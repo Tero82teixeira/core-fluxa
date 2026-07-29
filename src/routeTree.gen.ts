@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTarefasRouteImport } from './routes/_authenticated/tarefas'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedProcessosRouteImport } from './routes/_authenticated/processos'
 import { Route as AuthenticatedNovidadesRouteImport } from './routes/_authenticated/novidades'
 import { Route as AuthenticatedMonitoramentoRouteImport } from './routes/_authenticated/monitoramento'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
@@ -21,8 +22,15 @@ import { Route as AuthenticatedEquipeRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedComunicacaoRouteImport } from './routes/_authenticated/comunicacao'
+import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
+import { Route as AuthenticatedCentralRouteImport } from './routes/_authenticated/central'
 import { Route as AuthenticatedAutomacoesRouteImport } from './routes/_authenticated/automacoes'
 import { Route as AuthenticatedAjudaRouteImport } from './routes/_authenticated/ajuda'
+import { Route as AuthenticatedProcessosIndexRouteImport } from './routes/_authenticated/processos.index'
+import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
+import { Route as AuthenticatedProcessosProcessIdRouteImport } from './routes/_authenticated/processos.$processId'
+import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
+import { Route as AuthenticatedClientesClientIdRouteImport } from './routes/_authenticated/clientes.$clientId'
 
 const EntrarRoute = EntrarRouteImport.update({
   id: '/entrar',
@@ -46,6 +54,11 @@ const AuthenticatedTarefasRoute = AuthenticatedTarefasRouteImport.update({
 const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProcessosRoute = AuthenticatedProcessosRouteImport.update({
+  id: '/processos',
+  path: '/processos',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedNovidadesRoute = AuthenticatedNovidadesRouteImport.update({
@@ -86,6 +99,16 @@ const AuthenticatedComunicacaoRoute =
     path: '/comunicacao',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCentralRoute = AuthenticatedCentralRouteImport.update({
+  id: '/central',
+  path: '/central',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAutomacoesRoute = AuthenticatedAutomacoesRouteImport.update({
   id: '/automacoes',
   path: '/automacoes',
@@ -96,12 +119,44 @@ const AuthenticatedAjudaRoute = AuthenticatedAjudaRouteImport.update({
   path: '/ajuda',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedProcessosIndexRoute =
+  AuthenticatedProcessosIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedProcessosRoute,
+  } as any)
+const AuthenticatedClientesIndexRoute =
+  AuthenticatedClientesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedClientesRoute,
+  } as any)
+const AuthenticatedProcessosProcessIdRoute =
+  AuthenticatedProcessosProcessIdRouteImport.update({
+    id: '/$processId',
+    path: '/$processId',
+    getParentRoute: () => AuthenticatedProcessosRoute,
+  } as any)
+const AuthenticatedClientesNovoRoute =
+  AuthenticatedClientesNovoRouteImport.update({
+    id: '/novo',
+    path: '/novo',
+    getParentRoute: () => AuthenticatedClientesRoute,
+  } as any)
+const AuthenticatedClientesClientIdRoute =
+  AuthenticatedClientesClientIdRouteImport.update({
+    id: '/$clientId',
+    path: '/$clientId',
+    getParentRoute: () => AuthenticatedClientesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/entrar': typeof EntrarRoute
   '/ajuda': typeof AuthenticatedAjudaRoute
   '/automacoes': typeof AuthenticatedAutomacoesRoute
+  '/central': typeof AuthenticatedCentralRoute
+  '/clientes': typeof AuthenticatedClientesRouteWithChildren
   '/comunicacao': typeof AuthenticatedComunicacaoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
@@ -109,14 +164,21 @@ export interface FileRoutesByFullPath {
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/monitoramento': typeof AuthenticatedMonitoramentoRoute
   '/novidades': typeof AuthenticatedNovidadesRoute
+  '/processos': typeof AuthenticatedProcessosRouteWithChildren
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/tarefas': typeof AuthenticatedTarefasRoute
+  '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
+  '/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
+  '/clientes/': typeof AuthenticatedClientesIndexRoute
+  '/processos/': typeof AuthenticatedProcessosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/entrar': typeof EntrarRoute
   '/ajuda': typeof AuthenticatedAjudaRoute
   '/automacoes': typeof AuthenticatedAutomacoesRoute
+  '/central': typeof AuthenticatedCentralRoute
   '/comunicacao': typeof AuthenticatedComunicacaoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
@@ -126,6 +188,11 @@ export interface FileRoutesByTo {
   '/novidades': typeof AuthenticatedNovidadesRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/tarefas': typeof AuthenticatedTarefasRoute
+  '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
+  '/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
+  '/clientes': typeof AuthenticatedClientesIndexRoute
+  '/processos': typeof AuthenticatedProcessosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,6 +201,8 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/_authenticated/ajuda': typeof AuthenticatedAjudaRoute
   '/_authenticated/automacoes': typeof AuthenticatedAutomacoesRoute
+  '/_authenticated/central': typeof AuthenticatedCentralRoute
+  '/_authenticated/clientes': typeof AuthenticatedClientesRouteWithChildren
   '/_authenticated/comunicacao': typeof AuthenticatedComunicacaoRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
@@ -141,8 +210,14 @@ export interface FileRoutesById {
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
   '/_authenticated/monitoramento': typeof AuthenticatedMonitoramentoRoute
   '/_authenticated/novidades': typeof AuthenticatedNovidadesRoute
+  '/_authenticated/processos': typeof AuthenticatedProcessosRouteWithChildren
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/tarefas': typeof AuthenticatedTarefasRoute
+  '/_authenticated/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
+  '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/_authenticated/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
+  '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
+  '/_authenticated/processos/': typeof AuthenticatedProcessosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +226,8 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/ajuda'
     | '/automacoes'
+    | '/central'
+    | '/clientes'
     | '/comunicacao'
     | '/configuracoes'
     | '/documentos'
@@ -158,14 +235,21 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/monitoramento'
     | '/novidades'
+    | '/processos'
     | '/relatorios'
     | '/tarefas'
+    | '/clientes/$clientId'
+    | '/clientes/novo'
+    | '/processos/$processId'
+    | '/clientes/'
+    | '/processos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/entrar'
     | '/ajuda'
     | '/automacoes'
+    | '/central'
     | '/comunicacao'
     | '/configuracoes'
     | '/documentos'
@@ -175,6 +259,11 @@ export interface FileRouteTypes {
     | '/novidades'
     | '/relatorios'
     | '/tarefas'
+    | '/clientes/$clientId'
+    | '/clientes/novo'
+    | '/processos/$processId'
+    | '/clientes'
+    | '/processos'
   id:
     | '__root__'
     | '/'
@@ -182,6 +271,8 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/_authenticated/ajuda'
     | '/_authenticated/automacoes'
+    | '/_authenticated/central'
+    | '/_authenticated/clientes'
     | '/_authenticated/comunicacao'
     | '/_authenticated/configuracoes'
     | '/_authenticated/documentos'
@@ -189,8 +280,14 @@ export interface FileRouteTypes {
     | '/_authenticated/financeiro'
     | '/_authenticated/monitoramento'
     | '/_authenticated/novidades'
+    | '/_authenticated/processos'
     | '/_authenticated/relatorios'
     | '/_authenticated/tarefas'
+    | '/_authenticated/clientes/$clientId'
+    | '/_authenticated/clientes/novo'
+    | '/_authenticated/processos/$processId'
+    | '/_authenticated/clientes/'
+    | '/_authenticated/processos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -234,6 +331,13 @@ declare module '@tanstack/react-router' {
       path: '/relatorios'
       fullPath: '/relatorios'
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/processos': {
+      id: '/_authenticated/processos'
+      path: '/processos'
+      fullPath: '/processos'
+      preLoaderRoute: typeof AuthenticatedProcessosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/novidades': {
@@ -285,6 +389,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedComunicacaoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/clientes': {
+      id: '/_authenticated/clientes'
+      path: '/clientes'
+      fullPath: '/clientes'
+      preLoaderRoute: typeof AuthenticatedClientesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/central': {
+      id: '/_authenticated/central'
+      path: '/central'
+      fullPath: '/central'
+      preLoaderRoute: typeof AuthenticatedCentralRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/automacoes': {
       id: '/_authenticated/automacoes'
       path: '/automacoes'
@@ -299,12 +417,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAjudaRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/processos/': {
+      id: '/_authenticated/processos/'
+      path: '/'
+      fullPath: '/processos/'
+      preLoaderRoute: typeof AuthenticatedProcessosIndexRouteImport
+      parentRoute: typeof AuthenticatedProcessosRoute
+    }
+    '/_authenticated/clientes/': {
+      id: '/_authenticated/clientes/'
+      path: '/'
+      fullPath: '/clientes/'
+      preLoaderRoute: typeof AuthenticatedClientesIndexRouteImport
+      parentRoute: typeof AuthenticatedClientesRoute
+    }
+    '/_authenticated/processos/$processId': {
+      id: '/_authenticated/processos/$processId'
+      path: '/$processId'
+      fullPath: '/processos/$processId'
+      preLoaderRoute: typeof AuthenticatedProcessosProcessIdRouteImport
+      parentRoute: typeof AuthenticatedProcessosRoute
+    }
+    '/_authenticated/clientes/novo': {
+      id: '/_authenticated/clientes/novo'
+      path: '/novo'
+      fullPath: '/clientes/novo'
+      preLoaderRoute: typeof AuthenticatedClientesNovoRouteImport
+      parentRoute: typeof AuthenticatedClientesRoute
+    }
+    '/_authenticated/clientes/$clientId': {
+      id: '/_authenticated/clientes/$clientId'
+      path: '/$clientId'
+      fullPath: '/clientes/$clientId'
+      preLoaderRoute: typeof AuthenticatedClientesClientIdRouteImport
+      parentRoute: typeof AuthenticatedClientesRoute
+    }
   }
 }
+
+interface AuthenticatedClientesRouteChildren {
+  AuthenticatedClientesClientIdRoute: typeof AuthenticatedClientesClientIdRoute
+  AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
+  AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
+}
+
+const AuthenticatedClientesRouteChildren: AuthenticatedClientesRouteChildren = {
+  AuthenticatedClientesClientIdRoute: AuthenticatedClientesClientIdRoute,
+  AuthenticatedClientesNovoRoute: AuthenticatedClientesNovoRoute,
+  AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
+}
+
+const AuthenticatedClientesRouteWithChildren =
+  AuthenticatedClientesRoute._addFileChildren(
+    AuthenticatedClientesRouteChildren,
+  )
+
+interface AuthenticatedProcessosRouteChildren {
+  AuthenticatedProcessosProcessIdRoute: typeof AuthenticatedProcessosProcessIdRoute
+  AuthenticatedProcessosIndexRoute: typeof AuthenticatedProcessosIndexRoute
+}
+
+const AuthenticatedProcessosRouteChildren: AuthenticatedProcessosRouteChildren =
+  {
+    AuthenticatedProcessosProcessIdRoute: AuthenticatedProcessosProcessIdRoute,
+    AuthenticatedProcessosIndexRoute: AuthenticatedProcessosIndexRoute,
+  }
+
+const AuthenticatedProcessosRouteWithChildren =
+  AuthenticatedProcessosRoute._addFileChildren(
+    AuthenticatedProcessosRouteChildren,
+  )
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAjudaRoute: typeof AuthenticatedAjudaRoute
   AuthenticatedAutomacoesRoute: typeof AuthenticatedAutomacoesRoute
+  AuthenticatedCentralRoute: typeof AuthenticatedCentralRoute
+  AuthenticatedClientesRoute: typeof AuthenticatedClientesRouteWithChildren
   AuthenticatedComunicacaoRoute: typeof AuthenticatedComunicacaoRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
@@ -312,6 +500,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
   AuthenticatedMonitoramentoRoute: typeof AuthenticatedMonitoramentoRoute
   AuthenticatedNovidadesRoute: typeof AuthenticatedNovidadesRoute
+  AuthenticatedProcessosRoute: typeof AuthenticatedProcessosRouteWithChildren
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedTarefasRoute: typeof AuthenticatedTarefasRoute
 }
@@ -319,6 +508,8 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAjudaRoute: AuthenticatedAjudaRoute,
   AuthenticatedAutomacoesRoute: AuthenticatedAutomacoesRoute,
+  AuthenticatedCentralRoute: AuthenticatedCentralRoute,
+  AuthenticatedClientesRoute: AuthenticatedClientesRouteWithChildren,
   AuthenticatedComunicacaoRoute: AuthenticatedComunicacaoRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
@@ -326,6 +517,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
   AuthenticatedMonitoramentoRoute: AuthenticatedMonitoramentoRoute,
   AuthenticatedNovidadesRoute: AuthenticatedNovidadesRoute,
+  AuthenticatedProcessosRoute: AuthenticatedProcessosRouteWithChildren,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedTarefasRoute: AuthenticatedTarefasRoute,
 }
