@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { useWorkspace } from "@/lib/workspace";
 import { useProcesses } from "@/hooks/use-operations";
-import { KANBAN_STAGES, PRIORITY } from "@/lib/domain";
+import { KANBAN_STAGES, PRIORITY, PROCESS_STAGE } from "@/lib/domain";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatDate } from "@/lib/format";
