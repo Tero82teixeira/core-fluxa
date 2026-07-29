@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useClient, useProcesses } from "@/hooks/use-operations";
 import { useWorkspace } from "@/lib/workspace";
 import { Card, CardContent } from "@/components/ui/card";
+import { PROCESS_STAGE, CLIENT_STATUS } from "@/lib/domain";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatDate, maskDocument } from "@/lib/format";
 
@@ -39,7 +40,7 @@ function ClientDetail() {
               {client.data.document ? maskDocument(client.data.document) : "Sem documento"} · {client.data.email ?? "—"} · {client.data.phone ?? "—"}
             </p>
           </div>
-          <StatusBadge kind="client" value={client.data.status} />
+          <StatusBadge label={CLIENT_STATUS[client.data.status].label} tone={CLIENT_STATUS[client.data.status].tone} />
         </CardContent>
       </Card>
 
@@ -53,7 +54,7 @@ function ClientDetail() {
                   <p className="truncate text-sm font-medium">{process.code} — {process.title}</p>
                   <p className="text-xs text-muted-foreground">Prazo: {formatDate(process.due_date)}</p>
                 </div>
-                <StatusBadge kind="stage" value={process.stage} />
+                <StatusBadge label={PROCESS_STAGE[process.stage].label} tone={PROCESS_STAGE[process.stage].tone} />
               </li>
             ))}
             {related.length === 0 && <li className="py-4 text-sm text-muted-foreground">Nenhum processo vinculado.</li>}

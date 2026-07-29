@@ -23,8 +23,8 @@ export const Route = createFileRoute("/_authenticated/clientes/novo")({
 
 function NewClient() {
   const navigate = useNavigate();
-  const { organizationId, userId } = useWorkspace();
-  const createClient = useCreateClient(organizationId, userId ?? undefined);
+  const { organizationId, user } = useWorkspace();
+  const createClient = useCreateClient(organizationId, user?.id);
   const [form, setForm] = useState({ name: "", document: "", email: "", phone: "", city: "", state: "" });
 
   const submit = async (event: React.FormEvent) => {

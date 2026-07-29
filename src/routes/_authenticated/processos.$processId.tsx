@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { useProcess, useProcessMovements } from "@/hooks/use-operations";
 import { Card, CardContent } from "@/components/ui/card";
+import { PROCESS_STAGE, PRIORITY } from "@/lib/domain";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatDate, relativeTime } from "@/lib/format";
 
@@ -39,8 +40,8 @@ function ProcessDetail() {
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
-            <StatusBadge kind="stage" value={process.data.stage} />
-            <StatusBadge kind="priority" value={process.data.priority} />
+            <StatusBadge label={PROCESS_STAGE[process.data.stage].label} tone={PROCESS_STAGE[process.data.stage].tone} />
+            <StatusBadge label={PRIORITY[process.data.priority].label} tone={PRIORITY[process.data.priority].tone} />
           </div>
         </CardContent>
       </Card>

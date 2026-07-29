@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { useWorkspace } from "@/lib/workspace";
 import { useProcesses } from "@/hooks/use-operations";
-import { PROCESS_STAGES } from "@/lib/domain";
+import { KANBAN_STAGES, PRIORITY } from "@/lib/domain";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatDate } from "@/lib/format";
@@ -27,13 +27,13 @@ function ProcessesPage() {
   return (
     <div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {PROCESS_STAGES.map((stage) => {
-          const items = rows.filter((process) => process.stage === stage.value);
+        {KANBAN_STAGES.map((stage) => {
+          const items = rows.filter((process) => process.stage === stage);
           return (
-            <Card key={stage.value}>
+            <Card key={stage}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold">{stage.label}</p>
+                  <p className="text-sm font-semibold">{PROCESS_STAGE[stage].label}</p>
                   <span className="text-xs text-muted-foreground">{items.length}</span>
                 </div>
                 <ul className="mt-3 space-y-2">
@@ -47,7 +47,7 @@ function ProcessesPage() {
                         <p className="truncate text-sm font-medium">{process.code}</p>
                         <p className="truncate text-xs text-muted-foreground">{process.clients?.name}</p>
                         <div className="mt-2 flex items-center justify-between gap-2">
-                          <StatusBadge kind="priority" value={process.priority} />
+                          <StatusBadge label={PRIORITY[process.priority].label} tone={PRIORITY[process.priority].tone} />
                           <span className="text-[11px] text-muted-foreground">{formatDate(process.due_date)}</span>
                         </div>
                       </Link>

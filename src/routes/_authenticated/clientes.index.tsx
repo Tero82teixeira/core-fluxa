@@ -7,6 +7,7 @@ import { useClients } from "@/hooks/use-operations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { CLIENT_STATUS } from "@/lib/domain";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { maskDocument, formatDate } from "@/lib/format";
@@ -66,7 +67,7 @@ function ClientsPage() {
                       </p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <StatusBadge kind="client" value={client.status} />
+                      <StatusBadge label={CLIENT_STATUS[client.status].label} tone={CLIENT_STATUS[client.status].tone} />
                       <p className="mt-1 text-xs text-muted-foreground">{formatDate(client.last_interaction_at)}</p>
                     </div>
                   </Link>

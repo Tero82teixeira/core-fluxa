@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
+  const { user } = Route.useRouteContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -29,7 +30,7 @@ function AuthenticatedLayout() {
   };
 
   return (
-    <WorkspaceProvider>
+    <WorkspaceProvider user={user}>
       <SidebarProvider>
         <div className="flex min-h-screen w-full bg-background">
           <AppSidebar onSignOut={handleSignOut} />

@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useWorkspace } from "@/lib/workspace";
 import { useProcesses, useTasks, useRecentActivity } from "@/hooks/use-operations";
 import { Card, CardContent } from "@/components/ui/card";
+import { PROCESS_STAGE } from "@/lib/domain";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatDate, relativeTime } from "@/lib/format";
 
@@ -25,7 +26,7 @@ function Central() {
   const activity = useRecentActivity(organizationId);
 
   const rows = processes.data ?? [];
-  const open = rows.filter((p) => p.stage !== "concluido" && p.stage !== "arquivado");
+  const open = rows.filter((p) => p.stage !== "finalizado" && p.stage !== "arquivado" && p.stage !== "cancelado");
   const late = open.filter((p) => p.due_date && new Date(p.due_date) < new Date());
   const pendingTasks = (tasks.data ?? []).filter((t) => t.status !== "concluida");
 
@@ -61,7 +62,7 @@ function Central() {
                     <p className="truncate text-xs text-muted-foreground">{process.clients?.name}</p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <StatusBadge kind="stage" value={process.stage} />
+                    <StatusBadge label={PROCESS_STAGE[process.stage].label} tone={PROCESS_STAGE[process.stage].tone} />
                     <p className="mt-1 text-xs text-muted-foreground">{formatDate(process.due_date)}</p>
                   </div>
                 </li>
