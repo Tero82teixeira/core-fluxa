@@ -251,6 +251,16 @@ function AuthPage() {
               </div>
             )}
 
+            {demoSuccess && (
+              <div
+                role="status"
+                className="mt-5 flex items-start gap-2.5 rounded-lg border border-brand/30 bg-brand/10 px-3 py-2.5 text-sm text-foreground"
+              >
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={2} />
+                <span>{DEMO_SUCCESS_MESSAGE}</span>
+              </div>
+            )}
+
             <form onSubmit={submit} noValidate className="mt-6 space-y-4">
               {mode === "signup" && (
                 <div className="space-y-1.5">
