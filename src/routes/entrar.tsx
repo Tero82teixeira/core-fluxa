@@ -89,6 +89,7 @@ function AuthPage() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; form?: string }>({});
+  const [demoSuccess, setDemoSuccess] = useState(false);
 
   const validate = () => {
     const next: typeof errors = {};
@@ -104,7 +105,17 @@ function AuthPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (loading) return;
+    setDemoSuccess(false);
     if (!validate()) return;
+
+    // TODO(auth): substituir por integração real com Supabase Auth quando AUTH_ENABLED === true.
+    if (!AUTH_ENABLED) {
+      setErrors({});
+      setDemoSuccess(true);
+      toast.success(DEMO_SUCCESS_MESSAGE);
+      return;
+    }
+
     setLoading(true);
     try {
       if (mode === "login") {
@@ -134,6 +145,11 @@ function AuthPage() {
   const forgotPassword = async () => {
     if (!EMAIL_RE.test(email.trim())) {
       setErrors((e) => ({ ...e, email: "Informe seu e-mail para receber o link de redefinição." }));
+      return;
+    }
+    // TODO(auth): recuperação real de senha após conectar o Supabase Auth.
+    if (!AUTH_ENABLED) {
+      toast.success(DEMO_SUCCESS_MESSAGE);
       return;
     }
     try {
