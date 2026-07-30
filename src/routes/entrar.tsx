@@ -51,6 +51,19 @@ const PREVIEW_CARDS = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/**
+ * TODO(auth): fluxo temporário de demonstração.
+ * Enquanto AUTH_ENABLED === false, o formulário apenas valida os dados localmente
+ * e exibe um estado de sucesso — nenhuma chamada de API é feita, nenhum usuário
+ * fictício é criado e nenhum redirecionamento para área protegida acontece.
+ * Ao conectar o banco de dados e a autenticação (Supabase Auth), basta ativar a
+ * constante abaixo para que o fluxo real de signUp/signIn seja executado.
+ */
+const AUTH_ENABLED = false;
+
+const DEMO_SUCCESS_MESSAGE =
+  "Estrutura de cadastro pronta. A criação real da conta será ativada quando o banco de dados e a autenticação forem conectados.";
+
 function translateAuthError(message: string, status?: number): string {
   const m = message.toLowerCase();
   if (m.includes("invalid login credentials")) return "E-mail ou senha incorretos. Verifique e tente novamente.";
