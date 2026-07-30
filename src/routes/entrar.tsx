@@ -51,6 +51,19 @@ const PREVIEW_CARDS = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/**
+ * TODO(auth): fluxo temporário de demonstração.
+ * Enquanto AUTH_ENABLED === false, o formulário apenas valida os dados localmente
+ * e exibe um estado de sucesso — nenhuma chamada de API é feita, nenhum usuário
+ * fictício é criado e nenhum redirecionamento para área protegida acontece.
+ * Ao conectar o banco de dados e a autenticação (Supabase Auth), basta ativar a
+ * constante abaixo para que o fluxo real de signUp/signIn seja executado.
+ */
+const AUTH_ENABLED = false;
+
+const DEMO_SUCCESS_MESSAGE =
+  "Estrutura de cadastro pronta. A criação real da conta será ativada quando o banco de dados e a autenticação forem conectados.";
+
 function translateAuthError(message: string, status?: number): string {
   const m = message.toLowerCase();
   if (m.includes("invalid login credentials")) return "E-mail ou senha incorretos. Verifique e tente novamente.";
@@ -76,6 +89,7 @@ function AuthPage() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; form?: string }>({});
+  const [demoSuccess, setDemoSuccess] = useState(false);
 
   const validate = () => {
     const next: typeof errors = {};
@@ -91,7 +105,17 @@ function AuthPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (loading) return;
+    setDemoSuccess(false);
     if (!validate()) return;
+
+    // TODO(auth): substituir por integração real com Supabase Auth quando AUTH_ENABLED === true.
+    if (!AUTH_ENABLED) {
+      setErrors({});
+      setDemoSuccess(true);
+      toast.success(DEMO_SUCCESS_MESSAGE);
+      return;
+    }
+
     setLoading(true);
     try {
       if (mode === "login") {
@@ -121,6 +145,11 @@ function AuthPage() {
   const forgotPassword = async () => {
     if (!EMAIL_RE.test(email.trim())) {
       setErrors((e) => ({ ...e, email: "Informe seu e-mail para receber o link de redefinição." }));
+      return;
+    }
+    // TODO(auth): recuperação real de senha após conectar o Supabase Auth.
+    if (!AUTH_ENABLED) {
+      toast.success(DEMO_SUCCESS_MESSAGE);
       return;
     }
     try {
@@ -222,6 +251,16 @@ function AuthPage() {
               </div>
             )}
 
+            {demoSuccess && (
+              <div
+                role="status"
+                className="mt-5 flex items-start gap-2.5 rounded-lg border border-brand/30 bg-brand/10 px-3 py-2.5 text-sm text-foreground"
+              >
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={2} />
+                <span>{DEMO_SUCCESS_MESSAGE}</span>
+              </div>
+            )}
+
             <form onSubmit={submit} noValidate className="mt-6 space-y-4">
               {mode === "signup" && (
                 <div className="space-y-1.5">
@@ -317,6 +356,7 @@ function AuthPage() {
               onClick={() => {
                 setMode(mode === "login" ? "signup" : "login");
                 setErrors({});
+                setDemoSuccess(false);
               }}
               className="mt-5 w-full text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
