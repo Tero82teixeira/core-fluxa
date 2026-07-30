@@ -356,6 +356,7 @@ function AuthPage() {
               onClick={() => {
                 setMode(mode === "login" ? "signup" : "login");
                 setErrors({});
+                setDemoSuccess(false);
               }}
               className="mt-5 w-full text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
