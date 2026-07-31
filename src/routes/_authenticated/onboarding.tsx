@@ -155,6 +155,14 @@ function Onboarding() {
 
   const Icon = STEPS[step].icon;
 
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin" aria-hidden /> Preparando sua empresa…
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5 p-4 sm:p-6">
       <header className="space-y-1">
@@ -187,9 +195,9 @@ function Onboarding() {
             </div>
           </div>
 
-          {error && (
+          {(error || bootstrapError) && (
             <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
+              {error ?? bootstrapError}
             </p>
           )}
 
