@@ -66,6 +66,16 @@ export function describeError(error: unknown, context: Ctx = "salvar"): string {
     return "Você não tem permissão para executar esta ação.";
   if (code === "PGRST116" || message.includes("not found")) return "Registro não encontrado ou já removido.";
   if (message.includes("already registered")) return "Já existe uma conta com este e-mail.";
+  if (message.includes("document_client_process_mismatch"))
+    return "O cliente informado não corresponde ao cliente do processo selecionado.";
+  if (message.includes("document_process_org_mismatch") || message.includes("document_client_org_mismatch"))
+    return "O vínculo selecionado pertence a outra empresa.";
+  if (message.includes("document_checklist_mismatch"))
+    return "O item de checklist não pertence a este processo.";
+  if (message.includes("payload too large") || message.includes("exceeded the maximum allowed size"))
+    return "Arquivo acima do tamanho permitido (20 MB).";
+  if (message.includes("mime type") || message.includes("invalid_mime_type"))
+    return "Formato de arquivo não aceito. Envie PDF, JPG, PNG, DOCX ou XLSX.";
 
   return FALLBACK[context];
 }
