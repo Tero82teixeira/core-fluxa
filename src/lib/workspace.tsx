@@ -172,6 +172,17 @@ export function WorkspaceProvider({ user, children }: { user: User | null; child
     return () => clearTimeout(timer);
   }, [settled, user]);
 
+  useEffect(() => {
+    if (user) console.info("[Workspace] início", { userId: user.id });
+  }, [user]);
+  useEffect(() => {
+    if (profile.data) console.info("[Workspace] profile carregado");
+  }, [profile.data]);
+  useEffect(() => {
+    if (membership) console.info("[Workspace] membership carregado");
+    if (membership?.organizations) console.info("[Workspace] organização carregada");
+  }, [membership]);
+
   const value = useMemo<WorkspaceContextValue>(() => {
     const granted = new Set(permissions.data ?? []);
     const querying = memberships.isLoading || memberships.isFetching || profile.isLoading || profile.isFetching;
