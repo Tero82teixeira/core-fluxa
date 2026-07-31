@@ -40,7 +40,7 @@ export function WorkspaceProvider({ user, children }: { user: User | null; child
     return {
       loading: memberships.isLoading || profile.isLoading,
       user,
-      displayName: profile.data?.full_name || user.email || "Usuário",
+      displayName: profile.data?.full_name || user?.email || "Usuário",
       memberships: list,
       membership,
       organizationId: membership?.organization_id ?? null,
