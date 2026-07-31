@@ -25,15 +25,16 @@ export const Route = createFileRoute("/_authenticated")({
 
 /** Leva o usuário sem empresa (ou com onboarding pendente) para a configuração. */
 function OnboardingGate() {
-  const { loading, memberships, onboardingCompleted } = useWorkspace();
+  const { loading, ready, onboardingCompleted } = useWorkspace();
   const location = useLocation();
   const navigate = useNavigate();
   const onOnboarding = location.pathname.startsWith("/onboarding");
 
   useEffect(() => {
-    if (DEMO_MODE || loading || onOnboarding) return;
-    if (memberships.length === 0 || !onboardingCompleted) navigate({ to: "/onboarding", replace: true });
-  }, [loading, memberships.length, onboardingCompleted, onOnboarding, navigate]);
+    if (DEMO_MODE || loading || !ready) return;
+    if (!onboardingCompleted && !onOnboarding) navigate({ to: "/onboarding", replace: true });
+    if (onboardingCompleted && onOnboarding) navigate({ to: "/central", replace: true });
+  }, [loading, ready, onboardingCompleted, onOnboarding, navigate]);
 
   return null;
 }
@@ -45,8 +46,9 @@ function AuthenticatedLayout() {
 
   const handleSignOut = async () => {
     await queryClient.cancelQueries();
-    queryClient.clear();
     await supabase.auth.signOut();
+    queryClient.clear();
+    window.localStorage.removeItem("fluxa-workspace");
     navigate({ to: "/entrar", replace: true });
   };
 
