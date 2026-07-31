@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { ListChecks } from "lucide-react";
+
 import { ComingSoon } from "@/components/shared/empty-state";
 
 export const Route = createFileRoute("/_authenticated/tarefas")({
@@ -19,6 +21,9 @@ function Page() {
     <div className="mx-auto w-full max-w-6xl p-4 sm:p-6">
       <ComingSoon
         title="Tarefas"
+        benefit="Toda a equipe sabe o que fazer hoje, sem planilhas paralelas."
+        icon={ListChecks}
+        variant="split"
         summary="Agenda operacional da equipe com responsáveis, prazos e checklists."
         bullets={["Quadro por responsável e por dia", "Checklists reutilizáveis por tipo de serviço", "Tarefas recorrentes", "Integração com processos e clientes"]}
       />

@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { Bot } from "lucide-react";
+
 import { ComingSoon } from "@/components/shared/empty-state";
 
 export const Route = createFileRoute("/_authenticated/automacoes")({
@@ -19,6 +21,9 @@ function Page() {
     <div className="mx-auto w-full max-w-6xl p-4 sm:p-6">
       <ComingSoon
         title="Automações"
+        benefit="A operação avança sozinha nas tarefas repetitivas."
+        icon={Bot}
+        variant="timeline"
         summary="Regras que reagem a eventos do processo sem intervenção manual."
         bullets={["Gatilhos por mudança de etapa", "Lembretes automáticos de prazo", "Cobrança automática de documentos", "Notificações para a equipe"]}
       />
