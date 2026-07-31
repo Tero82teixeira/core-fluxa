@@ -38,7 +38,7 @@ const STEPS = [
 function Onboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, organizationId, membership, loading, bootstrapError } = useWorkspace();
+  const { organizationId, membership, loading, bootstrapError } = useWorkspace();
   const [orgId, setOrgId] = useState<string | null>(organizationId);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
