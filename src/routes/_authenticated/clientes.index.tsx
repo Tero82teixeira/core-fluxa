@@ -185,7 +185,7 @@ function ClientsPage() {
                         className="flex min-w-0 items-center gap-3"
                       >
                         <Avatar className="size-8">
-                          <AvatarFallback className="text-[11px]">{initials(client.name)}</AvatarFallback>
+                          <AvatarFallback className="text-xs">{initials(client.name)}</AvatarFallback>
                         </Avatar>
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-medium">{client.name}</span>
