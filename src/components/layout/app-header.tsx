@@ -92,9 +92,16 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
         <div className="flex min-w-0 items-center gap-2">
           <SidebarTrigger className="shrink-0" />
           <div className="min-w-0">
-            <h1 className="truncate font-display text-sm font-semibold sm:text-base">
-              {current?.label ?? "FLUXA"}
-            </h1>
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="truncate font-display text-sm font-semibold sm:text-base">
+                {current?.label ?? "FLUXA"}
+              </h1>
+              {DEMO_MODE && (
+                <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Demonstração
+                </span>
+              )}
+            </div>
             {isDetail && current && (
               <Breadcrumb className="hidden sm:block">
                 <BreadcrumbList className="text-xs">
