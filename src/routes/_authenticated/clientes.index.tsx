@@ -215,10 +215,10 @@ function ClientsPage() {
             </Table>
           </CardContent>
         </Card>
-        <div className="grid gap-3 md:hidden">
+        <div className="grid grid-cols-1 gap-3 md:hidden">
           {rows.map((client) => (
-            <Link key={client.id} to="/clientes/$clientId" params={{ clientId: client.id }}>
-              <Card className="transition hover:border-brand/40">
+            <Link key={client.id} to="/clientes/$clientId" params={{ clientId: client.id }} className="block min-w-0">
+              <Card className="min-w-0 transition hover:border-brand/40">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
@@ -251,10 +251,10 @@ function ClientsPage() {
         </div>
         </>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((client) => (
-            <Link key={client.id} to="/clientes/$clientId" params={{ clientId: client.id }}>
-              <Card className="h-full transition hover:border-brand/40 hover:shadow-sm">
+            <Link key={client.id} to="/clientes/$clientId" params={{ clientId: client.id }} className="block min-w-0">
+              <Card className="h-full min-w-0 transition hover:border-brand/40 hover:shadow-sm">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
@@ -270,7 +270,7 @@ function ClientsPage() {
                     </div>
                     <StatusBadge label={CLIENT_STATUS[client.status].label} tone={CLIENT_STATUS[client.status].tone} />
                   </div>
-                  <dl className="mt-4 grid grid-cols-2 gap-3">
+                  <dl className="mt-4 grid grid-cols-2 gap-3 [&>div]:min-w-0">
                     <div>
                       <dt className="field-label">Processos abertos</dt>
                       <dd className="mt-0.5 text-sm font-medium">{openByClient.get(client.id) ?? 0}</dd>
