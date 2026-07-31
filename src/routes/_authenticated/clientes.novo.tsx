@@ -1,24 +1,23 @@
-import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { useState } from "react";
 
 import { useWorkspace } from "@/lib/workspace";
-import { useCreateClient } from "@/hooks/use-operations";
+import { usePermissions } from "@/lib/permissions";
+import { useCreateClient } from "@/hooks/use-mutations";
 import { describeError } from "@/lib/errors";
-import { recordAudit } from "@/lib/audit";
+import { duplicateDocumentMessage, emptyClientForm, toClientPayload, type ClientFormValues, type FieldErrors } from "@/lib/validators";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { ClientForm } from "@/components/clients/client-form";
 
 export const Route = createFileRoute("/_authenticated/clientes/novo")({
   head: () => ({
     meta: [
       { title: "Novo cliente — FLUXA" },
-      { name: "description", content: "Cadastre um novo cliente na base da empresa." },
+      { name: "description", content: "Cadastre um cliente PF ou PJ com documento, contatos e endereço." },
       { property: "og:title", content: "Novo cliente — FLUXA" },
-      { property: "og:description", content: "Cadastre um novo cliente na base da empresa." },
+      { property: "og:description", content: "Cadastre um cliente PF ou PJ com documento, contatos e endereço." },
     ],
   }),
   component: NewClient,
@@ -26,81 +25,60 @@ export const Route = createFileRoute("/_authenticated/clientes/novo")({
 
 function NewClient() {
   const navigate = useNavigate();
-  const { organizationId, user, displayName } = useWorkspace();
-  const createClient = useCreateClient(organizationId, user?.id);
-  const [form, setForm] = useState({ name: "", document: "", email: "", phone: "", city: "", state: "" });
+  const { organizationId, displayName } = useWorkspace();
+  const permissions = usePermissions();
+  const createClient = useCreateClient(organizationId);
+  const [externalErrors, setExternalErrors] = useState<FieldErrors>({});
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const submit = async (values: ClientFormValues) => {
     if (!organizationId) {
       toast.error("Selecione uma empresa antes de cadastrar clientes.");
       return;
     }
+    setExternalErrors({});
     try {
-      const created = await createClient.mutateAsync({
-        name: form.name.trim(),
-        document: form.document.trim() || null,
-        email: form.email.trim() || null,
-        phone: form.phone.trim() || null,
-        city: form.city.trim() || null,
-        state: form.state.trim() || null,
-        person_type: form.document.replace(/\D/g, "").length > 11 ? "pj" : "pf",
-        status: "ativo",
-        owner_name: displayName,
-      });
-      await recordAudit({
-        organizationId,
-        actorId: user?.id ?? null,
-        actorName: displayName,
-        action: "client.created",
-        entity: "client",
-        entityId: created.id,
-        metadata: { name: form.name.trim() },
-      });
+      const created = await createClient.mutateAsync(toClientPayload(values));
       toast.success("Cliente cadastrado.");
       navigate({ to: "/clientes/$clientId", params: { clientId: created.id } });
     } catch (error) {
-      toast.error(describeError(error, "cliente"));
+      const message = describeError(error, "cliente");
+      if (/duplic|já existe|unique/i.test(message)) {
+        setExternalErrors({ document: duplicateDocumentMessage(values.person_type) });
+        toast.error(duplicateDocumentMessage(values.person_type));
+        return;
+      }
+      toast.error(message);
     }
   };
 
+  if (!permissions.canCreate) {
+    return (
+      <div className="mx-auto w-full max-w-3xl p-4 sm:p-6">
+        <Card>
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            Seu perfil tem acesso somente de leitura e não pode cadastrar clientes.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto w-full max-w-3xl p-4 sm:p-6">
+    <div className="mx-auto w-full max-w-4xl p-4 sm:p-6">
       <Card>
         <CardContent className="p-6">
-          <h2 className="font-display text-lg font-semibold">Novo cliente</h2>
-          <form onSubmit={submit} className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="name">Nome / Razão social</Label>
-              <Input id="name" required maxLength={160} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="document">CPF / CNPJ</Label>
-              <Input id="document" maxLength={20} value={form.document} onChange={(e) => setForm({ ...form, document: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input id="phone" maxLength={20} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" maxLength={255} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="city">Cidade</Label>
-              <Input id="city" maxLength={80} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="state">UF</Label>
-              <Input id="state" maxLength={2} value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
-            </div>
-            <div className="sm:col-span-2">
-              <Button type="submit" disabled={createClient.isPending}>
-                {createClient.isPending ? "Salvando…" : "Salvar cliente"}
-              </Button>
-            </div>
-          </form>
+          <h1 className="page-title">Novo cliente</h1>
+          <p className="page-subtitle mt-1">Dados cadastrais, contato e endereço.</p>
+          <div className="mt-6">
+            <ClientForm
+              initial={{ ...emptyClientForm(), owner_name: displayName ?? "" }}
+              submitLabel="Salvar cliente"
+              pending={createClient.isPending}
+              externalErrors={externalErrors}
+              onSubmit={submit}
+              onCancel={() => navigate({ to: "/clientes" })}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

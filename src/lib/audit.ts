@@ -5,12 +5,21 @@ export type AuditAction =
   | "client.created"
   | "client.updated"
   | "client.archived"
+  | "client.restored"
   | "process.created"
+  | "process.updated"
   | "process.stage_changed"
   | "process.owner_changed"
   | "process.due_changed"
   | "process.priority_changed"
+  | "checklist.created"
+  | "checklist.updated"
+  | "checklist.removed"
+  | "service_type.created"
+  | "service_type.updated"
+  | "service_type.archived"
   | "task.created"
+  | "task.updated"
   | "task.completed"
   | "task.reopened"
   | "task.deleted"
@@ -22,7 +31,7 @@ type AuditInput = {
   actorId?: string | null;
   actorName?: string | null;
   action: AuditAction;
-  entity: "client" | "process" | "task" | "member" | "organization";
+  entity: "client" | "process" | "task" | "member" | "organization" | "checklist" | "service_type";
   entityId?: string | null;
   metadata?: Record<string, unknown>;
 };

@@ -107,33 +107,56 @@ export function useUpdateMemberRole(organizationId: string | null) {
  * Clientes
  * ------------------------------------------------------------------ */
 
-export type ClientInput = {
-  person_type: "pf" | "pj";
-  name: string;
-  trade_name?: string | null;
-  document?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  whatsapp?: string | null;
-  city?: string | null;
-  state?: string | null;
-  status: ClientStatus;
-  owner_name?: string | null;
-  notes?: string | null;
+export type ClientPayload = ReturnType<typeof import("@/lib/validators").toClientPayload>;
+
+const invalidateClients = (queryClient: ReturnType<typeof useQueryClient>, organizationId: string | null, id?: string) => {
+  queryClient.invalidateQueries({ queryKey: ["clients", organizationId] });
+  queryClient.invalidateQueries({ queryKey: ["clients-page", organizationId] });
+  queryClient.invalidateQueries({ queryKey: ["client-owners", organizationId] });
+  if (id) queryClient.invalidateQueries({ queryKey: ["client", id] });
 };
+
+export function useCreateClient(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async (values: ClientPayload) => {
+      const { data, error } = await db()
+        .from("clients")
+        .insert({
+          ...values,
+          organization_id: organizationId,
+          owner_name: values.owner_name || actor.name,
+          created_by: actor.userId,
+          updated_by: actor.userId,
+          last_interaction_at: new Date().toISOString(),
+        })
+        .select("id, name")
+        .single();
+      if (error) throw error;
+      await recordAudit({
+        organizationId: organizationId!,
+        actorId: actor.userId,
+        actorName: actor.name,
+        action: "client.created",
+        entity: "client",
+        entityId: data.id,
+        metadata: { name: data.name },
+      });
+      return data as { id: string; name: string };
+    },
+    onSuccess: () => invalidateClients(queryClient, organizationId),
+  });
+}
 
 export function useUpdateClient(organizationId: string | null) {
   const queryClient = useQueryClient();
   const actor = useActor();
   return useMutation({
-    mutationFn: async ({ id, values }: { id: string; values: Partial<ClientInput> }) => {
+    mutationFn: async ({ id, values }: { id: string; values: Partial<ClientPayload> }) => {
       const { error } = await db()
         .from("clients")
-        .update({
-          ...values,
-          document_digits: values.document !== undefined ? digits(values.document ?? "") || null : undefined,
-          updated_by: actor.userId,
-        })
+        .update({ ...values, updated_by: actor.userId, last_interaction_at: new Date().toISOString() })
         .eq("id", id)
         .eq("organization_id", organizationId);
       if (error) throw error;
@@ -147,10 +170,7 @@ export function useUpdateClient(organizationId: string | null) {
         metadata: { fields: Object.keys(values) },
       });
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["clients", organizationId] });
-      queryClient.invalidateQueries({ queryKey: ["client", variables.id] });
-    },
+    onSuccess: (_data, variables) => invalidateClients(queryClient, organizationId, variables.id),
   });
 }
 
@@ -158,10 +178,14 @@ export function useArchiveClient(organizationId: string | null) {
   const queryClient = useQueryClient();
   const actor = useActor();
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, restore }: { id: string; restore?: boolean }) => {
       const { error } = await db()
         .from("clients")
-        .update({ archived_at: new Date().toISOString(), status: "arquivado", updated_by: actor.userId })
+        .update(
+          restore
+            ? { archived_at: null, status: "ativo", updated_by: actor.userId }
+            : { archived_at: new Date().toISOString(), status: "arquivado", updated_by: actor.userId },
+        )
         .eq("id", id)
         .eq("organization_id", organizationId);
       if (error) throw error;
@@ -169,12 +193,12 @@ export function useArchiveClient(organizationId: string | null) {
         organizationId: organizationId!,
         actorId: actor.userId,
         actorName: actor.name,
-        action: "client.archived",
+        action: restore ? "client.restored" : "client.archived",
         entity: "client",
         entityId: id,
       });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["clients", organizationId] }),
+    onSuccess: (_data, variables) => invalidateClients(queryClient, organizationId, variables.id),
   });
 }
 
@@ -557,6 +581,215 @@ export function useAddProcessNote(organizationId: string | null) {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["process-movements", variables.processId] });
       queryClient.invalidateQueries({ queryKey: ["process", variables.processId] });
+    },
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * Checklist do processo
+ * ------------------------------------------------------------------ */
+
+export type ChecklistStatus = "pendente" | "recebido" | "em_analise" | "aprovado" | "rejeitado";
+
+export type ChecklistInput = {
+  title: string;
+  description?: string | null;
+  status?: ChecklistStatus;
+  required?: boolean;
+  position?: number;
+  assignee_name?: string | null;
+  due_date?: string | null;
+};
+
+export function useCreateChecklistItem(organizationId: string | null, processId: string) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async (values: ChecklistInput) => {
+      const { error } = await db().from("process_checklist_items").insert({
+        ...values,
+        organization_id: organizationId,
+        process_id: processId,
+        created_by: actor.userId,
+        updated_by: actor.userId,
+      });
+      if (error) throw error;
+      await db().from("process_movements").insert({
+        organization_id: organizationId,
+        process_id: processId,
+        description: `Item de checklist adicionado: ${values.title}.`,
+        actor_name: actor.name,
+        created_by: actor.userId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["process-checklist", processId] });
+      queryClient.invalidateQueries({ queryKey: ["process-movements", processId] });
+    },
+  });
+}
+
+/** Cria vários itens de checklist de uma vez (modelo do tipo de serviço). */
+export function useSeedChecklist(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async ({ processId, titles }: { processId: string; titles: string[] }) => {
+      if (titles.length === 0) return;
+      const { error } = await db()
+        .from("process_checklist_items")
+        .insert(
+          titles.map((title, index) => ({
+            organization_id: organizationId,
+            process_id: processId,
+            title,
+            status: "pendente",
+            required: true,
+            position: index,
+            created_by: actor.userId,
+            updated_by: actor.userId,
+          })),
+        );
+      if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["process-checklist", variables.processId] });
+    },
+  });
+}
+
+export function useUpdateChecklistItem(organizationId: string | null, processId: string) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      values,
+      movement,
+    }: {
+      id: string;
+      values: Partial<ChecklistInput> & { deleted_at?: string | null };
+      movement?: string;
+    }) => {
+      const { error } = await db()
+        .from("process_checklist_items")
+        .update({ ...values, updated_by: actor.userId })
+        .eq("id", id)
+        .eq("organization_id", organizationId);
+      if (error) throw error;
+      if (movement) {
+        await db().from("process_movements").insert({
+          organization_id: organizationId,
+          process_id: processId,
+          description: movement,
+          actor_name: actor.name,
+          created_by: actor.userId,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["process-checklist", processId] });
+      queryClient.invalidateQueries({ queryKey: ["process-movements", processId] });
+    },
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * Tipos de serviço
+ * ------------------------------------------------------------------ */
+
+export type ServiceTypeRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  default_days: number | null;
+  default_value: number | null;
+  is_active: boolean;
+  suggested_stages: unknown;
+  default_checklist: unknown;
+};
+
+export function useAllServiceTypes(organizationId: string | null) {
+  return useQuery({
+    enabled: Boolean(organizationId),
+    queryKey: ["service-types-all", organizationId],
+    queryFn: async (): Promise<ServiceTypeRow[]> => {
+      const { data, error } = await db()
+        .from("service_types")
+        .select("id, name, description, default_days, default_value, is_active, suggested_stages, default_checklist")
+        .eq("organization_id", organizationId)
+        .order("name");
+      if (error) throw error;
+      return (data ?? []) as ServiceTypeRow[];
+    },
+  });
+}
+
+export type ServiceTypeInput = {
+  name: string;
+  description?: string | null;
+  default_days?: number | null;
+  default_value?: number | null;
+  is_active?: boolean;
+  default_checklist?: string[];
+};
+
+export function useSaveServiceType(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async ({ id, values }: { id?: string; values: ServiceTypeInput }) => {
+      const payload = {
+        ...values,
+        default_checklist: (values.default_checklist ?? []) as never,
+        organization_id: organizationId,
+      };
+      const query = id
+        ? db().from("service_types").update(payload).eq("id", id).eq("organization_id", organizationId)
+        : db().from("service_types").insert(payload);
+      const { error } = await query;
+      if (error) throw error;
+      await recordAudit({
+        organizationId: organizationId!,
+        actorId: actor.userId,
+        actorName: actor.name,
+        action: id ? "service_type.updated" : "service_type.created",
+        entity: "service_type",
+        entityId: id ?? null,
+        metadata: { name: values.name },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["service-types-all", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["service-types", organizationId] });
+    },
+  });
+}
+
+export function useArchiveServiceType(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { error } = await db()
+        .from("service_types")
+        .update({ is_active: active })
+        .eq("id", id)
+        .eq("organization_id", organizationId);
+      if (error) throw error;
+      await recordAudit({
+        organizationId: organizationId!,
+        actorId: actor.userId,
+        actorName: actor.name,
+        action: "service_type.archived",
+        entity: "service_type",
+        entityId: id,
+        metadata: { active },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["service-types-all", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["service-types", organizationId] });
     },
   });
 }

@@ -10,15 +10,13 @@ import {
   Flame,
   PauseCircle,
   Sparkles,
-  TrendingDown,
-  TrendingUp,
-  Users,
+      Users,
   Wallet,
 } from "lucide-react";
 
 import { useWorkspace } from "@/lib/workspace";
 import { useClients, useCompleteTask, useProcesses, useRecentActivity, useTasks } from "@/hooks/use-operations";
-import type { DemoProcess } from "@/lib/demo-data";
+import type { ProcessRow } from "@/hooks/use-operations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -50,7 +48,7 @@ export const Route = createFileRoute("/_authenticated/central")({
 
 const CLOSED: ProcessStage[] = ["finalizado", "arquivado", "cancelado"];
 
-const isStale = (process: DemoProcess) => {
+const isStale = (process: ProcessRow) => {
   const days = daysUntil(process.last_movement_at);
   return days !== null && days <= -14;
 };
@@ -93,9 +91,6 @@ function Central() {
       label: "Processos ativos",
       value: open.length,
       description: "Em andamento em todas as etapas",
-      trend: "+8%",
-      up: true,
-      comparison: "vs. período anterior",
       tooltip: "Processos que ainda não foram finalizados, arquivados ou cancelados.",
       icon: FileStack,
       onClick: () => navigate({ to: "/processos" }),
@@ -105,9 +100,6 @@ function Central() {
       label: "Aguardando documentos",
       value: groups.aguardando.length,
       description: "Dependem de envio do cliente",
-      trend: "-2",
-      up: false,
-      comparison: "vs. semana passada",
       tooltip: "Processos parados na etapa de coleta documental.",
       icon: Clock3,
       onClick: () => setDrawer("aguardando"),
@@ -117,9 +109,6 @@ function Central() {
       label: "Em análise",
       value: open.filter((p) => p.stage === "em_analise").length,
       description: "Sob avaliação dos órgãos",
-      trend: "+3",
-      up: true,
-      comparison: "vs. semana passada",
       tooltip: "Processos protocolados e em análise pelo órgão competente.",
       icon: Sparkles,
       onClick: () => navigate({ to: "/processos", search: { etapa: "em_analise" } }),
@@ -129,9 +118,6 @@ function Central() {
       label: "Prazos críticos",
       value: groups.criticos.length,
       description: "Vencem em até 2 dias ou atrasados",
-      trend: "+1",
-      up: false,
-      comparison: "vs. ontem",
       tooltip: "Considera prazos vencidos e os que vencem nas próximas 48 horas.",
       icon: AlertTriangle,
       onClick: () => setDrawer("criticos"),
@@ -141,9 +127,6 @@ function Central() {
       label: "Clientes ativos",
       value: activeClients.length,
       description: "Com relacionamento em curso",
-      trend: "+2",
-      up: true,
-      comparison: "vs. mês anterior",
       tooltip: "Clientes com status ativo na carteira.",
       icon: Users,
       onClick: () => navigate({ to: "/clientes" }),
@@ -153,9 +136,6 @@ function Central() {
       label: "Receita prevista",
       value: formatCompactCurrency(forecast),
       description: "Somatório dos processos ativos",
-      trend: "+12%",
-      up: true,
-      comparison: "vs. mês anterior",
       tooltip: "Valor contratado dos processos que seguem em andamento.",
       icon: Wallet,
       onClick: () => navigate({ to: "/financeiro" }),
@@ -171,7 +151,7 @@ function Central() {
   ];
 
   const radar = useMemo(() => {
-    const score = (process: DemoProcess) => {
+    const score = (process: ProcessRow) => {
       const days = daysUntil(process.due_date) ?? 99;
       const priorityWeight = { critica: 0, alta: 1, media: 2, baixa: 3 }[process.priority];
       return days * 2 + priorityWeight;
@@ -231,15 +211,6 @@ function Central() {
                         {metric.value}
                       </p>
                       <p className="helper-text mt-1.5">{metric.description}</p>
-                      <p
-                        className={`mt-3 inline-flex items-center gap-1 text-xs font-medium ${
-                          metric.up ? "text-success" : "text-caution"
-                        }`}
-                      >
-                        {metric.up ? <TrendingUp className="size-3.5" aria-hidden /> : <TrendingDown className="size-3.5" aria-hidden />}
-                        {metric.trend}
-                        <span className="font-normal text-muted-foreground">{metric.comparison}</span>
-                      </p>
                     </CardContent>
                   </Card>
                 </button>
@@ -303,7 +274,7 @@ function Central() {
                           <StatusBadge label={risk} tone={riskTone} />
                         </div>
                       </div>
-                      <p className="helper-text mt-2">Motivo: {process.next_action}</p>
+                      <p className="helper-text mt-2">Etapa atual: {PROCESS_STAGE[process.stage].label}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         <span>Prazo {formatDate(process.due_date)}</span>
                         <span>Responsável {process.owner_name}</span>

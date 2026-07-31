@@ -1,11 +1,21 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, Circle, Loader2, Plus } from "lucide-react";
+import { CheckCircle2, Circle, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useProcess, useProcessMovements, useTasks } from "@/hooks/use-operations";
+import { useProcess, useProcessChecklist, useProcessMovements, useTasks } from "@/hooks/use-operations";
 import { useWorkspace } from "@/lib/workspace";
-import { useAddProcessNote, useCreateTask, useMoveProcessStage, useSetTaskStatus } from "@/hooks/use-mutations";
+import {
+  useAddProcessNote,
+  useCreateChecklistItem,
+  useCreateTask,
+  useMoveProcessStage,
+  useSetTaskStatus,
+  useUpdateChecklistItem,
+  type ChecklistStatus,
+} from "@/hooks/use-mutations";
+import { usePermissions } from "@/lib/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import { describeError } from "@/lib/errors";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +35,14 @@ import {
 } from "@/lib/domain";
 import { daysUntil, formatCurrency, formatDate, relativeTime } from "@/lib/format";
 
+const CHECKLIST_LABEL: Record<string, string> = {
+  pendente: "Pendente",
+  recebido: "Recebido",
+  em_analise: "Em análise",
+  aprovado: "Aprovado",
+  rejeitado: "Rejeitado",
+};
+
 export const Route = createFileRoute("/_authenticated/processos/$processId")({
   head: () => ({
     meta: [
@@ -40,7 +58,12 @@ export const Route = createFileRoute("/_authenticated/processos/$processId")({
 function ProcessDetail() {
   const { processId } = Route.useParams();
   const { organizationId } = useWorkspace();
+  const permissions = usePermissions();
   const process = useProcess(processId);
+  const checklist = useProcessChecklist(processId);
+  const createChecklistItem = useCreateChecklistItem(organizationId, processId);
+  const updateChecklistItem = useUpdateChecklistItem(organizationId, processId);
+  const [newDoc, setNewDoc] = useState("");
   const moveStage = useMoveProcessStage(organizationId);
   const addNote = useAddProcessNote(organizationId);
   const createTask = useCreateTask(organizationId);
@@ -51,8 +74,17 @@ function ProcessDetail() {
   const movements = useProcessMovements(processId);
   const tasks = useTasks(organizationId);
 
+  if (process.isLoading) {
+    return (
+      <div className="mx-auto w-full max-w-6xl space-y-4 p-4 sm:p-6">
+        <Skeleton className="h-52 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
+  }
+
   if (!process.data) {
-    return <p className="p-6 text-sm text-muted-foreground">Processo não encontrado.</p>;
+    return <p className="p-6 text-sm text-muted-foreground">Processo não encontrado nesta empresa.</p>;
   }
 
   const data = process.data;
@@ -60,7 +92,11 @@ function ProcessDetail() {
   const deadlineLabel =
     days === null ? "Sem prazo" : days < 0 ? `Atrasado ${Math.abs(days)} dia(s)` : days === 0 ? "Vence hoje" : `Faltam ${days} dia(s)`;
   const deadlineTone = days === null ? "neutral" : days < 0 ? "danger" : days <= 2 ? "warning" : "success";
-  const docsPct = data.documents_total ? Math.round((data.documents_received / data.documents_total) * 100) : 0;
+  const checklistItems = checklist.data ?? [];
+  const checklistDone = checklistItems.filter((item) => item.status === "aprovado" || item.status === "recebido").length;
+  const docsTotal = checklistItems.length || data.documents_total;
+  const docsReceived = checklistItems.length ? checklistDone : data.documents_received;
+  const docsPct = docsTotal ? Math.round((docsReceived / docsTotal) * 100) : 0;
   const relatedTasks = (tasks.data ?? []).filter((task) => task.process_id === processId);
   const currentIndex = KANBAN_STAGES.indexOf(data.stage);
 
@@ -222,7 +258,7 @@ function ProcessDetail() {
         <Tabs defaultValue="timeline">
           <TabsList className="h-auto flex-wrap gap-1.5 p-1.5">
             <TabsTrigger value="timeline" className="px-4 py-2 text-sm">Linha do tempo</TabsTrigger>
-            <TabsTrigger value="documentos" className="px-4 py-2 text-sm">Documentos</TabsTrigger>
+            <TabsTrigger value="documentos" className="px-4 py-2 text-sm">Checklist ({checklistItems.length})</TabsTrigger>
             <TabsTrigger value="tarefas" className="px-4 py-2 text-sm">Tarefas ({relatedTasks.length})</TabsTrigger>
           </TabsList>
 
@@ -256,16 +292,112 @@ function ProcessDetail() {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="card-title">Checklist documental</span>
-                  <span className="text-muted-foreground">
-                    {data.documents_received}/{data.documents_total} recebidos
-                  </span>
+                  <span className="card-title">Checklist operacional</span>
+                  <span className="text-muted-foreground">{docsReceived}/{docsTotal} concluídos</span>
                 </div>
                 <Progress value={docsPct} className="mt-3 h-1.5" />
-                <p className="helper-text mt-4">
-                  O módulo de documentos entra em uma próxima etapa. Por enquanto, acompanhe o
-                  andamento pelo checklist de tarefas do processo.
-                </p>
+
+                {permissions.canEdit && (
+                  <form
+                    className="mt-5 flex flex-wrap gap-2"
+                    onSubmit={async (event) => {
+                      event.preventDefault();
+                      if (newDoc.trim().length < 3) return;
+                      try {
+                        await createChecklistItem.mutateAsync({
+                          title: newDoc.trim(),
+                          status: "pendente",
+                          required: true,
+                          position: checklistItems.length,
+                        });
+                        setNewDoc("");
+                        toast.success("Item adicionado ao checklist.");
+                      } catch (error) {
+                        toast.error(describeError(error, "checklist"));
+                      }
+                    }}
+                  >
+                    <Input
+                      value={newDoc}
+                      onChange={(event) => setNewDoc(event.target.value)}
+                      aria-label="Novo item do checklist"
+                      placeholder="Ex.: Contrato social atualizado"
+                      maxLength={160}
+                      className="h-10 min-w-0 flex-1"
+                    />
+                    <Button type="submit" disabled={createChecklistItem.isPending}>
+                      <Plus className="size-4" aria-hidden /> Adicionar
+                    </Button>
+                  </form>
+                )}
+
+                <ul className="mt-5 space-y-3">
+                  {checklistItems.map((item) => (
+                    <li key={item.id} className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{item.title}</p>
+                        <p className="helper-text mt-0.5">
+                          {item.required ? "Obrigatório" : "Opcional"}
+                          {item.due_date ? ` · Prazo ${formatDate(item.due_date)}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Select
+                          value={item.status}
+                          disabled={!permissions.canEdit || updateChecklistItem.isPending}
+                          onValueChange={async (value) => {
+                            const status = value as ChecklistStatus;
+                            if (status === item.status) return;
+                            try {
+                              await updateChecklistItem.mutateAsync({
+                                id: item.id,
+                                values: { status },
+                                movement: `Checklist "${item.title}": ${CHECKLIST_LABEL[status]}.`,
+                              });
+                            } catch (error) {
+                              toast.error(describeError(error, "checklist"));
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-9 w-44" aria-label={`Status do item ${item.title}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(CHECKLIST_LABEL).map(([key, label]) => (
+                              <SelectItem key={key} value={key}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {permissions.canEdit && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Remover ${item.title}`}
+                            onClick={async () => {
+                              try {
+                                await updateChecklistItem.mutateAsync({
+                                  id: item.id,
+                                  values: { deleted_at: new Date().toISOString() },
+                                  movement: `Item de checklist removido: ${item.title}.`,
+                                });
+                                toast.success("Item removido.");
+                              } catch (error) {
+                                toast.error(describeError(error, "checklist"));
+                              }
+                            }}
+                          >
+                            <Trash2 className="size-4" aria-hidden />
+                          </Button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                  {checklistItems.length === 0 && (
+                    <li className="text-sm text-muted-foreground">
+                      Nenhum item no checklist deste processo.
+                    </li>
+                  )}
+                </ul>
               </CardContent>
             </Card>
           </TabsContent>
@@ -374,7 +506,7 @@ function ProcessDetail() {
           <Card>
             <CardContent className="p-5">
               <h2 className="section-title">Próxima ação sugerida</h2>
-              <p className="mt-2 text-sm text-muted-foreground">{data.next_action}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{data.description ?? "—"}</p>
             </CardContent>
           </Card>
         </div>

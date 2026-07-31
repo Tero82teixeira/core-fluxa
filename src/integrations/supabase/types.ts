@@ -184,16 +184,21 @@ export type Database = {
       clients: {
         Row: {
           archived_at: string | null
+          birth_date: string | null
           city: string | null
+          complement: string | null
           created_at: string
           created_by: string | null
+          district: string | null
           document: string | null
           document_digits: string | null
           email: string | null
           id: string
           last_interaction_at: string | null
+          legal_rep_name: string | null
           name: string
           notes: string | null
+          number: string | null
           organization_id: string
           owner_id: string | null
           owner_name: string | null
@@ -201,23 +206,30 @@ export type Database = {
           phone: string | null
           state: string | null
           status: Database["public"]["Enums"]["client_status"]
+          street: string | null
           trade_name: string | null
           updated_at: string
           updated_by: string | null
           whatsapp: string | null
+          zip_code: string | null
         }
         Insert: {
           archived_at?: string | null
+          birth_date?: string | null
           city?: string | null
+          complement?: string | null
           created_at?: string
           created_by?: string | null
+          district?: string | null
           document?: string | null
           document_digits?: string | null
           email?: string | null
           id?: string
           last_interaction_at?: string | null
+          legal_rep_name?: string | null
           name: string
           notes?: string | null
+          number?: string | null
           organization_id: string
           owner_id?: string | null
           owner_name?: string | null
@@ -225,23 +237,30 @@ export type Database = {
           phone?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["client_status"]
+          street?: string | null
           trade_name?: string | null
           updated_at?: string
           updated_by?: string | null
           whatsapp?: string | null
+          zip_code?: string | null
         }
         Update: {
           archived_at?: string | null
+          birth_date?: string | null
           city?: string | null
+          complement?: string | null
           created_at?: string
           created_by?: string | null
+          district?: string | null
           document?: string | null
           document_digits?: string | null
           email?: string | null
           id?: string
           last_interaction_at?: string | null
+          legal_rep_name?: string | null
           name?: string
           notes?: string | null
+          number?: string | null
           organization_id?: string
           owner_id?: string | null
           owner_name?: string | null
@@ -249,10 +268,12 @@ export type Database = {
           phone?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["client_status"]
+          street?: string | null
           trade_name?: string | null
           updated_at?: string
           updated_by?: string | null
           whatsapp?: string | null
+          zip_code?: string | null
         }
         Relationships: [
           {
@@ -524,6 +545,75 @@ export type Database = {
         }
         Relationships: []
       }
+      process_checklist_items: {
+        Row: {
+          assignee_name: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          organization_id: string
+          position: number
+          process_id: string
+          required: boolean
+          status: Database["public"]["Enums"]["checklist_status"]
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          assignee_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          organization_id: string
+          position?: number
+          process_id: string
+          required?: boolean
+          status?: Database["public"]["Enums"]["checklist_status"]
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          assignee_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          organization_id?: string
+          position?: number
+          process_id?: string
+          required?: boolean
+          status?: Database["public"]["Enums"]["checklist_status"]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_checklist_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "process_checklist_items_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       process_movements: {
         Row: {
           actor_name: string | null
@@ -624,6 +714,7 @@ export type Database = {
           financial_status: Database["public"]["Enums"]["financial_status"]
           id: string
           last_movement_at: string | null
+          notes: string | null
           opened_at: string
           organization_id: string
           owner_id: string | null
@@ -650,6 +741,7 @@ export type Database = {
           financial_status?: Database["public"]["Enums"]["financial_status"]
           id?: string
           last_movement_at?: string | null
+          notes?: string | null
           opened_at?: string
           organization_id: string
           owner_id?: string | null
@@ -676,6 +768,7 @@ export type Database = {
           financial_status?: Database["public"]["Enums"]["financial_status"]
           id?: string
           last_movement_at?: string | null
+          notes?: string | null
           opened_at?: string
           organization_id?: string
           owner_id?: string | null
@@ -769,6 +862,7 @@ export type Database = {
       service_types: {
         Row: {
           created_at: string
+          default_checklist: Json
           default_days: number | null
           default_value: number | null
           description: string | null
@@ -776,10 +870,12 @@ export type Database = {
           is_active: boolean
           name: string
           organization_id: string
+          suggested_stages: Json
           updated_at: string
         }
         Insert: {
           created_at?: string
+          default_checklist?: Json
           default_days?: number | null
           default_value?: number | null
           description?: string | null
@@ -787,10 +883,12 @@ export type Database = {
           is_active?: boolean
           name: string
           organization_id: string
+          suggested_stages?: Json
           updated_at?: string
         }
         Update: {
           created_at?: string
+          default_checklist?: Json
           default_days?: number | null
           default_value?: number | null
           description?: string | null
@@ -798,6 +896,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           organization_id?: string
+          suggested_stages?: Json
           updated_at?: string
         }
         Relationships: [
@@ -931,6 +1030,12 @@ export type Database = {
         | "financeiro"
         | "visualizador"
         | "cliente_externo"
+      checklist_status:
+        | "pendente"
+        | "recebido"
+        | "em_analise"
+        | "aprovado"
+        | "rejeitado"
       client_status:
         | "lead"
         | "em_cadastro"
@@ -1097,6 +1202,13 @@ export const Constants = {
         "financeiro",
         "visualizador",
         "cliente_externo",
+      ],
+      checklist_status: [
+        "pendente",
+        "recebido",
+        "em_analise",
+        "aprovado",
+        "rejeitado",
       ],
       client_status: [
         "lead",

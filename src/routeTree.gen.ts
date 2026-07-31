@@ -34,6 +34,7 @@ import { Route as AuthenticatedProcessosNovoRouteImport } from './routes/_authen
 import { Route as AuthenticatedProcessosProcessIdRouteImport } from './routes/_authenticated/processos.$processId'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
 import { Route as AuthenticatedClientesClientIdRouteImport } from './routes/_authenticated/clientes.$clientId'
+import { Route as AuthenticatedClientesClientIdEditarRouteImport } from './routes/_authenticated/clientes.$clientId_.editar'
 
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
@@ -168,6 +169,12 @@ const AuthenticatedClientesClientIdRoute =
     path: '/$clientId',
     getParentRoute: () => AuthenticatedClientesRoute,
   } as any)
+const AuthenticatedClientesClientIdEditarRoute =
+  AuthenticatedClientesClientIdEditarRouteImport.update({
+    id: '/$clientId_/editar',
+    path: '/$clientId/editar',
+    getParentRoute: () => AuthenticatedClientesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/processos/novo': typeof AuthenticatedProcessosNovoRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/processos/': typeof AuthenticatedProcessosIndexRoute
+  '/clientes/$clientId/editar': typeof AuthenticatedClientesClientIdEditarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -218,6 +226,7 @@ export interface FileRoutesByTo {
   '/processos/novo': typeof AuthenticatedProcessosNovoRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/processos': typeof AuthenticatedProcessosIndexRoute
+  '/clientes/$clientId/editar': typeof AuthenticatedClientesClientIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -246,6 +255,7 @@ export interface FileRoutesById {
   '/_authenticated/processos/novo': typeof AuthenticatedProcessosNovoRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/processos/': typeof AuthenticatedProcessosIndexRoute
+  '/_authenticated/clientes/$clientId_/editar': typeof AuthenticatedClientesClientIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -274,6 +284,7 @@ export interface FileRouteTypes {
     | '/processos/novo'
     | '/clientes/'
     | '/processos/'
+    | '/clientes/$clientId/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/processos/novo'
     | '/clientes'
     | '/processos'
+    | '/clientes/$clientId/editar'
   id:
     | '__root__'
     | '/'
@@ -325,6 +337,7 @@ export interface FileRouteTypes {
     | '/_authenticated/processos/novo'
     | '/_authenticated/clientes/'
     | '/_authenticated/processos/'
+    | '/_authenticated/clientes/$clientId_/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -511,6 +524,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesClientIdRouteImport
       parentRoute: typeof AuthenticatedClientesRoute
     }
+    '/_authenticated/clientes/$clientId_/editar': {
+      id: '/_authenticated/clientes/$clientId_/editar'
+      path: '/$clientId/editar'
+      fullPath: '/clientes/$clientId/editar'
+      preLoaderRoute: typeof AuthenticatedClientesClientIdEditarRouteImport
+      parentRoute: typeof AuthenticatedClientesRoute
+    }
   }
 }
 
@@ -518,12 +538,15 @@ interface AuthenticatedClientesRouteChildren {
   AuthenticatedClientesClientIdRoute: typeof AuthenticatedClientesClientIdRoute
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
+  AuthenticatedClientesClientIdEditarRoute: typeof AuthenticatedClientesClientIdEditarRoute
 }
 
 const AuthenticatedClientesRouteChildren: AuthenticatedClientesRouteChildren = {
   AuthenticatedClientesClientIdRoute: AuthenticatedClientesClientIdRoute,
   AuthenticatedClientesNovoRoute: AuthenticatedClientesNovoRoute,
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
+  AuthenticatedClientesClientIdEditarRoute:
+    AuthenticatedClientesClientIdEditarRoute,
 }
 
 const AuthenticatedClientesRouteWithChildren =
@@ -598,13 +621,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
