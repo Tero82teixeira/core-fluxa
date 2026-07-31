@@ -5,15 +5,19 @@ import {
   FileStack,
   Gauge,
   LayoutDashboard,
+  LifeBuoy,
   ListChecks,
   MessagesSquare,
   PieChart,
   Settings,
+  Sparkles,
   Users,
   Wallet,
 } from "lucide-react";
 
 import type { IconType } from "@/lib/domain";
+
+export type NavGroupKey = "operacao" | "gestao" | "sistema";
 
 export type NavItem = {
   to: string;
@@ -21,21 +25,30 @@ export type NavItem = {
   icon: IconType;
   description: string;
   ready: boolean;
+  group: NavGroupKey;
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { to: "/central", label: "Central de Comando", icon: LayoutDashboard, description: "Pulso da operação", ready: true },
-  { to: "/clientes", label: "Clientes", icon: Users, description: "Carteira e relacionamento", ready: true },
-  { to: "/processos", label: "Processos", icon: FileStack, description: "Etapas, prazos e protocolos", ready: true },
-  { to: "/documentos", label: "Documentos", icon: Building2, description: "Arquivos e validades", ready: false },
-  { to: "/monitoramento", label: "Monitoramento", icon: Gauge, description: "Prazos e vencimentos", ready: false },
-  { to: "/tarefas", label: "Tarefas", icon: ListChecks, description: "Agenda operacional", ready: false },
-  { to: "/comunicacao", label: "Comunicação", icon: MessagesSquare, description: "Histórico com clientes", ready: false },
-  { to: "/financeiro", label: "Financeiro", icon: Wallet, description: "Receitas e cobranças", ready: false },
-  { to: "/relatorios", label: "Relatórios", icon: PieChart, description: "Indicadores e exportações", ready: false },
-  { to: "/equipe", label: "Equipe", icon: CalendarClock, description: "Usuários e permissões", ready: false },
-  { to: "/automacoes", label: "Automações", icon: Bot, description: "Regras e disparos", ready: false },
-  { to: "/configuracoes", label: "Configurações", icon: Settings, description: "Workspace e preferências", ready: false },
+  { to: "/central", label: "Central de Comando", icon: LayoutDashboard, description: "Pulso da operação", ready: true, group: "operacao" },
+  { to: "/clientes", label: "Clientes", icon: Users, description: "Carteira e relacionamento", ready: true, group: "operacao" },
+  { to: "/processos", label: "Processos", icon: FileStack, description: "Etapas, prazos e protocolos", ready: true, group: "operacao" },
+  { to: "/documentos", label: "Documentos", icon: Building2, description: "Arquivos e validades", ready: false, group: "operacao" },
+  { to: "/monitoramento", label: "Monitoramento", icon: Gauge, description: "Prazos e vencimentos", ready: false, group: "operacao" },
+  { to: "/tarefas", label: "Tarefas", icon: ListChecks, description: "Agenda operacional", ready: false, group: "operacao" },
+  { to: "/comunicacao", label: "Comunicação", icon: MessagesSquare, description: "Histórico com clientes", ready: false, group: "gestao" },
+  { to: "/financeiro", label: "Financeiro", icon: Wallet, description: "Receitas e cobranças", ready: false, group: "gestao" },
+  { to: "/relatorios", label: "Relatórios", icon: PieChart, description: "Indicadores e exportações", ready: false, group: "gestao" },
+  { to: "/equipe", label: "Equipe", icon: CalendarClock, description: "Usuários e permissões", ready: false, group: "gestao" },
+  { to: "/automacoes", label: "Automações", icon: Bot, description: "Regras e disparos", ready: false, group: "gestao" },
+  { to: "/configuracoes", label: "Configurações", icon: Settings, description: "Workspace e preferências", ready: false, group: "sistema" },
+  { to: "/ajuda", label: "Ajuda e suporte", icon: LifeBuoy, description: "Documentação e atendimento", ready: false, group: "sistema" },
+  { to: "/novidades", label: "Novidades", icon: Sparkles, description: "Entregas e melhorias", ready: false, group: "sistema" },
+];
+
+export const NAV_GROUPS: { key: NavGroupKey; label: string }[] = [
+  { key: "operacao", label: "Operação" },
+  { key: "gestao", label: "Gestão" },
+  { key: "sistema", label: "Sistema" },
 ];
 
 export const PAGE_TITLES: Record<string, string> = Object.fromEntries(

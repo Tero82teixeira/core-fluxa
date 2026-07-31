@@ -7,11 +7,29 @@ import { toast } from "sonner";
 export function notifyDemoAction(context?: string) {
   toast.info("Esta ação será ativada após a conexão com o banco de dados.", {
     description: context,
+    duration: 4000,
   });
 }
 
 export function notifyDemoSessionChange(context: string) {
-  toast.success("Alteração aplicada apenas nesta sessão de demonstração.", {
+  toast.success("Alteração aplicada somente nesta demonstração.", {
     description: context,
+    duration: 3500,
+  });
+}
+
+/** Toast específico do Kanban ao mover um card entre etapas. */
+export function notifyDemoStageChange(context: string) {
+  toast.success("Etapa alterada temporariamente no modo demonstração.", {
+    description: context,
+    duration: 3500,
+  });
+}
+
+/** Módulos ainda não desenvolvidos. */
+export function notifyFutureModule(moduleName: string) {
+  toast.info("Este módulo será ativado nas próximas etapas da FLUXA.", {
+    description: moduleName,
+    duration: 4000,
   });
 }
