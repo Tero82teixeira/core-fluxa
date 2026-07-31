@@ -374,7 +374,7 @@ function ProcessDetail() {
           <Card>
             <CardContent className="p-5">
               <h2 className="section-title">Próxima ação sugerida</h2>
-              <p className="mt-2 text-sm text-muted-foreground">{data.next_action}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{data.description ?? "—"}</p>
             </CardContent>
           </Card>
         </div>
