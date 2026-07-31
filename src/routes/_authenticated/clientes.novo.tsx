@@ -4,8 +4,8 @@ import { toast } from "sonner";
 
 import { useWorkspace } from "@/lib/workspace";
 import { useCreateClient } from "@/hooks/use-operations";
-import { DEMO_MODE } from "@/lib/demo";
-import { notifyDemoAction } from "@/components/shared/demo-notice";
+import { describeError } from "@/lib/errors";
+import { recordAudit } from "@/lib/audit";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,15 +26,14 @@ export const Route = createFileRoute("/_authenticated/clientes/novo")({
 
 function NewClient() {
   const navigate = useNavigate();
-  const { organizationId, user } = useWorkspace();
+  const { organizationId, user, displayName } = useWorkspace();
   const createClient = useCreateClient(organizationId, user?.id);
   const [form, setForm] = useState({ name: "", document: "", email: "", phone: "", city: "", state: "" });
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (DEMO_MODE) {
-      // TODO(supabase): cadastro real será habilitado com o banco conectado.
-      notifyDemoAction("Cadastro de cliente");
+    if (!organizationId) {
+      toast.error("Selecione uma empresa antes de cadastrar clientes.");
       return;
     }
     try {
@@ -47,11 +46,21 @@ function NewClient() {
         state: form.state.trim() || null,
         person_type: form.document.replace(/\D/g, "").length > 11 ? "pj" : "pf",
         status: "ativo",
+        owner_name: displayName,
+      });
+      await recordAudit({
+        organizationId,
+        actorId: user?.id ?? null,
+        actorName: displayName,
+        action: "client.created",
+        entity: "client",
+        entityId: created.id,
+        metadata: { name: form.name.trim() },
       });
       toast.success("Cliente cadastrado.");
       navigate({ to: "/clientes/$clientId", params: { clientId: created.id } });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao salvar cliente.");
+      toast.error(describeError(error, "cliente"));
     }
   };
 
