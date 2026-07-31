@@ -58,6 +58,7 @@ function AuthenticatedLayout() {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
         queryClient.clear();
+        window.localStorage.removeItem("fluxa-workspace");
         navigate({ to: "/entrar", replace: true });
       }
     });
