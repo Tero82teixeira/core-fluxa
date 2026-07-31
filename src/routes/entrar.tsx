@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_MODE } from "@/lib/demo";
+import { useAuth } from "@/lib/auth";
 import { describeAuthError } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/entrar")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Entrar — FLUXA" },
@@ -61,6 +62,7 @@ const SIGNUP_SUCCESS_SUBTITLE = "Estamos levando você para a configuração da 
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { status: authStatus, signIn, signUp, resendConfirmation } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -69,8 +71,22 @@ function AuthPage() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; form?: string }>({});
-  const [demoSuccess, setDemoSuccess] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [validated, setValidated] = useState(false);
+
+  // Já autenticado: a rota protegida decide entre onboarding e central.
+  useEffect(() => {
+    if (authStatus === "authenticated") navigate({ to: "/central", replace: true });
+  }, [authStatus, navigate]);
+
+  useEffect(() => {
+    try {
+      const remembered = window.localStorage.getItem(REMEMBER_KEY);
+      if (remembered) setEmail(remembered);
+    } catch {
+      /* armazenamento indisponível */
+    }
+  }, []);
 
   const validate = () => {
     const next: typeof errors = {};
@@ -86,7 +102,7 @@ function AuthPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (loading) return;
-    setDemoSuccess(false);
+    setNeedsConfirmation(false);
     if (!validate()) {
       setValidated(false);
       return;
@@ -96,43 +112,52 @@ function AuthPage() {
     setErrors({});
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-        if (error) throw error;
-        const { data: workspace, error: workspaceError } = await supabase.rpc("bootstrap_organization");
-        if (workspaceError) throw workspaceError;
-        window.localStorage.setItem(REMEMBER_KEY, remember ? email.trim() : "");
+        await signIn(email.trim(), password);
+        try {
+          window.localStorage.setItem(REMEMBER_KEY, remember ? email.trim() : "");
+        } catch {
+          /* armazenamento indisponível */
+        }
         setPassword("");
-        navigate({ to: workspace?.[0]?.onboarding_completed_at ? "/central" : "/onboarding" });
+        // O vínculo com a empresa é criado pelo WorkspaceProvider; a rota decide o destino.
+        navigate({ to: "/central", replace: true });
       } else {
-        const { data, error } = await supabase.auth.signUp({
+        const { needsEmailConfirmation } = await signUp({
           email: email.trim(),
           password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/central`,
-            data: { full_name: name.trim() },
-          },
+          fullName: name.trim(),
         });
-        if (error) throw error;
-        setValidated(true);
         setPassword("");
 
-        if (data.session?.user) {
-          // O perfil é criado imediatamente; a empresa é criada no onboarding.
-          await supabase
-            .from("profiles")
-            .upsert({ id: data.session.user.id, full_name: name.trim(), email: email.trim() }, { onConflict: "id" });
-          toast.success("Conta criada. Vamos configurar sua empresa.");
-          navigate({ to: "/onboarding" });
-        } else {
+        if (needsEmailConfirmation) {
+          setNeedsConfirmation(true);
           toast.success("Confirme o e-mail enviado para ativar sua conta.");
+        } else {
+          setValidated(true);
+          toast.success("Conta criada. Vamos configurar sua empresa.");
+          navigate({ to: "/central", replace: true });
         }
       }
     } catch (error) {
+      console.error("[Auth] falha no formulário", {
+        mode,
+        message: error instanceof Error ? error.message : undefined,
+        code: (error as { code?: string })?.code,
+      });
       const message = describeAuthError(error);
       setErrors({ form: message });
       toast.error(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resend = async () => {
+    try {
+      await resendConfirmation(email.trim());
+      toast.success("Reenviamos o e-mail de confirmação.");
+    } catch (error) {
+      toast.error(describeAuthError(error));
     }
   };
 
@@ -151,6 +176,7 @@ function AuthPage() {
       toast.error(describeAuthError(error));
     }
   };
+
 
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
@@ -352,17 +378,17 @@ function AuthPage() {
               </Button>
             </form>
 
-            {DEMO_MODE && (
-              <button
-                type="button"
-                onClick={() => {
-                  setPassword("");
-                  navigate({ to: "/central" });
-                }}
-                className="mt-4 w-full text-sm font-medium text-brand transition-colors hover:text-primary"
-              >
-                Entrar diretamente na demonstração
-              </button>
+            {needsConfirmation && (
+              <div role="status" className="mt-4 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm">
+                <p className="font-medium text-foreground">Confirme seu e-mail para ativar a conta.</p>
+                <button
+                  type="button"
+                  onClick={resend}
+                  className="mt-1 text-sm font-medium text-brand transition-colors hover:text-primary"
+                >
+                  Reenviar e-mail de confirmação
+                </button>
+              </div>
             )}
 
             <button
@@ -370,7 +396,7 @@ function AuthPage() {
               onClick={() => {
                 setMode(mode === "login" ? "signup" : "login");
                 setErrors({});
-                setDemoSuccess(false);
+                setNeedsConfirmation(false);
                 setValidated(false);
               }}
               className="mt-5 w-full text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -384,9 +410,6 @@ function AuthPage() {
               )}
             </button>
 
-            {DEMO_MODE && import.meta.env.DEV && (
-              <p className="mt-6 text-center text-xs text-muted-foreground/70">Modo de demonstração</p>
-            )}
           </CardContent>
         </Card>
       </section>

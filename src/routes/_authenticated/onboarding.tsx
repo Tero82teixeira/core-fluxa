@@ -46,9 +46,9 @@ function Onboarding() {
     ready,
     onboardingStep,
     bootstrapError,
-    ensureWorkspace,
     refreshWorkspace,
   } = useWorkspace();
+
   const [orgId, setOrgId] = useState<string | null>(organizationId);
   const [step, setStep] = useState(onboardingStep);
   const [saving, setSaving] = useState(false);
@@ -99,8 +99,11 @@ function Onboarding() {
     });
   }, [membership]);
 
-  /** Garante empresa + vínculo antes de qualquer escrita (idempotente no banco). */
-  const ensureOrganization = async () => {
+  /**
+   * O vínculo é criado uma única vez pelo WorkspaceProvider (RPC idempotente).
+   * Aqui apenas confirmamos que ele existe antes de qualquer escrita.
+   */
+  const ensureOrganization = () => {
     if (
       ready &&
       membership &&
@@ -111,15 +114,9 @@ function Onboarding() {
       membership.organization_id === organizationId
     ) return organizationId;
 
-    setError("Seu vínculo com a empresa ainda não foi concluído. Estamos tentando corrigir seu acesso.");
-    const repaired = await ensureWorkspace();
-    if (!repaired.organization_id || repaired.user_id !== user?.id || !repaired.is_active || !repaired.organizations) {
-      throw new Error("O vínculo da empresa não foi confirmado após o bootstrap.");
-    }
-    setOrgId(repaired.organization_id);
-    setError(null);
-    return repaired.organization_id;
+    throw new Error("Seu vínculo com a empresa ainda não está pronto. Use “Tentar novamente” para reconfigurar o acesso.");
   };
+
 
   const validateCompany = () => {
     const next: typeof fieldErrors = {};
