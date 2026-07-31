@@ -584,3 +584,183 @@ export function useAddProcessNote(organizationId: string | null) {
     },
   });
 }
+
+/* ------------------------------------------------------------------ *
+ * Checklist do processo
+ * ------------------------------------------------------------------ */
+
+export type ChecklistStatus = "pendente" | "recebido" | "em_analise" | "aprovado" | "rejeitado";
+
+export type ChecklistInput = {
+  title: string;
+  description?: string | null;
+  status?: ChecklistStatus;
+  required?: boolean;
+  position?: number;
+  assignee_name?: string | null;
+  due_date?: string | null;
+};
+
+export function useCreateChecklistItem(organizationId: string | null, processId: string) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async (values: ChecklistInput) => {
+      const { error } = await db().from("process_checklist_items").insert({
+        ...values,
+        organization_id: organizationId,
+        process_id: processId,
+        created_by: actor.userId,
+        updated_by: actor.userId,
+      });
+      if (error) throw error;
+      await db().from("process_movements").insert({
+        organization_id: organizationId,
+        process_id: processId,
+        description: `Item de checklist adicionado: ${values.title}.`,
+        actor_name: actor.name,
+        created_by: actor.userId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["process-checklist", processId] });
+      queryClient.invalidateQueries({ queryKey: ["process-movements", processId] });
+    },
+  });
+}
+
+export function useUpdateChecklistItem(organizationId: string | null, processId: string) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      values,
+      movement,
+    }: {
+      id: string;
+      values: Partial<ChecklistInput> & { deleted_at?: string | null };
+      movement?: string;
+    }) => {
+      const { error } = await db()
+        .from("process_checklist_items")
+        .update({ ...values, updated_by: actor.userId })
+        .eq("id", id)
+        .eq("organization_id", organizationId);
+      if (error) throw error;
+      if (movement) {
+        await db().from("process_movements").insert({
+          organization_id: organizationId,
+          process_id: processId,
+          description: movement,
+          actor_name: actor.name,
+          created_by: actor.userId,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["process-checklist", processId] });
+      queryClient.invalidateQueries({ queryKey: ["process-movements", processId] });
+    },
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * Tipos de serviço
+ * ------------------------------------------------------------------ */
+
+export type ServiceTypeRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  default_days: number | null;
+  default_value: number | null;
+  is_active: boolean;
+  suggested_stages: unknown;
+  default_checklist: unknown;
+};
+
+export function useAllServiceTypes(organizationId: string | null) {
+  return useQuery({
+    enabled: Boolean(organizationId),
+    queryKey: ["service-types-all", organizationId],
+    queryFn: async (): Promise<ServiceTypeRow[]> => {
+      const { data, error } = await db()
+        .from("service_types")
+        .select("id, name, description, default_days, default_value, is_active, suggested_stages, default_checklist")
+        .eq("organization_id", organizationId)
+        .order("name");
+      if (error) throw error;
+      return (data ?? []) as ServiceTypeRow[];
+    },
+  });
+}
+
+export type ServiceTypeInput = {
+  name: string;
+  description?: string | null;
+  default_days?: number | null;
+  default_value?: number | null;
+  is_active?: boolean;
+  default_checklist?: string[];
+};
+
+export function useSaveServiceType(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async ({ id, values }: { id?: string; values: ServiceTypeInput }) => {
+      const payload = {
+        ...values,
+        default_checklist: (values.default_checklist ?? []) as never,
+        organization_id: organizationId,
+      };
+      const query = id
+        ? db().from("service_types").update(payload).eq("id", id).eq("organization_id", organizationId)
+        : db().from("service_types").insert(payload);
+      const { error } = await query;
+      if (error) throw error;
+      await recordAudit({
+        organizationId: organizationId!,
+        actorId: actor.userId,
+        actorName: actor.name,
+        action: id ? "service_type.updated" : "service_type.created",
+        entity: "service_type",
+        entityId: id ?? null,
+        metadata: { name: values.name },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["service-types-all", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["service-types", organizationId] });
+    },
+  });
+}
+
+export function useArchiveServiceType(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { error } = await db()
+        .from("service_types")
+        .update({ is_active: active })
+        .eq("id", id)
+        .eq("organization_id", organizationId);
+      if (error) throw error;
+      await recordAudit({
+        organizationId: organizationId!,
+        actorId: actor.userId,
+        actorName: actor.name,
+        action: "service_type.archived",
+        entity: "service_type",
+        entityId: id,
+        metadata: { active },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["service-types-all", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["service-types", organizationId] });
+    },
+  });
+}

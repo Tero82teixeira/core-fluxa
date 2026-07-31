@@ -31,7 +31,7 @@ type AuditInput = {
   actorId?: string | null;
   actorName?: string | null;
   action: AuditAction;
-  entity: "client" | "process" | "task" | "member" | "organization";
+  entity: "client" | "process" | "task" | "member" | "organization" | "checklist" | "service_type";
   entityId?: string | null;
   metadata?: Record<string, unknown>;
 };
