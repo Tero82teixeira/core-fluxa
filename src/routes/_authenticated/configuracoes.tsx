@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/configuracoes")({
       { property: "og:description", content: "Catálogo de tipos de serviço, prazos padrão e checklists da empresa." },
     ],
   }),
-  component: SettingsPage;
+  component: SettingsPage,
 });
 
 const emptyForm = { id: "", name: "", description: "", default_days: "", default_value: "", checklist: "" };
