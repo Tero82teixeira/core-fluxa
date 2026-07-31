@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CLIENT_STATUS, PRIORITY, PROCESS_STAGE, TASK_STATUS } from "@/lib/domain";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { DocumentScopePanel } from "@/components/documents/document-scope-panel";
 import { formatCurrency, formatDate, initials, maskCEP, maskDocument, maskPhone, relativeTime } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/clientes/$clientId")({
