@@ -271,12 +271,13 @@ function Central() {
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <Card className="border-brand/30 shadow-panel">
             <CardContent className="p-5 sm:p-6">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="section-title">Radar de prioridades</h2>
-                <Button variant="ghost" size="sm" asChild>
+              <div className="flex min-w-0 items-center justify-between gap-3">
+                <h2 className="section-title min-w-0 truncate">Radar de prioridades</h2>
+                <Button variant="ghost" size="sm" className="shrink-0" asChild>
                   <Link to="/processos">Ver todos</Link>
                 </Button>
               </div>
+
               <ul className="mt-4 space-y-3">
                 {radar.map((process) => {
                   const days = daysUntil(process.due_date);
