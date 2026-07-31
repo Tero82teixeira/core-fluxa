@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { DEMO_MODE } from "@/lib/demo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -355,8 +356,16 @@ function AuthPage() {
               </div>
 
               <Button
-                type="submit"
-                disabled={loading || validated}
+                type={validated && mode === "signup" ? "button" : "submit"}
+                onClick={
+                  validated && mode === "signup"
+                    ? () => {
+                        setPassword("");
+                        navigate({ to: "/central" });
+                      }
+                    : undefined
+                }
+                disabled={loading}
                 aria-busy={loading}
                 className="h-11 w-full bg-brand text-brand-foreground text-base font-semibold transition-transform duration-200 hover:bg-brand/90 active:scale-[0.99] disabled:opacity-70"
               >
@@ -366,7 +375,7 @@ function AuthPage() {
                     {mode === "login" ? "Entrando…" : "Criando conta…"}
                   </>
                 ) : validated && mode === "signup" ? (
-                  "Cadastro validado"
+                  "Acessar demonstração"
                 ) : mode === "login" ? (
                   "Entrar"
                 ) : (
@@ -374,6 +383,19 @@ function AuthPage() {
                 )}
               </Button>
             </form>
+
+            {DEMO_MODE && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPassword("");
+                  navigate({ to: "/central" });
+                }}
+                className="mt-4 w-full text-sm font-medium text-brand transition-colors hover:text-primary"
+              >
+                Entrar diretamente na demonstração
+              </button>
+            )}
 
             <button
               type="button"

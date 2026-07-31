@@ -6,10 +6,15 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
 import { WorkspaceProvider } from "@/lib/workspace";
+import { DEMO_MODE } from "@/lib/demo";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
+    if (DEMO_MODE) {
+      const { data } = await supabase.auth.getUser();
+      return { user: data?.user ?? null };
+    }
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/entrar" });
     return { user: data.user };

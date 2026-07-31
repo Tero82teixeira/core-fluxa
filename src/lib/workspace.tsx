@@ -9,6 +9,7 @@ const STORAGE_KEY = "fluxa-workspace";
 type WorkspaceContextValue = {
   loading: boolean;
   user: User | null;
+
   displayName: string;
   memberships: Membership[];
   membership: Membership | null;
@@ -20,7 +21,7 @@ type WorkspaceContextValue = {
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
-export function WorkspaceProvider({ user, children }: { user: User; children: ReactNode }) {
+export function WorkspaceProvider({ user, children }: { user: User | null; children: ReactNode }) {
   const memberships = useMemberships();
   const profile = useProfile(user);
   const [selected, setSelected] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export function WorkspaceProvider({ user, children }: { user: User; children: Re
     return {
       loading: memberships.isLoading || profile.isLoading,
       user,
-      displayName: profile.data?.full_name || user.email || "Usuário",
+      displayName: profile.data?.full_name || user?.email || "Usuário",
       memberships: list,
       membership,
       organizationId: membership?.organization_id ?? null,
