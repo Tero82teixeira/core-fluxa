@@ -416,7 +416,7 @@ function AuthPage() {
               )}
             </button>
 
-            {!AUTH_ENABLED && import.meta.env.DEV && (
+            {DEMO_MODE && import.meta.env.DEV && (
               <p className="mt-6 text-center text-xs text-muted-foreground/70">Modo de demonstração</p>
             )}
           </CardContent>
