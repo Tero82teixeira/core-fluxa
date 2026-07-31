@@ -107,33 +107,56 @@ export function useUpdateMemberRole(organizationId: string | null) {
  * Clientes
  * ------------------------------------------------------------------ */
 
-export type ClientInput = {
-  person_type: "pf" | "pj";
-  name: string;
-  trade_name?: string | null;
-  document?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  whatsapp?: string | null;
-  city?: string | null;
-  state?: string | null;
-  status: ClientStatus;
-  owner_name?: string | null;
-  notes?: string | null;
+export type ClientPayload = ReturnType<typeof import("@/lib/validators").toClientPayload>;
+
+const invalidateClients = (queryClient: ReturnType<typeof useQueryClient>, organizationId: string | null, id?: string) => {
+  queryClient.invalidateQueries({ queryKey: ["clients", organizationId] });
+  queryClient.invalidateQueries({ queryKey: ["clients-page", organizationId] });
+  queryClient.invalidateQueries({ queryKey: ["client-owners", organizationId] });
+  if (id) queryClient.invalidateQueries({ queryKey: ["client", id] });
 };
+
+export function useCreateClient(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async (values: ClientPayload) => {
+      const { data, error } = await db()
+        .from("clients")
+        .insert({
+          ...values,
+          organization_id: organizationId,
+          owner_name: values.owner_name || actor.name,
+          created_by: actor.userId,
+          updated_by: actor.userId,
+          last_interaction_at: new Date().toISOString(),
+        })
+        .select("id, name")
+        .single();
+      if (error) throw error;
+      await recordAudit({
+        organizationId: organizationId!,
+        actorId: actor.userId,
+        actorName: actor.name,
+        action: "client.created",
+        entity: "client",
+        entityId: data.id,
+        metadata: { name: data.name },
+      });
+      return data as { id: string; name: string };
+    },
+    onSuccess: () => invalidateClients(queryClient, organizationId),
+  });
+}
 
 export function useUpdateClient(organizationId: string | null) {
   const queryClient = useQueryClient();
   const actor = useActor();
   return useMutation({
-    mutationFn: async ({ id, values }: { id: string; values: Partial<ClientInput> }) => {
+    mutationFn: async ({ id, values }: { id: string; values: Partial<ClientPayload> }) => {
       const { error } = await db()
         .from("clients")
-        .update({
-          ...values,
-          document_digits: values.document !== undefined ? digits(values.document ?? "") || null : undefined,
-          updated_by: actor.userId,
-        })
+        .update({ ...values, updated_by: actor.userId, last_interaction_at: new Date().toISOString() })
         .eq("id", id)
         .eq("organization_id", organizationId);
       if (error) throw error;
@@ -147,10 +170,7 @@ export function useUpdateClient(organizationId: string | null) {
         metadata: { fields: Object.keys(values) },
       });
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["clients", organizationId] });
-      queryClient.invalidateQueries({ queryKey: ["client", variables.id] });
-    },
+    onSuccess: (_data, variables) => invalidateClients(queryClient, organizationId, variables.id),
   });
 }
 
@@ -158,10 +178,14 @@ export function useArchiveClient(organizationId: string | null) {
   const queryClient = useQueryClient();
   const actor = useActor();
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, restore }: { id: string; restore?: boolean }) => {
       const { error } = await db()
         .from("clients")
-        .update({ archived_at: new Date().toISOString(), status: "arquivado", updated_by: actor.userId })
+        .update(
+          restore
+            ? { archived_at: null, status: "ativo", updated_by: actor.userId }
+            : { archived_at: new Date().toISOString(), status: "arquivado", updated_by: actor.userId },
+        )
         .eq("id", id)
         .eq("organization_id", organizationId);
       if (error) throw error;
@@ -169,12 +193,12 @@ export function useArchiveClient(organizationId: string | null) {
         organizationId: organizationId!,
         actorId: actor.userId,
         actorName: actor.name,
-        action: "client.archived",
+        action: restore ? "client.restored" : "client.archived",
         entity: "client",
         entityId: id,
       });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["clients", organizationId] }),
+    onSuccess: (_data, variables) => invalidateClients(queryClient, organizationId, variables.id),
   });
 }
 
