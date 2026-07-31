@@ -129,7 +129,7 @@ function ClientDetail() {
           <Card>
             <CardContent className="grid gap-6 p-6 md:grid-cols-2">
               <div>
-                <h3 className="text-sm font-semibold">Dados de contato</h3>
+                <h2 className="section-title">Dados de contato</h2>
                 <dl className="mt-3 space-y-2 text-sm">
                   <div className="flex justify-between gap-3">
                     <dt className="text-muted-foreground">E-mail</dt>
@@ -150,8 +150,8 @@ function ClientDetail() {
                 </dl>
               </div>
               <div>
-                <h3 className="text-sm font-semibold">Observações internas</h3>
-                <p className="mt-3 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+                <h2 className="section-title">Observações internas</h2>
+                <p className="mt-3 rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
                   {data.notes}
                 </p>
               </div>
@@ -221,15 +221,15 @@ function ClientDetail() {
             <CardContent className="p-6">
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
-                  <p className="text-xs text-muted-foreground">Total contratado</p>
+                  <p className="field-label">Total contratado</p>
                   <p className="mt-1 font-display text-xl font-semibold">{formatCurrency(contracted)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Saldo em aberto</p>
+                  <p className="field-label">Saldo em aberto</p>
                   <p className="mt-1 font-display text-xl font-semibold">{formatCurrency(balance)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Situação</p>
+                  <p className="field-label">Situação</p>
                   <p className="mt-1">
                     <StatusBadge
                       label={balance > 0 ? FINANCIAL_STATUS.pendente.label : FINANCIAL_STATUS.pago.label}

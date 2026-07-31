@@ -211,7 +211,7 @@ function ProcessDetail() {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold">Checklist documental</span>
+                  <span className="card-title">Checklist documental</span>
                   <span className="text-muted-foreground">
                     {data.documents_received}/{data.documents_total} recebidos
                   </span>
@@ -274,7 +274,7 @@ function ProcessDetail() {
         <div className="space-y-4">
           <Card>
             <CardContent className="p-5">
-              <h3 className="text-sm font-semibold">Resumo</h3>
+              <h2 className="section-title">Resumo</h2>
               <dl className="mt-3 space-y-2 text-sm">
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">Abertura</dt>
@@ -298,7 +298,7 @@ function ProcessDetail() {
 
           <Card>
             <CardContent className="p-5">
-              <h3 className="text-sm font-semibold">Próxima ação sugerida</h3>
+              <h2 className="section-title">Próxima ação sugerida</h2>
               <p className="mt-2 text-sm text-muted-foreground">{data.next_action}</p>
             </CardContent>
           </Card>
