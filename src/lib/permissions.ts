@@ -20,6 +20,8 @@ export type Permissions = {
   canArchiveDocuments: boolean;
   canManageDocumentTypes: boolean;
   canManageMonitoring: boolean;
+  canManageTeam: boolean;
+  canInviteMembers: boolean;
 };
 
 export const NO_PERMISSION = "Você não possui permissão para esta ação.";
@@ -46,6 +48,8 @@ export function usePermissions(): Permissions {
       canArchiveDocuments: isOwnerAdmin,
       canManageDocumentTypes: isOwnerAdmin,
       canManageMonitoring: isEditor,
+      canManageTeam: isOwnerAdmin,
+      canInviteMembers: isOwnerAdmin,
     };
   }, [role]);
 }
