@@ -94,11 +94,11 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
           <SidebarTrigger className="shrink-0" />
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate font-display text-base font-semibold sm:text-lg">
+              <h1 className="min-w-0 flex-1 truncate font-display text-base font-semibold sm:text-lg">
                 {current?.label ?? "FLUXA"}
               </h1>
               {DEMO_MODE && (
-                <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <span className="hidden shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:inline-flex">
                   Demonstração
                 </span>
               )}
