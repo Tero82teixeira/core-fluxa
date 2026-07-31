@@ -45,9 +45,8 @@ import {
 import { useWorkspace } from "@/lib/workspace";
 import { usePermissions } from "@/lib/permissions";
 import { describeError } from "@/lib/errors";
-import { ACCEPT_ATTRIBUTE, DOCUMENT_STATUS, formatFileSize } from "@/lib/documents";
+import { ACCEPT_ATTRIBUTE, DOCUMENT_STATUS, daysUntilLabel, formatFileSize } from "@/lib/documents";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { daysUntilLabel } from "@/lib/documents-ui";
 
 function ExpirationHint({ date }: { date: string | null }) {
   if (!date) return <span className="text-muted-foreground">Sem validade</span>;
@@ -71,7 +70,6 @@ export function DocumentCard({
   const review = useReviewDocument(organizationId);
   const archive = useArchiveDocument(organizationId);
   const newVersion = useUploadDocumentVersion(organizationId);
-  const versions = useDocumentVersions(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -266,7 +264,6 @@ export function DocumentCard({
       </Dialog>
 
       <VersionsDialog documentId={document.id} open={historyOpen} onOpenChange={setHistoryOpen} enabled={historyOpen} />
-      {versions.isFetching && null}
     </li>
   );
 }

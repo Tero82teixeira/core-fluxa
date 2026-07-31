@@ -153,3 +153,17 @@ export function suggestExpiration(issueDate: string, days?: number | null) {
   base.setDate(base.getDate() + days);
   return base.toISOString().slice(0, 10);
 }
+
+/** Rótulo de prazo relativo à validade, calculado no fuso local do usuário. */
+export function daysUntilLabel(date: string) {
+  const target = new Date(`${date}T12:00:00`);
+  if (Number.isNaN(target.getTime())) return { label: "—", critical: false, warning: false, days: null as number | null };
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const days = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+  if (days < 0) return { label: `vencido há ${Math.abs(days)} dia(s)`, critical: true, warning: false, days };
+  if (days === 0) return { label: "vence hoje", critical: true, warning: false, days };
+  if (days <= 7) return { label: `vence em ${days} dia(s)`, critical: true, warning: false, days };
+  if (days <= 30) return { label: `vence em ${days} dias`, critical: false, warning: true, days };
+  return { label: `vence em ${days} dias`, critical: false, warning: false, days };
+}
