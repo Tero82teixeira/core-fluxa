@@ -152,16 +152,6 @@ function Onboarding() {
       setSaving(false);
     }
   };
-      toast.success("Progresso salvo.");
-      setStep((current) => Math.min(current + 1, 3));
-    } catch (caught) {
-      const message = describeError(caught, "empresa");
-      setError(message);
-      toast.error(message);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const Icon = STEPS[step].icon;
 
