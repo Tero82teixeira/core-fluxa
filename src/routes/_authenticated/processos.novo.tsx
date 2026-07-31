@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useWorkspace } from "@/lib/workspace";
 import { usePermissions } from "@/lib/permissions";
 import { useClients } from "@/hooks/use-operations";
-import { useAllServiceTypes, useCreateChecklistItem, useCreateProcess } from "@/hooks/use-mutations";
+import { useAllServiceTypes, useCreateProcess, useSeedChecklist } from "@/hooks/use-mutations";
 import { describeError } from "@/lib/errors";
 import { KANBAN_STAGES, PRIORITY, PROCESS_STAGE, type PriorityLevel, type ProcessStage } from "@/lib/domain";
 
@@ -46,6 +46,7 @@ function NewProcess() {
   const clients = useClients(organizationId);
   const serviceTypes = useAllServiceTypes(organizationId);
   const createProcess = useCreateProcess(organizationId);
+  const seedChecklist = useSeedChecklist(organizationId);
   const [pendingChecklist, setPendingChecklist] = useState<string[]>([]);
 
   const [form, setForm] = useState({
@@ -100,6 +101,13 @@ function NewProcess() {
         value: form.value ? Number(form.value.replace(",", ".")) : 0,
         financial_status: "nao_aplicavel",
       });
+      if (pendingChecklist.length > 0) {
+        try {
+          await seedChecklist.mutateAsync({ processId: created.id, titles: pendingChecklist });
+        } catch (error) {
+          toast.warning("Processo criado, mas o checklist sugerido não pôde ser gerado.");
+        }
+      }
       toast.success(`Processo ${created.code} criado.`);
       navigate({ to: "/processos/$processId", params: { processId: created.id } });
     } catch (error) {

@@ -629,6 +629,35 @@ export function useCreateChecklistItem(organizationId: string | null, processId:
   });
 }
 
+/** Cria vários itens de checklist de uma vez (modelo do tipo de serviço). */
+export function useSeedChecklist(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async ({ processId, titles }: { processId: string; titles: string[] }) => {
+      if (titles.length === 0) return;
+      const { error } = await db()
+        .from("process_checklist_items")
+        .insert(
+          titles.map((title, index) => ({
+            organization_id: organizationId,
+            process_id: processId,
+            title,
+            status: "pendente",
+            required: true,
+            position: index,
+            created_by: actor.userId,
+            updated_by: actor.userId,
+          })),
+        );
+      if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["process-checklist", variables.processId] });
+    },
+  });
+}
+
 export function useUpdateChecklistItem(organizationId: string | null, processId: string) {
   const queryClient = useQueryClient();
   const actor = useActor();
