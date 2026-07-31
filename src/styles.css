@@ -194,6 +194,8 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    /* Escala base ampliada (~6%) para conforto de leitura sem perder densidade. */
+    font-size: 106.25%;
   }
 
   body {
@@ -202,6 +204,7 @@
     font-family: var(--font-sans);
     font-feature-settings: "cv02", "cv03", "ss01";
     -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
   }
 
   h1,
@@ -210,6 +213,12 @@
   h4 {
     font-family: var(--font-display);
     letter-spacing: -0.015em;
+  }
+
+  /* Foco sempre visível em elementos interativos. */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
   }
 }
 
@@ -223,3 +232,62 @@
 @utility text-balance-tight {
   text-wrap: balance;
 }
+
+/* ---- Hierarquia tipográfica padronizada ---- */
+
+@utility page-title {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+@utility page-subtitle {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--color-muted-foreground);
+}
+
+@utility section-title {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+@utility card-title {
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+@utility metric-value {
+  font-family: var(--font-display);
+  font-size: 1.875rem;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+@utility field-label {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+
+@utility helper-text {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-muted-foreground);
+}
+
+@utility table-text {
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
