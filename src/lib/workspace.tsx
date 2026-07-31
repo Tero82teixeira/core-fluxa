@@ -31,27 +31,28 @@ export function WorkspaceProvider({ user, children }: { user: User | null; child
     if (stored) setSelected(stored);
   }, []);
 
-  const list = memberships.data ?? [];
+  const list = DEMO_MODE ? DEMO_MEMBERSHIPS : (memberships.data ?? []);
   const membership = list.find((m) => m.organization_id === selected) ?? list[0] ?? null;
   const permissions = useRolePermissions(membership?.role);
 
   const value = useMemo<WorkspaceContextValue>(() => {
     const granted = new Set(permissions.data ?? []);
     return {
-      loading: memberships.isLoading || profile.isLoading,
+      loading: DEMO_MODE ? false : memberships.isLoading || profile.isLoading,
       user,
-      displayName: profile.data?.full_name || user?.email || "Usuário",
+      displayName: DEMO_MODE ? DEMO_USER.name : profile.data?.full_name || user?.email || "Usuário",
       memberships: list,
       membership,
       organizationId: membership?.organization_id ?? null,
       role: membership?.role ?? null,
-      can: (permission) => granted.has(permission),
+      can: (permission) => (DEMO_MODE ? true : granted.has(permission)),
       switchWorkspace: (organizationId) => {
         window.localStorage.setItem(STORAGE_KEY, organizationId);
         setSelected(organizationId);
       },
     };
   }, [permissions.data, memberships.isLoading, profile.isLoading, profile.data, user, list, membership]);
+
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
