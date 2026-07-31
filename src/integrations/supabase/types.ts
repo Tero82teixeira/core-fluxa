@@ -454,6 +454,7 @@ export type Database = {
           legal_name: string
           onboarding_completed: boolean
           onboarding_completed_at: string | null
+          onboarding_step: number
           phone: string | null
           sample_data_at: string | null
           slug: string | null
@@ -472,6 +473,7 @@ export type Database = {
           legal_name: string
           onboarding_completed?: boolean
           onboarding_completed_at?: string | null
+          onboarding_step?: number
           phone?: string | null
           sample_data_at?: string | null
           slug?: string | null
@@ -490,6 +492,7 @@ export type Database = {
           legal_name?: string
           onboarding_completed?: boolean
           onboarding_completed_at?: string | null
+          onboarding_step?: number
           phone?: string | null
           sample_data_at?: string | null
           slug?: string | null
@@ -894,9 +897,12 @@ export type Database = {
       bootstrap_organization: {
         Args: never
         Returns: {
+          is_active: boolean
           membership_id: string
           onboarding_completed_at: string
+          onboarding_step: number
           organization_id: string
+          profile_id: string
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
