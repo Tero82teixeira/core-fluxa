@@ -15,6 +15,11 @@ export type Permissions = {
   canArchive: boolean;
   canManageServiceTypes: boolean;
   canManageTasks: boolean;
+  canUploadDocuments: boolean;
+  canReviewDocuments: boolean;
+  canArchiveDocuments: boolean;
+  canManageDocumentTypes: boolean;
+  canManageMonitoring: boolean;
 };
 
 export const NO_PERMISSION = "Você não possui permissão para esta ação.";
@@ -26,6 +31,7 @@ export function usePermissions(): Permissions {
     const current = (role ?? null) as AppRole | null;
     const isManager = current ? MANAGERS.includes(current) : false;
     const isEditor = current ? EDITORS.includes(current) || current === "superadmin" : false;
+    const isOwnerAdmin = current === "proprietario" || current === "administrador" || current === "superadmin";
     return {
       role: current,
       readOnly: !isEditor,
@@ -35,6 +41,11 @@ export function usePermissions(): Permissions {
       canArchive: isManager || current === "operacional",
       canManageServiceTypes: isManager,
       canManageTasks: isEditor || current === "financeiro",
+      canUploadDocuments: isEditor,
+      canReviewDocuments: isOwnerAdmin,
+      canArchiveDocuments: isOwnerAdmin,
+      canManageDocumentTypes: isOwnerAdmin,
+      canManageMonitoring: isEditor,
     };
   }, [role]);
 }
