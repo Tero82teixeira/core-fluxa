@@ -73,6 +73,7 @@ function ProcessDetail() {
   const [note, setNote] = useState("");
   const [noteOpen, setNoteOpen] = useState(false);
   const [newTask, setNewTask] = useState("");
+  const [attachItem, setAttachItem] = useState<{ id: string; title: string } | null>(null);
   const movements = useProcessMovements(processId);
   const tasks = useTasks(organizationId);
 
@@ -532,6 +533,18 @@ function ProcessDetail() {
           </Card>
         </div>
       </div>
+
+      <DocumentUploadDialog
+        open={Boolean(attachItem)}
+        onOpenChange={(open) => !open && setAttachItem(null)}
+        scope={{
+          processId,
+          clientId: data.client_id,
+          checklistItemId: attachItem?.id ?? null,
+          suggestedTitle: attachItem?.title,
+          lockScope: true,
+        }}
+      />
     </div>
   );
 }
