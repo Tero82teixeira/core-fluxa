@@ -70,7 +70,9 @@ export function useMembers(organizationId: string | null) {
         .from("profiles")
         .select("id, full_name, email")
         .in("id", rows.map((row) => row.user_id));
-      const map = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+      const map = new Map<string, { full_name: string | null; email: string | null }>(
+        (profiles ?? []).map((p: any) => [p.id as string, { full_name: p.full_name ?? null, email: p.email ?? null }]),
+      );
       return rows.map((row) => ({
         ...row,
         full_name: map.get(row.user_id)?.full_name ?? null,
