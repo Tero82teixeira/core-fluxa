@@ -40,9 +40,9 @@ function Onboarding() {
   const queryClient = useQueryClient();
   const {
     user,
+    status,
     organizationId,
     membership,
-    loading,
     ready,
     onboardingStep,
     bootstrapError,
@@ -250,7 +250,7 @@ function Onboarding() {
 
   const Icon = STEPS[step].icon;
 
-  if (loading || !ready) {
+  if (status === "loading" || status === "bootstrapping" || status === "idle") {
     return (
       <div className="flex min-h-[50vh] items-center justify-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" aria-hidden /> Configurando seu acesso…
@@ -391,7 +391,7 @@ function Onboarding() {
                   Concluir depois
                 </Button>
               )}
-              <Button onClick={advance} disabled={saving || loading || !ready} aria-busy={saving}>
+              <Button onClick={advance} disabled={saving || !ready} aria-busy={saving}>
                 {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
                 {saving ? "Salvando…" : step === 3 ? "Entrar na Central de Comando" : "Salvar e continuar"}
               </Button>
