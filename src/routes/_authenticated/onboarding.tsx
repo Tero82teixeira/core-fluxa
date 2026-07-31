@@ -40,9 +40,9 @@ function Onboarding() {
   const queryClient = useQueryClient();
   const {
     user,
+    status,
     organizationId,
     membership,
-    loading,
     ready,
     onboardingStep,
     bootstrapError,
