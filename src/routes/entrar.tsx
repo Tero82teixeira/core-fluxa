@@ -356,15 +356,7 @@ function AuthPage() {
               </div>
 
               <Button
-                type={validated && mode === "signup" ? "button" : "submit"}
-                onClick={
-                  validated && mode === "signup"
-                    ? () => {
-                        setPassword("");
-                        navigate({ to: "/central" });
-                      }
-                    : undefined
-                }
+                type="submit"
                 disabled={loading}
                 aria-busy={loading}
                 className="h-11 w-full bg-brand text-brand-foreground text-base font-semibold transition-transform duration-200 hover:bg-brand/90 active:scale-[0.99] disabled:opacity-70"
@@ -374,12 +366,10 @@ function AuthPage() {
                     <Loader2 className="h-4 w-4 animate-spin" />
                     {mode === "login" ? "Entrando…" : "Criando conta…"}
                   </>
-                ) : validated && mode === "signup" ? (
-                  "Acessar demonstração"
                 ) : mode === "login" ? (
                   "Entrar"
                 ) : (
-                  "Criar empresa"
+                  "Criar conta e empresa"
                 )}
               </Button>
             </form>
