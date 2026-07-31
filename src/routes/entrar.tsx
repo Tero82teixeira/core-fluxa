@@ -25,8 +25,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/entrar")({
-  ssr: false,
   head: () => ({
+
     meta: [
       { title: "Entrar — FLUXA" },
       { name: "description", content: "Acesse a central inteligente de processos da sua empresa." },
