@@ -92,7 +92,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-2">
           <SidebarTrigger className="shrink-0" />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
               <h1 className="min-w-0 flex-1 truncate font-display text-base font-semibold sm:text-lg">
                 {current?.label ?? "FLUXA"}
