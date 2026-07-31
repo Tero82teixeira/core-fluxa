@@ -98,9 +98,11 @@ function AuthPage() {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
+        const { data: workspace, error: workspaceError } = await supabase.rpc("bootstrap_organization");
+        if (workspaceError) throw workspaceError;
         window.localStorage.setItem(REMEMBER_KEY, remember ? email.trim() : "");
         setPassword("");
-        navigate({ to: "/central" });
+        navigate({ to: workspace?.[0]?.onboarding_completed_at ? "/central" : "/onboarding" });
       } else {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),

@@ -22,13 +22,14 @@ import { useTheme } from "@/lib/theme";
 import { useWorkspace } from "@/lib/workspace";
 import { ROLE } from "@/lib/domain";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggleTheme } = useTheme();
-  const { displayName, role, membership, loading } = useWorkspace();
+  const { displayName, role, membership, loading, onboardingCompleted } = useWorkspace();
 
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false);
@@ -73,23 +74,31 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
                 <SidebarMenu className="gap-0.5">
                   {items.map((item) => {
                     const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
+                    const locked = !onboardingCompleted;
                     return (
                       <SidebarMenuItem key={item.to}>
                         <SidebarMenuButton
-                          asChild
+                          asChild={!locked}
                           isActive={active}
                           tooltip={item.label}
                           className="h-10 text-sm data-[active=true]:font-semibold"
                         >
-                          <Link to={item.to} onClick={closeOnMobile} className="gap-3">
-                            <item.icon className="size-4.5 shrink-0" aria-hidden />
-                            <span className="truncate">{item.label}</span>
-                            {!item.ready && !collapsed && (
-                              <span className="ml-auto rounded-full border border-sidebar-border px-1.5 py-0.5 text-[0.65rem] leading-none text-muted-foreground">
-                                em breve
-                              </span>
-                            )}
-                          </Link>
+                          {locked ? (
+                            <span onClick={() => toast.info("Conclua a configuração inicial da empresa para acessar este módulo.")}>
+                              <item.icon className="size-4.5 shrink-0" aria-hidden />
+                              <span className="truncate">{item.label}</span>
+                            </span>
+                          ) : (
+                            <Link to={item.to} onClick={closeOnMobile} className="gap-3">
+                              <item.icon className="size-4.5 shrink-0" aria-hidden />
+                              <span className="truncate">{item.label}</span>
+                              {!item.ready && !collapsed && (
+                                <span className="ml-auto rounded-full border border-sidebar-border px-1.5 py-0.5 text-[0.65rem] leading-none text-muted-foreground">
+                                  em breve
+                                </span>
+                              )}
+                            </Link>
+                          )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     );

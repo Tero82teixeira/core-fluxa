@@ -27,26 +27,45 @@ export function useSession() {
 export type Membership = {
   id: string;
   organization_id: string;
+  user_id: string;
   role: AppRole;
+  is_active: boolean;
   organizations: {
     id: string;
     legal_name: string;
     trade_name: string | null;
+    document: string | null;
+    phone: string | null;
+    whatsapp: string | null;
     onboarding_completed: boolean;
     onboarding_completed_at: string | null;
+    onboarding_step: number;
+    organization_settings: {
+      zip_code: string | null;
+      street: string | null;
+      number: string | null;
+      district: string | null;
+      city: string | null;
+      state: string | null;
+      main_services: string | null;
+      clients_range: string | null;
+      employees_range: string | null;
+    } | null;
   } | null;
 };
 
 /** Workspaces (empresas) das quais o usuário autenticado participa. */
-export function useMemberships() {
+export function useMemberships(user: User | null) {
   return useQuery({
-    queryKey: ["memberships"],
+    enabled: Boolean(user),
+    queryKey: ["memberships", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organization_members")
         .select(
-          "id, organization_id, role, organizations(id, legal_name, trade_name, onboarding_completed, onboarding_completed_at)",
+          "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, document, phone, whatsapp, onboarding_completed, onboarding_completed_at, onboarding_step, organization_settings(zip_code, street, number, district, city, state, main_services, clients_range, employees_range))",
         )
+        .eq("user_id", user?.id ?? "")
         .eq("is_active", true)
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -60,10 +79,11 @@ export function useProfile(user: User | null) {
     enabled: Boolean(user),
     queryKey: ["profile", user?.id],
     queryFn: async () => {
+      if (!user) return null;
       const { data, error } = await supabase
         .from("profiles")
         .select("id, full_name, email, avatar_url")
-        .eq("id", user!.id)
+        .eq("id", user.id)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -76,10 +96,11 @@ export function useRolePermissions(role?: AppRole) {
     enabled: Boolean(role),
     queryKey: ["role-permissions", role],
     queryFn: async () => {
+      if (!role) return [];
       const { data, error } = await supabase
         .from("role_permissions")
         .select("permission_key")
-        .eq("role", role!);
+        .eq("role", role);
       if (error) throw error;
       return (data ?? []).map((r) => r.permission_key as PermissionKey);
     },

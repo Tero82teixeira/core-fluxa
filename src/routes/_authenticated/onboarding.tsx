@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Building2, CheckCircle2, Loader2, MapPin, Settings2 } from "lucide-react";
@@ -38,15 +38,29 @@ const STEPS = [
 function Onboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { organizationId, membership, loading, bootstrapError } = useWorkspace();
+  const {
+    user,
+    organizationId,
+    membership,
+    loading,
+    ready,
+    onboardingStep,
+    bootstrapError,
+    ensureWorkspace,
+    refreshWorkspace,
+  } = useWorkspace();
   const [orgId, setOrgId] = useState<string | null>(organizationId);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(onboardingStep);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ document?: string; phone?: string; whatsapp?: string }>({});
+  const hydratedOrganization = useRef<string | null>(null);
 
   useEffect(() => {
     if (organizationId) setOrgId(organizationId);
   }, [organizationId]);
+
+  useEffect(() => setStep(onboardingStep), [onboardingStep]);
 
   const [company, setCompany] = useState({
     trade_name: membership?.organizations?.trade_name ?? "",
@@ -58,16 +72,66 @@ function Onboarding() {
   const [place, setPlace] = useState({ zip_code: "", street: "", number: "", district: "", city: "", state: "" });
   const [operation, setOperation] = useState({ main_services: "", clients_range: "", employees_range: "" });
 
+  useEffect(() => {
+    const organization = membership?.organizations;
+    if (!organization || hydratedOrganization.current === organization.id) return;
+    hydratedOrganization.current = organization.id;
+    const settings = organization.organization_settings;
+    setCompany({
+      trade_name: organization.trade_name ?? "",
+      legal_name: organization.legal_name ?? "",
+      document: organization.document ?? "",
+      phone: organization.phone ?? "",
+      whatsapp: organization.whatsapp ?? "",
+    });
+    setPlace({
+      zip_code: settings?.zip_code ?? "",
+      street: settings?.street ?? "",
+      number: settings?.number ?? "",
+      district: settings?.district ?? "",
+      city: settings?.city ?? "",
+      state: settings?.state ?? "",
+    });
+    setOperation({
+      main_services: settings?.main_services ?? "",
+      clients_range: settings?.clients_range ?? "",
+      employees_range: settings?.employees_range ?? "",
+    });
+  }, [membership]);
+
   /** Garante empresa + vínculo antes de qualquer escrita (idempotente no banco). */
   const ensureOrganization = async () => {
-    if (orgId) return orgId;
-    const { data, error: rpcError } = await supabase.rpc("bootstrap_organization");
-    if (rpcError) throw rpcError;
-    const created = data?.[0]?.organization_id ?? null;
-    if (!created) throw new Error("Não foi possível preparar sua empresa.");
-    setOrgId(created);
-    await queryClient.invalidateQueries({ queryKey: ["memberships"] });
-    return created;
+    if (
+      ready &&
+      membership &&
+      membership.user_id === user?.id &&
+      membership.is_active &&
+      membership.organizations &&
+      organizationId &&
+      membership.organization_id === organizationId
+    ) return organizationId;
+
+    setError("Seu vínculo com a empresa ainda não foi concluído. Estamos tentando corrigir seu acesso.");
+    const repaired = await ensureWorkspace();
+    if (!repaired.organization_id || repaired.user_id !== user?.id || !repaired.is_active || !repaired.organizations) {
+      throw new Error("O vínculo da empresa não foi confirmado após o bootstrap.");
+    }
+    setOrgId(repaired.organization_id);
+    setError(null);
+    return repaired.organization_id;
+  };
+
+  const validateCompany = () => {
+    const next: typeof fieldErrors = {};
+    const documentLength = digits(company.document).length;
+    const phoneLength = digits(company.phone).length;
+    const whatsappLength = digits(company.whatsapp).length;
+    if (company.document && documentLength !== 11 && documentLength !== 14)
+      next.document = "Informe um CPF ou CNPJ válido.";
+    if (company.phone && (phoneLength < 10 || phoneLength > 11)) next.phone = "Informe o telefone com DDD.";
+    if (company.whatsapp && (whatsappLength < 10 || whatsappLength > 11)) next.whatsapp = "Informe o WhatsApp com DDD.";
+    setFieldErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   const saveCompany = async () => {
@@ -75,24 +139,34 @@ function Onboarding() {
       setError("Informe o nome fantasia da empresa.");
       return false;
     }
+    if (!validateCompany()) return false;
     const id = await ensureOrganization();
+    if (!id) throw new Error("A organização vinculada não foi encontrada.");
     const payload = {
       trade_name: company.trade_name.trim(),
       legal_name: company.legal_name.trim() || company.trade_name.trim(),
       document: company.document.trim() || null,
       document_digits: digits(company.document) || null,
-      phone: company.phone.trim() || null,
-      whatsapp: company.whatsapp.trim() || null,
+      phone: digits(company.phone) || null,
+      whatsapp: digits(company.whatsapp) || null,
+      onboarding_step: 1,
     };
 
-    const { error: updateError } = await supabase.from("organizations").update(payload).eq("id", id);
+    const { data: updated, error: updateError } = await supabase
+      .from("organizations")
+      .update(payload)
+      .eq("id", id)
+      .select("id, trade_name, legal_name, document, phone, whatsapp, onboarding_step")
+      .single();
     if (updateError) throw updateError;
+    if (!updated?.id) throw new Error("A empresa atualizada não foi retornada.");
 
-    await supabase
+    const { error: portalError } = await supabase
       .from("organization_settings")
       .upsert({ organization_id: id, portal_name: payload.trade_name }, { onConflict: "organization_id" });
+    if (portalError) throw portalError;
 
-    await queryClient.invalidateQueries({ queryKey: ["memberships"] });
+    await refreshWorkspace();
     return true;
   };
 
@@ -122,6 +196,11 @@ function Onboarding() {
           city: place.city.trim() || null,
           state: place.state.trim().toUpperCase() || null,
         });
+        const { error: stepError } = await supabase
+          .from("organizations")
+          .update({ onboarding_step: 2 })
+          .eq("id", await ensureOrganization());
+        if (stepError) throw stepError;
       }
       if (step === 2) {
         await saveSettings({
@@ -129,15 +208,20 @@ function Onboarding() {
           clients_range: operation.clients_range.trim() || null,
           employees_range: operation.employees_range.trim() || null,
         });
+        const { error: stepError } = await supabase
+          .from("organizations")
+          .update({ onboarding_step: 3 })
+          .eq("id", await ensureOrganization());
+        if (stepError) throw stepError;
       }
       if (step === 3) {
         const id = await ensureOrganization();
         const { error: finishError } = await supabase
           .from("organizations")
-          .update({ onboarding_completed: true, onboarding_completed_at: new Date().toISOString() })
+          .update({ onboarding_completed: true, onboarding_completed_at: new Date().toISOString(), onboarding_step: 3 })
           .eq("id", id);
         if (finishError) throw finishError;
-        await queryClient.invalidateQueries({ queryKey: ["memberships"] });
+        await refreshWorkspace();
         toast.success("Empresa configurada. Bem-vindo à Central de Comando.");
         navigate({ to: "/central" });
         return;
@@ -145,6 +229,17 @@ function Onboarding() {
       toast.success("Progresso salvo.");
       setStep((current) => Math.min(current + 1, 3));
     } catch (caught) {
+      console.error("Erro no vínculo da empresa", {
+        message: caught instanceof Error ? caught.message : undefined,
+        code: typeof caught === "object" && caught && "code" in caught ? caught.code : undefined,
+        details: typeof caught === "object" && caught && "details" in caught ? caught.details : undefined,
+        hint: typeof caught === "object" && caught && "hint" in caught ? caught.hint : undefined,
+        userId: user?.id,
+        organizationId,
+        membershipFound: Boolean(membership),
+        role: membership?.role,
+        status: membership?.is_active,
+      });
       const message = describeError(caught, "empresa");
       setError(message);
       toast.error(message);
@@ -155,10 +250,10 @@ function Onboarding() {
 
   const Icon = STEPS[step].icon;
 
-  if (loading) {
+  if (loading || !ready) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" aria-hidden /> Preparando sua empresa…
+        <Loader2 className="size-4 animate-spin" aria-hidden /> Configurando seu acesso…
       </div>
     );
   }
@@ -210,13 +305,25 @@ function Onboarding() {
                 <Input value={company.legal_name} maxLength={160} onChange={(e) => setCompany({ ...company, legal_name: e.target.value })} />
               </Field>
               <Field label="CPF ou CNPJ">
-                <Input value={company.document} maxLength={20} onChange={(e) => setCompany({ ...company, document: e.target.value })} />
+                <Input value={company.document} maxLength={20} aria-invalid={Boolean(fieldErrors.document)} onChange={(e) => {
+                  setCompany({ ...company, document: e.target.value });
+                  setFieldErrors((current) => ({ ...current, document: undefined }));
+                }} />
+                {fieldErrors.document && <p className="text-sm text-destructive">{fieldErrors.document}</p>}
               </Field>
               <Field label="Telefone">
-                <Input value={company.phone} maxLength={20} onChange={(e) => setCompany({ ...company, phone: e.target.value })} />
+                <Input value={company.phone} maxLength={20} aria-invalid={Boolean(fieldErrors.phone)} onChange={(e) => {
+                  setCompany({ ...company, phone: e.target.value });
+                  setFieldErrors((current) => ({ ...current, phone: undefined }));
+                }} />
+                {fieldErrors.phone && <p className="text-sm text-destructive">{fieldErrors.phone}</p>}
               </Field>
               <Field label="WhatsApp">
-                <Input value={company.whatsapp} maxLength={20} onChange={(e) => setCompany({ ...company, whatsapp: e.target.value })} />
+                <Input value={company.whatsapp} maxLength={20} aria-invalid={Boolean(fieldErrors.whatsapp)} onChange={(e) => {
+                  setCompany({ ...company, whatsapp: e.target.value });
+                  setFieldErrors((current) => ({ ...current, whatsapp: undefined }));
+                }} />
+                {fieldErrors.whatsapp && <p className="text-sm text-destructive">{fieldErrors.whatsapp}</p>}
               </Field>
             </div>
           )}
@@ -284,7 +391,7 @@ function Onboarding() {
                   Concluir depois
                 </Button>
               )}
-              <Button onClick={advance} disabled={saving} aria-busy={saving}>
+              <Button onClick={advance} disabled={saving || loading || !ready} aria-busy={saving}>
                 {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
                 {saving ? "Salvando…" : step === 3 ? "Entrar na Central de Comando" : "Salvar e continuar"}
               </Button>
