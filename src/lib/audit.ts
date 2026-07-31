@@ -24,14 +24,38 @@ export type AuditAction =
   | "task.reopened"
   | "task.deleted"
   | "member.role_changed"
-  | "organization.sample_data";
+  | "organization.sample_data"
+  | "document.uploaded"
+  | "document.version_added"
+  | "document.updated"
+  | "document.approved"
+  | "document.rejected"
+  | "document.archived"
+  | "document.downloaded"
+  | "document_type.created"
+  | "document_type.updated"
+  | "document_type.archived"
+  | "monitoring.created"
+  | "monitoring.updated"
+  | "monitoring.renewed"
+  | "monitoring.archived";
 
 type AuditInput = {
   organizationId: string;
   actorId?: string | null;
   actorName?: string | null;
   action: AuditAction;
-  entity: "client" | "process" | "task" | "member" | "organization" | "checklist" | "service_type";
+  entity:
+    | "client"
+    | "process"
+    | "task"
+    | "member"
+    | "organization"
+    | "checklist"
+    | "service_type"
+    | "document"
+    | "document_type"
+    | "monitoring";
   entityId?: string | null;
   metadata?: Record<string, unknown>;
 };

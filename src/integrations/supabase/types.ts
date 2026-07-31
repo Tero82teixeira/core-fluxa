@@ -285,10 +285,427 @@ export type Database = {
           },
         ]
       }
+      document_types: {
+        Row: {
+          active: boolean
+          archived_at: string | null
+          category: Database["public"]["Enums"]["document_category"]
+          created_at: string
+          created_by: string | null
+          default_validity_days: number | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          requires_expiration_date: boolean
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          archived_at?: string | null
+          category?: Database["public"]["Enums"]["document_category"]
+          created_at?: string
+          created_by?: string | null
+          default_validity_days?: number | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          requires_expiration_date?: boolean
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          archived_at?: string | null
+          category?: Database["public"]["Enums"]["document_category"]
+          created_at?: string
+          created_by?: string | null
+          default_validity_days?: number | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          requires_expiration_date?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_types_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_versions: {
+        Row: {
+          created_at: string
+          document_id: string
+          file_path: string
+          file_size: number
+          id: string
+          mime_type: string
+          notes: string | null
+          organization_id: string
+          original_file_name: string
+          stored_file_name: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          file_path: string
+          file_size: number
+          id?: string
+          mime_type: string
+          notes?: string | null
+          organization_id: string
+          original_file_name: string
+          stored_file_name: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          notes?: string | null
+          organization_id?: string
+          original_file_name?: string
+          stored_file_name?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          archived_at: string | null
+          checklist_item_id: string | null
+          client_id: string | null
+          created_at: string
+          current_version: number
+          description: string | null
+          document_number: string | null
+          document_type_id: string | null
+          expiration_date: string | null
+          file_extension: string
+          file_path: string
+          file_size: number
+          id: string
+          issue_date: string | null
+          issuer: string | null
+          mime_type: string
+          notes: string | null
+          organization_id: string
+          original_file_name: string
+          process_id: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewed_by_name: string | null
+          status: Database["public"]["Enums"]["document_status"]
+          stored_file_name: string
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          checklist_item_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          current_version?: number
+          description?: string | null
+          document_number?: string | null
+          document_type_id?: string | null
+          expiration_date?: string | null
+          file_extension: string
+          file_path: string
+          file_size: number
+          id?: string
+          issue_date?: string | null
+          issuer?: string | null
+          mime_type: string
+          notes?: string | null
+          organization_id: string
+          original_file_name: string
+          process_id?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          status?: Database["public"]["Enums"]["document_status"]
+          stored_file_name: string
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          checklist_item_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          current_version?: number
+          description?: string | null
+          document_number?: string | null
+          document_type_id?: string | null
+          expiration_date?: string | null
+          file_extension?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          issue_date?: string | null
+          issuer?: string | null
+          mime_type?: string
+          notes?: string | null
+          organization_id?: string
+          original_file_name?: string
+          process_id?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          status?: Database["public"]["Enums"]["document_status"]
+          stored_file_name?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "process_checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monitoring_history: {
+        Row: {
+          changed_by: string | null
+          changed_by_name: string | null
+          created_at: string
+          id: string
+          monitoring_item_id: string
+          new_document_id: string | null
+          new_expiration_date: string | null
+          new_issue_date: string | null
+          notes: string | null
+          organization_id: string
+          previous_document_id: string | null
+          previous_expiration_date: string | null
+          previous_issue_date: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          monitoring_item_id: string
+          new_document_id?: string | null
+          new_expiration_date?: string | null
+          new_issue_date?: string | null
+          notes?: string | null
+          organization_id: string
+          previous_document_id?: string | null
+          previous_expiration_date?: string | null
+          previous_issue_date?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          monitoring_item_id?: string
+          new_document_id?: string | null
+          new_expiration_date?: string | null
+          new_issue_date?: string | null
+          notes?: string | null
+          organization_id?: string
+          previous_document_id?: string | null
+          previous_expiration_date?: string | null
+          previous_issue_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_history_monitoring_item_id_fkey"
+            columns: ["monitoring_item_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_history_monitoring_item_id_fkey"
+            columns: ["monitoring_item_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_items_status_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monitoring_items: {
+        Row: {
+          archived_at: string | null
+          auto_generated: boolean
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          document_id: string | null
+          expiration_date: string | null
+          id: string
+          issue_date: string | null
+          notes: string | null
+          organization_id: string
+          process_id: string | null
+          reference_number: string | null
+          responsible_name: string | null
+          responsible_user_id: string | null
+          status: Database["public"]["Enums"]["monitoring_status"]
+          title: string
+          type: Database["public"]["Enums"]["document_category"]
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          auto_generated?: boolean
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          expiration_date?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          organization_id: string
+          process_id?: string | null
+          reference_number?: string | null
+          responsible_name?: string | null
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["monitoring_status"]
+          title: string
+          type?: Database["public"]["Enums"]["document_category"]
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          auto_generated?: boolean
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          expiration_date?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          organization_id?: string
+          process_id?: string | null
+          reference_number?: string | null
+          responsible_name?: string | null
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["monitoring_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["document_category"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_items_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_items_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
           created_at: string
+          dedupe_key: string | null
           id: string
           kind: string
           organization_id: string
@@ -299,6 +716,7 @@ export type Database = {
         Insert: {
           body?: string | null
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           kind?: string
           organization_id: string
@@ -309,6 +727,7 @@ export type Database = {
         Update: {
           body?: string | null
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           kind?: string
           organization_id?: string
@@ -993,7 +1412,116 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      monitoring_items_status_view: {
+        Row: {
+          archived_at: string | null
+          auto_generated: boolean | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          days_remaining: number | null
+          document_id: string | null
+          expiration_date: string | null
+          id: string | null
+          is_expired: boolean | null
+          is_expiring_soon: boolean | null
+          issue_date: string | null
+          notes: string | null
+          organization_id: string | null
+          process_id: string | null
+          reference_number: string | null
+          responsible_name: string | null
+          responsible_user_id: string | null
+          situation: string | null
+          status: Database["public"]["Enums"]["monitoring_status"] | null
+          title: string | null
+          type: Database["public"]["Enums"]["document_category"] | null
+          updated_at: string | null
+          urgency: number | null
+        }
+        Insert: {
+          archived_at?: string | null
+          auto_generated?: boolean | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          days_remaining?: never
+          document_id?: string | null
+          expiration_date?: string | null
+          id?: string | null
+          is_expired?: never
+          is_expiring_soon?: never
+          issue_date?: string | null
+          notes?: string | null
+          organization_id?: string | null
+          process_id?: string | null
+          reference_number?: string | null
+          responsible_name?: string | null
+          responsible_user_id?: string | null
+          situation?: never
+          status?: Database["public"]["Enums"]["monitoring_status"] | null
+          title?: string | null
+          type?: Database["public"]["Enums"]["document_category"] | null
+          updated_at?: string | null
+          urgency?: never
+        }
+        Update: {
+          archived_at?: string | null
+          auto_generated?: boolean | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          days_remaining?: never
+          document_id?: string | null
+          expiration_date?: string | null
+          id?: string | null
+          is_expired?: never
+          is_expiring_soon?: never
+          issue_date?: string | null
+          notes?: string | null
+          organization_id?: string | null
+          process_id?: string | null
+          reference_number?: string | null
+          responsible_name?: string | null
+          responsible_user_id?: string | null
+          situation?: never
+          status?: Database["public"]["Enums"]["monitoring_status"] | null
+          title?: string | null
+          type?: Database["public"]["Enums"]["document_category"] | null
+          updated_at?: string | null
+          urgency?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_items_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_items_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       bootstrap_organization: {
@@ -1018,6 +1546,11 @@ export type Database = {
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
       next_process_code: { Args: { _org: string }; Returns: string }
+      seed_default_document_types: {
+        Args: { _org: string }
+        Returns: undefined
+      }
+      storage_path_org: { Args: { _name: string }; Returns: string }
     }
     Enums: {
       app_role:
@@ -1043,12 +1576,32 @@ export type Database = {
         | "com_pendencia"
         | "inativo"
         | "arquivado"
+      document_category:
+        | "identificacao"
+        | "certidao"
+        | "comprovante"
+        | "contrato"
+        | "formulario"
+        | "autorizacao"
+        | "registro"
+        | "licenca"
+        | "financeiro"
+        | "outros"
+      document_status:
+        | "pendente"
+        | "recebido"
+        | "em_analise"
+        | "aprovado"
+        | "rejeitado"
+        | "vencido"
+        | "arquivado"
       financial_status:
         | "nao_aplicavel"
         | "pendente"
         | "parcial"
         | "pago"
         | "atrasado"
+      monitoring_status: "ativo" | "em_renovacao" | "renovado" | "arquivado"
       person_type: "pf" | "pj"
       priority_level: "baixa" | "media" | "alta" | "critica"
       process_stage:
@@ -1218,6 +1771,27 @@ export const Constants = {
         "inativo",
         "arquivado",
       ],
+      document_category: [
+        "identificacao",
+        "certidao",
+        "comprovante",
+        "contrato",
+        "formulario",
+        "autorizacao",
+        "registro",
+        "licenca",
+        "financeiro",
+        "outros",
+      ],
+      document_status: [
+        "pendente",
+        "recebido",
+        "em_analise",
+        "aprovado",
+        "rejeitado",
+        "vencido",
+        "arquivado",
+      ],
       financial_status: [
         "nao_aplicavel",
         "pendente",
@@ -1225,6 +1799,7 @@ export const Constants = {
         "pago",
         "atrasado",
       ],
+      monitoring_status: ["ativo", "em_renovacao", "renovado", "arquivado"],
       person_type: ["pf", "pj"],
       priority_level: ["baixa", "media", "alta", "critica"],
       process_stage: [

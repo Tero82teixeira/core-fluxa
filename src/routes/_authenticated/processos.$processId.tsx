@@ -21,6 +21,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DocumentScopePanel } from "@/components/documents/document-scope-panel";
+import { DocumentUploadDialog } from "@/components/documents/document-upload-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Input } from "@/components/ui/input";
@@ -71,6 +73,7 @@ function ProcessDetail() {
   const [note, setNote] = useState("");
   const [noteOpen, setNoteOpen] = useState(false);
   const [newTask, setNewTask] = useState("");
+  const [attachItem, setAttachItem] = useState<{ id: string; title: string } | null>(null);
   const movements = useProcessMovements(processId);
   const tasks = useTasks(organizationId);
 
@@ -259,8 +262,17 @@ function ProcessDetail() {
           <TabsList className="h-auto flex-wrap gap-1.5 p-1.5">
             <TabsTrigger value="timeline" className="px-4 py-2 text-sm">Linha do tempo</TabsTrigger>
             <TabsTrigger value="documentos" className="px-4 py-2 text-sm">Checklist ({checklistItems.length})</TabsTrigger>
+            <TabsTrigger value="arquivos" className="px-4 py-2 text-sm">Documentos</TabsTrigger>
             <TabsTrigger value="tarefas" className="px-4 py-2 text-sm">Tarefas ({relatedTasks.length})</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="arquivos">
+            <DocumentScopePanel
+              processId={processId}
+              emptyDescription="Anexe os arquivos deste processo — eles também aparecem na ficha do cliente."
+            />
+          </TabsContent>
+
 
 
           <TabsContent value="timeline">
@@ -368,7 +380,17 @@ function ProcessDetail() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {permissions.canUploadDocuments && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAttachItem({ id: item.id, title: item.title })}
+                          >
+                            Anexar
+                          </Button>
+                        )}
                         {permissions.canEdit && (
+
                           <Button
                             variant="ghost"
                             size="icon"
@@ -511,6 +533,18 @@ function ProcessDetail() {
           </Card>
         </div>
       </div>
+
+      <DocumentUploadDialog
+        open={Boolean(attachItem)}
+        onOpenChange={(open) => !open && setAttachItem(null)}
+        scope={{
+          processId,
+          clientId: data.client_id,
+          checklistItemId: attachItem?.id ?? null,
+          suggestedTitle: attachItem?.title,
+          lockScope: true,
+        }}
+      />
     </div>
   );
 }
