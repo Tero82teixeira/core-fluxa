@@ -97,11 +97,10 @@ function Onboarding() {
   };
 
   const saveSettings = async (values: Record<string, string | null>) => {
-    if (!orgId) return false;
+    const id = await ensureOrganization();
     const { error: settingsError } = await supabase
       .from("organization_settings")
-      .update(values as never)
-      .eq("organization_id", orgId);
+      .upsert({ organization_id: id, ...values } as never, { onConflict: "organization_id" });
     if (settingsError) throw settingsError;
     return true;
   };
@@ -132,16 +131,27 @@ function Onboarding() {
         });
       }
       if (step === 3) {
+        const id = await ensureOrganization();
         const { error: finishError } = await supabase
           .from("organizations")
-          .update({ onboarding_completed: true })
-          .eq("id", orgId!);
+          .update({ onboarding_completed: true, onboarding_completed_at: new Date().toISOString() })
+          .eq("id", id);
         if (finishError) throw finishError;
         await queryClient.invalidateQueries({ queryKey: ["memberships"] });
         toast.success("Empresa configurada. Bem-vindo à Central de Comando.");
         navigate({ to: "/central" });
         return;
       }
+      toast.success("Progresso salvo.");
+      setStep((current) => Math.min(current + 1, 3));
+    } catch (caught) {
+      const message = describeError(caught, "empresa");
+      setError(message);
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  };
       toast.success("Progresso salvo.");
       setStep((current) => Math.min(current + 1, 3));
     } catch (caught) {
