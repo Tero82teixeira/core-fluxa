@@ -80,27 +80,33 @@ function ClientsPage() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 p-4 sm:p-6">
+    <div className="mx-auto w-full max-w-7xl space-y-5 p-4 sm:p-6">
+      <header className="space-y-1">
+        <h1 className="page-title">Clientes</h1>
+        <p className="page-subtitle">Carteira de clientes com documentos, contatos, processos e histórico.</p>
+      </header>
+
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((kpi) => (
           <Card key={kpi.label}>
-            <CardContent className="p-4">
-              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{kpi.label}</p>
-              <p className="mt-1.5 font-display text-2xl font-semibold">{kpi.value}</p>
+            <CardContent className="p-5">
+              <p className="field-label">{kpi.label}</p>
+              <p className="metric-value mt-2 text-2xl">{kpi.value}</p>
             </CardContent>
           </Card>
         ))}
       </section>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2.5">
         <Input
           value={term}
           onChange={(event) => setTerm(event.target.value)}
+          aria-label="Buscar clientes"
           placeholder="Buscar por nome, documento, e-mail ou telefone"
-          className="w-full sm:max-w-xs"
+          className="h-10 w-full sm:max-w-xs"
         />
         <Select value={status} onValueChange={(value) => setStatus(value as typeof status)}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger aria-label="Filtrar por status" className="h-10 w-full sm:w-44"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os status</SelectItem>
             {Object.entries(CLIENT_STATUS).map(([key, meta]) => (
@@ -109,7 +115,7 @@ function ClientsPage() {
           </SelectContent>
         </Select>
         <Select value={type} onValueChange={(value) => setType(value as typeof type)}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <SelectTrigger aria-label="Filtrar por tipo" className="h-10 w-full sm:w-40"><SelectValue placeholder="Tipo" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">PF e PJ</SelectItem>
             <SelectItem value="pf">Pessoa física</SelectItem>
@@ -117,18 +123,20 @@ function ClientsPage() {
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={(value) => setSort(value as SortKey)}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Ordenar" /></SelectTrigger>
+          <SelectTrigger aria-label="Ordenar lista" className="h-10 w-full sm:w-52"><SelectValue placeholder="Ordenar" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="name">Nome (A–Z)</SelectItem>
             <SelectItem value="recent">Interação mais recente</SelectItem>
             <SelectItem value="processes">Mais processos abertos</SelectItem>
           </SelectContent>
         </Select>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:ml-auto">
           <Button
             variant="outline"
             size="icon"
+            className="hidden size-10 md:inline-flex"
             aria-label={view === "tabela" ? "Ver em cards" : "Ver em tabela"}
+            title={view === "tabela" ? "Ver em cards" : "Ver em tabela"}
             onClick={() => setView(view === "tabela" ? "cards" : "tabela")}
           >
             {view === "tabela" ? <LayoutGrid className="size-4" /> : <Rows3 className="size-4" />}
@@ -153,7 +161,8 @@ function ClientsPage() {
           </CardContent>
         </Card>
       ) : view === "tabela" ? (
-        <Card>
+        <>
+        <Card className="hidden md:block">
           <CardContent className="overflow-x-auto p-0">
             <Table>
               <TableHeader>
@@ -163,7 +172,7 @@ function ClientsPage() {
                   <TableHead className="hidden lg:table-cell">Contato</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="hidden sm:table-cell">Processos</TableHead>
-                  <TableHead className="hidden xl:table-cell">Última interação</TableHead>
+                  <TableHead className="hidden 2xl:table-cell">Última interação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -197,7 +206,7 @@ function ClientsPage() {
                       <StatusBadge label={CLIENT_STATUS[client.status].label} tone={CLIENT_STATUS[client.status].tone} />
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-sm">{openByClient.get(client.id) ?? 0}</TableCell>
-                    <TableCell className="hidden xl:table-cell text-xs text-muted-foreground">
+                    <TableCell className="hidden 2xl:table-cell text-xs text-muted-foreground">
                       {relativeTime(client.last_interaction_at)}
                     </TableCell>
                   </TableRow>
@@ -206,6 +215,41 @@ function ClientsPage() {
             </Table>
           </CardContent>
         </Card>
+        <div className="grid gap-3 md:hidden">
+          {rows.map((client) => (
+            <Link key={client.id} to="/clientes/$clientId" params={{ clientId: client.id }}>
+              <Card className="transition hover:border-brand/40">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar className="size-10 shrink-0">
+                        <AvatarFallback className="text-xs">{initials(client.name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">{client.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {client.document ? maskDocument(client.document) : "Sem documento"}
+                        </p>
+                      </div>
+                    </div>
+                    <StatusBadge label={CLIENT_STATUS[client.status].label} tone={CLIENT_STATUS[client.status].tone} />
+                  </div>
+                  <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <dt className="field-label">Processos</dt>
+                      <dd className="mt-0.5 text-sm font-medium">{openByClient.get(client.id) ?? 0}</dd>
+                    </div>
+                    <div>
+                      <dt className="field-label">Última interação</dt>
+                      <dd className="mt-0.5 text-sm font-medium">{relativeTime(client.last_interaction_at)}</dd>
+                    </div>
+                  </dl>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+        </>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((client) => (
@@ -218,7 +262,7 @@ function ClientsPage() {
                         <AvatarFallback className="text-xs">{initials(client.name)}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{client.name}</p>
+                        <p className="truncate text-sm font-semibold">{client.name}</p>
                         <p className="truncate text-xs text-muted-foreground">
                           {client.document ? maskDocument(client.document) : "Sem documento"}
                         </p>
@@ -226,14 +270,14 @@ function ClientsPage() {
                     </div>
                     <StatusBadge label={CLIENT_STATUS[client.status].label} tone={CLIENT_STATUS[client.status].tone} />
                   </div>
-                  <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                  <dl className="mt-4 grid grid-cols-2 gap-3">
                     <div>
-                      <dt className="text-muted-foreground">Processos abertos</dt>
-                      <dd className="mt-0.5 font-medium">{openByClient.get(client.id) ?? 0}</dd>
+                      <dt className="field-label">Processos abertos</dt>
+                      <dd className="mt-0.5 text-sm font-medium">{openByClient.get(client.id) ?? 0}</dd>
                     </div>
                     <div>
-                      <dt className="text-muted-foreground">Última interação</dt>
-                      <dd className="mt-0.5 font-medium">{formatDate(client.last_interaction_at)}</dd>
+                      <dt className="field-label">Última interação</dt>
+                      <dd className="mt-0.5 text-sm font-medium">{formatDate(client.last_interaction_at)}</dd>
                     </div>
                   </dl>
                 </CardContent>
