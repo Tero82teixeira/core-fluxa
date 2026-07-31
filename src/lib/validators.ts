@@ -3,6 +3,7 @@
  * Mensagens em português, específicas por campo.
  */
 import { digits, isValidCPF, isValidCNPJ } from "@/lib/format";
+import type { ClientStatus } from "@/lib/domain";
 
 export const UF_LIST = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI",
@@ -134,7 +135,7 @@ export function toClientPayload(values: ClientFormValues) {
     city: nullable(values.city),
     state: values.state.trim() ? values.state.trim().toUpperCase() : null,
     owner_name: nullable(values.owner_name),
-    status: values.status,
+    status: values.status as ClientStatus,
     notes: nullable(values.notes),
   };
 }
