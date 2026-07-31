@@ -209,9 +209,18 @@ function ClientDetail() {
         <TabsList className="h-auto flex-wrap gap-1.5 p-1.5">
           <TabsTrigger value="visao" className="px-4 py-2 text-sm">Visão geral</TabsTrigger>
           <TabsTrigger value="processos" className="px-4 py-2 text-sm">Processos ({related.length})</TabsTrigger>
+          <TabsTrigger value="documentos" className="px-4 py-2 text-sm">Documentos</TabsTrigger>
           <TabsTrigger value="tarefas" className="px-4 py-2 text-sm">Tarefas ({relatedTasks.length})</TabsTrigger>
           <TabsTrigger value="historico" className="px-4 py-2 text-sm">Histórico</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="documentos" className="mt-4">
+          <DocumentScopePanel
+            clientId={clientId}
+            emptyDescription="Envie documentos deste cliente para manter a ficha completa."
+          />
+        </TabsContent>
+
 
         <TabsContent value="visao" className="mt-4">
           <Card>
