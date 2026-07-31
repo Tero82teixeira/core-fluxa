@@ -533,3 +533,30 @@ export function useEntityHistory(organizationId: string | null, entityId?: strin
     },
   });
 }
+
+/** Movimentação manual (anotação) na linha do tempo do processo. */
+export function useAddProcessNote(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  const actor = useActor();
+  return useMutation({
+    mutationFn: async ({ processId, description }: { processId: string; description: string }) => {
+      const { error } = await db().from("process_movements").insert({
+        organization_id: organizationId,
+        process_id: processId,
+        description,
+        actor_name: actor.name,
+        created_by: actor.userId,
+      });
+      if (error) throw error;
+      await db()
+        .from("processes")
+        .update({ last_movement_at: new Date().toISOString(), updated_by: actor.userId })
+        .eq("id", processId)
+        .eq("organization_id", organizationId);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["process-movements", variables.processId] });
+      queryClient.invalidateQueries({ queryKey: ["process", variables.processId] });
+    },
+  });
+}
