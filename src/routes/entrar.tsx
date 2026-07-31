@@ -64,6 +64,10 @@ const AUTH_ENABLED = false;
 const DEMO_SUCCESS_MESSAGE =
   "Estrutura de cadastro pronta. A criação real da conta será ativada quando o banco de dados e a autenticação forem conectados.";
 
+const SIGNUP_SUCCESS_TITLE = "Cadastro validado com sucesso.";
+const SIGNUP_SUCCESS_SUBTITLE =
+  "A ativação da conta será concluída quando a autenticação da plataforma for conectada.";
+
 function translateAuthError(message: string, status?: number): string {
   const m = message.toLowerCase();
   if (m.includes("invalid login credentials")) return "E-mail ou senha incorretos. Verifique e tente novamente.";
@@ -90,6 +94,7 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; form?: string }>({});
   const [demoSuccess, setDemoSuccess] = useState(false);
+  const [validated, setValidated] = useState(false);
 
   const validate = () => {
     const next: typeof errors = {};
@@ -106,13 +111,19 @@ function AuthPage() {
     event.preventDefault();
     if (loading) return;
     setDemoSuccess(false);
-    if (!validate()) return;
+    if (!validate()) {
+      setValidated(false);
+      return;
+    }
 
-    // TODO(auth): substituir por integração real com Supabase Auth quando AUTH_ENABLED === true.
     if (!AUTH_ENABLED) {
       setErrors({});
-      setDemoSuccess(true);
-      toast.success(DEMO_SUCCESS_MESSAGE);
+      if (mode === "signup") {
+        setValidated(true);
+      } else {
+        setDemoSuccess(true);
+        toast.success(DEMO_SUCCESS_MESSAGE);
+      }
       return;
     }
 
@@ -147,7 +158,6 @@ function AuthPage() {
       setErrors((e) => ({ ...e, email: "Informe seu e-mail para receber o link de redefinição." }));
       return;
     }
-    // TODO(auth): recuperação real de senha após conectar o Supabase Auth.
     if (!AUTH_ENABLED) {
       toast.success(DEMO_SUCCESS_MESSAGE);
       return;
@@ -251,16 +261,6 @@ function AuthPage() {
               </div>
             )}
 
-            {demoSuccess && (
-              <div
-                role="status"
-                className="mt-5 flex items-start gap-2.5 rounded-lg border border-brand/30 bg-brand/10 px-3 py-2.5 text-sm text-foreground"
-              >
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={2} />
-                <span>{DEMO_SUCCESS_MESSAGE}</span>
-              </div>
-            )}
-
             <form onSubmit={submit} noValidate className="mt-6 space-y-4">
               {mode === "signup" && (
                 <div className="space-y-1.5">
@@ -268,7 +268,11 @@ function AuthPage() {
                   <Input
                     id="name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setValidated(false);
+                      setErrors((prev) => ({ ...prev, name: undefined }));
+                    }}
                     maxLength={120}
                     autoComplete="name"
                     aria-invalid={Boolean(errors.name)}
@@ -285,7 +289,11 @@ function AuthPage() {
                   type="email"
                   inputMode="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setValidated(false);
+                    setErrors((prev) => ({ ...prev, email: undefined }));
+                  }}
                   maxLength={255}
                   autoComplete="email"
                   aria-invalid={Boolean(errors.email)}
@@ -301,7 +309,11 @@ function AuthPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setValidated(false);
+                      setErrors((prev) => ({ ...prev, password: undefined }));
+                    }}
                     autoComplete={mode === "login" ? "current-password" : "new-password"}
                     aria-invalid={Boolean(errors.password)}
                     className="h-11 pr-11 transition-shadow duration-200 focus-visible:ring-2"
@@ -317,6 +329,16 @@ function AuthPage() {
                 </div>
                 {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
               </div>
+
+              {validated && mode === "signup" && (
+                <div
+                  role="status"
+                  className="rounded-lg border border-brand/30 bg-brand/10 px-3 py-2.5 text-sm text-foreground"
+                >
+                  <p className="font-medium">{SIGNUP_SUCCESS_TITLE}</p>
+                  <p className="mt-0.5 text-muted-foreground">{SIGNUP_SUCCESS_SUBTITLE}</p>
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                 <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
@@ -334,7 +356,7 @@ function AuthPage() {
 
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || validated}
                 aria-busy={loading}
                 className="h-11 w-full bg-brand text-brand-foreground text-base font-semibold transition-transform duration-200 hover:bg-brand/90 active:scale-[0.99] disabled:opacity-70"
               >
@@ -343,6 +365,8 @@ function AuthPage() {
                     <Loader2 className="h-4 w-4 animate-spin" />
                     {mode === "login" ? "Entrando…" : "Criando conta…"}
                   </>
+                ) : validated && mode === "signup" ? (
+                  "Cadastro validado"
                 ) : mode === "login" ? (
                   "Entrar"
                 ) : (
@@ -357,6 +381,7 @@ function AuthPage() {
                 setMode(mode === "login" ? "signup" : "login");
                 setErrors({});
                 setDemoSuccess(false);
+                setValidated(false);
               }}
               className="mt-5 w-full text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
@@ -368,6 +393,10 @@ function AuthPage() {
                 "Já tenho conta"
               )}
             </button>
+
+            {!AUTH_ENABLED && import.meta.env.DEV && (
+              <p className="mt-6 text-center text-xs text-muted-foreground/70">Modo de demonstração</p>
+            )}
           </CardContent>
         </Card>
       </section>
