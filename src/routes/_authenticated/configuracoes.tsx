@@ -29,10 +29,14 @@ export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: SettingsPage,
 });
 
+function checklistOf(type: { default_checklist: unknown }): string[] {
+  return Array.isArray(type.default_checklist) ? (type.default_checklist as string[]) : [];
+}
+
 const emptyForm = { id: "", name: "", description: "", default_days: "", default_value: "", checklist: "" };
 
 function SettingsPage() {
-  const { organizationId, organizationName } = useWorkspace();
+  const { organizationId, membership } = useWorkspace();
   const permissions = usePermissions();
   const serviceTypes = useAllServiceTypes(organizationId);
   const saveServiceType = useSaveServiceType(organizationId);
@@ -63,7 +67,7 @@ function SettingsPage() {
       setForm(emptyForm);
       toast.success(form.id ? "Tipo de serviço atualizado." : "Tipo de serviço criado.");
     } catch (error) {
-      toast.error(describeError(error, "tipo de serviço"));
+      toast.error(describeError(error, "servico"));
     }
   };
 
@@ -72,7 +76,7 @@ function SettingsPage() {
       <header className="space-y-1">
         <h1 className="page-title">Configurações</h1>
         <p className="page-subtitle">
-          Catálogo operacional de {organizationName ?? "sua empresa"}: prazos padrão, valores e checklists reutilizáveis.
+          Catálogo operacional de {membership?.organizations?.trade_name || membership?.organizations?.legal_name || "sua empresa"}: prazos padrão, valores e checklists reutilizáveis.
         </p>
       </header>
 
@@ -175,7 +179,7 @@ function SettingsPage() {
                     <p className="helper-text mt-0.5 truncate">
                       {type.default_days ? `${type.default_days} dias` : "Sem prazo padrão"}
                       {" · "}
-                      {(type.default_checklist ?? []).length} itens de checklist
+                      {checklistOf(type).length} itens de checklist
                       {type.description ? ` · ${type.description}` : ""}
                     </p>
                   </div>
@@ -196,7 +200,7 @@ function SettingsPage() {
                               description: type.description ?? "",
                               default_days: type.default_days ? String(type.default_days) : "",
                               default_value: type.default_value ? String(type.default_value) : "",
-                              checklist: (type.default_checklist ?? []).join("\n"),
+                              checklist: checklistOf(type).join("\n"),
                             })
                           }
                         >
@@ -210,7 +214,7 @@ function SettingsPage() {
                               await archiveServiceType.mutateAsync({ id: type.id, active: !type.is_active });
                               toast.success(type.is_active ? "Tipo desativado." : "Tipo reativado.");
                             } catch (error) {
-                              toast.error(describeError(error, "tipo de serviço"));
+                              toast.error(describeError(error, "servico"));
                             }
                           }}
                         >
