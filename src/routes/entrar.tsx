@@ -334,7 +334,7 @@ function AuthPage() {
               {validated && mode === "signup" && (
                 <div
                   role="status"
-                  className="rounded-lg border border-brand/30 bg-brand/10 px-3 py-2.5 text-sm text-foreground"
+                  className="rounded-lg border border-success/30 bg-success/10 px-3 py-2.5 text-sm text-foreground"
                 >
                   <p className="font-medium">{SIGNUP_SUCCESS_TITLE}</p>
                   <p className="mt-0.5 text-muted-foreground">{SIGNUP_SUCCESS_SUBTITLE}</p>
