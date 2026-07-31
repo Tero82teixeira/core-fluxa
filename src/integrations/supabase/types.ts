@@ -447,6 +447,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           created_at: string
+          created_by: string | null
           document: string | null
           document_digits: string | null
           email: string | null
@@ -466,6 +467,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           created_at?: string
+          created_by?: string | null
           document?: string | null
           document_digits?: string | null
           email?: string | null
@@ -485,6 +487,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           created_at?: string
+          created_by?: string | null
           document?: string | null
           document_digits?: string | null
           email?: string | null
@@ -899,6 +902,7 @@ export type Database = {
         Returns: {
           is_active: boolean
           membership_id: string
+          membership_status: string
           onboarding_completed_at: string
           onboarding_step: number
           organization_id: string

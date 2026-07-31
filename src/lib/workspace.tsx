@@ -1,16 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-
-import { useMemberships, useProfile, useRolePermissions, type Membership } from "@/hooks/use-session";
-import type { AppRole, PermissionKey } from "@/lib/domain";
 import type { User } from "@supabase/supabase-js";
+
 import { supabase } from "@/integrations/supabase/client";
-import { logTechnical } from "@/lib/errors";
+import { useAuth } from "@/lib/auth";
+import { useRolePermissions, type Membership } from "@/hooks/use-session";
+import type { AppRole, PermissionKey } from "@/lib/domain";
 
 const STORAGE_KEY = "fluxa-workspace";
-const BOOTSTRAP_TIMEOUT_MS = 10_000;
+const WORKSPACE_TIMEOUT_MS = 12_000;
+
+const MEMBERSHIP_SELECT =
+  "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, document, phone, whatsapp, onboarding_completed, onboarding_completed_at, onboarding_step, organization_settings(zip_code, street, number, district, city, state, main_services, clients_range, employees_range))";
 
 export type WorkspaceStatus = "idle" | "loading" | "bootstrapping" | "ready" | "error";
+
+type Profile = { id: string; full_name: string | null; email: string | null; avatar_url: string | null } | null;
 
 type WorkspaceContextValue = {
   status: WorkspaceStatus;
@@ -29,17 +33,16 @@ type WorkspaceContextValue = {
   bootstrapError: string | null;
   can: (permission: PermissionKey) => boolean;
   switchWorkspace: (organizationId: string) => void;
-  ensureWorkspace: () => Promise<Membership>;
   refreshWorkspace: () => Promise<void>;
   retryWorkspace: () => void;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
-function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
+function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(message)), ms);
-    promise.then(
+    const timer = setTimeout(() => reject(new Error("WORKSPACE_TIMEOUT")), ms);
+    Promise.resolve(promise).then(
       (value) => {
         clearTimeout(timer);
         resolve(value);
@@ -52,152 +55,182 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
   });
 }
 
-export function WorkspaceProvider({ user, children }: { user: User | null; children: ReactNode }) {
-  const memberships = useMemberships(user);
-  const profile = useProfile(user);
-  const queryClient = useQueryClient();
+/** Mensagem específica — nunca genérica — para cada falha real do acesso. */
+function describeWorkspaceError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String((error as { message?: string })?.message ?? "");
+  const code = (error as { code?: string })?.code ?? "";
+
+  if (message.includes("WORKSPACE_TIMEOUT"))
+    return "A configuração do seu acesso demorou mais que o esperado. Tente novamente.";
+  if (message.includes("BOOTSTRAP_NO_SESSION") || code === "28000")
+    return "Sua sessão expirou. Entre novamente para continuar.";
+  if (message.includes("BOOTSTRAP_PROFILE_NOT_FOUND"))
+    return "Seu perfil não pôde ser carregado (BOOTSTRAP_PROFILE_NOT_FOUND).";
+  if (message.includes("BOOTSTRAP_ORGANIZATION_NOT_FOUND"))
+    return "A empresa vinculada à sua conta não foi encontrada (BOOTSTRAP_ORGANIZATION_NOT_FOUND).";
+  if (message.includes("BOOTSTRAP_MEMBERSHIP_NOT_FOUND"))
+    return "Seu vínculo com a empresa não foi encontrado (BOOTSTRAP_MEMBERSHIP_NOT_FOUND).";
+  if (message.includes("BOOTSTRAP_MEMBERSHIP_INACTIVE"))
+    return "Seu vínculo com a empresa está inativo. Peça a reativação a um administrador.";
+  if (code === "42501" || message.toLowerCase().includes("row-level security"))
+    return "Seu usuário não tem permissão para ler os dados da empresa.";
+  if (message.toLowerCase().includes("failed to fetch") || message.toLowerCase().includes("network"))
+    return "Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.";
+  return message ? `Não foi possível configurar seu acesso: ${message}` : "Não foi possível configurar seu acesso.";
+}
+
+export function WorkspaceProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+
+  const [status, setStatus] = useState<WorkspaceStatus>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile>(null);
+  const [list, setList] = useState<Membership[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [bootstrapping, setBootstrapping] = useState(false);
-  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
-  const bootstrapPromise = useRef<Promise<Membership> | null>(null);
-  const bootstrapAttempted = useRef(false);
-  const membershipsRef = useRef<Membership[]>([]);
+
+  // Trava central: uma única sequência de bootstrap/carregamento por vez.
+  const inflight = useRef<Promise<void> | null>(null);
+  const runId = useRef(0);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored) setSelected(stored);
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored) setSelected(stored);
+    } catch {
+      /* armazenamento indisponível */
+    }
   }, []);
 
-  const list = memberships.data ?? [];
-  membershipsRef.current = list;
+  const fetchWorkspace = useCallback(async (currentUserId: string) => {
+    const [profileResult, membershipsResult] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, email, avatar_url").eq("id", currentUserId).maybeSingle(),
+      supabase
+        .from("organization_members")
+        .select(MEMBERSHIP_SELECT)
+        .eq("user_id", currentUserId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: true }),
+    ]);
+    if (profileResult.error) throw profileResult.error;
+    if (membershipsResult.error) throw membershipsResult.error;
+
+    const nextProfile = profileResult.data as Profile;
+    const nextList = (membershipsResult.data ?? []) as unknown as Membership[];
+    if (!nextProfile) throw new Error("BOOTSTRAP_PROFILE_NOT_FOUND");
+
+    const active = nextList.find((item) => item.user_id === currentUserId && item.is_active);
+    if (!active) throw new Error("BOOTSTRAP_MEMBERSHIP_NOT_FOUND");
+    if (!active.organizations) throw new Error("BOOTSTRAP_ORGANIZATION_NOT_FOUND");
+
+    return { profile: nextProfile, list: nextList };
+  }, []);
+
+  /** Carregamento completo: bootstrap (uma vez) + consultas + validação. */
+  const load = useCallback(
+    (options: { bootstrap: boolean }) => {
+      if (!userId) {
+        setStatus("idle");
+        return Promise.resolve();
+      }
+      if (inflight.current) return inflight.current;
+
+      const id = ++runId.current;
+      setError(null);
+      setStatus(options.bootstrap ? "bootstrapping" : "loading");
+
+      const run = (async () => {
+        try {
+          if (options.bootstrap) {
+            console.info("[Workspace] bootstrap iniciado");
+            const { data, error: rpcError } = await withTimeout(
+              supabase.rpc("bootstrap_organization"),
+              WORKSPACE_TIMEOUT_MS,
+            );
+            if (rpcError) throw rpcError;
+            const result = Array.isArray(data) ? data[0] : data;
+            if (!result?.profile_id) throw new Error("BOOTSTRAP_PROFILE_NOT_FOUND");
+            if (!result.organization_id) throw new Error("BOOTSTRAP_ORGANIZATION_NOT_FOUND");
+            if (!result.membership_id) throw new Error("BOOTSTRAP_MEMBERSHIP_NOT_FOUND");
+            console.info("[Workspace] bootstrap concluído");
+          }
+
+          if (id !== runId.current) return;
+          setStatus("loading");
+
+          const next = await withTimeout(fetchWorkspace(userId), WORKSPACE_TIMEOUT_MS);
+          if (id !== runId.current) return;
+
+          setProfile(next.profile);
+          setList(next.list);
+          setStatus("ready");
+          console.info("[Workspace] ready");
+        } catch (caught) {
+          if (id !== runId.current) return;
+          console.error("[Workspace] falha", {
+            message: caught instanceof Error ? caught.message : undefined,
+            code: (caught as { code?: string })?.code,
+            details: (caught as { details?: string })?.details,
+            hint: (caught as { hint?: string })?.hint,
+            userId,
+          });
+          setError(describeWorkspaceError(caught));
+          setStatus("error");
+        } finally {
+          inflight.current = null;
+        }
+      })();
+
+      inflight.current = run;
+      return run;
+    },
+    [fetchWorkspace, userId],
+  );
+
+  // Único disparo automático: depende apenas da identidade do usuário.
+  useEffect(() => {
+    runId.current += 1;
+    inflight.current = null;
+    if (!userId) {
+      setStatus("idle");
+      setError(null);
+      setProfile(null);
+      setList([]);
+      return;
+    }
+    setProfile(null);
+    setList([]);
+    void load({ bootstrap: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const refreshWorkspace = useCallback(async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["memberships", user?.id] }),
-      queryClient.invalidateQueries({ queryKey: ["profile", user?.id] }),
-    ]);
-  }, [queryClient, user?.id]);
-
-  // Trava central: uma única chamada de bootstrap por vez, sempre finalizada.
-  const ensureWorkspace = useCallback(async () => {
-    if (!user) throw new Error("Sua sessão expirou.");
-    const existing = membershipsRef.current.find(
-      (item) => item.user_id === user.id && item.is_active && Boolean(item.organizations),
-    );
-    if (existing) return existing;
-    if (bootstrapPromise.current) return bootstrapPromise.current;
-
-    bootstrapAttempted.current = true;
-    setBootstrapping(true);
-    setBootstrapError(null);
-    console.info("[Workspace] bootstrap iniciado", { userId: user.id });
-
-    bootstrapPromise.current = (async () => {
-      try {
-        const { data, error } = await withTimeout(
-          Promise.resolve(supabase.rpc("bootstrap_organization")),
-          BOOTSTRAP_TIMEOUT_MS,
-          "BOOTSTRAP_TIMEOUT",
-        );
-        if (error) throw error;
-        const result = data?.[0];
-        if (!result?.organization_id) throw new Error("BOOTSTRAP_ORGANIZATION_NOT_CREATED");
-        if (!result.membership_id || !result.is_active) throw new Error("BOOTSTRAP_MEMBERSHIP_NOT_CREATED");
-
-        await withTimeout(refreshWorkspace(), BOOTSTRAP_TIMEOUT_MS, "BOOTSTRAP_TIMEOUT");
-        const refreshed = queryClient.getQueryData<Membership[]>(["memberships", user.id]) ?? [];
-        const confirmed = refreshed.find(
-          (item) => item.id === result.membership_id && item.user_id === user.id && item.is_active,
-        );
-        if (!confirmed?.organizations) throw new Error("BOOTSTRAP_MEMBERSHIP_NOT_CREATED");
-        console.info("[Workspace] bootstrap concluído");
-        return confirmed;
-      } catch (error) {
-        logTechnical("bootstrap_organization", error);
-        console.error("[Workspace] falha", {
-          message: error instanceof Error ? error.message : undefined,
-          code: typeof error === "object" && error && "code" in error ? (error as { code?: string }).code : undefined,
-          details:
-            typeof error === "object" && error && "details" in error
-              ? (error as { details?: string }).details
-              : undefined,
-          hint: typeof error === "object" && error && "hint" in error ? (error as { hint?: string }).hint : undefined,
-        });
-        setBootstrapError("Não foi possível configurar seu acesso.");
-        throw error;
-      } finally {
-        setBootstrapping(false);
-        bootstrapPromise.current = null;
-      }
-    })();
-    return bootstrapPromise.current;
-  }, [queryClient, refreshWorkspace, user]);
-
-  // Primeiro acesso ou registro parcial: uma única tentativa automática de reparo.
-  useEffect(() => {
-    if (!user) return;
-    if (memberships.isLoading || memberships.isFetching || !memberships.isSuccess) return;
-    if (list.length > 0 || bootstrapAttempted.current || bootstrapPromise.current) return;
-    void ensureWorkspace().catch(() => undefined);
-  }, [ensureWorkspace, list.length, memberships.isFetching, memberships.isLoading, memberships.isSuccess, user]);
-
-  // Consultas bloqueadas por RLS ou rede: encerra em erro em vez de girar para sempre.
-  useEffect(() => {
-    if (memberships.isError || profile.isError) {
-      setBootstrapError("Não foi possível configurar seu acesso.");
+    if (!userId) return;
+    try {
+      const next = await withTimeout(fetchWorkspace(userId), WORKSPACE_TIMEOUT_MS);
+      setProfile(next.profile);
+      setList(next.list);
+      setStatus("ready");
+    } catch (caught) {
+      console.error("[Workspace] falha ao atualizar", {
+        message: caught instanceof Error ? caught.message : undefined,
+      });
+      setError(describeWorkspaceError(caught));
+      setStatus("error");
     }
-  }, [memberships.isError, profile.isError]);
-
-  useEffect(() => {
-    if (!user) {
-      bootstrapAttempted.current = false;
-      setBootstrapError(null);
-    }
-  }, [user]);
+  }, [fetchWorkspace, userId]);
 
   const retryWorkspace = useCallback(() => {
-    bootstrapAttempted.current = false;
-    setBootstrapError(null);
-    void refreshWorkspace();
-  }, [refreshWorkspace]);
+    if (inflight.current) return;
+    void load({ bootstrap: true });
+  }, [load]);
 
   const membership = list.find((m) => m.organization_id === selected) ?? list[0] ?? null;
   const permissions = useRolePermissions(membership?.role);
 
-  // Watchdog: nenhuma tela pode ficar presa em carregamento.
-  const settled = Boolean(bootstrapError) || Boolean(membership?.organizations && profile.data);
-  useEffect(() => {
-    if (!user || settled) return;
-    const timer = setTimeout(() => setBootstrapError("Não foi possível configurar seu acesso."), BOOTSTRAP_TIMEOUT_MS);
-    return () => clearTimeout(timer);
-  }, [settled, user]);
-
-  useEffect(() => {
-    if (user) console.info("[Workspace] início", { userId: user.id });
-  }, [user]);
-  useEffect(() => {
-    if (profile.data) console.info("[Workspace] profile carregado");
-  }, [profile.data]);
-  useEffect(() => {
-    if (membership) console.info("[Workspace] membership carregado");
-    if (membership?.organizations) console.info("[Workspace] organização carregada");
-  }, [membership]);
-
   const value = useMemo<WorkspaceContextValue>(() => {
     const granted = new Set(permissions.data ?? []);
-    const querying = memberships.isLoading || memberships.isFetching || profile.isLoading || profile.isFetching;
-    const ready = Boolean(
-      user && profile.data && membership?.organizations && membership.is_active && membership.user_id === user.id,
-    );
-
-    let status: WorkspaceStatus;
-    if (!user) status = "idle";
-    else if (ready) status = "ready";
-    else if (bootstrapError) status = "error";
-    else if (bootstrapping) status = "bootstrapping";
-    else if (querying) status = "loading";
-    else if (memberships.isSuccess && list.length === 0 && !bootstrapAttempted.current) status = "bootstrapping";
-    else status = "error";
+    const ready = status === "ready" && Boolean(membership?.organizations);
 
     return {
       status,
@@ -205,40 +238,27 @@ export function WorkspaceProvider({ user, children }: { user: User | null; child
       bootstrapping: status === "bootstrapping",
       ready,
       user,
-      displayName: profile.data?.full_name || user?.email || "Usuário",
+      displayName: profile?.full_name || user?.email || "Usuário",
       memberships: list,
       membership,
       organizationId: membership?.organization_id ?? null,
       role: membership?.role ?? null,
       onboardingCompleted: Boolean(membership?.organizations?.onboarding_completed_at),
       onboardingStep: membership?.organizations?.onboarding_step ?? 0,
-      bootstrapError: status === "error" ? bootstrapError ?? "Não foi possível configurar seu acesso." : null,
+      bootstrapError: status === "error" ? error ?? "Não foi possível configurar seu acesso." : null,
       can: (permission) => granted.has(permission),
       switchWorkspace: (organizationId) => {
-        window.localStorage.setItem(STORAGE_KEY, organizationId);
+        try {
+          window.localStorage.setItem(STORAGE_KEY, organizationId);
+        } catch {
+          /* armazenamento indisponível */
+        }
         setSelected(organizationId);
       },
-      ensureWorkspace,
       refreshWorkspace,
       retryWorkspace,
     };
-  }, [
-    permissions.data,
-    memberships.isLoading,
-    memberships.isFetching,
-    memberships.isSuccess,
-    profile.isLoading,
-    profile.isFetching,
-    profile.data,
-    user,
-    list,
-    membership,
-    bootstrapping,
-    bootstrapError,
-    ensureWorkspace,
-    refreshWorkspace,
-    retryWorkspace,
-  ]);
+  }, [permissions.data, status, error, user, profile, list, membership, refreshWorkspace, retryWorkspace]);
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }

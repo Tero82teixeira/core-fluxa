@@ -1,21 +1,17 @@
-import { useEffect } from "react";
 import { createFileRoute, Outlet, redirect, useLocation, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
-import { DEMO_MODE } from "@/lib/demo";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    if (DEMO_MODE) {
-      const { data } = await supabase.auth.getUser();
-      return { user: data?.user ?? null };
-    }
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/entrar" });
     return { user: data.user };
@@ -31,7 +27,7 @@ function OnboardingGate() {
   const onOnboarding = location.pathname.startsWith("/onboarding");
 
   useEffect(() => {
-    if (DEMO_MODE || status !== "ready") return;
+    if (status !== "ready") return;
     if (!onboardingCompleted && !onOnboarding) navigate({ to: "/onboarding", replace: true });
     if (onboardingCompleted && onOnboarding) navigate({ to: "/central", replace: true });
   }, [status, onboardingCompleted, onOnboarding, navigate]);
@@ -40,8 +36,11 @@ function OnboardingGate() {
 }
 
 /** Recuperação determinística quando o acesso não pôde ser configurado. */
-function WorkspaceRecovery({ onSignOut }: { onSignOut: () => void }) {
-  const { bootstrapError, retryWorkspace } = useWorkspace();
+function WorkspaceRecovery() {
+  const { bootstrapError, retryWorkspace, status } = useWorkspace();
+  const { signOut, signingOut } = useAuth();
+  const retrying = status === "loading" || status === "bootstrapping";
+
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-6 text-center">
       <div className="space-y-1">
@@ -50,14 +49,19 @@ function WorkspaceRecovery({ onSignOut }: { onSignOut: () => void }) {
       </div>
       <div className="flex flex-wrap justify-center gap-2">
         <button
+          type="button"
           onClick={retryWorkspace}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          disabled={retrying}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-70"
         >
+          {retrying && <Loader2 className="h-4 w-4 animate-spin" />}
           Tentar novamente
         </button>
         <button
-          onClick={onSignOut}
-          className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          type="button"
+          onClick={() => void signOut()}
+          disabled={signingOut}
+          className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-70"
         >
           Sair da conta
         </button>
@@ -66,40 +70,33 @@ function WorkspaceRecovery({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
-function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
+function WorkspaceContent() {
   const { status } = useWorkspace();
-  if (!DEMO_MODE && status === "error") return <WorkspaceRecovery onSignOut={onSignOut} />;
+  if (status === "error") return <WorkspaceRecovery />;
   return <Outlet />;
 }
 
 function AuthenticatedLayout() {
-  const { user } = Route.useRouteContext();
+  const { status: authStatus, signOut } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const handleSignOut = () => void signOut();
 
-  const handleSignOut = async () => {
-    await queryClient.cancelQueries();
-    await supabase.auth.signOut();
-    queryClient.clear();
-    window.localStorage.removeItem("fluxa-workspace");
-    navigate({ to: "/entrar", replace: true });
-  };
-
-  // Sessão expirada ou encerrada em outra aba: volta para o login.
+  // Sessão encerrada em outra aba ou expirada: volta para o login.
   useEffect(() => {
-    if (DEMO_MODE) return;
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") {
-        queryClient.clear();
-        window.localStorage.removeItem("fluxa-workspace");
-        navigate({ to: "/entrar", replace: true });
-      }
-    });
-    return () => sub.subscription.unsubscribe();
-  }, [navigate, queryClient]);
+    if (authStatus === "unauthenticated") navigate({ to: "/entrar", replace: true });
+  }, [authStatus, navigate]);
+
+  if (authStatus !== "authenticated") {
+    return (
+      <div className="flex min-h-dvh items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Verificando sua sessão…
+      </div>
+    );
+  }
 
   return (
-    <WorkspaceProvider user={user}>
+    <WorkspaceProvider>
       <OnboardingGate />
       <SidebarProvider>
         <div className="flex min-h-screen w-full bg-background">
@@ -107,7 +104,7 @@ function AuthenticatedLayout() {
           <SidebarInset className="min-w-0">
             <AppHeader onSignOut={handleSignOut} />
             <main className="min-w-0 flex-1">
-              <WorkspaceContent onSignOut={handleSignOut} />
+              <WorkspaceContent />
             </main>
           </SidebarInset>
         </div>
