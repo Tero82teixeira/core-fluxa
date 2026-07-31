@@ -25,16 +25,15 @@ export const Route = createFileRoute("/_authenticated")({
 
 /** Leva o usuário sem empresa (ou com onboarding pendente) para a configuração. */
 function OnboardingGate() {
-  const { loading, memberships, membership } = useWorkspace();
+  const { loading, memberships, onboardingCompleted } = useWorkspace();
   const location = useLocation();
   const navigate = useNavigate();
   const onOnboarding = location.pathname.startsWith("/onboarding");
 
   useEffect(() => {
     if (DEMO_MODE || loading || onOnboarding) return;
-    const pending = memberships.length === 0 || membership?.organizations?.onboarding_completed === false;
-    if (pending) navigate({ to: "/onboarding", replace: true });
-  }, [loading, memberships.length, membership, onOnboarding, navigate]);
+    if (memberships.length === 0 || !onboardingCompleted) navigate({ to: "/onboarding", replace: true });
+  }, [loading, memberships.length, onboardingCompleted, onOnboarding, navigate]);
 
   return null;
 }

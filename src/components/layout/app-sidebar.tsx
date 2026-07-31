@@ -28,7 +28,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   const collapsed = state === "collapsed" && !isMobile;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggleTheme } = useTheme();
-  const { displayName, role, membership } = useWorkspace();
+  const { displayName, role, membership, loading } = useWorkspace();
 
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false);
@@ -135,7 +135,9 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{displayName}</p>
-              <p className="truncate text-xs text-muted-foreground">{role ? ROLE[role].label : "Sem perfil"}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {loading ? "Carregando…" : role ? ROLE[role].label : "Configurando acesso…"}
+              </p>
             </div>
           )}
           {!collapsed && (

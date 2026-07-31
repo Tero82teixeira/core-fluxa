@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Building2, CheckCircle2, Loader2, MapPin, Settings2 } from "lucide-react";
@@ -38,11 +38,15 @@ const STEPS = [
 function Onboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, organizationId, membership } = useWorkspace();
+  const { organizationId, membership, loading, bootstrapError } = useWorkspace();
   const [orgId, setOrgId] = useState<string | null>(organizationId);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (organizationId) setOrgId(organizationId);
+  }, [organizationId]);
 
   const [company, setCompany] = useState({
     trade_name: membership?.organizations?.trade_name ?? "",
@@ -54,54 +58,49 @@ function Onboarding() {
   const [place, setPlace] = useState({ zip_code: "", street: "", number: "", district: "", city: "", state: "" });
   const [operation, setOperation] = useState({ main_services: "", clients_range: "", employees_range: "" });
 
+  /** Garante empresa + vínculo antes de qualquer escrita (idempotente no banco). */
+  const ensureOrganization = async () => {
+    if (orgId) return orgId;
+    const { data, error: rpcError } = await supabase.rpc("bootstrap_organization");
+    if (rpcError) throw rpcError;
+    const created = data?.[0]?.organization_id ?? null;
+    if (!created) throw new Error("Não foi possível preparar sua empresa.");
+    setOrgId(created);
+    await queryClient.invalidateQueries({ queryKey: ["memberships"] });
+    return created;
+  };
+
   const saveCompany = async () => {
     if (!company.trade_name.trim()) {
       setError("Informe o nome fantasia da empresa.");
       return false;
     }
+    const id = await ensureOrganization();
     const payload = {
       trade_name: company.trade_name.trim(),
-      legal_name: (company.legal_name.trim() || company.trade_name.trim()),
+      legal_name: company.legal_name.trim() || company.trade_name.trim(),
       document: company.document.trim() || null,
       document_digits: digits(company.document) || null,
       phone: company.phone.trim() || null,
       whatsapp: company.whatsapp.trim() || null,
     };
 
-    if (orgId) {
-      const { error: updateError } = await supabase.from("organizations").update(payload).eq("id", orgId);
-      if (updateError) throw updateError;
-      return true;
-    }
+    const { error: updateError } = await supabase.from("organizations").update(payload).eq("id", id);
+    if (updateError) throw updateError;
 
-    const { data, error: insertError } = await supabase
-      .from("organizations")
-      .insert(payload)
-      .select("id")
-      .single();
-    if (insertError) throw insertError;
+    await supabase
+      .from("organization_settings")
+      .upsert({ organization_id: id, portal_name: payload.trade_name }, { onConflict: "organization_id" });
 
-    const { error: memberError } = await supabase
-      .from("organization_members")
-      .insert({ organization_id: data.id, user_id: user!.id, role: "proprietario" });
-    if (memberError) throw memberError;
-
-    await supabase.from("organization_settings").insert({
-      organization_id: data.id,
-      portal_name: payload.trade_name,
-    });
-
-    setOrgId(data.id);
     await queryClient.invalidateQueries({ queryKey: ["memberships"] });
     return true;
   };
 
   const saveSettings = async (values: Record<string, string | null>) => {
-    if (!orgId) return false;
+    const id = await ensureOrganization();
     const { error: settingsError } = await supabase
       .from("organization_settings")
-      .update(values as never)
-      .eq("organization_id", orgId);
+      .upsert({ organization_id: id, ...values } as never, { onConflict: "organization_id" });
     if (settingsError) throw settingsError;
     return true;
   };
@@ -132,10 +131,11 @@ function Onboarding() {
         });
       }
       if (step === 3) {
+        const id = await ensureOrganization();
         const { error: finishError } = await supabase
           .from("organizations")
-          .update({ onboarding_completed: true })
-          .eq("id", orgId!);
+          .update({ onboarding_completed: true, onboarding_completed_at: new Date().toISOString() })
+          .eq("id", id);
         if (finishError) throw finishError;
         await queryClient.invalidateQueries({ queryKey: ["memberships"] });
         toast.success("Empresa configurada. Bem-vindo à Central de Comando.");
@@ -154,6 +154,14 @@ function Onboarding() {
   };
 
   const Icon = STEPS[step].icon;
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin" aria-hidden /> Preparando sua empresa…
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5 p-4 sm:p-6">
@@ -187,9 +195,9 @@ function Onboarding() {
             </div>
           </div>
 
-          {error && (
+          {(error || bootstrapError) && (
             <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
+              {error ?? bootstrapError}
             </p>
           )}
 

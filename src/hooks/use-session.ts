@@ -33,6 +33,7 @@ export type Membership = {
     legal_name: string;
     trade_name: string | null;
     onboarding_completed: boolean;
+    onboarding_completed_at: string | null;
   } | null;
 };
 
@@ -43,7 +44,9 @@ export function useMemberships() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organization_members")
-        .select("id, organization_id, role, organizations(id, legal_name, trade_name, onboarding_completed)")
+        .select(
+          "id, organization_id, role, organizations(id, legal_name, trade_name, onboarding_completed, onboarding_completed_at)",
+        )
         .eq("is_active", true)
         .order("created_at", { ascending: true });
       if (error) throw error;
