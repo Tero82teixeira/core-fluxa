@@ -18,6 +18,7 @@ import { useWorkspace } from "@/lib/workspace";
 import { useClients, useCompleteTask, useProcesses, useRecentActivity, useTasks } from "@/hooks/use-operations";
 import type { ProcessRow } from "@/hooks/use-operations";
 import { Card, CardContent } from "@/components/ui/card";
+import { useDocumentsSummary, useMonitoring } from "@/hooks/use-documents";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -61,6 +62,8 @@ function Central() {
   const tasks = useTasks(organizationId);
   const activity = useRecentActivity(organizationId);
   const completeTask = useCompleteTask(organizationId);
+  const monitoring = useMonitoring(organizationId);
+  const documentsSummary = useDocumentsSummary(organizationId);
   const [drawer, setDrawer] = useState<string | null>(null);
 
   const rows = processes.data ?? [];
@@ -86,6 +89,33 @@ function Central() {
   const forecast = open.reduce((total, process) => total + (process.value ?? 0), 0);
 
   const metrics = [
+    {
+      key: "vencimentos",
+      label: "Vencimentos em 30 dias",
+      value: (monitoring.data ?? []).filter((item) => item.is_expiring_soon).length,
+      description: "Licenças, certidões e registros",
+      tooltip: "Itens monitorados que vencem nos próximos 30 dias.",
+      icon: CalendarClock,
+      onClick: () => navigate({ to: "/monitoramento" }),
+    },
+    {
+      key: "vencidos",
+      label: "Itens vencidos",
+      value: (monitoring.data ?? []).filter((item) => item.is_expired).length,
+      description: "Exigem regularização imediata",
+      tooltip: "Itens monitorados com validade já expirada.",
+      icon: AlertTriangle,
+      onClick: () => navigate({ to: "/monitoramento" }),
+    },
+    {
+      key: "docs-analise",
+      label: "Documentos em análise",
+      value: documentsSummary.data?.pending ?? 0,
+      description: "Aguardando conferência interna",
+      tooltip: "Documentos recebidos que ainda não foram aprovados ou rejeitados.",
+      icon: FileStack,
+      onClick: () => navigate({ to: "/documentos" }),
+    },
     {
       key: "ativos",
       label: "Processos ativos",
