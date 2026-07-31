@@ -173,14 +173,14 @@ function ProcessDetail() {
         </CardContent>
       </Card>
 
-
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Tabs defaultValue="timeline">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="timeline">Linha do tempo</TabsTrigger>
-            <TabsTrigger value="documentos">Documentos</TabsTrigger>
-            <TabsTrigger value="tarefas">Tarefas ({relatedTasks.length})</TabsTrigger>
+          <TabsList className="h-auto flex-wrap gap-1.5 p-1.5">
+            <TabsTrigger value="timeline" className="px-4 py-2 text-sm">Linha do tempo</TabsTrigger>
+            <TabsTrigger value="documentos" className="px-4 py-2 text-sm">Documentos</TabsTrigger>
+            <TabsTrigger value="tarefas" className="px-4 py-2 text-sm">Tarefas ({relatedTasks.length})</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="timeline">
             <Card>
