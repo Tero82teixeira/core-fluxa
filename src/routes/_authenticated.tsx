@@ -1,11 +1,12 @@
-import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { createFileRoute, Outlet, redirect, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
-import { WorkspaceProvider } from "@/lib/workspace";
+import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 import { DEMO_MODE } from "@/lib/demo";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -22,6 +23,22 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
 });
 
+/** Leva o usuário sem empresa (ou com onboarding pendente) para a configuração. */
+function OnboardingGate() {
+  const { loading, memberships, membership } = useWorkspace();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const onOnboarding = location.pathname.startsWith("/onboarding");
+
+  useEffect(() => {
+    if (DEMO_MODE || loading || onOnboarding) return;
+    const pending = memberships.length === 0 || membership?.organizations?.onboarding_completed === false;
+    if (pending) navigate({ to: "/onboarding", replace: true });
+  }, [loading, memberships.length, membership, onOnboarding, navigate]);
+
+  return null;
+}
+
 function AuthenticatedLayout() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
@@ -34,8 +51,21 @@ function AuthenticatedLayout() {
     navigate({ to: "/entrar", replace: true });
   };
 
+  // Sessão expirada ou encerrada em outra aba: volta para o login.
+  useEffect(() => {
+    if (DEMO_MODE) return;
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        queryClient.clear();
+        navigate({ to: "/entrar", replace: true });
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [navigate, queryClient]);
+
   return (
     <WorkspaceProvider user={user}>
+      <OnboardingGate />
       <SidebarProvider>
         <div className="flex min-h-screen w-full bg-background">
           <AppSidebar onSignOut={handleSignOut} />
