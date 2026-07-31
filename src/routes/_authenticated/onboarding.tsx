@@ -100,7 +100,7 @@ function Onboarding() {
     if (!orgId) return false;
     const { error: settingsError } = await supabase
       .from("organization_settings")
-      .update(values)
+      .update(values as never)
       .eq("organization_id", orgId);
     if (settingsError) throw settingsError;
     return true;
