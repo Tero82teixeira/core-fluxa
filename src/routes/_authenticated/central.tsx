@@ -195,10 +195,10 @@ function Central() {
     <TooltipProvider delayDuration={200}>
       <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">
         <header>
-          <h2 className="font-display text-xl font-semibold text-balance sm:text-2xl">
+          <h1 className="page-title text-balance sm:text-[1.6rem]">
             {greeting()}, {firstName(displayName)}. Aqui está o pulso da sua operação.
-          </h2>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+          </h1>
+          <p className="page-subtitle mt-2">
             Você possui {radar.length} prioridades, {groups.criticos.length} prazos críticos e{" "}
             {groups.aguardando.length + groups.parados.length} processos aguardando ação.
           </p>
@@ -213,16 +213,24 @@ function Central() {
                   onClick={metric.onClick}
                   className="rounded-xl text-left outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <Card className="h-full transition hover:border-brand/40 hover:shadow-sm">
-                    <CardContent className="p-5">
+                  <Card
+                    className={`h-full transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md ${
+                      metric.key === "prazos" && Number(metric.value) > 0 ? "border-destructive/40 bg-destructive/[0.04]" : ""
+                    }`}
+                  >
+                    <CardContent className="p-6">
                       <div className="flex items-start justify-between gap-3">
-                        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                          {metric.label}
-                        </p>
-                        <metric.icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                        <p className="field-label">{metric.label}</p>
+                        <metric.icon className="size-4.5 shrink-0 text-muted-foreground" aria-hidden />
                       </div>
-                      <p className="mt-2 font-display text-3xl font-semibold">{metric.value}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{metric.description}</p>
+                      <p
+                        className={`metric-value mt-3 ${
+                          metric.key === "prazos" && Number(metric.value) > 0 ? "text-destructive" : ""
+                        }`}
+                      >
+                        {metric.value}
+                      </p>
+                      <p className="helper-text mt-1.5">{metric.description}</p>
                       <p
                         className={`mt-3 inline-flex items-center gap-1 text-xs font-medium ${
                           metric.up ? "text-success" : "text-caution"
@@ -242,28 +250,29 @@ function Central() {
         </section>
 
         <section>
-          <h3 className="text-sm font-semibold">Pulso da operação</h3>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          <h2 className="section-title">Pulso da operação</h2>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {pulse.map((item) => (
               <button
                 key={item.key}
                 type="button"
                 onClick={() => setDrawer(item.key)}
-                className="rounded-xl border border-border bg-card p-4 text-left transition hover:border-brand/40 hover:bg-muted/40"
+                aria-label={`${item.label}: ${item.count} processo(s)`}
+                className="min-h-[104px] rounded-xl border border-border bg-card p-5 text-left transition hover:border-brand/40 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
-                <item.icon className="size-4 text-muted-foreground" aria-hidden />
-                <p className="mt-3 font-display text-2xl font-semibold">{item.count}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{item.label}</p>
+                <item.icon className={`size-4.5 ${item.tone === "danger" ? "text-destructive" : "text-muted-foreground"}`} aria-hidden />
+                <p className={`metric-value mt-3 text-2xl ${item.tone === "danger" && item.count > 0 ? "text-destructive" : ""}`}>{item.count}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{item.label}</p>
               </button>
             ))}
           </div>
         </section>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-          <Card>
-            <CardContent className="p-5">
+          <Card className="border-brand/30 shadow-panel">
+            <CardContent className="p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="font-display text-base font-semibold">Radar de prioridades</h3>
+                <h2 className="section-title">Radar de prioridades</h2>
                 <Button variant="ghost" size="sm" asChild>
                   <Link to="/processos">Ver todos</Link>
                 </Button>
@@ -275,10 +284,15 @@ function Central() {
                     days !== null && days < 0 ? "Risco alto" : days !== null && days <= 2 ? "Risco médio" : "Sob controle";
                   const riskTone = risk === "Risco alto" ? "danger" : risk === "Risco médio" ? "warning" : "success";
                   return (
-                    <li key={process.id} className="rounded-lg border border-border p-3">
+                    <li
+                      key={process.id}
+                      className={`rounded-lg border p-4 transition hover:bg-muted/40 ${
+                        riskTone === "danger" ? "border-destructive/40 bg-destructive/[0.04]" : "border-border"
+                      }`}
+                    >
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{process.clients?.name}</p>
+                          <p className="truncate text-sm font-semibold">{process.clients?.name}</p>
                           <p className="truncate text-xs text-muted-foreground">
                             {process.code} · {process.service_types?.name}
                           </p>
@@ -288,15 +302,13 @@ function Central() {
                           <StatusBadge label={risk} tone={riskTone} />
                         </div>
                       </div>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Motivo: {process.next_action}
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <p className="helper-text mt-2">Motivo: {process.next_action}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         <span>Prazo {formatDate(process.due_date)}</span>
                         <span>Responsável {process.owner_name}</span>
                       </div>
                       <div className="mt-3">
-                        <Button size="sm" variant="outline" asChild>
+                        <Button variant="outline" asChild>
                           <Link to="/processos/$processId" params={{ processId: process.id }}>
                             Abrir processo
                           </Link>
@@ -312,7 +324,7 @@ function Central() {
           <div className="space-y-4">
             <Card>
               <CardContent className="p-5">
-                <h3 className="font-display text-base font-semibold">Pipeline</h3>
+                <h2 className="section-title">Pipeline</h2>
                 <ul className="mt-4 space-y-3">
                   {PIPELINE_STAGES.map((stage) => {
                     const count = open.filter((process) => stage.key.includes(process.stage)).length;
@@ -324,11 +336,11 @@ function Central() {
                           search={{ etapa: stage.key[0] }}
                           className="block rounded-md p-1 transition hover:bg-muted/50"
                         >
-                          <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center justify-between text-sm">
                             <span className="font-medium">{stage.label}</span>
                             <span className="text-muted-foreground">{count}</span>
                           </div>
-                          <Progress value={pct} className="mt-1.5 h-1.5" />
+                          <Progress value={pct} className="mt-2 h-2" />
                         </Link>
                       </li>
                     );
@@ -337,9 +349,9 @@ function Central() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-5">
-                <h3 className="font-display text-base font-semibold">Agenda operacional</h3>
+            <Card className="border-brand/25">
+              <CardContent className="p-5 sm:p-6">
+                <h2 className="section-title">Agenda operacional</h2>
                 <ul className="mt-4 space-y-3">
                   {agenda.map((task) => (
                     <li key={task.id} className="flex items-start gap-3">
@@ -348,9 +360,9 @@ function Central() {
                         aria-label={`Concluir ${task.title}`}
                         disabled={task.status === "concluida"}
                         onClick={() => completeTask.mutate(task.id)}
-                        className="mt-0.5 shrink-0 text-muted-foreground transition hover:text-success disabled:text-success"
+                        className="-m-1.5 mt-0 grid size-9 shrink-0 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-success focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:text-success"
                       >
-                        <CheckCircle2 className="size-4" aria-hidden />
+                        <CheckCircle2 className="size-4.5" aria-hidden />
                       </button>
                       <div className="min-w-0 flex-1">
                         <p
@@ -367,7 +379,7 @@ function Central() {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-4 text-[11px] text-muted-foreground">
+                <p className="helper-text mt-4">
                   Conclusões valem apenas nesta sessão de demonstração.
                 </p>
               </CardContent>
@@ -385,7 +397,7 @@ function Central() {
                   <p className="text-xs text-muted-foreground">
                     {item.processes?.code} · {item.processes?.clients?.name}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {item.actor_name ?? "Sistema"} · {relativeTime(item.created_at)}
                   </p>
                 </li>
