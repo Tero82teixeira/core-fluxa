@@ -3,8 +3,26 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useMemberships, useProfile, useRolePermissions, type Membership } from "@/hooks/use-session";
 import type { AppRole, PermissionKey } from "@/lib/domain";
 import type { User } from "@supabase/supabase-js";
+import { DEMO_MODE } from "@/lib/demo";
+import { DEMO_ORG_ID, DEMO_ORG_NAME, DEMO_USER } from "@/lib/demo-data";
 
 const STORAGE_KEY = "fluxa-workspace";
+
+/** Workspace fictício da demonstração — substituído pelos dados reais. */
+const DEMO_MEMBERSHIPS: Membership[] = [
+  {
+    id: "demo-membership",
+    organization_id: DEMO_ORG_ID,
+    role: "proprietario",
+    organizations: {
+      id: DEMO_ORG_ID,
+      legal_name: DEMO_ORG_NAME,
+      trade_name: "Vértice",
+      onboarding_completed: true,
+    },
+  },
+];
+
 
 type WorkspaceContextValue = {
   loading: boolean;
