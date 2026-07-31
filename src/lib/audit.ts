@@ -38,7 +38,18 @@ export type AuditAction =
   | "monitoring.created"
   | "monitoring.updated"
   | "monitoring.renewed"
-  | "monitoring.archived";
+  | "monitoring.archived"
+  | "task.archived"
+  | "task.restored"
+  | "task.assignee_changed"
+  | "task.comment_added"
+  | "invite.created"
+  | "invite.resent"
+  | "invite.cancelled"
+  | "invite.accepted"
+  | "member.deactivated"
+  | "member.reactivated"
+  | "member.responsibilities_transferred";
 
 type AuditInput = {
   organizationId: string;

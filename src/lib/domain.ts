@@ -17,7 +17,14 @@ export type ProcessStage =
   | "arquivado"
   | "cancelado";
 export type PriorityLevel = "baixa" | "media" | "alta" | "critica";
-export type TaskStatus = "pendente" | "em_andamento" | "concluida" | "cancelada";
+export type TaskStatus =
+  | "pendente"
+  | "em_andamento"
+  | "aguardando"
+  | "concluida"
+  | "cancelada"
+  | "arquivada";
+export type RecurrenceType = "none" | "daily" | "weekly" | "monthly";
 export type FinancialStatus = "nao_aplicavel" | "pendente" | "parcial" | "pago" | "atrasado";
 export type AppRole =
   | "superadmin"
@@ -84,15 +91,32 @@ export const PRIORITY: Record<PriorityLevel, { label: string; tone: Tone }> = {
   baixa: { label: "Baixa", tone: "neutral" },
   media: { label: "Média", tone: "info" },
   alta: { label: "Alta", tone: "caution" },
-  critica: { label: "Crítica", tone: "danger" },
+  critica: { label: "Urgente", tone: "danger" },
 };
 
 export const TASK_STATUS: Record<TaskStatus, { label: string; tone: Tone }> = {
-  pendente: { label: "Pendente", tone: "warning" },
+  pendente: { label: "Pendente", tone: "neutral" },
   em_andamento: { label: "Em andamento", tone: "info" },
+  aguardando: { label: "Aguardando", tone: "warning" },
   concluida: { label: "Concluída", tone: "success" },
   cancelada: { label: "Cancelada", tone: "neutral" },
+  arquivada: { label: "Arquivada", tone: "neutral" },
 };
+
+/** Colunas do quadro de tarefas (arrastar e soltar). */
+export const TASK_BOARD_STATUSES: TaskStatus[] = ["pendente", "em_andamento", "aguardando", "concluida"];
+
+export const TASK_OPEN_STATUSES: TaskStatus[] = ["pendente", "em_andamento", "aguardando"];
+
+export const RECURRENCE: Record<RecurrenceType, { label: string }> = {
+  none: { label: "Sem recorrência" },
+  daily: { label: "Diária" },
+  weekly: { label: "Semanal" },
+  monthly: { label: "Mensal" },
+};
+
+/** Funções oficiais oferecidas na gestão de equipe (valores internos já padronizados no banco). */
+export const TEAM_ROLES: AppRole[] = ["proprietario", "administrador", "operacional", "visualizador"];
 
 export const FINANCIAL_STATUS: Record<FinancialStatus, { label: string; tone: Tone }> = {
   nao_aplicavel: { label: "Não aplicável", tone: "neutral" },

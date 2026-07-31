@@ -72,6 +72,29 @@ export function describeError(error: unknown, context: Ctx = "salvar"): string {
     return "O vínculo selecionado pertence a outra empresa.";
   if (message.includes("document_checklist_mismatch"))
     return "O item de checklist não pertence a este processo.";
+  if (message.includes("task_client_process_mismatch"))
+    return "O cliente informado não corresponde ao cliente do processo selecionado.";
+  if (message.includes("task_process_org_mismatch") || message.includes("task_client_org_mismatch")
+      || message.includes("task_document_org_mismatch") || message.includes("task_monitoring_org_mismatch"))
+    return "O vínculo selecionado pertence a outra empresa.";
+  if (message.includes("task_assignee_not_member"))
+    return "O responsável escolhido não é um membro ativo desta empresa.";
+  if (message.includes("task_due_before_start"))
+    return "O prazo final não pode ser anterior à data inicial.";
+  if (message.includes("not_allowed")) return "Você não possui permissão para esta ação.";
+  if (message.includes("invite_not_found")) return "Convite não encontrado.";
+  if (message.includes("invite_expired")) return "Este convite expirou. Peça um novo convite.";
+  if (message.includes("invite_cancelled")) return "Este convite foi cancelado.";
+  if (message.includes("invite_already_accepted")) return "Este convite já foi utilizado.";
+  if (message.includes("invite_email_mismatch"))
+    return "Este convite foi enviado para outro e-mail. Entre com o e-mail convidado.";
+  if (message.includes("invalid_email")) return "Informe um e-mail válido.";
+  if (message.includes("invalid_role")) return "Função inválida para convite.";
+  if (message.includes("last_owner")) return "A empresa precisa ter ao menos um proprietário ativo.";
+  if (message.includes("cannot_change_own_role")) return "Você não pode alterar a sua própria função.";
+  if (message.includes("cannot_change_self")) return "Você não pode desativar o seu próprio vínculo.";
+  if (message.includes("member_not_found")) return "Membro não encontrado.";
+  if (message.includes("target_not_member")) return "O novo responsável precisa ser um membro ativo.";
   if (message.includes("payload too large") || message.includes("exceeded the maximum allowed size"))
     return "Arquivo acima do tamanho permitido (20 MB).";
   if (message.includes("mime type") || message.includes("invalid_mime_type"))
