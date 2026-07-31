@@ -17,6 +17,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_MODE } from "@/lib/demo";
+import { describeAuthError } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,37 +53,11 @@ const PREVIEW_CARDS = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/**
- * TODO(auth): fluxo temporário de demonstração.
- * Enquanto AUTH_ENABLED === false, o formulário apenas valida os dados localmente
- * e exibe um estado de sucesso — nenhuma chamada de API é feita, nenhum usuário
- * fictício é criado e nenhum redirecionamento para área protegida acontece.
- * Ao conectar o banco de dados e a autenticação (Supabase Auth), basta ativar a
- * constante abaixo para que o fluxo real de signUp/signIn seja executado.
- */
-const AUTH_ENABLED = false;
+/** Apenas o e-mail é lembrado — a senha nunca sai do formulário. */
+const REMEMBER_KEY = "fluxa-remember-email";
 
-const DEMO_SUCCESS_MESSAGE =
-  "Estrutura de cadastro pronta. A criação real da conta será ativada quando o banco de dados e a autenticação forem conectados.";
-
-const SIGNUP_SUCCESS_TITLE = "Cadastro validado com sucesso.";
-const SIGNUP_SUCCESS_SUBTITLE =
-  "A ativação da conta será concluída quando a autenticação da plataforma for conectada.";
-
-function translateAuthError(message: string, status?: number): string {
-  const m = message.toLowerCase();
-  if (m.includes("invalid login credentials")) return "E-mail ou senha incorretos. Verifique e tente novamente.";
-  if (m.includes("email not confirmed") || m.includes("not confirmed"))
-    return "Sua conta ainda não foi verificada. Confira o e-mail de confirmação.";
-  if (m.includes("already registered") || m.includes("already been registered"))
-    return "Já existe uma conta com este e-mail. Faça login.";
-  if (m.includes("rate limit") || m.includes("too many") || status === 429)
-    return "Muitas tentativas de acesso. Aguarde alguns instantes antes de tentar novamente.";
-  if (m.includes("password") && m.includes("6")) return "A senha deve ter pelo menos 6 caracteres.";
-  if (m.includes("failed to fetch") || m.includes("network") || m.includes("timeout"))
-    return "Erro temporário de conexão. Verifique sua internet e tente novamente.";
-  return "Não foi possível concluir. Tente novamente em instantes.";
-}
+const SIGNUP_SUCCESS_TITLE = "Conta criada com sucesso.";
+const SIGNUP_SUCCESS_SUBTITLE = "Estamos levando você para a configuração da empresa.";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -117,36 +92,41 @@ function AuthPage() {
       return;
     }
 
-    if (!AUTH_ENABLED) {
-      setErrors({});
-      if (mode === "signup") {
-        setValidated(true);
-      } else {
-        setDemoSuccess(true);
-        toast.success(DEMO_SUCCESS_MESSAGE);
-      }
-      return;
-    }
-
     setLoading(true);
+    setErrors({});
     try {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
+        window.localStorage.setItem(REMEMBER_KEY, remember ? email.trim() : "");
+        setPassword("");
+        navigate({ to: "/central" });
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { emailRedirectTo: window.location.origin, data: { full_name: name.trim() } },
+          options: {
+            emailRedirectTo: `${window.location.origin}/central`,
+            data: { full_name: name.trim() },
+          },
         });
         if (error) throw error;
+        setValidated(true);
+        setPassword("");
+
+        if (data.session?.user) {
+          // O perfil é criado imediatamente; a empresa é criada no onboarding.
+          await supabase
+            .from("profiles")
+            .upsert({ id: data.session.user.id, full_name: name.trim(), email: email.trim() }, { onConflict: "id" });
+          toast.success("Conta criada. Vamos configurar sua empresa.");
+          navigate({ to: "/onboarding" });
+        } else {
+          toast.success("Confirme o e-mail enviado para ativar sua conta.");
+        }
       }
-      navigate({ to: "/central" });
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? translateAuthError(error.message, (error as { status?: number }).status)
-          : "Erro temporário de conexão. Tente novamente.";
+      const message = describeAuthError(error);
       setErrors({ form: message });
       toast.error(message);
     } finally {
@@ -159,18 +139,14 @@ function AuthPage() {
       setErrors((e) => ({ ...e, email: "Informe seu e-mail para receber o link de redefinição." }));
       return;
     }
-    if (!AUTH_ENABLED) {
-      toast.success(DEMO_SUCCESS_MESSAGE);
-      return;
-    }
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/redefinir-senha`,
       });
       if (error) throw error;
       toast.success("Enviamos um link de redefinição para o seu e-mail.");
     } catch (error) {
-      toast.error(error instanceof Error ? translateAuthError(error.message) : "Não foi possível enviar o link.");
+      toast.error(describeAuthError(error));
     }
   };
 
@@ -334,7 +310,7 @@ function AuthPage() {
               {validated && mode === "signup" && (
                 <div
                   role="status"
-                  className="rounded-lg border border-brand/30 bg-brand/10 px-3 py-2.5 text-sm text-foreground"
+                  className="rounded-lg border border-success/30 bg-success/10 px-3 py-2.5 text-sm text-foreground"
                 >
                   <p className="font-medium">{SIGNUP_SUCCESS_TITLE}</p>
                   <p className="mt-0.5 text-muted-foreground">{SIGNUP_SUCCESS_SUBTITLE}</p>
@@ -356,15 +332,7 @@ function AuthPage() {
               </div>
 
               <Button
-                type={validated && mode === "signup" ? "button" : "submit"}
-                onClick={
-                  validated && mode === "signup"
-                    ? () => {
-                        setPassword("");
-                        navigate({ to: "/central" });
-                      }
-                    : undefined
-                }
+                type="submit"
                 disabled={loading}
                 aria-busy={loading}
                 className="h-11 w-full bg-brand text-brand-foreground text-base font-semibold transition-transform duration-200 hover:bg-brand/90 active:scale-[0.99] disabled:opacity-70"
@@ -374,12 +342,10 @@ function AuthPage() {
                     <Loader2 className="h-4 w-4 animate-spin" />
                     {mode === "login" ? "Entrando…" : "Criando conta…"}
                   </>
-                ) : validated && mode === "signup" ? (
-                  "Acessar demonstração"
                 ) : mode === "login" ? (
                   "Entrar"
                 ) : (
-                  "Criar empresa"
+                  "Criar conta e empresa"
                 )}
               </Button>
             </form>
@@ -416,7 +382,7 @@ function AuthPage() {
               )}
             </button>
 
-            {!AUTH_ENABLED && import.meta.env.DEV && (
+            {DEMO_MODE && import.meta.env.DEV && (
               <p className="mt-6 text-center text-xs text-muted-foreground/70">Modo de demonstração</p>
             )}
           </CardContent>

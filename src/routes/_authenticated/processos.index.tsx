@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, GripVertical } from "lucide-react";
 
 import { useWorkspace } from "@/lib/workspace";
 import { useProcesses } from "@/hooks/use-operations";
-import { moveDemoProcess } from "@/lib/demo-store";
+import { useMoveProcessStage } from "@/hooks/use-mutations";
+import { describeError } from "@/lib/errors";
 import { KANBAN_STAGES, PRIORITY, PROCESS_STAGE, type PriorityLevel, type ProcessStage } from "@/lib/domain";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { notifyDemoAction, notifyDemoStageChange } from "@/components/shared/demo-notice";
+import { toast } from "sonner";
 
 import { daysUntil, formatDate } from "@/lib/format";
 
@@ -46,7 +47,9 @@ function deadlineTone(due: string | null) {
 function ProcessesPage() {
   const { etapa } = Route.useSearch();
   const { organizationId } = useWorkspace();
+  const navigate = useNavigate();
   const processes = useProcesses(organizationId);
+  const moveStage = useMoveProcessStage(organizationId);
   const [term, setTerm] = useState("");
   const [owner, setOwner] = useState("todos");
   const [priority, setPriority] = useState<"todos" | PriorityLevel>("todos");
@@ -75,14 +78,23 @@ function ProcessesPage() {
     });
   }, [all, term, owner, priority, etapa]);
 
-  const drop = (stage: ProcessStage) => {
+  const drop = async (stage: ProcessStage) => {
     setDropTarget(null);
     if (!dragging) return;
     const process = all.find((item) => item.id === dragging);
     setDragging(null);
     if (!process || process.stage === stage) return;
-    moveDemoProcess(process.id, stage);
-    notifyDemoStageChange(`${process.code} movido para ${PROCESS_STAGE[stage].label}.`);
+    try {
+      await moveStage.mutateAsync({
+        processId: process.id,
+        from: process.stage,
+        to: stage,
+        code: process.code,
+      });
+      toast.success(`${process.code} movido para ${PROCESS_STAGE[stage].label}.`);
+    } catch (error) {
+      toast.error(describeError(error, "etapa"));
+    }
   };
 
   return (
@@ -129,13 +141,13 @@ function ProcessesPage() {
             <Link to="/processos" search={{}}>Limpar filtro de etapa</Link>
           </Button>
         )}
-        <Button className="sm:ml-auto" onClick={() => notifyDemoAction("Criação de processo")}>
+        <Button className="sm:ml-auto" onClick={() => navigate({ to: "/processos/novo" })}>
           Novo processo
         </Button>
       </div>
 
       <p className="helper-text">
-        Arraste os cards entre as colunas — as movimentações valem apenas nesta sessão de demonstração.
+        Arraste os cards entre as colunas — cada movimentação é registrada na linha do tempo do processo.
       </p>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">

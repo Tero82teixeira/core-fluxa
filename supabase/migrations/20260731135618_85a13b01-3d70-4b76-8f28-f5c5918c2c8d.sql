@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.next_process_code(uuid) FROM anon;
