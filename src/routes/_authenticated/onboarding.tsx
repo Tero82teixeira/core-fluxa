@@ -391,7 +391,7 @@ function Onboarding() {
                   Concluir depois
                 </Button>
               )}
-              <Button onClick={advance} disabled={saving || loading || !ready} aria-busy={saving}>
+              <Button onClick={advance} disabled={saving || !ready} aria-busy={saving}>
                 {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
                 {saving ? "Salvando…" : step === 3 ? "Entrar na Central de Comando" : "Salvar e continuar"}
               </Button>
