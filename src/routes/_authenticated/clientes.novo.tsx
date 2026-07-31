@@ -29,6 +29,11 @@ function NewClient() {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (DEMO_MODE) {
+      // TODO(supabase): cadastro real será habilitado com o banco conectado.
+      notifyDemoAction("Cadastro de cliente");
+      return;
+    }
     try {
       const created = await createClient.mutateAsync({
         name: form.name.trim(),
@@ -46,6 +51,7 @@ function NewClient() {
       toast.error(error instanceof Error ? error.message : "Erro ao salvar cliente.");
     }
   };
+
 
   return (
     <div className="mx-auto w-full max-w-3xl p-4 sm:p-6">
