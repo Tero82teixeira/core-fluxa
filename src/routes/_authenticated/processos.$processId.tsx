@@ -259,8 +259,17 @@ function ProcessDetail() {
           <TabsList className="h-auto flex-wrap gap-1.5 p-1.5">
             <TabsTrigger value="timeline" className="px-4 py-2 text-sm">Linha do tempo</TabsTrigger>
             <TabsTrigger value="documentos" className="px-4 py-2 text-sm">Checklist ({checklistItems.length})</TabsTrigger>
+            <TabsTrigger value="arquivos" className="px-4 py-2 text-sm">Documentos</TabsTrigger>
             <TabsTrigger value="tarefas" className="px-4 py-2 text-sm">Tarefas ({relatedTasks.length})</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="arquivos">
+            <DocumentScopePanel
+              processId={processId}
+              emptyDescription="Anexe os arquivos deste processo — eles também aparecem na ficha do cliente."
+            />
+          </TabsContent>
+
 
 
           <TabsContent value="timeline">
