@@ -4,6 +4,9 @@ import { toast } from "sonner";
 
 import { useWorkspace } from "@/lib/workspace";
 import { useCreateClient } from "@/hooks/use-operations";
+import { DEMO_MODE } from "@/lib/demo";
+import { notifyDemoAction } from "@/components/shared/demo-notice";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
