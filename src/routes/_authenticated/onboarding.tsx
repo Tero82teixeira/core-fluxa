@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Building2, CheckCircle2, Loader2, MapPin, Settings2 } from "lucide-react";
@@ -54,6 +54,7 @@ function Onboarding() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ document?: string; phone?: string; whatsapp?: string }>({});
+  const hydratedOrganization = useRef<string | null>(null);
 
   useEffect(() => {
     if (organizationId) setOrgId(organizationId);
@@ -70,6 +71,33 @@ function Onboarding() {
   });
   const [place, setPlace] = useState({ zip_code: "", street: "", number: "", district: "", city: "", state: "" });
   const [operation, setOperation] = useState({ main_services: "", clients_range: "", employees_range: "" });
+
+  useEffect(() => {
+    const organization = membership?.organizations;
+    if (!organization || hydratedOrganization.current === organization.id) return;
+    hydratedOrganization.current = organization.id;
+    const settings = organization.organization_settings;
+    setCompany({
+      trade_name: organization.trade_name ?? "",
+      legal_name: organization.legal_name ?? "",
+      document: organization.document ?? "",
+      phone: organization.phone ?? "",
+      whatsapp: organization.whatsapp ?? "",
+    });
+    setPlace({
+      zip_code: settings?.zip_code ?? "",
+      street: settings?.street ?? "",
+      number: settings?.number ?? "",
+      district: settings?.district ?? "",
+      city: settings?.city ?? "",
+      state: settings?.state ?? "",
+    });
+    setOperation({
+      main_services: settings?.main_services ?? "",
+      clients_range: settings?.clients_range ?? "",
+      employees_range: settings?.employees_range ?? "",
+    });
+  }, [membership]);
 
   /** Garante empresa + vínculo antes de qualquer escrita (idempotente no banco). */
   const ensureOrganization = async () => {
@@ -133,9 +161,10 @@ function Onboarding() {
     if (updateError) throw updateError;
     if (!updated?.id) throw new Error("A empresa atualizada não foi retornada.");
 
-    await supabase
+    const { error: portalError } = await supabase
       .from("organization_settings")
       .upsert({ organization_id: id, portal_name: payload.trade_name }, { onConflict: "organization_id" });
+    if (portalError) throw portalError;
 
     await refreshWorkspace();
     return true;
@@ -167,7 +196,11 @@ function Onboarding() {
           city: place.city.trim() || null,
           state: place.state.trim().toUpperCase() || null,
         });
-        await supabase.from("organizations").update({ onboarding_step: 2 }).eq("id", await ensureOrganization());
+        const { error: stepError } = await supabase
+          .from("organizations")
+          .update({ onboarding_step: 2 })
+          .eq("id", await ensureOrganization());
+        if (stepError) throw stepError;
       }
       if (step === 2) {
         await saveSettings({
@@ -175,7 +208,11 @@ function Onboarding() {
           clients_range: operation.clients_range.trim() || null,
           employees_range: operation.employees_range.trim() || null,
         });
-        await supabase.from("organizations").update({ onboarding_step: 3 }).eq("id", await ensureOrganization());
+        const { error: stepError } = await supabase
+          .from("organizations")
+          .update({ onboarding_step: 3 })
+          .eq("id", await ensureOrganization());
+        if (stepError) throw stepError;
       }
       if (step === 3) {
         const id = await ensureOrganization();

@@ -34,9 +34,23 @@ export type Membership = {
     id: string;
     legal_name: string;
     trade_name: string | null;
+    document: string | null;
+    phone: string | null;
+    whatsapp: string | null;
     onboarding_completed: boolean;
     onboarding_completed_at: string | null;
     onboarding_step: number;
+    organization_settings: {
+      zip_code: string | null;
+      street: string | null;
+      number: string | null;
+      district: string | null;
+      city: string | null;
+      state: string | null;
+      main_services: string | null;
+      clients_range: string | null;
+      employees_range: string | null;
+    } | null;
   } | null;
 };
 
@@ -49,7 +63,7 @@ export function useMemberships(user: User | null) {
       const { data, error } = await supabase
         .from("organization_members")
         .select(
-          "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, onboarding_completed, onboarding_completed_at, onboarding_step)",
+          "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, document, phone, whatsapp, onboarding_completed, onboarding_completed_at, onboarding_step, organization_settings(zip_code, street, number, district, city, state, main_services, clients_range, employees_range))",
         )
         .eq("user_id", user?.id ?? "")
         .eq("is_active", true)

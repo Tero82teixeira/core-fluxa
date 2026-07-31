@@ -74,7 +74,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
                 <SidebarMenu className="gap-0.5">
                   {items.map((item) => {
                     const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
-                    const locked = !onboardingCompleted && item.to !== "/configuracoes";
+                    const locked = !onboardingCompleted;
                     return (
                       <SidebarMenuItem key={item.to}>
                         <SidebarMenuButton
