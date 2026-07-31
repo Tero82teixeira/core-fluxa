@@ -161,6 +161,9 @@ export function WorkspaceProvider({ user, children }: { user: User | null; child
     void refreshWorkspace();
   }, [refreshWorkspace]);
 
+  const membership = list.find((m) => m.organization_id === selected) ?? list[0] ?? null;
+  const permissions = useRolePermissions(membership?.role);
+
   // Watchdog: nenhuma tela pode ficar presa em carregamento.
   const settled = Boolean(bootstrapError) || Boolean(membership?.organizations && profile.data);
   useEffect(() => {
@@ -168,9 +171,6 @@ export function WorkspaceProvider({ user, children }: { user: User | null; child
     const timer = setTimeout(() => setBootstrapError("Não foi possível configurar seu acesso."), BOOTSTRAP_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [settled, user]);
-
-  const membership = list.find((m) => m.organization_id === selected) ?? list[0] ?? null;
-  const permissions = useRolePermissions(membership?.role);
 
   const value = useMemo<WorkspaceContextValue>(() => {
     const granted = new Set(permissions.data ?? []);
