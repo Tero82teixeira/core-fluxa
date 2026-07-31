@@ -1,17 +1,20 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, Circle, FileText } from "lucide-react";
+import { CheckCircle2, Circle, Loader2, Plus } from "lucide-react";
+import { toast } from "sonner";
 
-import { useProcess, useProcessChecklist, useProcessMovements, useTasks } from "@/hooks/use-operations";
+import { useProcess, useProcessMovements, useTasks } from "@/hooks/use-operations";
 import { useWorkspace } from "@/lib/workspace";
-import { moveDemoProcess } from "@/lib/demo-store";
-import { CHECKLIST_STATUS } from "@/lib/demo-data";
+import { useAddProcessNote, useCreateTask, useMoveProcessStage, useSetTaskStatus } from "@/hooks/use-mutations";
+import { describeError } from "@/lib/errors";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { notifyDemoAction, notifyDemoSessionChange } from "@/components/shared/demo-notice";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   FINANCIAL_STATUS,
   KANBAN_STAGES,
@@ -38,8 +41,14 @@ function ProcessDetail() {
   const { processId } = Route.useParams();
   const { organizationId } = useWorkspace();
   const process = useProcess(processId);
+  const moveStage = useMoveProcessStage(organizationId);
+  const addNote = useAddProcessNote(organizationId);
+  const createTask = useCreateTask(organizationId);
+  const setTaskStatus = useSetTaskStatus(organizationId);
+  const [note, setNote] = useState("");
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [newTask, setNewTask] = useState("");
   const movements = useProcessMovements(processId);
-  const checklist = useProcessChecklist(processId);
   const tasks = useTasks(organizationId);
 
   if (!process.data) {
@@ -98,9 +107,15 @@ function ProcessDetail() {
               </label>
               <Select
                 value={data.stage}
-                onValueChange={(value) => {
-                  moveDemoProcess(processId, value as ProcessStage);
-                  notifyDemoSessionChange(`${data.code} agora está em ${PROCESS_STAGE[value as ProcessStage].label}.`);
+                onValueChange={async (value) => {
+                  const to = value as ProcessStage;
+                  if (to === data.stage) return;
+                  try {
+                    await moveStage.mutateAsync({ processId, from: data.stage, to, code: data.code });
+                    toast.success(`${data.code} agora está em ${PROCESS_STAGE[to].label}.`);
+                  } catch (error) {
+                    toast.error(describeError(error, "etapa"));
+                  }
                 }}
               >
                 <SelectTrigger id="stage-select" aria-label="Alterar etapa do processo" className="h-10 w-full">
@@ -112,9 +127,39 @@ function ProcessDetail() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={() => notifyDemoAction("Registro de movimentação")}>
+              <Button variant="outline" onClick={() => setNoteOpen((open) => !open)}>
                 Registrar movimentação
               </Button>
+              {noteOpen && (
+                <div className="space-y-2">
+                  <Textarea
+                    rows={3}
+                    maxLength={400}
+                    value={note}
+                    aria-label="Descrição da movimentação"
+                    placeholder="Descreva o que aconteceu neste processo"
+                    onChange={(event) => setNote(event.target.value)}
+                  />
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    disabled={addNote.isPending || note.trim().length < 3}
+                    onClick={async () => {
+                      try {
+                        await addNote.mutateAsync({ processId, description: note.trim() });
+                        setNote("");
+                        setNoteOpen(false);
+                        toast.success("Movimentação registrada.");
+                      } catch (error) {
+                        toast.error(describeError(error, "processo"));
+                      }
+                    }}
+                  >
+                    {addNote.isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
+                    Salvar movimentação
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -217,32 +262,10 @@ function ProcessDetail() {
                   </span>
                 </div>
                 <Progress value={docsPct} className="mt-3 h-1.5" />
-                <ul className="mt-4 space-y-2">
-                  {(checklist.data ?? []).map((item) => (
-                    <li key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-                      <span className="flex min-w-0 items-center gap-2">
-                        {item.status === "aprovado" ? (
-                          <CheckCircle2 className="size-4 shrink-0 text-success" aria-hidden />
-                        ) : (
-                          <Circle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                        )}
-                        <span className="truncate text-sm">{item.label}</span>
-                      </span>
-                      <StatusBadge label={CHECKLIST_STATUS[item.status].label} tone={CHECKLIST_STATUS[item.status].tone} />
-                    </li>
-                  ))}
-                  {(checklist.data ?? []).length === 0 && (
-                    <li className="py-4 text-sm text-muted-foreground">Nenhum documento exigido neste processo.</li>
-                  )}
-                </ul>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-4"
-                  onClick={() => notifyDemoAction("Upload de documentos")}
-                >
-                  <FileText className="size-4" aria-hidden /> Enviar documento
-                </Button>
+                <p className="helper-text mt-4">
+                  O módulo de documentos entra em uma próxima etapa. Por enquanto, acompanhe o
+                  andamento pelo checklist de tarefas do processo.
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -250,15 +273,67 @@ function ProcessDetail() {
           <TabsContent value="tarefas">
             <Card>
               <CardContent className="p-6">
+                <form
+                  className="mb-4 flex flex-wrap gap-2"
+                  onSubmit={async (event) => {
+                    event.preventDefault();
+                    if (newTask.trim().length < 3) return;
+                    try {
+                      await createTask.mutateAsync({
+                        title: newTask.trim(),
+                        priority: data.priority,
+                        process_id: processId,
+                        client_id: data.client_id,
+                      });
+                      setNewTask("");
+                      toast.success("Tarefa criada.");
+                    } catch (error) {
+                      toast.error(describeError(error, "tarefa"));
+                    }
+                  }}
+                >
+                  <Input
+                    value={newTask}
+                    onChange={(event) => setNewTask(event.target.value)}
+                    aria-label="Nova tarefa do processo"
+                    placeholder="Nova tarefa deste processo"
+                    maxLength={160}
+                    className="h-10 min-w-0 flex-1"
+                  />
+                  <Button type="submit" disabled={createTask.isPending}>
+                    <Plus className="size-4" aria-hidden /> Adicionar
+                  </Button>
+                </form>
                 <ul className="space-y-3">
                   {relatedTasks.map((task) => (
                     <li key={task.id} className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{task.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(task.due_at)} · {task.assignee_name}
-                        </p>
-                      </div>
+                      <label className="flex min-w-0 items-center gap-2.5">
+                        <input
+                          type="checkbox"
+                          className="size-4 accent-[var(--brand)]"
+                          checked={task.status === "concluida"}
+                          onChange={async (event) => {
+                            try {
+                              await setTaskStatus.mutateAsync({
+                                id: task.id,
+                                status: event.target.checked ? "concluida" : "pendente",
+                                title: task.title,
+                                processId,
+                              });
+                            } catch (error) {
+                              toast.error(describeError(error, "tarefa"));
+                            }
+                          }}
+                        />
+                        <span className="min-w-0">
+                          <span className={`block truncate text-sm font-medium ${task.status === "concluida" ? "text-muted-foreground line-through" : ""}`}>
+                            {task.title}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(task.due_at)} · {task.assignee_name}
+                          </span>
+                        </span>
+                      </label>
                       <StatusBadge label={TASK_STATUS[task.status].label} tone={TASK_STATUS[task.status].tone} />
                     </li>
                   ))}
