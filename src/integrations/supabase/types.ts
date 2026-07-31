@@ -305,6 +305,35 @@ export type Database = {
           },
         ]
       }
+      organization_counters: {
+        Row: {
+          created_at: string
+          organization_id: string
+          process_seq: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          organization_id: string
+          process_seq?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          organization_id?: string
+          process_seq?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -425,6 +454,7 @@ export type Database = {
           legal_name: string
           onboarding_completed: boolean
           phone: string | null
+          sample_data_at: string | null
           slug: string | null
           trade_name: string | null
           updated_at: string
@@ -441,6 +471,7 @@ export type Database = {
           legal_name: string
           onboarding_completed?: boolean
           phone?: string | null
+          sample_data_at?: string | null
           slug?: string | null
           trade_name?: string | null
           updated_at?: string
@@ -457,6 +488,7 @@ export type Database = {
           legal_name?: string
           onboarding_completed?: boolean
           phone?: string | null
+          sample_data_at?: string | null
           slug?: string | null
           trade_name?: string | null
           updated_at?: string
@@ -576,6 +608,7 @@ export type Database = {
           code: string
           created_at: string
           created_by: string | null
+          description: string | null
           documents_received: number
           documents_total: number
           due_date: string | null
@@ -601,6 +634,7 @@ export type Database = {
           code: string
           created_at?: string
           created_by?: string | null
+          description?: string | null
           documents_received?: number
           documents_total?: number
           due_date?: string | null
@@ -626,6 +660,7 @@ export type Database = {
           code?: string
           created_at?: string
           created_by?: string | null
+          description?: string | null
           documents_received?: number
           documents_total?: number
           due_date?: string | null
@@ -774,6 +809,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           due_at: string | null
           id: string
@@ -783,6 +819,7 @@ export type Database = {
           status: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           assignee_id?: string | null
@@ -791,6 +828,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           due_at?: string | null
           id?: string
@@ -800,6 +838,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           assignee_id?: string | null
@@ -808,6 +847,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           due_at?: string | null
           id?: string
@@ -817,6 +857,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["task_status"]
           title?: string
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -855,6 +896,7 @@ export type Database = {
         Returns: boolean
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      next_process_code: { Args: { _org: string }; Returns: string }
     }
     Enums: {
       app_role:
