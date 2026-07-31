@@ -9,9 +9,11 @@ import { KANBAN_STAGES, PRIORITY, PROCESS_STAGE, type PriorityLevel, type Proces
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { notifyDemoAction, notifyDemoSessionChange } from "@/components/shared/demo-notice";
+import { notifyDemoAction, notifyDemoStageChange } from "@/components/shared/demo-notice";
+
 import { daysUntil, formatDate } from "@/lib/format";
 
 type Search = { etapa?: string; responsavel?: string };
