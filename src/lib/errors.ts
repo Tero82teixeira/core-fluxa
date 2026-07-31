@@ -10,6 +10,8 @@ type Ctx =
   | "processo"
   | "etapa"
   | "tarefa"
+  | "checklist"
+  | "servico"
   | "equipe"
   | "empresa"
   | "auth";
@@ -21,6 +23,8 @@ const FALLBACK: Record<Ctx, string> = {
   processo: "Não foi possível salvar o processo. Revise os dados e tente novamente.",
   etapa: "Não foi possível alterar a etapa do processo. Tente novamente.",
   tarefa: "Não foi possível salvar a tarefa. Tente novamente.",
+  checklist: "Não foi possível atualizar o checklist. Tente novamente.",
+  servico: "Não foi possível salvar o tipo de serviço. Tente novamente.",
   equipe: "Não foi possível atualizar a equipe. Tente novamente.",
   empresa: "Não foi possível salvar os dados da empresa. Tente novamente.",
   auth: "Não foi possível concluir. Tente novamente em instantes.",
