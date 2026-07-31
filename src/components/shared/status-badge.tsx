@@ -33,7 +33,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs leading-none font-medium whitespace-nowrap",
         toneClasses[tone],
         className,
       )}
@@ -42,4 +42,5 @@ export function StatusBadge({
       {label}
     </span>
   );
+
 }

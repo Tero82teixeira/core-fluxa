@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { LifeBuoy } from "lucide-react";
+
 import { ComingSoon } from "@/components/shared/empty-state";
 
 export const Route = createFileRoute("/_authenticated/ajuda")({
@@ -19,6 +21,9 @@ function Page() {
     <div className="mx-auto w-full max-w-6xl p-4 sm:p-6">
       <ComingSoon
         title="Ajuda e suporte"
+        benefit="Suporte e conhecimento disponíveis quando você precisar."
+        icon={LifeBuoy}
+        variant="list"
         summary="Central de documentação e canais de atendimento do FLUXA."
         bullets={["Base de conhecimento", "Abertura de chamados", "Treinamentos da equipe", "Status da plataforma"]}
       />

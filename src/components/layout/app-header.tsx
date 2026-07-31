@@ -89,16 +89,16 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 sm:px-5">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-2">
           <SidebarTrigger className="shrink-0" />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate font-display text-sm font-semibold sm:text-base">
+              <h1 className="min-w-0 flex-1 truncate font-display text-base font-semibold sm:text-lg">
                 {current?.label ?? "FLUXA"}
               </h1>
               {DEMO_MODE && (
-                <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                <span className="hidden shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:inline-flex">
                   Demonstração
                 </span>
               )}
@@ -125,19 +125,19 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
           <Button
             variant="outline"
             onClick={() => setSearchOpen(true)}
-            className="hidden h-9 w-56 justify-start gap-2 text-muted-foreground lg:flex xl:w-72"
+            className="hidden h-10 w-56 justify-start gap-2 text-muted-foreground lg:flex xl:w-72"
           >
-            <Search className="size-4" aria-hidden />
+            <Search className="size-4.5" aria-hidden />
             <span className="truncate text-sm">Buscar em tudo…</span>
-            <kbd className="ml-auto rounded border border-border px-1.5 text-[10px]">Ctrl K</kbd>
+            <kbd className="ml-auto rounded border border-border px-1.5 py-0.5 text-xs">Ctrl K</kbd>
           </Button>
-          <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Busca global" onClick={() => setSearchOpen(true)}>
+          <Button variant="ghost" size="icon" className="size-10 lg:hidden" aria-label="Busca global" onClick={() => setSearchOpen(true)}>
             <Search className="size-4" aria-hidden />
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" className="h-9 gap-1.5">
+              <Button className="h-10 gap-1.5">
                 <Plus className="size-4" aria-hidden />
                 <span className="hidden sm:inline">Criar</span>
               </Button>
@@ -156,7 +156,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative" aria-label="Central de notificações">
+              <Button variant="ghost" size="icon" className="relative size-10" aria-label="Central de notificações">
                 <Bell className="size-4" aria-hidden />
                 {unread > 0 && (
                   <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-caution" aria-hidden />
@@ -176,7 +176,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
                   <div key={item.id} className="px-4 py-3">
                     <p className="text-sm font-medium">{item.title}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{item.body}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{relativeTime(item.created_at)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{relativeTime(item.created_at)}</p>
                   </div>
                 ))}
               </div>
@@ -186,7 +186,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
           {memberships.length > 1 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="hidden h-9 gap-1.5 md:flex">
+                <Button variant="outline" size="sm" className="hidden h-10 gap-1.5 md:flex">
                   <Building className="size-4" aria-hidden />
                   <span className="max-w-32 truncate">
                     {membership?.organizations?.trade_name ?? "Workspace"}

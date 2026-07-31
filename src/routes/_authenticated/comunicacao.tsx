@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { MessagesSquare } from "lucide-react";
+
 import { ComingSoon } from "@/components/shared/empty-state";
 
 export const Route = createFileRoute("/_authenticated/comunicacao")({
@@ -19,6 +21,9 @@ function Page() {
     <div className="mx-auto w-full max-w-6xl p-4 sm:p-6">
       <ComingSoon
         title="Comunicação"
+        benefit="Todo o histórico com o cliente reunido em um só lugar."
+        icon={MessagesSquare}
+        variant="timeline"
         summary="Histórico unificado de conversas, e-mails e mensagens com clientes."
         bullets={["Registro de interações por cliente", "Modelos de mensagem", "Envio de atualizações de processo", "Caixa de entrada compartilhada"]}
       />

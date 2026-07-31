@@ -56,37 +56,50 @@ function ClientDetail() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-4 p-4 sm:p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
       <Card>
-        <CardContent className="flex flex-wrap items-start justify-between gap-4 p-6">
+        <CardContent className="flex flex-wrap items-start justify-between gap-5 p-6">
           <div className="flex min-w-0 items-start gap-4">
-            <Avatar className="size-12">
-              <AvatarFallback>{initials(data.name)}</AvatarFallback>
+            <Avatar className="size-14 shrink-0">
+              <AvatarFallback className="text-sm">{initials(data.name)}</AvatarFallback>
             </Avatar>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="truncate font-display text-xl font-semibold">{data.name}</h2>
+                <h1 className="page-title truncate">{data.name}</h1>
                 <StatusBadge label={CLIENT_STATUS[data.status].label} tone={CLIENT_STATUS[data.status].tone} />
                 {data.awaitingReturn && <StatusBadge label="Aguardando retorno" tone="warning" />}
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="page-subtitle mt-1.5">
                 {data.person_type === "pj" ? "Pessoa jurídica" : "Pessoa física"} ·{" "}
                 {data.document ? maskDocument(data.document) : "Sem documento"} · {data.city}/{data.state}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">Responsável interno: {data.owner_name}</p>
+              <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                <div className="min-w-0">
+                  <dt className="field-label">Contato</dt>
+                  <dd className="mt-0.5 truncate">{data.phone ? maskPhone(data.phone) : "—"}</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="field-label">E-mail</dt>
+                  <dd className="mt-0.5 truncate">{data.email ?? "—"}</dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="field-label">Responsável interno</dt>
+                  <dd className="mt-0.5 truncate">{data.owner_name}</dd>
+                </div>
+              </dl>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => notifyDemoAction("Envio de e-mail")}>
+            <Button variant="outline" onClick={() => notifyDemoAction("Envio de e-mail")}>
               <Mail className="size-4" aria-hidden /> E-mail
             </Button>
-            <Button variant="outline" size="sm" onClick={() => notifyDemoAction("Chamada telefônica")}>
+            <Button variant="outline" onClick={() => notifyDemoAction("Chamada telefônica")}>
               <Phone className="size-4" aria-hidden /> Ligar
             </Button>
-            <Button variant="outline" size="sm" onClick={() => notifyDemoAction("Mensagem por WhatsApp")}>
+            <Button variant="outline" onClick={() => notifyDemoAction("Mensagem por WhatsApp")}>
               <MessageSquare className="size-4" aria-hidden /> WhatsApp
             </Button>
-            <Button size="sm" onClick={() => notifyDemoAction("Criação de processo")}>Novo processo</Button>
+            <Button onClick={() => notifyDemoAction("Criação de processo")}>Novo processo</Button>
           </div>
         </CardContent>
       </Card>
@@ -94,28 +107,29 @@ function ClientDetail() {
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {summary.map((item) => (
           <Card key={item.label}>
-            <CardContent className="p-4">
-              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{item.label}</p>
-              <p className="mt-1.5 font-display text-xl font-semibold">{item.value}</p>
+            <CardContent className="p-5">
+              <p className="field-label">{item.label}</p>
+              <p className="metric-value mt-2 text-2xl">{item.value}</p>
             </CardContent>
           </Card>
         ))}
       </section>
 
       <Tabs defaultValue="visao">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="visao">Visão geral</TabsTrigger>
-          <TabsTrigger value="processos">Processos ({related.length})</TabsTrigger>
-          <TabsTrigger value="tarefas">Tarefas ({relatedTasks.length})</TabsTrigger>
-          <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
-          <TabsTrigger value="historico">Histórico</TabsTrigger>
+        <TabsList className="h-auto flex-wrap gap-1.5 p-1.5">
+          <TabsTrigger value="visao" className="px-4 py-2 text-sm">Visão geral</TabsTrigger>
+          <TabsTrigger value="processos" className="px-4 py-2 text-sm">Processos ({related.length})</TabsTrigger>
+          <TabsTrigger value="tarefas" className="px-4 py-2 text-sm">Tarefas ({relatedTasks.length})</TabsTrigger>
+          <TabsTrigger value="financeiro" className="px-4 py-2 text-sm">Financeiro</TabsTrigger>
+          <TabsTrigger value="historico" className="px-4 py-2 text-sm">Histórico</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="visao">
           <Card>
             <CardContent className="grid gap-6 p-6 md:grid-cols-2">
               <div>
-                <h3 className="text-sm font-semibold">Dados de contato</h3>
+                <h2 className="section-title">Dados de contato</h2>
                 <dl className="mt-3 space-y-2 text-sm">
                   <div className="flex justify-between gap-3">
                     <dt className="text-muted-foreground">E-mail</dt>
@@ -136,8 +150,8 @@ function ClientDetail() {
                 </dl>
               </div>
               <div>
-                <h3 className="text-sm font-semibold">Observações internas</h3>
-                <p className="mt-3 rounded-lg border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+                <h2 className="section-title">Observações internas</h2>
+                <p className="mt-3 rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
                   {data.notes}
                 </p>
               </div>
@@ -207,15 +221,15 @@ function ClientDetail() {
             <CardContent className="p-6">
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
-                  <p className="text-xs text-muted-foreground">Total contratado</p>
+                  <p className="field-label">Total contratado</p>
                   <p className="mt-1 font-display text-xl font-semibold">{formatCurrency(contracted)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Saldo em aberto</p>
+                  <p className="field-label">Saldo em aberto</p>
                   <p className="mt-1 font-display text-xl font-semibold">{formatCurrency(balance)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Situação</p>
+                  <p className="field-label">Situação</p>
                   <p className="mt-1">
                     <StatusBadge
                       label={balance > 0 ? FINANCIAL_STATUS.pendente.label : FINANCIAL_STATUS.pago.label}

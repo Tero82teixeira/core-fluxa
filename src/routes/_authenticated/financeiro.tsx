@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { Wallet } from "lucide-react";
+
 import { ComingSoon } from "@/components/shared/empty-state";
 
 export const Route = createFileRoute("/_authenticated/financeiro")({
@@ -19,6 +21,9 @@ function Page() {
     <div className="mx-auto w-full max-w-6xl p-4 sm:p-6">
       <ComingSoon
         title="Financeiro"
+        benefit="Visibilidade total de honorários, cobranças e recebimentos."
+        icon={Wallet}
+        variant="grid"
         summary="Controle de honorários, cobranças e recebimentos por processo."
         bullets={["Lançamentos por processo e cliente", "Situação financeira e inadimplência", "Previsão de receita", "Relatórios de faturamento"]}
       />
