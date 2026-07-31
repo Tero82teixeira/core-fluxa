@@ -73,8 +73,15 @@ function Onboarding() {
 
   /** Garante empresa + vínculo antes de qualquer escrita (idempotente no banco). */
   const ensureOrganization = async () => {
-    const confirmed = membership?.user_id === user?.id && membership.is_active && membership.organizations;
-    if (ready && confirmed && organizationId && membership.organization_id === organizationId) return organizationId;
+    if (
+      ready &&
+      membership &&
+      membership.user_id === user?.id &&
+      membership.is_active &&
+      membership.organizations &&
+      organizationId &&
+      membership.organization_id === organizationId
+    ) return organizationId;
 
     setError("Seu vínculo com a empresa ainda não foi concluído. Estamos tentando corrigir seu acesso.");
     const repaired = await ensureWorkspace();

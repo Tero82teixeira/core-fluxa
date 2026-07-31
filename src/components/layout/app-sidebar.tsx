@@ -84,24 +84,20 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
                           className="h-10 text-sm data-[active=true]:font-semibold"
                         >
                           {locked ? (
-                            <button
-                              type="button"
-                              onClick={() => toast.info("Conclua a configuração inicial da empresa para acessar este módulo.")}
-                              className="gap-3"
-                            >
+                            <span onClick={() => toast.info("Conclua a configuração inicial da empresa para acessar este módulo.")}>
                               <item.icon className="size-4.5 shrink-0" aria-hidden />
                               <span className="truncate">{item.label}</span>
-                            </button>
+                            </span>
                           ) : (
-                          <Link to={item.to} onClick={closeOnMobile} className="gap-3">
-                            <item.icon className="size-4.5 shrink-0" aria-hidden />
-                            <span className="truncate">{item.label}</span>
-                            {!item.ready && !collapsed && (
-                              <span className="ml-auto rounded-full border border-sidebar-border px-1.5 py-0.5 text-[0.65rem] leading-none text-muted-foreground">
-                                em breve
-                              </span>
-                            )}
-                          </Link>
+                            <Link to={item.to} onClick={closeOnMobile} className="gap-3">
+                              <item.icon className="size-4.5 shrink-0" aria-hidden />
+                              <span className="truncate">{item.label}</span>
+                              {!item.ready && !collapsed && (
+                                <span className="ml-auto rounded-full border border-sidebar-border px-1.5 py-0.5 text-[0.65rem] leading-none text-muted-foreground">
+                                  em breve
+                                </span>
+                              )}
+                            </Link>
                           )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
