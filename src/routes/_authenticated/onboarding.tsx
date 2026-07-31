@@ -250,7 +250,7 @@ function Onboarding() {
 
   const Icon = STEPS[step].icon;
 
-  if (loading || !ready) {
+  if (status === "loading" || status === "bootstrapping" || status === "idle") {
     return (
       <div className="flex min-h-[50vh] items-center justify-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" aria-hidden /> Configurando seu acesso…
