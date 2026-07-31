@@ -38,11 +38,15 @@ const STEPS = [
 function Onboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, organizationId, membership } = useWorkspace();
+  const { user, organizationId, membership, loading, bootstrapError } = useWorkspace();
   const [orgId, setOrgId] = useState<string | null>(organizationId);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (organizationId) setOrgId(organizationId);
+  }, [organizationId]);
 
   const [company, setCompany] = useState({
     trade_name: membership?.organizations?.trade_name ?? "",
@@ -54,44 +58,40 @@ function Onboarding() {
   const [place, setPlace] = useState({ zip_code: "", street: "", number: "", district: "", city: "", state: "" });
   const [operation, setOperation] = useState({ main_services: "", clients_range: "", employees_range: "" });
 
+  /** Garante empresa + vínculo antes de qualquer escrita (idempotente no banco). */
+  const ensureOrganization = async () => {
+    if (orgId) return orgId;
+    const { data, error: rpcError } = await supabase.rpc("bootstrap_organization");
+    if (rpcError) throw rpcError;
+    const created = data?.[0]?.organization_id ?? null;
+    if (!created) throw new Error("Não foi possível preparar sua empresa.");
+    setOrgId(created);
+    await queryClient.invalidateQueries({ queryKey: ["memberships"] });
+    return created;
+  };
+
   const saveCompany = async () => {
     if (!company.trade_name.trim()) {
       setError("Informe o nome fantasia da empresa.");
       return false;
     }
+    const id = await ensureOrganization();
     const payload = {
       trade_name: company.trade_name.trim(),
-      legal_name: (company.legal_name.trim() || company.trade_name.trim()),
+      legal_name: company.legal_name.trim() || company.trade_name.trim(),
       document: company.document.trim() || null,
       document_digits: digits(company.document) || null,
       phone: company.phone.trim() || null,
       whatsapp: company.whatsapp.trim() || null,
     };
 
-    if (orgId) {
-      const { error: updateError } = await supabase.from("organizations").update(payload).eq("id", orgId);
-      if (updateError) throw updateError;
-      return true;
-    }
+    const { error: updateError } = await supabase.from("organizations").update(payload).eq("id", id);
+    if (updateError) throw updateError;
 
-    const { data, error: insertError } = await supabase
-      .from("organizations")
-      .insert(payload)
-      .select("id")
-      .single();
-    if (insertError) throw insertError;
+    await supabase
+      .from("organization_settings")
+      .upsert({ organization_id: id, portal_name: payload.trade_name }, { onConflict: "organization_id" });
 
-    const { error: memberError } = await supabase
-      .from("organization_members")
-      .insert({ organization_id: data.id, user_id: user!.id, role: "proprietario" });
-    if (memberError) throw memberError;
-
-    await supabase.from("organization_settings").insert({
-      organization_id: data.id,
-      portal_name: payload.trade_name,
-    });
-
-    setOrgId(data.id);
     await queryClient.invalidateQueries({ queryKey: ["memberships"] });
     return true;
   };
