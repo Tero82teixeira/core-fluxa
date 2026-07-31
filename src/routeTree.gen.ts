@@ -30,6 +30,7 @@ import { Route as AuthenticatedAutomacoesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAjudaRouteImport } from './routes/_authenticated/ajuda'
 import { Route as AuthenticatedProcessosIndexRouteImport } from './routes/_authenticated/processos.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
+import { Route as AuthenticatedProcessosNovoRouteImport } from './routes/_authenticated/processos.novo'
 import { Route as AuthenticatedProcessosProcessIdRouteImport } from './routes/_authenticated/processos.$processId'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
 import { Route as AuthenticatedClientesClientIdRouteImport } from './routes/_authenticated/clientes.$clientId'
@@ -143,6 +144,12 @@ const AuthenticatedClientesIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedClientesRoute,
   } as any)
+const AuthenticatedProcessosNovoRoute =
+  AuthenticatedProcessosNovoRouteImport.update({
+    id: '/novo',
+    path: '/novo',
+    getParentRoute: () => AuthenticatedProcessosRoute,
+  } as any)
 const AuthenticatedProcessosProcessIdRoute =
   AuthenticatedProcessosProcessIdRouteImport.update({
     id: '/$processId',
@@ -184,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
+  '/processos/novo': typeof AuthenticatedProcessosNovoRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/processos/': typeof AuthenticatedProcessosIndexRoute
 }
@@ -207,6 +215,7 @@ export interface FileRoutesByTo {
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
+  '/processos/novo': typeof AuthenticatedProcessosNovoRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/processos': typeof AuthenticatedProcessosIndexRoute
 }
@@ -234,6 +243,7 @@ export interface FileRoutesById {
   '/_authenticated/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/_authenticated/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
+  '/_authenticated/processos/novo': typeof AuthenticatedProcessosNovoRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/processos/': typeof AuthenticatedProcessosIndexRoute
 }
@@ -261,6 +271,7 @@ export interface FileRouteTypes {
     | '/clientes/$clientId'
     | '/clientes/novo'
     | '/processos/$processId'
+    | '/processos/novo'
     | '/clientes/'
     | '/processos/'
   fileRoutesByTo: FileRoutesByTo
@@ -284,6 +295,7 @@ export interface FileRouteTypes {
     | '/clientes/$clientId'
     | '/clientes/novo'
     | '/processos/$processId'
+    | '/processos/novo'
     | '/clientes'
     | '/processos'
   id:
@@ -310,6 +322,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes/$clientId'
     | '/_authenticated/clientes/novo'
     | '/_authenticated/processos/$processId'
+    | '/_authenticated/processos/novo'
     | '/_authenticated/clientes/'
     | '/_authenticated/processos/'
   fileRoutesById: FileRoutesById
@@ -470,6 +483,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesIndexRouteImport
       parentRoute: typeof AuthenticatedClientesRoute
     }
+    '/_authenticated/processos/novo': {
+      id: '/_authenticated/processos/novo'
+      path: '/novo'
+      fullPath: '/processos/novo'
+      preLoaderRoute: typeof AuthenticatedProcessosNovoRouteImport
+      parentRoute: typeof AuthenticatedProcessosRoute
+    }
     '/_authenticated/processos/$processId': {
       id: '/_authenticated/processos/$processId'
       path: '/$processId'
@@ -513,12 +533,14 @@ const AuthenticatedClientesRouteWithChildren =
 
 interface AuthenticatedProcessosRouteChildren {
   AuthenticatedProcessosProcessIdRoute: typeof AuthenticatedProcessosProcessIdRoute
+  AuthenticatedProcessosNovoRoute: typeof AuthenticatedProcessosNovoRoute
   AuthenticatedProcessosIndexRoute: typeof AuthenticatedProcessosIndexRoute
 }
 
 const AuthenticatedProcessosRouteChildren: AuthenticatedProcessosRouteChildren =
   {
     AuthenticatedProcessosProcessIdRoute: AuthenticatedProcessosProcessIdRoute,
+    AuthenticatedProcessosNovoRoute: AuthenticatedProcessosNovoRoute,
     AuthenticatedProcessosIndexRoute: AuthenticatedProcessosIndexRoute,
   }
 
