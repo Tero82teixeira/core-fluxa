@@ -181,7 +181,7 @@ function ProcessDetail() {
                         ) : (
                           <Circle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                         )}
-                        <span className="truncate text-sm">{item.name}</span>
+                        <span className="truncate text-sm">{item.label}</span>
                       </span>
                       <StatusBadge label={CHECKLIST_STATUS[item.status].label} tone={CHECKLIST_STATUS[item.status].tone} />
                     </li>

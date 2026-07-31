@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Mail, MessageSquare, Phone } from "lucide-react";
 
-import { useClient, useProcesses, useProcessMovements, useTasks } from "@/hooks/use-operations";
+import { useClient, useProcesses, useRecentActivity, useTasks } from "@/hooks/use-operations";
 import { useWorkspace } from "@/lib/workspace";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ function ClientDetail() {
   const client = useClient(clientId);
   const processes = useProcesses(organizationId);
   const tasks = useTasks(organizationId);
-  const allMovements = useProcessMovements("");
+  const allMovements = useRecentActivity(organizationId);
 
   if (!client.data) {
     return <p className="p-6 text-sm text-muted-foreground">Cliente não encontrado.</p>;

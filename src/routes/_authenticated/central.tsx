@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -429,8 +429,4 @@ function Central() {
       </div>
     </TooltipProvider>
   );
-}
-
-export function Unused(): ReactNode {
-  return null;
 }
