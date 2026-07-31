@@ -14,6 +14,9 @@ type Ctx =
   | "servico"
   | "equipe"
   | "empresa"
+  | "documento"
+  | "monitoramento"
+  | "upload"
   | "auth";
 
 const FALLBACK: Record<Ctx, string> = {
@@ -27,6 +30,9 @@ const FALLBACK: Record<Ctx, string> = {
   servico: "Não foi possível salvar o tipo de serviço. Tente novamente.",
   equipe: "Não foi possível atualizar a equipe. Tente novamente.",
   empresa: "Não foi possível salvar os dados da empresa. Tente novamente.",
+  documento: "Não foi possível concluir a ação no documento. Tente novamente.",
+  monitoramento: "Não foi possível atualizar o item de monitoramento. Tente novamente.",
+  upload: "Não foi possível enviar o arquivo. Verifique o formato e tente novamente.",
   auth: "Não foi possível concluir. Tente novamente em instantes.",
 };
 
