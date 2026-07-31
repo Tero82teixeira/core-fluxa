@@ -50,7 +50,7 @@ export const Route = createFileRoute("/_authenticated/central")({
 
 const CLOSED: ProcessStage[] = ["finalizado", "arquivado", "cancelado"];
 
-const isStale = (process: DemoProcess) => {
+const isStale = (process: ProcessRow) => {
   const days = daysUntil(process.last_movement_at);
   return days !== null && days <= -14;
 };
