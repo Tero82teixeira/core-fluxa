@@ -381,7 +381,7 @@ function Central() {
                   ))}
                 </ul>
                 <p className="helper-text mt-4">
-                  Conclusões valem apenas nesta sessão de demonstração.
+                  Conclusões são salvas e registradas na auditoria da empresa.
                 </p>
               </CardContent>
             </Card>

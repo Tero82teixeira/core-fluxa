@@ -99,7 +99,7 @@ function ClientDetail() {
             <Button variant="outline" onClick={() => notifyDemoAction("Mensagem por WhatsApp")}>
               <MessageSquare className="size-4" aria-hidden /> WhatsApp
             </Button>
-            <Button onClick={() => notifyDemoAction("Criação de processo")}>Novo processo</Button>
+            <Button asChild><Link to="/processos/novo">Novo processo</Link></Button>
           </div>
         </CardContent>
       </Card>
