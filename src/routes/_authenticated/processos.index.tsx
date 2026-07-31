@@ -80,20 +80,30 @@ function ProcessesPage() {
     setDragging(null);
     if (!process || process.stage === stage) return;
     moveDemoProcess(process.id, stage);
-    notifyDemoSessionChange(`${process.code} movido para ${PROCESS_STAGE[stage].label}.`);
+    notifyDemoStageChange(`${process.code} movido para ${PROCESS_STAGE[stage].label}.`);
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4 sm:p-6">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 sm:p-6">
+      <header className="space-y-1">
+        <h1 className="page-title">Processos</h1>
+        <p className="page-subtitle">
+          Kanban operacional com etapas, prazos, prioridades e responsáveis.
+        </p>
+      </header>
+
+      <div className="flex flex-wrap items-center gap-2.5">
         <Input
           value={term}
           onChange={(event) => setTerm(event.target.value)}
+          aria-label="Buscar processos"
           placeholder="Buscar por código, cliente ou protocolo"
-          className="w-full sm:max-w-xs"
+          className="h-10 w-full sm:max-w-xs"
         />
         <Select value={owner} onValueChange={setOwner}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Responsável" /></SelectTrigger>
+          <SelectTrigger aria-label="Filtrar por responsável" className="h-10 w-full sm:w-52">
+            <SelectValue placeholder="Responsável" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os responsáveis</SelectItem>
             {owners.map((name) => (
@@ -102,7 +112,9 @@ function ProcessesPage() {
           </SelectContent>
         </Select>
         <Select value={priority} onValueChange={(value) => setPriority(value as typeof priority)}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Prioridade" /></SelectTrigger>
+          <SelectTrigger aria-label="Filtrar por prioridade" className="h-10 w-full sm:w-44">
+            <SelectValue placeholder="Prioridade" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todas prioridades</SelectItem>
             {Object.entries(PRIORITY).map(([key, meta]) => (
@@ -111,22 +123,26 @@ function ProcessesPage() {
           </SelectContent>
         </Select>
         {etapa && (
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" asChild>
             <Link to="/processos" search={{}}>Limpar filtro de etapa</Link>
           </Button>
         )}
-        <Button className="ml-auto" onClick={() => notifyDemoAction("Criação de processo")}>
+        <Button className="sm:ml-auto" onClick={() => notifyDemoAction("Criação de processo")}>
           Novo processo
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="helper-text">
         Arraste os cards entre as colunas — as movimentações valem apenas nesta sessão de demonstração.
       </p>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {KANBAN_STAGES.map((stage) => {
           const items = rows.filter((process) => process.stage === stage);
+          const atRisk = items.filter((process) => {
+            const days = daysUntil(process.due_date);
+            return days !== null && days <= 0;
+          }).length;
           return (
             <section
               key={stage}
@@ -136,55 +152,79 @@ function ProcessesPage() {
               }}
               onDragLeave={() => setDropTarget((current) => (current === stage ? null : current))}
               onDrop={() => drop(stage)}
-              className={`rounded-xl border bg-card transition ${
-                dropTarget === stage ? "border-brand bg-brand/5" : "border-border"
+              className={`min-w-0 rounded-xl border bg-card transition ${
+                dropTarget === stage
+                  ? "border-brand bg-brand/5"
+                  : atRisk > 0
+                    ? "border-destructive/35"
+                    : "border-border"
               }`}
             >
-              <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-                <p className="truncate text-sm font-semibold">{PROCESS_STAGE[stage].label}</p>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{items.length}</span>
+              <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3.5">
+                <p className="card-title truncate">{PROCESS_STAGE[stage].label}</p>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {atRisk > 0 && (
+                    <span className="rounded-full bg-destructive/12 px-2 py-0.5 text-xs font-medium text-destructive">
+                      {atRisk} em risco
+                    </span>
+                  )}
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                    {items.length}
+                  </span>
+                </span>
               </div>
-              <ul className="space-y-2 p-3">
+              <ul className="space-y-2.5 p-3">
                 {items.map((process) => {
                   const deadline = deadlineTone(process.due_date);
-                  const docs = `${process.documents_received}/${process.documents_total}`;
+                  const docsPct = process.documents_total
+                    ? Math.round((process.documents_received / process.documents_total) * 100)
+                    : 0;
                   return (
                     <li
                       key={process.id}
                       draggable
                       onDragStart={() => setDragging(process.id)}
                       onDragEnd={() => setDragging(null)}
-                      className={`rounded-lg border border-border bg-background p-3 transition ${
-                        dragging === process.id ? "opacity-50" : "hover:border-brand/40"
+                      className={`rounded-lg border border-border bg-background p-3.5 transition ${
+                        dragging === process.id ? "opacity-50" : "hover:border-brand/40 hover:shadow-sm"
                       }`}
                     >
                       <div className="flex items-start gap-2">
-                        <GripVertical className="mt-0.5 size-4 shrink-0 cursor-grab text-muted-foreground" aria-hidden />
+                        <GripVertical
+                          className="mt-0.5 size-4 shrink-0 cursor-grab text-muted-foreground"
+                          aria-hidden
+                        />
                         <Link
                           to="/processos/$processId"
                           params={{ processId: process.id }}
-                          className="min-w-0 flex-1"
+                          className="min-w-0 flex-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          <p className="truncate text-sm font-medium">{process.clients?.name}</p>
+                          <p className="truncate text-sm font-semibold">{process.clients?.name}</p>
                           <p className="truncate text-xs text-muted-foreground">
                             {process.code} · {process.title}
                           </p>
-                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                             <StatusBadge label={PRIORITY[process.priority].label} tone={PRIORITY[process.priority].tone} />
                             <StatusBadge label={deadline.label} tone={deadline.tone} />
                           </div>
-                          <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                            <span className="truncate">{process.owner_name}</span>
-                            <span className="shrink-0">Docs {docs}</span>
+                          <div className="mt-3 space-y-1.5">
+                            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                              <span className="truncate">Docs {process.documents_received}/{process.documents_total}</span>
+                              <span className="shrink-0">{docsPct}%</span>
+                            </div>
+                            <Progress value={docsPct} className="h-1.5" />
                           </div>
-                          <p className="mt-1 text-[11px] text-muted-foreground">Prazo {formatDate(process.due_date)}</p>
+                          <div className="mt-2.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                            <span className="truncate">{process.owner_name}</span>
+                            <span className="shrink-0">Prazo {formatDate(process.due_date)}</span>
+                          </div>
                         </Link>
                       </div>
                     </li>
                   );
                 })}
                 {items.length === 0 && (
-                  <li className="rounded-lg border border-dashed border-border py-6 text-center text-xs text-muted-foreground">
+                  <li className="rounded-lg border border-dashed border-border py-7 text-center text-xs text-muted-foreground">
                     Nenhum processo nesta etapa.
                   </li>
                 )}
@@ -205,3 +245,4 @@ function ProcessesPage() {
     </div>
   );
 }
+
