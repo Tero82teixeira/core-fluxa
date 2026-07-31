@@ -50,19 +50,20 @@ export function WorkspaceProvider({ user, children }: { user: User | null; child
 
     attempted.current = true;
     setBootstrapping(true);
-    supabase
-      .rpc("bootstrap_organization")
-      .then(async ({ error }) => {
+    void (async () => {
+      try {
+        const { error } = await supabase.rpc("bootstrap_organization");
         if (error) throw error;
         setBootstrapError(null);
         await queryClient.invalidateQueries({ queryKey: ["memberships"] });
         await queryClient.invalidateQueries({ queryKey: ["profile"] });
-      })
-      .catch((error) => {
+      } catch (error) {
         logTechnical("bootstrap_organization", error);
         setBootstrapError("Seu vínculo com a empresa ainda não foi concluído.");
-      })
-      .finally(() => setBootstrapping(false));
+      } finally {
+        setBootstrapping(false);
+      }
+    })();
   }, [user, memberships.isLoading, memberships.isFetching, memberships.isSuccess, list.length, queryClient]);
 
   const membership = list.find((m) => m.organization_id === selected) ?? list[0] ?? null;
