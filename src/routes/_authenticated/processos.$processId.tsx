@@ -379,7 +379,17 @@ function ProcessDetail() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {permissions.canUploadDocuments && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAttachItem({ id: item.id, title: item.title })}
+                          >
+                            Anexar
+                          </Button>
+                        )}
                         {permissions.canEdit && (
+
                           <Button
                             variant="ghost"
                             size="icon"
