@@ -86,10 +86,10 @@ function ClientsPage() {
         <p className="page-subtitle">Carteira de clientes com documentos, contatos, processos e histórico.</p>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {kpis.map((kpi) => (
           <Card key={kpi.label}>
-            <CardContent className="p-5">
+            <CardContent className="p-4 sm:p-5">
               <p className="field-label">{kpi.label}</p>
               <p className="metric-value mt-2 text-2xl">{kpi.value}</p>
             </CardContent>
