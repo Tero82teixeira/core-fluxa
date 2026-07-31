@@ -209,7 +209,8 @@ export function useClientOwners(organizationId: string | null) {
         .not("owner_name", "is", null)
         .limit(500);
       if (error) throw error;
-      return Array.from(new Set((data ?? []).map((row: any) => row.owner_name as string))).sort();
+      const names = (data ?? []).map((row: any) => String(row.owner_name));
+      return Array.from(new Set<string>(names)).sort();
     },
   });
 }

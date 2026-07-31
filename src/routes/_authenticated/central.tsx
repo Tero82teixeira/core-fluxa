@@ -18,7 +18,7 @@ import {
 
 import { useWorkspace } from "@/lib/workspace";
 import { useClients, useCompleteTask, useProcesses, useRecentActivity, useTasks } from "@/hooks/use-operations";
-import type { DemoProcess } from "@/lib/demo-data";
+import type { ProcessRow } from "@/hooks/use-operations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -171,7 +171,7 @@ function Central() {
   ];
 
   const radar = useMemo(() => {
-    const score = (process: DemoProcess) => {
+    const score = (process: ProcessRow) => {
       const days = daysUntil(process.due_date) ?? 99;
       const priorityWeight = { critica: 0, alta: 1, media: 2, baixa: 3 }[process.priority];
       return days * 2 + priorityWeight;
@@ -303,7 +303,7 @@ function Central() {
                           <StatusBadge label={risk} tone={riskTone} />
                         </div>
                       </div>
-                      <p className="helper-text mt-2">Motivo: {process.next_action}</p>
+                      <p className="helper-text mt-2">Etapa atual: {PROCESS_STAGE[process.stage].label}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         <span>Prazo {formatDate(process.due_date)}</span>
                         <span>Responsável {process.owner_name}</span>
