@@ -117,36 +117,41 @@ function AuthPage() {
       return;
     }
 
-    if (!AUTH_ENABLED) {
-      setErrors({});
-      if (mode === "signup") {
-        setValidated(true);
-      } else {
-        setDemoSuccess(true);
-        toast.success(DEMO_SUCCESS_MESSAGE);
-      }
-      return;
-    }
-
     setLoading(true);
+    setErrors({});
     try {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
+        window.localStorage.setItem(REMEMBER_KEY, remember ? email.trim() : "");
+        setPassword("");
+        navigate({ to: "/central" });
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { emailRedirectTo: window.location.origin, data: { full_name: name.trim() } },
+          options: {
+            emailRedirectTo: `${window.location.origin}/central`,
+            data: { full_name: name.trim() },
+          },
         });
         if (error) throw error;
+        setValidated(true);
+        setPassword("");
+
+        if (data.session?.user) {
+          // O perfil é criado imediatamente; a empresa é criada no onboarding.
+          await supabase
+            .from("profiles")
+            .upsert({ id: data.session.user.id, full_name: name.trim(), email: email.trim() }, { onConflict: "id" });
+          toast.success("Conta criada. Vamos configurar sua empresa.");
+          navigate({ to: "/onboarding" });
+        } else {
+          toast.success("Confirme o e-mail enviado para ativar sua conta.");
+        }
       }
-      navigate({ to: "/central" });
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? translateAuthError(error.message, (error as { status?: number }).status)
-          : "Erro temporário de conexão. Tente novamente.";
+      const message = describeAuthError(error);
       setErrors({ form: message });
       toast.error(message);
     } finally {
@@ -159,18 +164,14 @@ function AuthPage() {
       setErrors((e) => ({ ...e, email: "Informe seu e-mail para receber o link de redefinição." }));
       return;
     }
-    if (!AUTH_ENABLED) {
-      toast.success(DEMO_SUCCESS_MESSAGE);
-      return;
-    }
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/redefinir-senha`,
       });
       if (error) throw error;
       toast.success("Enviamos um link de redefinição para o seu e-mail.");
     } catch (error) {
-      toast.error(error instanceof Error ? translateAuthError(error.message) : "Não foi possível enviar o link.");
+      toast.error(describeAuthError(error));
     }
   };
 
