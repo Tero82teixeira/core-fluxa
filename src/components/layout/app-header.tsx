@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { DEMO_MODE } from "@/lib/demo";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Bell,
