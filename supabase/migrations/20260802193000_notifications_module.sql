@@ -13,13 +13,16 @@ CREATE INDEX IF NOT EXISTS notifications_organization_idx ON public.notification
 CREATE INDEX IF NOT EXISTS notifications_read_idx ON public.notifications(user_id, read_at);
 CREATE INDEX IF NOT EXISTS notifications_created_idx ON public.notifications(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS notifications_dedupe_idx ON public.notifications(dedupe_key);
-CREATE UNIQUE INDEX IF NOT EXISTS notifications_org_dedupe_unique ON public.notifications(organization_id, dedupe_key) WHERE dedupe_key IS NOT NULL;
+DROP INDEX IF EXISTS public.notifications_org_dedupe_unique;
+DROP INDEX IF EXISTS public.notifications_org_user_dedupe_unique;
+CREATE UNIQUE INDEX notifications_org_user_dedupe_unique ON public.notifications(organization_id, user_id, dedupe_key) WHERE dedupe_key IS NOT NULL;
 
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS notifications_select ON public.notifications;
 DROP POLICY IF EXISTS notifications_update ON public.notifications;
 DROP POLICY IF EXISTS notifications_insert ON public.notifications;
 DROP POLICY IF EXISTS notifications_delete ON public.notifications;
+DROP POLICY IF EXISTS notifications_select_own ON public.notifications;
 CREATE POLICY notifications_select_own ON public.notifications FOR SELECT TO authenticated
 USING (user_id = auth.uid() AND EXISTS (SELECT 1 FROM public.organization_members m WHERE m.organization_id=notifications.organization_id AND m.user_id=auth.uid() AND m.is_active));
 REVOKE INSERT, UPDATE, DELETE ON public.notifications FROM authenticated, anon;
@@ -46,20 +49,38 @@ END $$;
 REVOKE ALL ON FUNCTION public.mark_notification_read(uuid), public.mark_all_notifications_read(uuid), public.archive_notification(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.mark_notification_read(uuid), public.mark_all_notifications_read(uuid), public.archive_notification(uuid) TO authenticated;
 
--- Trigger genérico e transacional. to_jsonb permite evolução segura dos módulos sem acoplamento a colunas opcionais.
+-- Trigger transacional, baseado exclusivamente nos responsáveis reais de cada tabela.
 CREATE OR REPLACE FUNCTION public.notify_domain_change() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
-DECLARE n jsonb:=to_jsonb(NEW); o jsonb:=CASE WHEN TG_OP='UPDATE' THEN to_jsonb(OLD) ELSE '{}'::jsonb END; recipient uuid; actor uuid:=auth.uid(); k text; label text; url text; event text;
+DECLARE
+ n jsonb:=to_jsonb(NEW);
+ o jsonb:=CASE WHEN TG_OP='UPDATE' THEN to_jsonb(OLD) ELSE '{}'::jsonb END;
+ recipient_text text; recipient uuid; k text; label text; url text; event text;
 BEGIN
- k:=CASE TG_TABLE_NAME WHEN 'tasks' THEN 'task' WHEN 'processes' THEN 'process' WHEN 'documents' THEN 'document' ELSE 'monitoring' END;
- label:=CASE k WHEN 'task' THEN 'Tarefa' WHEN 'process' THEN 'Processo' WHEN 'document' THEN 'Documento' ELSE 'Monitoramento' END;
- url:=CASE k WHEN 'task' THEN '/tarefas' WHEN 'process' THEN '/processos' WHEN 'document' THEN '/documentos' ELSE '/monitoramento' END;
- recipient:=coalesce(nullif(n->>'assignee_id','')::uuid,nullif(n->>'owner_id','')::uuid,nullif(n->>'responsible_id','')::uuid);
- IF recipient IS NULL OR recipient=actor THEN RETURN NEW; END IF;
- event:=CASE WHEN TG_OP='INSERT' THEN 'assigned' WHEN n->>'assignee_id' IS DISTINCT FROM o->>'assignee_id' OR n->>'owner_id' IS DISTINCT FROM o->>'owner_id' THEN 'reassigned' WHEN n->>'status' IS DISTINCT FROM o->>'status' THEN 'status' WHEN n->>'due_at' IS DISTINCT FROM o->>'due_at' OR n->>'due_date' IS DISTINCT FROM o->>'due_date' THEN 'deadline' ELSE NULL END;
- IF event IS NULL THEN RETURN NEW; END IF;
+ CASE TG_TABLE_NAME
+  WHEN 'tasks' THEN
+   k:='task'; label:='Tarefa'; url:='/tarefas'; recipient_text:=n->>'assignee_id';
+   event:=CASE WHEN TG_OP='INSERT' THEN 'assigned' WHEN n->>'assignee_id' IS DISTINCT FROM o->>'assignee_id' THEN 'reassigned' WHEN n->>'status' IS DISTINCT FROM o->>'status' THEN 'status' WHEN n->>'due_at' IS DISTINCT FROM o->>'due_at' THEN 'deadline' END;
+  WHEN 'processes' THEN
+   k:='process'; label:='Processo'; url:='/processos'; recipient_text:=n->>'owner_id';
+   event:=CASE WHEN TG_OP='INSERT' THEN 'assigned' WHEN n->>'owner_id' IS DISTINCT FROM o->>'owner_id' THEN 'reassigned' WHEN n->>'stage' IS DISTINCT FROM o->>'stage' THEN 'status' WHEN n->>'due_date' IS DISTINCT FROM o->>'due_date' THEN 'deadline' END;
+  WHEN 'monitoring_items' THEN
+   k:='monitoring'; label:='Monitoramento'; url:='/monitoramento'; recipient_text:=n->>'responsible_user_id';
+   event:=CASE WHEN TG_OP='INSERT' THEN 'assigned' WHEN n->>'responsible_user_id' IS DISTINCT FROM o->>'responsible_user_id' THEN 'reassigned' WHEN n->>'status' IS DISTINCT FROM o->>'status' THEN 'status' WHEN n->>'expiration_date' IS DISTINCT FROM o->>'expiration_date' THEN 'deadline' END;
+  ELSE RETURN NEW;
+ END CASE;
+ -- A validação ocorre antes do cast: vazio, texto malformado e UUID nulo nunca são convertidos.
+ IF recipient_text IS NULL OR recipient_text !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' OR event IS NULL THEN RETURN NEW; END IF;
+ recipient:=recipient_text::uuid;
+ IF recipient=auth.uid() THEN RETURN NEW; END IF;
  INSERT INTO public.notifications(organization_id,user_id,kind,title,body,entity_type,entity_id,action_url,dedupe_key)
- VALUES ((n->>'organization_id')::uuid,recipient,k,label||' atualizada',coalesce(n->>'title',n->>'name',label)||' requer sua atenção.',k,(n->>'id')::uuid,url,k||':'||(n->>'id')||':'||event||':'||coalesce(n->>'updated_at',n->>'created_at')) ON CONFLICT DO NOTHING;
+ VALUES ((n->>'organization_id')::uuid,recipient,k,label||' atualizada',coalesce(n->>'title',n->>'code',label)||' requer sua atenção.',k,(n->>'id')::uuid,url,k||':'||(n->>'id')||':'||event||':'||coalesce(n->>'updated_at',n->>'created_at')) ON CONFLICT DO NOTHING;
  RETURN NEW;
 END $$;
 REVOKE ALL ON FUNCTION public.notify_domain_change() FROM PUBLIC, anon, authenticated;
-DO $$ DECLARE t text; BEGIN FOREACH t IN ARRAY ARRAY['tasks','processes','documents','monitoring_items'] LOOP IF to_regclass('public.'||t) IS NOT NULL THEN EXECUTE format('DROP TRIGGER IF EXISTS notify_domain_change ON public.%I',t); EXECUTE format('CREATE TRIGGER notify_domain_change AFTER INSERT OR UPDATE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.notify_domain_change()',t); END IF; END LOOP; END $$;
+-- Documents possui autoria/revisão concluída, mas não um responsável ou revisor designado; não se inventa destinatário.
+DO $$ DECLARE t text; BEGIN
+ DROP TRIGGER IF EXISTS notify_domain_change ON public.documents;
+ FOREACH t IN ARRAY ARRAY['tasks','processes','monitoring_items'] LOOP
+  IF to_regclass('public.'||t) IS NOT NULL THEN EXECUTE format('DROP TRIGGER IF EXISTS notify_domain_change ON public.%I',t); EXECUTE format('CREATE TRIGGER notify_domain_change AFTER INSERT OR UPDATE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.notify_domain_change()',t); END IF;
+ END LOOP;
+END $$;
