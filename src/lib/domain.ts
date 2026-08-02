@@ -116,7 +116,7 @@ export const RECURRENCE: Record<RecurrenceType, { label: string }> = {
 };
 
 /** Funções oficiais oferecidas na gestão de equipe (valores internos já padronizados no banco). */
-export const TEAM_ROLES: AppRole[] = ["proprietario", "administrador", "operacional", "visualizador"];
+export const TEAM_ROLES: AppRole[] = ["proprietario", "administrador", "gestor", "operacional", "visualizador"];
 
 export const FINANCIAL_STATUS: Record<FinancialStatus, { label: string; tone: Tone }> = {
   nao_aplicavel: { label: "Não aplicável", tone: "neutral" },
