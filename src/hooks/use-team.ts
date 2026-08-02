@@ -108,27 +108,40 @@ const invalidateTeam = (queryClient: ReturnType<typeof useQueryClient>, organiza
   queryClient.invalidateQueries({ queryKey: ["invitations", organizationId] });
 };
 
-/** Cria um convite e devolve o link (o token só é exibido uma vez). */
+/** Cria um convite diretamente pela RPC segura e devolve o link uma única vez. */
 export function useCreateInvitation(organizationId: string | null) {
   const queryClient = useQueryClient();
-  const actor = useActor();
   return useMutation({
     mutationFn: async ({ email, role }: { email: string; role: AppRole }) => {
-      const { data, error } = await supabase.functions.invoke("send-team-invitation", {
-        body: { organizationId, email, role },
+      if (!organizationId) throw new Error("Empresa ativa não encontrada.");
+
+      const { data, error } = await db().rpc("create_invitation", {
+        _org: organizationId,
+        _email: email,
+        _role: role,
       });
       if (error) throw error;
-      const row = data as { invitation_id: string; expires_at: string; invitation_url: string; email_sent: boolean; message: string };
-      await recordAudit({
-        organizationId: organizationId!,
-        actorId: actor.userId,
-        actorName: actor.name,
-        action: "invite.created",
-        entity: "member",
-        entityId: row.invitation_id,
-        metadata: { email, role },
-      });
-      return row;
+
+      const invitation = (Array.isArray(data) ? data[0] : data) as {
+        invitation_id?: string;
+        token?: string;
+        expires_at?: string;
+      } | null;
+
+      if (!invitation?.invitation_id || !invitation.token || !invitation.expires_at) {
+        throw new Error("Não foi possível gerar o link do convite.");
+      }
+      if (typeof window === "undefined") {
+        throw new Error("Não foi possível identificar o endereço da aplicação.");
+      }
+
+      return {
+        invitation_id: invitation.invitation_id,
+        expires_at: invitation.expires_at,
+        invitation_url: new URL(`/convite/${encodeURIComponent(invitation.token)}`, window.location.origin).toString(),
+        email_sent: false,
+        message: "Convite criado. Copie e compartilhe o link.",
+      };
     },
     onSuccess: () => invalidateTeam(queryClient, organizationId),
   });

@@ -5,8 +5,9 @@ const migration=readFileSync("supabase/migrations/20260802230000_complete_team_p
 const base=readFileSync("supabase/migrations/20260731184003_213e2283-a433-444c-9de8-cdd162bacfa2.sql","utf8");
 const edge=readFileSync("supabase/functions/send-team-invitation/index.ts","utf8");
 const page=readFileSync("src/routes/_authenticated/equipe.tsx","utf8");
+const hook=readFileSync("src/hooks/use-team.ts","utf8");
 const invite=readFileSync("src/routes/convite.$token.tsx","utf8");
-const all=page+invite+edge;
+const all=page+invite+edge+hook;
 describe("equipe e permissões",()=>{
  test("lista membros da organização",()=>assert.match(page,/useTeamMembers\(organizationId\)/));
  test("isola outra organização",()=>assert.match(migration,/is_org_member\(organization_id\)/));
@@ -36,8 +37,9 @@ describe("equipe e permissões",()=>{
  test("token puro não é persistido",()=>assert.match(migration,/token_hash/));
  test("convite reutilizado é bloqueado",()=>assert.match(base,/INVITE_ALREADY_ACCEPTED/));
  test("frontend não contém service role",()=>assert.doesNotMatch(all,/service_role/i));
- test("Edge valida JWT",()=>assert.match(edge,/auth.getUser\(\)/));
- test("Edge confirma autorização pelo RPC",()=>assert.match(edge,/client.rpc\("create_invitation"/));
+ test("convite usa RPC segura diretamente",()=>assert.match(hook,/rpc\("create_invitation"/));
+ test("convite não depende de Edge Function",()=>assert.doesNotMatch(hook,/functions\.invoke\("send-team-invitation"/));
+ test("link usa a origem atual da aplicação",()=>assert.match(hook,/window\.location\.origin/));
 });
 
 describe("revisão de segurança do PR #3",()=>{
