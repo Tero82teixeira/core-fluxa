@@ -18,6 +18,7 @@ export type TeamMember = {
   openTasks: number;
   lateTasks: number;
   openProcesses: number;
+  monitoringItems: number;
 };
 
 /** Membros da empresa com carga de trabalho real. */
@@ -36,7 +37,7 @@ export function useTeamMembers(organizationId: string | null) {
       if (rows.length === 0) return [];
 
       const ids = rows.map((row) => row.user_id);
-      const [{ data: profiles }, { data: tasks }, { data: processes }] = await Promise.all([
+      const [{ data: profiles }, { data: tasks }, { data: processes }, { data: monitoring }] = await Promise.all([
         db().from("profiles").select("id, full_name, email").in("id", ids),
         db()
           .from("tasks")
@@ -50,6 +51,7 @@ export function useTeamMembers(organizationId: string | null) {
           .select("owner_id")
           .eq("organization_id", organizationId)
           .is("archived_at", null),
+        db().from("monitoring_items").select("responsible_user_id").eq("organization_id", organizationId).is("archived_at", null),
       ]);
 
       const profileMap = new Map<string, { full_name: string | null; email: string | null }>(
@@ -65,6 +67,7 @@ export function useTeamMembers(organizationId: string | null) {
           openTasks: own.length,
           lateTasks: own.filter((task: any) => task.due_at && new Date(task.due_at).getTime() < now).length,
           openProcesses: (processes ?? []).filter((process: any) => process.owner_id === row.user_id).length,
+          monitoringItems: (monitoring ?? []).filter((item: any) => item.responsible_user_id === row.user_id).length,
         };
       });
     },
@@ -111,13 +114,11 @@ export function useCreateInvitation(organizationId: string | null) {
   const actor = useActor();
   return useMutation({
     mutationFn: async ({ email, role }: { email: string; role: AppRole }) => {
-      const { data, error } = await db().rpc("create_invitation", {
-        _org: organizationId,
-        _email: email,
-        _role: role,
+      const { data, error } = await supabase.functions.invoke("send-team-invitation", {
+        body: { organizationId, email, role },
       });
       if (error) throw error;
-      const row = (Array.isArray(data) ? data[0] : data) as { invitation_id: string; token: string; expires_at: string };
+      const row = data as { invitation_id: string; expires_at: string; invitation_url: string; email_sent: boolean; message: string };
       await recordAudit({
         organizationId: organizationId!,
         actorId: actor.userId,
