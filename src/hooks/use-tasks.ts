@@ -206,7 +206,8 @@ export function useSaveTask(organizationId: string | null) {
         const { error } = await db()
           .from("tasks")
           .update({ ...payload, updated_by: actor.userId })
-          .eq("id", id);
+          .eq("id", id)
+          .eq("organization_id", organizationId);
         if (error) throw error;
         await recordAudit({
           organizationId: organizationId!,
@@ -299,7 +300,8 @@ export function useChangeTaskStatus(organizationId: string | null) {
           completed_by: done ? actor.userId : null,
           updated_by: actor.userId,
         })
-        .eq("id", task.id);
+        .eq("id", task.id)
+        .eq("organization_id", organizationId);
       if (error) throw error;
 
       if (done) {
@@ -368,7 +370,8 @@ export function useAssignTask(organizationId: string | null) {
       const { error } = await db()
         .from("tasks")
         .update({ assignee_id: assigneeId, assignee_name: assigneeName, updated_by: actor.userId })
-        .eq("id", task.id);
+        .eq("id", task.id)
+        .eq("organization_id", organizationId);
       if (error) throw error;
       await recordAudit({
         organizationId: organizationId!,
@@ -406,7 +409,8 @@ export function useArchiveTask(organizationId: string | null) {
           status: archived ? "arquivada" : "pendente",
           updated_by: actor.userId,
         })
-        .eq("id", task.id);
+        .eq("id", task.id)
+        .eq("organization_id", organizationId);
       if (error) throw error;
       await recordAudit({
         organizationId: organizationId!,

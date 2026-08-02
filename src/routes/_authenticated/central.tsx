@@ -19,6 +19,7 @@ import { useClients, useCompleteTask, useProcesses, useRecentActivity, useTasks 
 import type { ProcessRow } from "@/hooks/use-operations";
 import { Card, CardContent } from "@/components/ui/card";
 import { useDocumentsSummary, useMonitoring } from "@/hooks/use-documents";
+import { taskIndicators } from "@/lib/tasks";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -85,10 +86,20 @@ function Central() {
   }, [open]);
 
   const pendingTasks = (tasks.data ?? []).filter((task) => task.status !== "concluida");
+  const taskStats = taskIndicators(tasks.data ?? []);
   const activeClients = (clients.data ?? []).filter((client) => client.status === "ativo");
   const forecast = open.reduce((total, process) => total + (process.value ?? 0), 0);
 
   const metrics = [
+    {
+      key: "tarefas-abertas",
+      label: "Tarefas em aberto",
+      value: taskStats.open,
+      description: `${taskStats.overdue} atrasada(s) exigem atenção`,
+      tooltip: "Tarefas pendentes, em andamento ou aguardando na organização.",
+      icon: CheckCircle2,
+      onClick: () => navigate({ to: "/tarefas" }),
+    },
     {
       key: "vencimentos",
       label: "Vencimentos em 30 dias",
