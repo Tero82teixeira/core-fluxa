@@ -39,3 +39,21 @@ describe("equipe e permissões",()=>{
  test("Edge valida JWT",()=>assert.match(edge,/auth.getUser\(\)/));
  test("Edge confirma autorização pelo RPC",()=>assert.match(edge,/client.rpc\("create_invitation"/));
 });
+
+describe("revisão de segurança do PR #3",()=>{
+ test("origin malicioso do body é ignorado",()=>{assert.doesNotMatch(edge,/organizationId, email, role, origin/);assert.match(edge,/Deno\.env\.get\("APP_URL"\)/);});
+ test("APP_URL ausente falha de forma segura",()=>assert.match(edge,/INVITATION_URL_NOT_CONFIGURED/));
+ test("aceite bloqueia convite expirado",()=>assert.match(migration,/INVITE_EXPIRED/));
+ test("aceite bloqueia convite cancelado",()=>assert.match(migration,/INVITE_CANCELLED/));
+ test("aceite bloqueia convite reutilizado com lock",()=>assert.match(migration,/FOR UPDATE[\s\S]+INVITE_ALREADY_USED/));
+ test("aceite rejeita e-mail autenticado diferente",()=>assert.match(migration,/INVITE_EMAIL_MISMATCH/));
+ test("aceite rejeita membership ativa duplicada",()=>assert.match(migration,/MEMBERSHIP_ALREADY_EXISTS/));
+ test("aceite não cria nova organização",()=>assert.doesNotMatch(migration,/INSERT INTO public\.organizations/));
+ test("administrador não promove proprietário",()=>assert.match(migration,/v_m\.role='proprietario' OR _role IN \('proprietario','administrador'\)/));
+ test("último proprietário não pode ser removido",()=>assert.match(migration,/RAISE EXCEPTION 'LAST_OWNER'/));
+ test("transferência é uma função transacional",()=>assert.match(migration,/FUNCTION public\.transfer_member_responsibilities[\s\S]+UPDATE public\.tasks[\s\S]+UPDATE public\.processes[\s\S]+UPDATE public\.monitoring_items/));
+ test("falha de transferência não desativa membro",()=>{const fn=migration.slice(migration.lastIndexOf("FUNCTION public.transfer_member_responsibilities"));assert.doesNotMatch(fn,/SET is_active=false/);});
+ test("DELETE físico de tasks continua revogado",()=>assert.match(migration,/DROP POLICY IF EXISTS tasks_viewer_delete[\s\S]+REVOKE DELETE ON public\.tasks FROM authenticated/));
+ test("preview nunca retorna token_hash",()=>{const fn=migration.slice(migration.indexOf("FUNCTION public.invitation_preview"),migration.indexOf("FUNCTION public.accept_invitation"));assert.doesNotMatch(fn,/RETURNS TABLE\([^)]*token_hash/);});
+ test("CORS rejeita domínio não permitido",()=>{assert.match(edge,/ORIGIN_NOT_ALLOWED/);assert.doesNotMatch(edge,/Access-Control-Allow-Origin[^\n]+\*/);});
+});

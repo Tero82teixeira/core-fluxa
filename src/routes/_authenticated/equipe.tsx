@@ -53,7 +53,7 @@ function TeamPage() {
     event.preventDefault();
     try {
       const result = await createInvitation.mutateAsync({ email: email.trim(), role: inviteRole });
-      setEmail(""); setLastLink(result.invitation_url || `${location.origin}/convite/${result.token}`);
+      setEmail(""); setLastLink(result.invitation_url);
       toast.success(result.message || (result.email_sent ? "Convite enviado." : "Convite criado. Configure o serviço de e-mail para envio automático."));
     } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível criar o convite."); }
   }

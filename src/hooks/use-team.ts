@@ -115,10 +115,10 @@ export function useCreateInvitation(organizationId: string | null) {
   return useMutation({
     mutationFn: async ({ email, role }: { email: string; role: AppRole }) => {
       const { data, error } = await supabase.functions.invoke("send-team-invitation", {
-        body: { organizationId, email, role, origin: window.location.origin },
+        body: { organizationId, email, role },
       });
       if (error) throw error;
-      const row = data as { invitation_id: string; token: string; expires_at: string; invitation_url: string; email_sent: boolean; message: string };
+      const row = data as { invitation_id: string; expires_at: string; invitation_url: string; email_sent: boolean; message: string };
       await recordAudit({
         organizationId: organizationId!,
         actorId: actor.userId,
