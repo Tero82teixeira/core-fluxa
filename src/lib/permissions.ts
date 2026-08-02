@@ -5,6 +5,7 @@ import type { AppRole } from "@/lib/domain";
 
 const EDITORS: AppRole[] = ["proprietario", "administrador", "gestor", "operacional", "atendimento"];
 const MANAGERS: AppRole[] = ["superadmin", "proprietario", "administrador", "gestor"];
+const TASK_EDITORS: AppRole[] = ["superadmin", "proprietario", "administrador", "gestor", "operacional"];
 
 export type Permissions = {
   role: AppRole | null;
@@ -42,7 +43,7 @@ export function usePermissions(): Permissions {
       canMoveStage: isEditor,
       canArchive: isManager || current === "operacional",
       canManageServiceTypes: isManager,
-      canManageTasks: isEditor || current === "financeiro",
+      canManageTasks: current ? TASK_EDITORS.includes(current) : false,
       canUploadDocuments: isEditor,
       canReviewDocuments: isOwnerAdmin,
       canArchiveDocuments: isOwnerAdmin,
