@@ -21,6 +21,43 @@ DO $$ BEGIN
     CHECK (recurrence_type IN ('none', 'daily', 'weekly', 'monthly'));
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- Validação centralizada: nenhum vínculo pode atravessar a fronteira da organização.
+CREATE OR REPLACE FUNCTION public.tasks_enforce_links()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+DECLARE v_process public.processes%ROWTYPE;
+BEGIN
+  IF TG_OP = 'UPDATE' AND OLD.organization_id <> NEW.organization_id THEN
+    RAISE EXCEPTION 'TASK_ORGANIZATION_IMMUTABLE';
+  END IF;
+  IF NEW.assignee_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.organization_members m WHERE m.organization_id = NEW.organization_id
+      AND m.user_id = NEW.assignee_id AND m.is_active
+  ) THEN RAISE EXCEPTION 'TASK_ASSIGNEE_NOT_MEMBER'; END IF;
+  IF NEW.client_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.clients c WHERE c.id = NEW.client_id AND c.organization_id = NEW.organization_id
+  ) THEN RAISE EXCEPTION 'TASK_CLIENT_ORG_MISMATCH'; END IF;
+  IF NEW.process_id IS NOT NULL THEN
+    SELECT * INTO v_process FROM public.processes p
+      WHERE p.id = NEW.process_id AND p.organization_id = NEW.organization_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'TASK_PROCESS_ORG_MISMATCH'; END IF;
+    IF NEW.client_id IS NULL THEN NEW.client_id := v_process.client_id;
+    ELSIF NEW.client_id IS DISTINCT FROM v_process.client_id THEN
+      RAISE EXCEPTION 'TASK_CLIENT_PROCESS_MISMATCH';
+    END IF;
+  END IF;
+  IF NEW.document_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.documents d WHERE d.id = NEW.document_id AND d.organization_id = NEW.organization_id
+  ) THEN RAISE EXCEPTION 'TASK_DOCUMENT_ORG_MISMATCH'; END IF;
+  IF NEW.monitoring_item_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.monitoring_items m WHERE m.id = NEW.monitoring_item_id AND m.organization_id = NEW.organization_id
+  ) THEN RAISE EXCEPTION 'TASK_MONITORING_ORG_MISMATCH'; END IF;
+  RETURN NEW;
+END; $$;
+
+DROP TRIGGER IF EXISTS tasks_enforce_links_trg ON public.tasks;
+CREATE TRIGGER tasks_enforce_links_trg BEFORE INSERT OR UPDATE ON public.tasks
+  FOR EACH ROW EXECUTE FUNCTION public.tasks_enforce_links();
+
 CREATE TABLE IF NOT EXISTS public.task_comments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   task_id uuid NOT NULL REFERENCES public.tasks(id) ON DELETE CASCADE, user_id uuid, user_name text,
@@ -32,6 +69,26 @@ CREATE TABLE IF NOT EXISTS public.task_history (
   task_id uuid NOT NULL REFERENCES public.tasks(id) ON DELETE CASCADE, user_id uuid, user_name text,
   action text NOT NULL, old_value text, new_value text, created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Comentários e histórico sempre permanecem junto da tarefa e organização originais.
+CREATE OR REPLACE FUNCTION public.task_children_enforce_scope()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+BEGIN
+  IF TG_OP = 'UPDATE' AND OLD.organization_id <> NEW.organization_id THEN
+    RAISE EXCEPTION 'TASK_CHILD_ORGANIZATION_IMMUTABLE';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.tasks t WHERE t.id = NEW.task_id AND t.organization_id = NEW.organization_id
+  ) THEN RAISE EXCEPTION 'TASK_CHILD_ORG_MISMATCH'; END IF;
+  RETURN NEW;
+END; $$;
+
+DROP TRIGGER IF EXISTS task_comments_enforce_scope_trg ON public.task_comments;
+CREATE TRIGGER task_comments_enforce_scope_trg BEFORE INSERT OR UPDATE ON public.task_comments
+  FOR EACH ROW EXECUTE FUNCTION public.task_children_enforce_scope();
+DROP TRIGGER IF EXISTS task_history_enforce_scope_trg ON public.task_history;
+CREATE TRIGGER task_history_enforce_scope_trg BEFORE INSERT OR UPDATE ON public.task_history
+  FOR EACH ROW EXECUTE FUNCTION public.task_children_enforce_scope();
 
 CREATE INDEX IF NOT EXISTS tasks_org_due_active_idx ON public.tasks (organization_id, due_at) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS tasks_org_status_idx ON public.tasks (organization_id, status);
@@ -57,8 +114,6 @@ CREATE POLICY tasks_insert ON public.tasks FOR INSERT TO authenticated WITH CHEC
 CREATE POLICY tasks_update ON public.tasks FOR UPDATE TO authenticated
   USING (public.has_org_role(organization_id, ARRAY['proprietario','administrador','gestor','operacional']::public.app_role[]))
   WITH CHECK (public.has_org_role(organization_id, ARRAY['proprietario','administrador','gestor','operacional']::public.app_role[]));
-CREATE POLICY tasks_delete ON public.tasks FOR DELETE TO authenticated
-  USING (public.has_org_role(organization_id, ARRAY['proprietario','administrador']::public.app_role[]));
 
 DROP POLICY IF EXISTS task_comments_select ON public.task_comments;
 DROP POLICY IF EXISTS task_comments_insert ON public.task_comments;
@@ -81,6 +136,7 @@ CREATE POLICY task_history_insert ON public.task_history FOR INSERT TO authentic
   AND EXISTS (SELECT 1 FROM public.tasks t WHERE t.id = task_id AND t.organization_id = organization_id)
 );
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.tasks TO authenticated;
+REVOKE DELETE ON public.tasks FROM authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.tasks TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.task_comments TO authenticated;
 GRANT SELECT, INSERT ON public.task_history TO authenticated;

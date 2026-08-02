@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+import { readFileSync } from "node:fs";
 import { filterTasks, groupTasksByStatus, isTaskArchived, isTaskOpen, isTaskOverdue, taskDateKey, taskIndicators } from "../src/lib/tasks.ts";
 
 const task = (overrides = {}) => ({ status: "pendente", priority: "media", due_at: "2026-08-01T12:00:00Z", archived_at: null, assignee_name: "Ana", ...overrides });
+const migration = readFileSync(new URL("../supabase/migrations/20260802190000_complete_tasks_module.sql", import.meta.url), "utf8");
 
 describe("módulo de tarefas", () => {
   test("pendente está aberta", () => assert.equal(isTaskOpen("pendente"), true));
@@ -25,4 +27,16 @@ describe("módulo de tarefas", () => {
   test("filtra arquivadas", () => assert.equal(filterTasks([task(), task({ archived_at: "2026-08-01" })], { archived: true }).length, 1));
   test("calcula indicadores", () => assert.deepEqual(taskIndicators([task(), task({ status: "concluida" }), task({ status: "arquivada" })], new Date("2026-08-02")), { open: 1, overdue: 1, completed: 1, archived: 1 }));
   test("agrupa colunas do quadro", () => assert.equal(groupTasksByStatus([task(), task({ status: "aguardando" })]).aguardando.length, 1));
+});
+
+describe("segurança SQL de tarefas", () => {
+  test("bloqueia responsável de outra organização", () => assert.match(migration, /organization_members[\s\S]+m\.organization_id = NEW\.organization_id[\s\S]+TASK_ASSIGNEE_NOT_MEMBER/));
+  test("bloqueia cliente de outra organização", () => assert.match(migration, /clients c[\s\S]+c\.organization_id = NEW\.organization_id[\s\S]+TASK_CLIENT_ORG_MISMATCH/));
+  test("bloqueia processo de outra organização", () => assert.match(migration, /processes p[\s\S]+p\.organization_id = NEW\.organization_id[\s\S]+TASK_PROCESS_ORG_MISMATCH/));
+  test("bloqueia documento de outra organização", () => assert.match(migration, /documents d[\s\S]+d\.organization_id = NEW\.organization_id[\s\S]+TASK_DOCUMENT_ORG_MISMATCH/));
+  test("bloqueia monitoramento de outra organização", () => assert.match(migration, /monitoring_items m[\s\S]+m\.organization_id = NEW\.organization_id[\s\S]+TASK_MONITORING_ORG_MISMATCH/));
+  test("organization_id da tarefa é imutável", () => assert.match(migration, /OLD\.organization_id <> NEW\.organization_id[\s\S]+TASK_ORGANIZATION_IMMUTABLE/));
+  test("comentário não pode ser movido de organização", () => assert.match(migration, /task_comments_enforce_scope_trg BEFORE INSERT OR UPDATE/));
+  test("exclusão física está bloqueada", () => { assert.match(migration, /REVOKE DELETE ON public\.tasks FROM authenticated/); assert.doesNotMatch(migration, /CREATE POLICY tasks_delete/); });
+  test("arquivamento lógico permanece disponível", () => assert.match(migration, /ADD COLUMN IF NOT EXISTS archived_at[\s\S]+ADD COLUMN IF NOT EXISTS deleted_at/));
 });
