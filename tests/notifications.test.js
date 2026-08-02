@@ -1,0 +1,12 @@
+import test from "node:test"; import assert from "node:assert/strict"; import fs from "node:fs";
+const source=fs.readFileSync("src/lib/notifications.ts","utf8"); const migration=fs.readFileSync("supabase/migrations/20260802193000_notifications_module.sql","utf8"); const header=fs.readFileSync("src/components/layout/app-header.tsx","utf8");
+test("URLs internas são aceitas e externas rejeitadas",()=>{assert.match(source,/\^\\\/\(\?!\\\/\)/);assert.match(source,/includes\(\"\\\\\"\)/)});
+test("RLS limita usuário e organização ativa",()=>{assert.match(migration,/user_id = auth\.uid\(\)/);assert.match(migration,/m\.is_active/)});
+test("RPC não marca notificação alheia",()=>assert.match(migration,/n\.user_id=auth\.uid\(\)/));
+test("arquivamento é lógico, sem DELETE",()=>{assert.match(migration,/SET archived_at/);assert.doesNotMatch(migration,/DELETE FROM public\.notifications/)});
+test("deduplicação usa índice parcial",()=>assert.match(migration,/UNIQUE INDEX[\s\S]*WHERE dedupe_key IS NOT NULL/));
+test("policies não são permissivas",()=>assert.doesNotMatch(migration,/(USING|WITH CHECK) \(true\)/i));
+test("RPCs revogadas de PUBLIC e anon",()=>assert.match(migration,/REVOKE ALL ON FUNCTION[\s\S]*FROM PUBLIC, anon/));
+test("sino limita cinco recentes e exibe contador",()=>{assert.match(header,/useNotifications\(organizationId, 5\)/);assert.match(header,/99\+/)});
+test("consulta ordena mais recente e filtro existe",()=>{const hook=fs.readFileSync("src/hooks/use-notifications.ts","utf8");assert.match(hook,/created_at.*ascending: false/);assert.match(source,/filter === \"unread\"/)});
+test("frontend não contém chave secreta",()=>assert.doesNotMatch(fs.readFileSync("src/integrations/supabase/client.ts","utf8"),/service_role|SUPABASE_SECRET_KEY/));
