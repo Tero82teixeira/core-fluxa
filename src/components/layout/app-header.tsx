@@ -49,7 +49,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/lib/workspace";
-import { useGlobalSearch, useNotifications } from "@/hooks/use-operations";
+import { useGlobalSearch } from "@/hooks/use-operations";
+import { useMarkNotificationRead, useNotifications, useUnreadNotificationCount } from "@/hooks/use-notifications";
 import { initials, maskDocument, relativeTime } from "@/lib/format";
 import { NAV_ITEMS } from "@/lib/navigation";
 
@@ -63,9 +64,11 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const current = NAV_ITEMS.find((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
   const isDetail = Boolean(current) && pathname !== current?.to;
 
-  const notifications = useNotifications(organizationId);
+  const notifications = useNotifications(organizationId, 5);
+  const unreadQuery = useUnreadNotificationCount(organizationId);
+  const markNotification = useMarkNotificationRead(organizationId);
   const results = useGlobalSearch(organizationId, term);
-  const unread = (notifications.data ?? []).filter((n) => !n.read_at).length;
+  const unread = unreadQuery.data ?? 0;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -158,9 +161,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="relative size-10" aria-label="Central de notificações">
                 <Bell className="size-4" aria-hidden />
-                {unread > 0 && (
-                  <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-caution" aria-hidden />
-                )}
+                {unread > 0 && <span className="absolute -top-1 -right-1 min-w-5 rounded-full bg-destructive px-1 text-center text-[10px] font-bold leading-5 text-destructive-foreground" aria-label={`${unread} não lidas`}>{unread > 99 ? "99+" : unread}</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-80 p-0">
@@ -173,13 +174,14 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
                   <p className="px-4 py-6 text-sm text-muted-foreground">Nenhuma notificação por enquanto.</p>
                 )}
                 {(notifications.data ?? []).map((item) => (
-                  <div key={item.id} className="px-4 py-3">
+                  <button type="button" key={item.id} className={`block w-full px-4 py-3 text-left ${!item.read_at ? "bg-brand/5" : ""}`} onClick={() => markNotification.mutate({ _notification: item.id })}>
                     <p className="text-sm font-medium">{item.title}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{item.body}</p>
                     <p className="mt-1 text-xs text-muted-foreground">{relativeTime(item.created_at)}</p>
-                  </div>
+                  </button>
                 ))}
               </div>
+              <div className="border-t p-2"><Button asChild variant="ghost" className="w-full"><Link to="/notificacoes">Ver todas</Link></Button></div>
             </PopoverContent>
           </Popover>
 
