@@ -1773,10 +1773,6 @@ export type Database = {
           token: string
         }[]
       }
-      create_test_notification: {
-        Args: { _organization: string }
-        Returns: { notification_id: string }[]
-      }
       has_org_role: {
         Args: {
           _org: string
