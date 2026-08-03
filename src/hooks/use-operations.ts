@@ -456,7 +456,7 @@ export function useGlobalSearch(organizationId: string | null, term: string) {
         .join(",");
 
       const [clientsRes, processesRes] = await Promise.all([
-        db().from("clients").select("id, name, document").eq("organization_id", organizationId).or(clientFilter).limit(6),
+        db().from(CLIENTS_SOURCE).select("id, name, document").eq("organization_id", organizationId).or(clientFilter).limit(6),
         db()
           .from("processes")
           .select("id, code, title, protocol")
