@@ -122,7 +122,10 @@ const db = () => supabase as unknown as { from: (table: string) => any };
 export const CLIENT_COLUMNS =
   "id, organization_id, person_type, name, trade_name, document, document_digits, birth_date, legal_rep_name, email, phone, whatsapp, zip_code, street, number, complement, district, city, state, status, owner_name, notes, last_interaction_at, archived_at, created_at, updated_at";
 
-const PROCESS_COLUMNS = "*, clients(id, name, document, status), service_types(id, name)";
+const PROCESS_COLUMNS = "*, clients(id, name, status), service_types(id, name)";
+
+/** Visão segura: mascara dados sensíveis do cliente conforme o papel do usuário. */
+const CLIENTS_SOURCE = "clients_secure";
 
 /* ------------------------------------------------------------------ *
  * Clientes
@@ -135,7 +138,7 @@ export function useClients(organizationId: string | null) {
     queryKey: ["clients", organizationId],
     queryFn: async (): Promise<ClientRow[]> => {
       const { data, error } = await db()
-        .from("clients")
+        .from(CLIENTS_SOURCE)
         .select(CLIENT_COLUMNS)
         .eq("organization_id", organizationId)
         .is("archived_at", null)
@@ -165,7 +168,7 @@ export function useClientsPage(organizationId: string | null, filters: ClientFil
     queryKey: ["clients-page", organizationId, term, status, personType, owner, sort, archived, page, pageSize],
     queryFn: async (): Promise<{ rows: ClientRow[]; count: number }> => {
       let q = db()
-        .from("clients")
+        .from(CLIENTS_SOURCE)
         .select(CLIENT_COLUMNS, { count: "exact" })
         .eq("organization_id", organizationId);
 
@@ -203,7 +206,7 @@ export function useClientOwners(organizationId: string | null) {
     queryKey: ["client-owners", organizationId],
     queryFn: async (): Promise<string[]> => {
       const { data, error } = await db()
-        .from("clients")
+        .from(CLIENTS_SOURCE)
         .select("owner_name")
         .eq("organization_id", organizationId)
         .not("owner_name", "is", null)
@@ -220,7 +223,7 @@ export function useClient(clientId: string) {
     enabled: Boolean(clientId),
     queryKey: ["client", clientId],
     queryFn: async (): Promise<ClientRow | null> => {
-      const { data, error } = await db().from("clients").select(CLIENT_COLUMNS).eq("id", clientId).maybeSingle();
+      const { data, error } = await db().from(CLIENTS_SOURCE).select(CLIENT_COLUMNS).eq("id", clientId).maybeSingle();
       if (error) throw error;
       return (data ?? null) as ClientRow | null;
     },
@@ -453,7 +456,7 @@ export function useGlobalSearch(organizationId: string | null, term: string) {
         .join(",");
 
       const [clientsRes, processesRes] = await Promise.all([
-        db().from("clients").select("id, name, document").eq("organization_id", organizationId).or(clientFilter).limit(6),
+        db().from(CLIENTS_SOURCE).select("id, name, document").eq("organization_id", organizationId).or(clientFilter).limit(6),
         db()
           .from("processes")
           .select("id, code, title, protocol")

@@ -116,6 +116,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "client_addresses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "client_addresses_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -170,6 +177,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
             referencedColumns: ["id"]
           },
           {
@@ -514,6 +528,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "documents_document_type_id_fkey"
             columns: ["document_type_id"]
             isOneToOne: false
@@ -676,6 +697,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
             referencedColumns: ["id"]
           },
           {
@@ -1266,6 +1294,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "processes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "processes_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -1583,6 +1618,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
@@ -1621,6 +1663,104 @@ export type Database = {
       }
     }
     Views: {
+      clients_secure: {
+        Row: {
+          archived_at: string | null
+          birth_date: string | null
+          city: string | null
+          complement: string | null
+          created_at: string | null
+          district: string | null
+          document: string | null
+          document_digits: string | null
+          email: string | null
+          id: string | null
+          last_interaction_at: string | null
+          legal_rep_name: string | null
+          name: string | null
+          notes: string | null
+          number: string | null
+          organization_id: string | null
+          owner_id: string | null
+          owner_name: string | null
+          person_type: Database["public"]["Enums"]["person_type"] | null
+          phone: string | null
+          state: string | null
+          status: Database["public"]["Enums"]["client_status"] | null
+          street: string | null
+          trade_name: string | null
+          updated_at: string | null
+          whatsapp: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          birth_date?: never
+          city?: string | null
+          complement?: never
+          created_at?: string | null
+          district?: never
+          document?: never
+          document_digits?: never
+          email?: never
+          id?: string | null
+          last_interaction_at?: string | null
+          legal_rep_name?: never
+          name?: string | null
+          notes?: never
+          number?: never
+          organization_id?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          person_type?: Database["public"]["Enums"]["person_type"] | null
+          phone?: never
+          state?: string | null
+          status?: Database["public"]["Enums"]["client_status"] | null
+          street?: never
+          trade_name?: string | null
+          updated_at?: string | null
+          whatsapp?: never
+          zip_code?: never
+        }
+        Update: {
+          archived_at?: string | null
+          birth_date?: never
+          city?: string | null
+          complement?: never
+          created_at?: string | null
+          district?: never
+          document?: never
+          document_digits?: never
+          email?: never
+          id?: string | null
+          last_interaction_at?: string | null
+          legal_rep_name?: never
+          name?: string | null
+          notes?: never
+          number?: never
+          organization_id?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          person_type?: Database["public"]["Enums"]["person_type"] | null
+          phone?: never
+          state?: string | null
+          status?: Database["public"]["Enums"]["client_status"] | null
+          street?: never
+          trade_name?: string | null
+          updated_at?: string | null
+          whatsapp?: never
+          zip_code?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monitoring_items_status_view: {
         Row: {
           archived_at: string | null
@@ -1706,6 +1846,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
             referencedColumns: ["id"]
           },
           {
