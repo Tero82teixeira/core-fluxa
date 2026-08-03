@@ -71,7 +71,10 @@ test("frontend não insere execuções nem usa Edge Function ou segredo", () => 
 });
 test("rota, botão por papel, estados e histórico existem", () => {
   assert.match(page, /\/_authenticated\/automacoes/);
-  assert.match(page, /allowed&&<Button[^>]*>[\s\S]*Nova automação/);
+  assert.match(page, /const allowed = canManageAutomations\(role\)/);
+  assert.match(page, /\{allowed\s*&&\s*\(/);
+  assert.match(page, /onClick=\{\(\) => setEditing\(null\)\}/);
+  assert.match(page, /Nova automação/);
   for (const x of ["isLoading", "isError", "Nenhuma automação", "Histórico", "confirm("])
     assert.ok(page.includes(x));
 });
