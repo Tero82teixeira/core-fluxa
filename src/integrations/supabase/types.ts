@@ -58,6 +58,156 @@ export type Database = {
           },
         ]
       }
+      automation_executions: {
+        Row: {
+          automation_rule_id: string
+          created_at: string
+          dedupe_key: string
+          entity_id: string | null
+          entity_type: string
+          error_code: string | null
+          error_message: string | null
+          event_type: string
+          execution_depth: number
+          finished_at: string | null
+          id: string
+          input_payload: Json
+          organization_id: string
+          output_payload: Json | null
+          source_automation_rule_id: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          automation_rule_id: string
+          created_at?: string
+          dedupe_key: string
+          entity_id?: string | null
+          entity_type: string
+          error_code?: string | null
+          error_message?: string | null
+          event_type: string
+          execution_depth?: number
+          finished_at?: string | null
+          id?: string
+          input_payload?: Json
+          organization_id: string
+          output_payload?: Json | null
+          source_automation_rule_id?: string | null
+          started_at?: string
+          status: string
+        }
+        Update: {
+          automation_rule_id?: string
+          created_at?: string
+          dedupe_key?: string
+          entity_id?: string | null
+          entity_type?: string
+          error_code?: string | null
+          error_message?: string | null
+          event_type?: string
+          execution_depth?: number
+          finished_at?: string | null
+          id?: string
+          input_payload?: Json
+          organization_id?: string
+          output_payload?: Json | null
+          source_automation_rule_id?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_executions_automation_rule_id_fkey"
+            columns: ["automation_rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_executions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_executions_source_automation_rule_id_fkey"
+            columns: ["source_automation_rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_rules: {
+        Row: {
+          action_config: Json
+          action_type: string
+          archived_at: string | null
+          conditions: Json
+          created_at: string
+          created_by: string
+          creator_name: string | null
+          description: string | null
+          execution_count: number
+          failure_count: number
+          id: string
+          is_active: boolean
+          last_executed_at: string | null
+          name: string
+          organization_id: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          action_config?: Json
+          action_type: string
+          archived_at?: string | null
+          conditions?: Json
+          created_at?: string
+          created_by: string
+          creator_name?: string | null
+          description?: string | null
+          execution_count?: number
+          failure_count?: number
+          id?: string
+          is_active?: boolean
+          last_executed_at?: string | null
+          name: string
+          organization_id: string
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          action_config?: Json
+          action_type?: string
+          archived_at?: string | null
+          conditions?: Json
+          created_at?: string
+          created_by?: string
+          creator_name?: string | null
+          description?: string | null
+          execution_count?: number
+          failure_count?: number
+          id?: string
+          is_active?: boolean
+          last_executed_at?: string | null
+          name?: string
+          organization_id?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_addresses: {
         Row: {
           city: string | null
@@ -1841,9 +1991,18 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      archive_automation_rule: {
+        Args: { _rule_id: string }
+        Returns: undefined
+      }
       archive_notification: {
         Args: { _notification: string }
         Returns: undefined
+      }
+      automation_can_manage: { Args: { _org: string }; Returns: boolean }
+      automation_conditions_match: {
+        Args: { _conditions: Json; _payload: Json }
+        Returns: boolean
       }
       bootstrap_organization: {
         Args: never
@@ -1884,6 +2043,19 @@ export type Database = {
           zip_code: string
         }[]
       }
+      create_automation_rule: {
+        Args: {
+          _organization_id: string
+          action_config: Json
+          action_type: string
+          conditions: Json
+          description: string
+          is_active: boolean
+          name: string
+          trigger_type: string
+        }
+        Returns: string
+      }
       create_invitation: {
         Args: {
           _email: string
@@ -1902,6 +2074,7 @@ export type Database = {
           notification_id: string
         }[]
       }
+      duplicate_automation_rule: { Args: { _rule_id: string }; Returns: string }
       has_org_role: {
         Args: {
           _org: string
@@ -1929,8 +2102,25 @@ export type Database = {
         Returns: undefined
       }
       next_process_code: { Args: { _org: string }; Returns: string }
+      process_automation_event: {
+        Args: {
+          _entity_id: string
+          _entity_type: string
+          _event_type: string
+          _event_version?: string
+          _execution_depth?: number
+          _organization_id: string
+          _payload: Json
+          _source_automation_rule_id?: string
+        }
+        Returns: number
+      }
       seed_default_document_types: {
         Args: { _org: string }
+        Returns: undefined
+      }
+      set_automation_rule_active: {
+        Args: { _is_active: boolean; _rule_id: string }
         Returns: undefined
       }
       set_member_active: {
@@ -1945,6 +2135,28 @@ export type Database = {
           processes_moved: number
           tasks_moved: number
         }[]
+      }
+      update_automation_rule: {
+        Args: {
+          _rule_id: string
+          action_config: Json
+          action_type: string
+          conditions: Json
+          description: string
+          is_active: boolean
+          name: string
+          trigger_type: string
+        }
+        Returns: undefined
+      }
+      validate_automation: {
+        Args: {
+          _action: string
+          _conditions: Json
+          _config: Json
+          _trigger: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
