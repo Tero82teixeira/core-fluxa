@@ -1693,64 +1693,6 @@ export type Database = {
           whatsapp: string | null
           zip_code: string | null
         }
-        Insert: {
-          archived_at?: string | null
-          birth_date?: never
-          city?: string | null
-          complement?: never
-          created_at?: string | null
-          district?: never
-          document?: never
-          document_digits?: never
-          email?: never
-          id?: string | null
-          last_interaction_at?: string | null
-          legal_rep_name?: never
-          name?: string | null
-          notes?: never
-          number?: never
-          organization_id?: string | null
-          owner_id?: string | null
-          owner_name?: string | null
-          person_type?: Database["public"]["Enums"]["person_type"] | null
-          phone?: never
-          state?: string | null
-          status?: Database["public"]["Enums"]["client_status"] | null
-          street?: never
-          trade_name?: string | null
-          updated_at?: string | null
-          whatsapp?: never
-          zip_code?: never
-        }
-        Update: {
-          archived_at?: string | null
-          birth_date?: never
-          city?: string | null
-          complement?: never
-          created_at?: string | null
-          district?: never
-          document?: never
-          document_digits?: never
-          email?: never
-          id?: string | null
-          last_interaction_at?: string | null
-          legal_rep_name?: never
-          name?: string | null
-          notes?: never
-          number?: never
-          organization_id?: string | null
-          owner_id?: string | null
-          owner_name?: string | null
-          person_type?: Database["public"]["Enums"]["person_type"] | null
-          phone?: never
-          state?: string | null
-          status?: Database["public"]["Enums"]["client_status"] | null
-          street?: never
-          trade_name?: string | null
-          updated_at?: string | null
-          whatsapp?: never
-          zip_code?: never
-        }
         Relationships: [
           {
             foreignKeyName: "clients_organization_id_fkey"
@@ -1907,6 +1849,24 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: undefined
+      }
+      client_sensitive: {
+        Args: { _client: string }
+        Returns: {
+          birth_date: string
+          complement: string
+          district: string
+          document: string
+          document_digits: string
+          email: string
+          legal_rep_name: string
+          notes: string
+          number: string
+          phone: string
+          street: string
+          whatsapp: string
+          zip_code: string
+        }[]
       }
       create_invitation: {
         Args: {
