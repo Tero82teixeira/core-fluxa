@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.emit_task_automation_event(), public.emit_process_automation_event(), public.emit_monitoring_automation_event() FROM PUBLIC, anon, authenticated;
