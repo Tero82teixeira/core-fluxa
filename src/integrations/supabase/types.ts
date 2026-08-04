@@ -731,9 +731,13 @@ export type Database = {
       }
       notifications: {
         Row: {
+          action_url: string | null
+          archived_at: string | null
           body: string | null
           created_at: string
           dedupe_key: string | null
+          entity_id: string | null
+          entity_type: string | null
           id: string
           kind: string
           organization_id: string
@@ -742,9 +746,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          action_url?: string | null
+          archived_at?: string | null
           body?: string | null
           created_at?: string
           dedupe_key?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           kind?: string
           organization_id: string
@@ -753,9 +761,13 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          action_url?: string | null
+          archived_at?: string | null
           body?: string | null
           created_at?: string
           dedupe_key?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           kind?: string
           organization_id?: string
@@ -1829,6 +1841,10 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      archive_notification: {
+        Args: { _notification: string }
+        Returns: undefined
+      }
       bootstrap_organization: {
         Args: never
         Returns: {
@@ -1898,6 +1914,14 @@ export type Database = {
         }[]
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      mark_all_notifications_read: {
+        Args: { _organization: string }
+        Returns: number
+      }
+      mark_notification_read: {
+        Args: { _notification: string }
+        Returns: undefined
+      }
       next_process_code: { Args: { _org: string }; Returns: string }
       seed_default_document_types: {
         Args: { _org: string }
