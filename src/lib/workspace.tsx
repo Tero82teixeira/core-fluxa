@@ -6,7 +6,8 @@ import { useAuth } from "@/lib/auth";
 import { useRolePermissions, type Membership } from "@/hooks/use-session";
 import type { AppRole, PermissionKey } from "@/lib/domain";
 
-const STORAGE_KEY = "fluxa-workspace";
+export const WORKSPACE_STORAGE_KEY = "fluxa-workspace";
+const INVITATION_STORAGE_KEY = "fluxa-pending-invitation";
 const WORKSPACE_TIMEOUT_MS = 12_000;
 
 const MEMBERSHIP_SELECT =
@@ -95,7 +96,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
+      const stored = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
       if (stored) setSelected(stored);
     } catch {
       /* armazenamento indisponível */
@@ -141,7 +142,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       const run = (async () => {
         try {
-          if (options.bootstrap) {
+          if (options.bootstrap && window.localStorage.getItem(INVITATION_STORAGE_KEY) !== "1") {
             console.info("[Workspace] bootstrap iniciado");
             const { data, error: rpcError } = await withTimeout(
               supabase.rpc("bootstrap_organization"),
@@ -153,6 +154,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             if (!result.organization_id) throw new Error("BOOTSTRAP_ORGANIZATION_NOT_FOUND");
             if (!result.membership_id) throw new Error("BOOTSTRAP_MEMBERSHIP_NOT_FOUND");
             console.info("[Workspace] bootstrap concluído");
+          } else if (options.bootstrap) {
+            console.info("[Workspace] bootstrap adiado para aceite de convite");
           }
 
           if (id !== runId.current) return;
@@ -249,7 +252,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       can: (permission) => granted.has(permission),
       switchWorkspace: (organizationId) => {
         try {
-          window.localStorage.setItem(STORAGE_KEY, organizationId);
+          window.localStorage.setItem(WORKSPACE_STORAGE_KEY, organizationId);
         } catch {
           /* armazenamento indisponível */
         }
