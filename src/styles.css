@@ -291,3 +291,13 @@
   line-height: 1.45;
 }
 
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: white !important; color: black !important; }
+  [data-sidebar="sidebar"], header:not(.print-header), .no-print { display: none !important; }
+  .reports-page { max-width: none !important; padding: 0 !important; }
+  .print-header { display: flex !important; border-bottom: 1px solid #bbb; padding-bottom: 8px; }
+  .panel, [data-slot="card"] { box-shadow: none !important; break-inside: avoid; }
+  .table-card { break-before: page; }
+}
