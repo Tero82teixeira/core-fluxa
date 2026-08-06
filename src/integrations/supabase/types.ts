@@ -1987,9 +1987,7 @@ export type Database = {
       accept_invitation: {
         Args: { _token: string }
         Returns: {
-          membership_id: string
           organization_id: string
-          organization_name: string
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
