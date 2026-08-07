@@ -707,6 +707,507 @@ export type Database = {
           },
         ]
       }
+      financial_account_movements: {
+        Row: {
+          account_id: string
+          amount: number
+          balance_after: number
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          organization_id: string
+          payment_id: string | null
+          transaction_id: string | null
+          type: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          balance_after: number
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          organization_id: string
+          payment_id?: string | null
+          transaction_id?: string | null
+          type: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          organization_id?: string
+          payment_id?: string | null
+          transaction_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_account_movements_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_account_movements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_account_movements_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transaction_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_account_movements_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_accounts: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string
+          current_balance: number
+          description: string | null
+          id: string
+          initial_balance: number
+          is_active: boolean
+          name: string
+          organization_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by: string
+          current_balance?: number
+          description?: string | null
+          id?: string
+          initial_balance?: number
+          is_active?: boolean
+          name: string
+          organization_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          current_balance?: number
+          description?: string | null
+          id?: string
+          initial_balance?: number
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_accounts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_categories: {
+        Row: {
+          archived_at: string | null
+          color: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_recurrences: {
+        Row: {
+          account_id: string | null
+          amount: number
+          archived_at: string | null
+          category_id: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string
+          end_date: string | null
+          frequency: string
+          id: string
+          interval_count: number
+          name: string
+          next_run_date: string
+          notes: string | null
+          organization_id: string
+          process_id: string | null
+          start_date: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          archived_at?: string | null
+          category_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by: string
+          end_date?: string | null
+          frequency: string
+          id?: string
+          interval_count?: number
+          name: string
+          next_run_date: string
+          notes?: string | null
+          organization_id: string
+          process_id?: string | null
+          start_date: string
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          archived_at?: string | null
+          category_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          interval_count?: number
+          name?: string
+          next_run_date?: string
+          notes?: string | null
+          organization_id?: string
+          process_id?: string | null
+          start_date?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_recurrences_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_recurrences_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_recurrences_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_recurrences_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_recurrences_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_recurrences_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transaction_payments: {
+        Row: {
+          account_id: string
+          amount: number
+          created_at: string
+          created_by: string
+          id: string
+          notes: string | null
+          organization_id: string
+          paid_at: string
+          payment_method: string | null
+          reversal_notes: string | null
+          reversed_at: string | null
+          transaction_id: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          paid_at?: string
+          payment_method?: string | null
+          reversal_notes?: string | null
+          reversed_at?: string | null
+          transaction_id: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string
+          payment_method?: string | null
+          reversal_notes?: string | null
+          reversed_at?: string | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transaction_payments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transaction_payments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transaction_payments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transactions: {
+        Row: {
+          account_id: string | null
+          amount: number
+          archived_at: string | null
+          category_id: string | null
+          client_id: string | null
+          competence_date: string | null
+          created_at: string
+          created_by: string
+          description: string
+          document_id: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          organization_id: string
+          paid_at: string | null
+          payment_method: string | null
+          process_id: string | null
+          recurrence_due_date: string | null
+          recurrence_id: string | null
+          reference: string | null
+          responsible_user_id: string | null
+          status: string
+          task_id: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          archived_at?: string | null
+          category_id?: string | null
+          client_id?: string | null
+          competence_date?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          document_id?: string | null
+          due_date: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          paid_at?: string | null
+          payment_method?: string | null
+          process_id?: string | null
+          recurrence_due_date?: string | null
+          recurrence_id?: string | null
+          reference?: string | null
+          responsible_user_id?: string | null
+          status?: string
+          task_id?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          archived_at?: string | null
+          category_id?: string | null
+          client_id?: string | null
+          competence_date?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          document_id?: string | null
+          due_date?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          process_id?: string | null
+          recurrence_due_date?: string | null
+          recurrence_id?: string | null
+          reference?: string | null
+          responsible_user_id?: string | null
+          status?: string
+          task_id?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_recurrence_id_fkey"
+            columns: ["recurrence_id"]
+            isOneToOne: false
+            referencedRelation: "financial_recurrences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monitoring_history: {
         Row: {
           changed_by: string | null
@@ -2000,6 +2501,18 @@ export type Database = {
         Args: { _rule_id: string }
         Returns: undefined
       }
+      archive_financial_account: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      archive_financial_category: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      archive_financial_transaction: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
       archive_notification: {
         Args: { _notification: string }
         Returns: undefined
@@ -2021,6 +2534,10 @@ export type Database = {
           profile_id: string
           role: Database["public"]["Enums"]["app_role"]
         }[]
+      }
+      cancel_financial_transaction: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
       }
       cancel_invitation: { Args: { _invitation: string }; Returns: undefined }
       change_member_role: {
@@ -2061,6 +2578,22 @@ export type Database = {
         }
         Returns: string
       }
+      create_financial_account: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      create_financial_category: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      create_financial_recurrence: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      create_financial_transaction: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
       create_invitation: {
         Args: {
           _email: string
@@ -2080,6 +2613,25 @@ export type Database = {
         }[]
       }
       duplicate_automation_rule: { Args: { _rule_id: string }; Returns: string }
+      duplicate_financial_transaction: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      financial_assert_editor: { Args: { _org: string }; Returns: undefined }
+      financial_audit: {
+        Args: {
+          _action: string
+          _entity: string
+          _id: string
+          _meta?: Json
+          _org: string
+        }
+        Returns: undefined
+      }
+      generate_recurrence_transactions: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: number
+      }
       has_org_role: {
         Args: {
           _org: string
@@ -2102,6 +2654,15 @@ export type Database = {
         Args: { _organization: string }
         Returns: number
       }
+      mark_financial_transaction_paid: {
+        Args: {
+          _account_id: string
+          _organization_id: string
+          _payment_method?: string
+          _transaction_id: string
+        }
+        Returns: string
+      }
       mark_notification_read: {
         Args: { _notification: string }
         Returns: undefined
@@ -2120,6 +2681,21 @@ export type Database = {
         }
         Returns: number
       }
+      register_partial_payment: {
+        Args: {
+          _account_id: string
+          _amount: number
+          _notes?: string
+          _organization_id: string
+          _payment_method?: string
+          _transaction_id: string
+        }
+        Returns: string
+      }
+      reverse_financial_payment: {
+        Args: { _notes: string; _organization_id: string; _payment_id: string }
+        Returns: string
+      }
       seed_default_document_types: {
         Args: { _org: string }
         Returns: undefined
@@ -2127,6 +2703,14 @@ export type Database = {
       set_automation_rule_active: {
         Args: { _is_active: boolean; _rule_id: string }
         Returns: undefined
+      }
+      set_financial_account_active: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      set_financial_category_active: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
       }
       set_member_active: {
         Args: { _active: boolean; _member: string }
@@ -2153,6 +2737,22 @@ export type Database = {
           trigger_type: string
         }
         Returns: undefined
+      }
+      update_financial_account: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      update_financial_category: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      update_financial_recurrence: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      update_financial_transaction: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
       }
       validate_automation: {
         Args: {
