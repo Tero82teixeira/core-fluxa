@@ -25,5 +25,15 @@ export function useFinancialAction(organizationId:string|null) {
 
 export function useFinancialPayment(organizationId:string|null) {
   const client=useQueryClient();
-  return useMutation({ mutationFn:async(args:{transactionId:string;amount:number;accountId:string;notes?:string})=>{ const {data,error}=await db.rpc("register_partial_payment",{_organization_id:organizationId,_transaction_id:args.transactionId,_amount:args.amount,_account_id:args.accountId,_payment_method:null,_notes:args.notes??null}); if(error) throw error; return data; }, onSuccess:()=>client.invalidateQueries({queryKey:["finance",organizationId]}) });
+  return useMutation({ mutationFn:async(args:{transactionId:string;amount:number;accountId:string;paymentMethod?:string;notes?:string})=>{ const {data,error}=await db.rpc("register_partial_payment",{_organization_id:organizationId,_transaction_id:args.transactionId,_amount:args.amount,_account_id:args.accountId,_payment_method:args.paymentMethod??null,_notes:args.notes??null}); if(error) throw error; return data; }, onSuccess:()=>client.invalidateQueries({queryKey:["finance",organizationId]}) });
+}
+
+export function useFinancialPaymentAction(organizationId:string|null) {
+  const client=useQueryClient();
+  return useMutation({mutationFn:async(args:{kind:"settle"|"reverse";transactionId?:string;paymentId?:string;accountId?:string;paymentMethod?:string;notes?:string})=>{
+    const call=args.kind==="settle"
+      ? db.rpc("mark_financial_transaction_paid",{_organization_id:organizationId,_transaction_id:args.transactionId,_account_id:args.accountId,_payment_method:args.paymentMethod??null})
+      : db.rpc("reverse_financial_payment",{_organization_id:organizationId,_payment_id:args.paymentId,_notes:args.notes??"Estorno confirmado pelo usuário"});
+    const {data,error}=await call; if(error) throw error; return data;
+  },onSuccess:()=>client.invalidateQueries({queryKey:["finance",organizationId]})});
 }
