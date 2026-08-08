@@ -71,7 +71,27 @@ const statusLabel: Record<string, string> = {
   overdue: "Atrasado",
   cancelled: "Cancelado",
 };
+const statusTone: Record<string, Tone> = {
+  pending: "info",
+  partial: "warning",
+  paid: "success",
+  overdue: "danger",
+  cancelled: "neutral",
+};
+const financeColumns = [
+  { label: "Descrição", className: "min-w-[220px]", align: "text-left" },
+  { label: "Tipo", className: "min-w-[110px]", align: "text-left" },
+  { label: "Valor", className: "min-w-[130px]", align: "text-right" },
+  { label: "Vencimento", className: "min-w-[130px]", align: "text-center" },
+  { label: "Status", className: "min-w-[130px]", align: "text-left" },
+  { label: "Categoria", className: "min-w-[150px]", align: "text-left" },
+  { label: "Conta", className: "min-w-[150px]", align: "text-left" },
+  { label: "Valor pago", className: "min-w-[130px]", align: "text-right" },
+  { label: "Saldo restante", className: "min-w-[140px]", align: "text-right" },
+  { label: "Ações", className: "min-w-[220px]", align: "text-right" },
+];
 const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
+
 
 function FinancePage() {
   const { organizationId, membership, role } = useWorkspace();
