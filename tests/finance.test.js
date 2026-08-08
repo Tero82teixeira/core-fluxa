@@ -46,7 +46,7 @@ describe("módulo financeiro", () => {
     assert.match(csv, /;|A ""B""/);
   });
   test("consulta fontes reais isoladas por organização", () => {
-    assert.match(hook, /eq\("organization_id",organizationId\)/);
+    assert.match(hook, /eq\("organization_id",\s*organizationId\)/);
     assert.doesNotMatch(route + hook, /mock|faker|service_role/i);
   });
   test("dashboard, gráficos, filtros, paginação e estados acessíveis", () =>
@@ -258,7 +258,7 @@ describe("módulo financeiro", () => {
     );
   });
   test("sucesso invalida a consulta financeira da organização", () =>
-    assert.match(hook, /invalidateQueries\(\{queryKey:\["finance",organizationId\]\}\)/));
+    assert.match(hook, /invalidateQueries\(\{\s*queryKey:\s*\["finance",\s*organizationId\]\s*\}\)/));
   test("frontend não escreve diretamente nas tabelas financeiras", () =>
     assert.doesNotMatch(
       hook + route + structures,
