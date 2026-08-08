@@ -40,6 +40,32 @@ export function canManageFinance(role?: string | null) {
   return role === "proprietario" || role === "administrador" || role === "gestor";
 }
 
+export function canReverseFinancialPayment(role?: string | null) {
+  return role === "proprietario" || role === "administrador";
+}
+
+export type FinancialPayment = { amount: number; reversed_at?: string | null };
+export function paymentTotals(amount: number, payments: FinancialPayment[]) {
+  const paid = payments.filter((payment) => !payment.reversed_at).reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const reversed = payments.filter((payment) => payment.reversed_at).reduce((sum, payment) => sum + Number(payment.amount), 0);
+  return { original: Number(amount), paid, reversed, remaining: Math.max(0, Number(amount) - paid) };
+}
+
+export function validateFinancialPayment(
+  transaction: { amount: number; status: FinancialStatus; archived_at?: string | null },
+  payments: FinancialPayment[],
+  amount: number,
+) {
+  if (transaction.archived_at || transaction.status === "cancelled" || transaction.status === "paid") return "TRANSACTION_NOT_PAYABLE";
+  if (!Number.isFinite(amount) || amount <= 0) return "INVALID_AMOUNT";
+  if (amount > paymentTotals(transaction.amount, payments).remaining) return "PAYMENT_EXCEEDS_BALANCE";
+  return null;
+}
+
+export function displayFinancialStatus(status: FinancialStatus, dueDate: string, now = new Date()) {
+  return financialBuckets(dueDate, status, now).overdue ? "overdue" : status;
+}
+
 export const brl = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value || 0);
 export const brDate = (value?: string | null) =>

@@ -9,6 +9,10 @@ import {
   canManageFinance,
   financialBuckets,
   financialCsv,
+  canReverseFinancialPayment,
+  displayFinancialStatus,
+  paymentTotals,
+  validateFinancialPayment,
 } from "../src/lib/finance.ts";
 
 const route = readFileSync(
@@ -264,4 +268,21 @@ describe("módulo financeiro", () => {
       hook + route + structures,
       /\.from\("financial_[^\n]+\.(?:insert|update)\(/,
     ));
+  test("pagamentos parciais, quitação e bloqueios são calculados com segurança", () => {
+    const tx = { amount: 100, status: "pending" };
+    assert.deepEqual(paymentTotals(100, [{ amount: 30 }]), { original: 100, paid: 30, reversed: 0, remaining: 70 });
+    assert.equal(validateFinancialPayment(tx, [{ amount: 30 }], 70), null);
+    assert.equal(validateFinancialPayment(tx, [{ amount: 30 }], 71), "PAYMENT_EXCEEDS_BALANCE");
+    assert.equal(validateFinancialPayment({ ...tx, status: "paid" }, [], 1), "TRANSACTION_NOT_PAYABLE");
+    assert.equal(validateFinancialPayment({ ...tx, status: "cancelled" }, [], 1), "TRANSACTION_NOT_PAYABLE");
+  });
+  test("histórico preserva pagos, estornados e saldo", () => assert.deepEqual(paymentTotals(100, [{ amount: 60 }, { amount: 40, reversed_at: "2026-08-08" }]), { original: 100, paid: 60, reversed: 40, remaining: 40 }));
+  test("permissões de estorno são restritas", () => {
+    assert.equal(canReverseFinancialPayment("proprietario"), true); assert.equal(canReverseFinancialPayment("administrador"), true);
+    for (const role of ["gestor", "operacional", "visualizador"]) assert.equal(canReverseFinancialPayment(role), false);
+  });
+  test("status vencido é apenas apresentação", () => assert.equal(displayFinancialStatus("partial", "2026-08-01", new Date("2026-08-08")), "overdue"));
+  test("interface reutiliza RPCs para pagamentos, estorno e recorrências", () => ["register_partial_payment","mark_financial_transaction_paid","reverse_financial_payment","create_financial_recurrence","update_financial_recurrence","generate_recurrence_transactions"].forEach(rpc=>assert.match(route+hook,new RegExp(rpc))));
+  test("estorno preserva histórico, reverte saldo, status e paid_at", () => ["reversed_at=now()","current_balance=newbal","WHEN total=0 THEN 'pending' ELSE 'partial'","paid_at=NULL"].forEach(value=>assert.match(migration,new RegExp(value))));
+  test("recorrências cobrem frequências, deduplicação e encerramento", () => ["'weekly'","'monthly'","'quarterly'","make_interval\\(years","ON CONFLICT","next_run_date=run_date","'finished'"].forEach(value=>assert.match(migration,new RegExp(value))));
 });
