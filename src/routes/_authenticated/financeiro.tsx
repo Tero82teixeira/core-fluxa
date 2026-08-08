@@ -52,7 +52,10 @@ import {
   type FinancialCategory,
   type FinancialType,
 } from "@/lib/finance";
+import { StatusBadge } from "@/components/shared/status-badge";
+import type { Tone } from "@/lib/domain";
 import { useWorkspace } from "@/lib/workspace";
+
 
 export const Route = createFileRoute("/_authenticated/financeiro")({
   head: () => ({
@@ -71,7 +74,27 @@ const statusLabel: Record<string, string> = {
   overdue: "Atrasado",
   cancelled: "Cancelado",
 };
+const statusTone: Record<string, Tone> = {
+  pending: "info",
+  partial: "warning",
+  paid: "success",
+  overdue: "danger",
+  cancelled: "neutral",
+};
+const financeColumns = [
+  { label: "Descrição", className: "min-w-[220px]", align: "text-left" },
+  { label: "Tipo", className: "min-w-[110px]", align: "text-left" },
+  { label: "Valor", className: "min-w-[130px]", align: "text-right" },
+  { label: "Vencimento", className: "min-w-[130px]", align: "text-center" },
+  { label: "Status", className: "min-w-[130px]", align: "text-left" },
+  { label: "Categoria", className: "min-w-[150px]", align: "text-left" },
+  { label: "Conta", className: "min-w-[150px]", align: "text-left" },
+  { label: "Valor pago", className: "min-w-[130px]", align: "text-right" },
+  { label: "Saldo restante", className: "min-w-[140px]", align: "text-right" },
+  { label: "Ações", className: "min-w-[220px]", align: "text-right" },
+];
 const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
+
 
 function FinancePage() {
   const { organizationId, membership, role } = useWorkspace();
@@ -401,72 +424,90 @@ function Transactions({ rows, data, paid, editable, page, setPage, payment, role
   const shown = rows.slice(page * 10, page * 10 + 10);
   return (
     <Card>
-      <CardContent className="overflow-x-auto pt-6">
+      <CardContent className="pt-6">
         {!shown.length ? (
           <p className="py-10 text-center text-muted-foreground">Nenhum lançamento encontrado.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                {[
-                  "Descrição",
-                  "Tipo",
-                  "Valor",
-                  "Vencimento",
-                  "Status",
-                  "Categoria",
-                  "Conta",
-                  "Valor pago",
-                  "Saldo restante",
-                  "Ações",
-                ].map((x) => (
-                  <th className="p-2 text-left" key={x}>
-                    {x}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((x: any) => {
-                const total = paid(x.id);
-                return (
-                  <tr className="border-t" key={x.id}>
-                    <td className="p-2 font-medium">{x.description}</td>
-                    <td>{x.type === "income" ? "Receita" : "Despesa"}</td>
-                    <td>{brl(x.amount)}</td>
-                    <td>{brDate(x.due_date)}</td>
-                    <td>{statusLabel[displayedFinancialStatus(x.status, x.due_date)]}</td>
-                    <td>{data.categories.find((c: any) => c.id === x.category_id)?.name ?? "—"}</td>
-                    <td>{data.accounts.find((a: any) => a.id === x.account_id)?.name ?? "—"}</td>
-                    <td>{brl(total)}</td>
-                    <td>{brl(x.amount - total)}</td>
-                    <td>
-                      <div className="flex flex-wrap gap-1">
-                        {editable &&
-                          !["paid", "cancelled"].includes(x.status) &&
-                          !x.archived_at && (
-                            <PayDialog
-                              transaction={x}
-                              accounts={data.accounts}
-                              payments={data.payments.filter((p: any) => p.transaction_id === x.id)}
-                              payment={payment}
-                            />
-                          )}
-                        <PaymentHistory
-                          transaction={x}
-                          payments={data.payments.filter((p: any) => p.transaction_id === x.id)}
-                          accounts={data.accounts}
-                          payment={payment}
-                          canReverse={canReverseFinancialPayment(role)}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="-mx-2 overflow-x-auto px-2">
+            <table className="w-full min-w-[1180px] border-separate border-spacing-0 text-sm">
+              <thead>
+                <tr className="bg-muted/40">
+                  {financeColumns.map((column) => (
+                    <th
+                      className={`border-b px-4 py-3 text-xs font-semibold tracking-wide whitespace-nowrap text-muted-foreground uppercase ${column.className} ${column.align}`}
+                      key={column.label}
+                    >
+                      {column.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((x: any) => {
+                  const total = paid(x.id);
+                  const status = displayedFinancialStatus(x.status, x.due_date);
+                  return (
+                    <tr className="align-top hover:bg-muted/30" key={x.id}>
+                      <td className="border-b px-4 py-3 font-medium break-words">{x.description}</td>
+                      <td className="border-b px-4 py-3 whitespace-nowrap">
+                        {x.type === "income" ? "Receita" : "Despesa"}
+                      </td>
+                      <td className="border-b px-4 py-3 text-right font-medium tabular-nums whitespace-nowrap">
+                        {brl(x.amount)}
+                      </td>
+                      <td className="border-b px-4 py-3 text-center tabular-nums whitespace-nowrap">
+                        {brDate(x.due_date)}
+                      </td>
+                      <td className="border-b px-4 py-3 whitespace-nowrap">
+                        <StatusBadge label={statusLabel[status]} tone={statusTone[status]} />
+                      </td>
+                      <td className="border-b px-4 py-3 break-words">
+                        {data.categories.find((c: any) => c.id === x.category_id)?.name ?? (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="border-b px-4 py-3 break-words">
+                        {data.accounts.find((a: any) => a.id === x.account_id)?.name ?? (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="border-b px-4 py-3 text-right tabular-nums whitespace-nowrap">
+                        {brl(total)}
+                      </td>
+                      <td className="border-b px-4 py-3 text-right tabular-nums whitespace-nowrap">
+                        {brl(x.amount - total)}
+                      </td>
+                      <td className="border-b px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          {editable &&
+                            !["paid", "cancelled"].includes(x.status) &&
+                            !x.archived_at && (
+                              <PayDialog
+                                transaction={x}
+                                accounts={data.accounts}
+                                payments={data.payments.filter(
+                                  (p: any) => p.transaction_id === x.id,
+                                )}
+                                payment={payment}
+                              />
+                            )}
+                          <PaymentHistory
+                            transaction={x}
+                            payments={data.payments.filter((p: any) => p.transaction_id === x.id)}
+                            accounts={data.accounts}
+                            payment={payment}
+                            canReverse={canReverseFinancialPayment(role)}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
+
         <div className="no-print mt-4 flex justify-between">
           <Button variant="outline" disabled={!page} onClick={() => setPage(page - 1)}>
             Anterior
