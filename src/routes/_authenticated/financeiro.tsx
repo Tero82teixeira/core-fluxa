@@ -52,7 +52,10 @@ import {
   type FinancialCategory,
   type FinancialType,
 } from "@/lib/finance";
+import { StatusBadge } from "@/components/shared/status-badge";
+import type { Tone } from "@/lib/domain";
 import { useWorkspace } from "@/lib/workspace";
+
 
 export const Route = createFileRoute("/_authenticated/financeiro")({
   head: () => ({
