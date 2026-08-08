@@ -1,6 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, Download, Plus, Printer, RefreshCw, WalletCards } from "lucide-react";
+import {
+  AlertTriangle,
+  Download,
+  History,
+  Plus,
+  Printer,
+  RefreshCw,
+  Undo2,
+  WalletCards,
+} from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -35,6 +44,8 @@ import {
   brDate,
   brl,
   canManageFinance,
+  canReverseFinancialPayment,
+  displayedFinancialStatus,
   downloadFinancialCsv,
   financialBuckets,
   type FinancialAccount,
@@ -294,6 +305,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
               page={page}
               setPage={setPage}
               payment={payment}
+              role={role}
             />
           </TabsContent>
         ))}
@@ -319,27 +331,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
           />
         </TabsContent>
         <TabsContent value="recurrences">
-          <SimpleList
-            title="Lançamentos recorrentes"
-            rows={data.recurrences}
-            empty="Nenhuma recorrência cadastrada."
-            action={
-              editable ? (
-                <Button
-                  onClick={async () => {
-                    await action.mutateAsync({
-                      rpc: "generate_recurrence_transactions",
-                      payload: { until: new Date().toISOString().slice(0, 10) },
-                    });
-                    toast.success("Próximos lançamentos gerados.");
-                  }}
-                >
-                  <RefreshCw />
-                  Gerar próximos lançamentos
-                </Button>
-              ) : undefined
-            }
-          />
+          <Recurrences data={data} editable={editable} action={action} />
         </TabsContent>
       </Tabs>
     </div>
@@ -405,7 +397,7 @@ function Select({ label, value, set, options }: any) {
     </Label>
   );
 }
-function Transactions({ rows, data, paid, editable, page, setPage, payment }: any) {
+function Transactions({ rows, data, paid, editable, page, setPage, payment, role }: any) {
   const shown = rows.slice(page * 10, page * 10 + 10);
   return (
     <Card>
@@ -443,15 +435,31 @@ function Transactions({ rows, data, paid, editable, page, setPage, payment }: an
                     <td>{x.type === "income" ? "Receita" : "Despesa"}</td>
                     <td>{brl(x.amount)}</td>
                     <td>{brDate(x.due_date)}</td>
-                    <td>{statusLabel[x.status]}</td>
+                    <td>{statusLabel[displayedFinancialStatus(x.status, x.due_date)]}</td>
                     <td>{data.categories.find((c: any) => c.id === x.category_id)?.name ?? "—"}</td>
                     <td>{data.accounts.find((a: any) => a.id === x.account_id)?.name ?? "—"}</td>
                     <td>{brl(total)}</td>
                     <td>{brl(x.amount - total)}</td>
                     <td>
-                      {editable && !["paid", "cancelled"].includes(x.status) && (
-                        <PayDialog transaction={x} accounts={data.accounts} payment={payment} />
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {editable &&
+                          !["paid", "cancelled"].includes(x.status) &&
+                          !x.archived_at && (
+                            <PayDialog
+                              transaction={x}
+                              accounts={data.accounts}
+                              payments={data.payments.filter((p: any) => p.transaction_id === x.id)}
+                              payment={payment}
+                            />
+                          )}
+                        <PaymentHistory
+                          transaction={x}
+                          payments={data.payments.filter((p: any) => p.transaction_id === x.id)}
+                          accounts={data.accounts}
+                          payment={payment}
+                          canReverse={canReverseFinancialPayment(role)}
+                        />
+                      </div>
                     </td>
                   </tr>
                 );
@@ -578,11 +586,17 @@ function TransactionDialog({ data, onSave }: any) {
     </Dialog>
   );
 }
-function PayDialog({ transaction, accounts, payment }: any) {
+function PayDialog({ transaction, accounts, payments, payment }: any) {
   const available = availableFinancialAccounts(accounts),
     [open, setOpen] = useState(false),
-    [amount, setAmount] = useState(String(transaction.amount)),
-    [accountId, setAccount] = useState(transaction.account_id || available[0]?.id || "");
+    paidTotal = payments
+      .filter((p: any) => !p.reversed_at)
+      .reduce((n: number, p: any) => n + Number(p.amount), 0),
+    balance = Math.max(0, Number(transaction.amount) - paidTotal),
+    [amount, setAmount] = useState(String(balance)),
+    [accountId, setAccount] = useState(transaction.account_id || available[0]?.id || ""),
+    [method, setMethod] = useState(""),
+    [notes, setNotes] = useState("");
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -595,12 +609,18 @@ function PayDialog({ transaction, accounts, payment }: any) {
         <DialogHeader>
           <DialogTitle>Registrar pagamento</DialogTitle>
         </DialogHeader>
+        <div className="rounded-md bg-muted p-3 text-sm">
+          <strong>{transaction.description}</strong>
+          <br />
+          Valor total: {brl(transaction.amount)} · Total já pago: {brl(paidTotal)} · Saldo restante:{" "}
+          {brl(balance)}
+        </div>
         <Label>
           Valor
           <Input
             type="number"
             min="0.01"
-            max={transaction.amount}
+            max={balance}
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -612,20 +632,400 @@ function PayDialog({ transaction, accounts, payment }: any) {
           set={setAccount}
           options={available.map((x: any) => [x.id, x.name])}
         />
+        <Label>
+          Forma de pagamento
+          <Input
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            placeholder="PIX, boleto, cartão…"
+          />
+        </Label>
+        <Label>
+          Observação
+          <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </Label>
         <DialogFooter>
           <Button
-            disabled={!accountId || Number(amount) <= 0 || payment.isPending}
+            variant="outline"
+            disabled={!accountId || payment.isPending || balance <= 0}
             onClick={async () => {
               await payment.mutateAsync({
+                kind: "settle",
+                transactionId: transaction.id,
+                accountId,
+                paymentMethod: method,
+              });
+              toast.success("Saldo quitado.");
+              setOpen(false);
+            }}
+          >
+            Quitar saldo
+          </Button>
+          <Button
+            disabled={
+              !accountId ||
+              Number(amount) <= 0 ||
+              Number(amount) > balance ||
+              payment.isPending ||
+              transaction.status === "paid" ||
+              transaction.status === "cancelled" ||
+              Boolean(transaction.archived_at)
+            }
+            onClick={async () => {
+              await payment.mutateAsync({
+                kind: "partial",
                 transactionId: transaction.id,
                 amount: Number(amount),
                 accountId,
+                paymentMethod: method,
+                notes,
               });
               toast.success("Pagamento registrado.");
               setOpen(false);
             }}
           >
             Confirmar pagamento
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PaymentHistory({ transaction, payments, accounts, payment, canReverse }: any) {
+  const [open, setOpen] = useState(false),
+    confirmed = payments
+      .filter((p: any) => !p.reversed_at)
+      .reduce((n: number, p: any) => n + Number(p.amount), 0),
+    reversed = payments
+      .filter((p: any) => p.reversed_at)
+      .reduce((n: number, p: any) => n + Number(p.amount), 0);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="ghost">
+          <History />
+          Ver pagamentos
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Histórico de pagamentos</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm">
+          Valor original: {brl(transaction.amount)} · Total pago: {brl(confirmed)} · Total
+          estornado: {brl(reversed)} · Saldo restante:{" "}
+          {brl(Math.max(0, transaction.amount - confirmed))}
+        </p>
+        {!payments.length ? (
+          <p>Nenhum pagamento registrado.</p>
+        ) : (
+          <div className="space-y-2">
+            {payments.map((p: any) => (
+              <div key={p.id} className="rounded-md border p-3 text-sm">
+                <div className="flex justify-between">
+                  <strong>
+                    {brl(p.amount)} · {brDate(p.paid_at || p.created_at)}
+                  </strong>
+                  <span>{p.reversed_at ? "Estornado" : "Confirmado"}</span>
+                </div>
+                <p>
+                  Conta: {accounts.find((a: any) => a.id === p.account_id)?.name ?? "—"} · Forma:{" "}
+                  {p.payment_method || "—"}
+                </p>
+                <p>
+                  Observação: {p.notes || "—"}
+                  {p.reversed_at ? ` · Estornado em ${brDate(p.reversed_at)}` : ""}
+                </p>
+                {canReverse && !p.reversed_at && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={payment.isPending}
+                    onClick={async () => {
+                      if (
+                        !window.confirm("O estorno desfará a movimentação financeira desta conta.")
+                      )
+                        return;
+                      await payment.mutateAsync({
+                        kind: "reverse",
+                        paymentId: p.id,
+                        notes: "Estorno confirmado pelo usuário",
+                      });
+                      toast.success("Pagamento estornado.");
+                    }}
+                  >
+                    <Undo2 />
+                    Estornar pagamento
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Recurrences({ data, editable, action }: any) {
+  const generate = async () => {
+    await action.mutateAsync({
+      rpc: "generate_recurrence_transactions",
+      payload: { until: new Date().toISOString().slice(0, 10) },
+    });
+    toast.success("Lançamentos pendentes gerados.");
+  };
+  return (
+    <Card>
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+        <CardTitle>Lançamentos recorrentes</CardTitle>
+        <div className="flex gap-2">
+          {editable && (
+            <>
+              <RecurrenceDialog data={data} action={action} />
+              <Button variant="outline" onClick={generate}>
+                <RefreshCw />
+                Gerar lançamentos pendentes
+              </Button>
+            </>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {!data.recurrences.length ? (
+          <p>Nenhuma recorrência cadastrada.</p>
+        ) : (
+          <div className="space-y-2">
+            {data.recurrences.map((r: any) => (
+              <div
+                key={r.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3"
+              >
+                <div>
+                  <strong>{r.name}</strong>
+                  <p className="text-sm text-muted-foreground">
+                    {r.type === "income" ? "Receita" : "Despesa"} · {brl(r.amount)} ·{" "}
+                    {
+                      (
+                        {
+                          weekly: "Semanal",
+                          monthly: "Mensal",
+                          quarterly: "Trimestral",
+                          yearly: "Anual",
+                        } as any
+                      )[r.frequency]
+                    }{" "}
+                    · Próxima: {brDate(r.next_run_date)} ·{" "}
+                    {r.status === "active"
+                      ? "Ativa"
+                      : r.status === "paused"
+                        ? "Pausada"
+                        : "Finalizada"}
+                  </p>
+                </div>
+                {editable && (
+                  <div className="flex gap-1">
+                    <RecurrenceDialog data={data} action={action} recurrence={r} />
+                    {r.status !== "finished" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          await action.mutateAsync({
+                            rpc: "update_financial_recurrence",
+                            payload: {
+                              id: r.id,
+                              status: r.status === "active" ? "paused" : "active",
+                            },
+                          });
+                          toast.success(
+                            r.status === "active"
+                              ? "Recorrência pausada."
+                              : "Recorrência reativada.",
+                          );
+                        }}
+                      >
+                        {r.status === "active" ? "Pausar" : "Reativar"}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function RecurrenceDialog({ data, action, recurrence }: any) {
+  const [open, setOpen] = useState(false),
+    [saving, setSaving] = useState(false),
+    [form, setForm] = useState(() => ({
+      name: recurrence?.name ?? "",
+      type: recurrence?.type ?? "expense",
+      amount: String(recurrence?.amount ?? ""),
+      category_id: recurrence?.category_id ?? "",
+      account_id: recurrence?.account_id ?? "",
+      frequency: recurrence?.frequency ?? "monthly",
+      interval_count: String(recurrence?.interval_count ?? 1),
+      start_date: recurrence?.start_date ?? new Date().toISOString().slice(0, 10),
+      end_date: recurrence?.end_date ?? "",
+      next_run_date: recurrence?.next_run_date ?? new Date().toISOString().slice(0, 10),
+      client_id: recurrence?.client_id ?? "",
+      process_id: recurrence?.process_id ?? "",
+      notes: recurrence?.notes ?? "",
+    }));
+  const field = (key: string, value: string) => setForm({ ...form, [key]: value });
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size={recurrence ? "sm" : "default"} variant={recurrence ? "outline" : "default"}>
+          {recurrence ? (
+            "Editar"
+          ) : (
+            <>
+              <Plus />
+              Nova recorrência
+            </>
+          )}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{recurrence ? "Editar recorrência" : "Nova recorrência"}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Label className="sm:col-span-2">
+            Nome
+            <Input value={form.name} onChange={(e) => field("name", e.target.value)} />
+          </Label>
+          <Select
+            label="Tipo"
+            value={form.type}
+            set={(v: string) => field("type", v)}
+            options={[
+              ["income", "Receita"],
+              ["expense", "Despesa"],
+            ]}
+          />
+          <Label>
+            Valor
+            <Input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={form.amount}
+              onChange={(e) => field("amount", e.target.value)}
+            />
+          </Label>
+          <Select
+            label="Categoria"
+            value={form.category_id || "all"}
+            set={(v: string) => field("category_id", v === "all" ? "" : v)}
+            options={availableFinancialCategories(data.categories, form.type as FinancialType).map(
+              (x: any) => [x.id, x.name],
+            )}
+          />
+          <Select
+            label="Conta"
+            value={form.account_id || "all"}
+            set={(v: string) => field("account_id", v === "all" ? "" : v)}
+            options={availableFinancialAccounts(data.accounts).map((x: any) => [x.id, x.name])}
+          />
+          <Select
+            label="Frequência"
+            value={form.frequency}
+            set={(v: string) => field("frequency", v)}
+            options={[
+              ["weekly", "Semanal"],
+              ["monthly", "Mensal"],
+              ["quarterly", "Trimestral"],
+              ["yearly", "Anual"],
+            ]}
+          />
+          <Label>
+            Intervalo
+            <Input
+              type="number"
+              min="1"
+              value={form.interval_count}
+              onChange={(e) => field("interval_count", e.target.value)}
+            />
+          </Label>
+          <Label>
+            Data inicial
+            <Input
+              type="date"
+              value={form.start_date}
+              onChange={(e) => field("start_date", e.target.value)}
+            />
+          </Label>
+          <Label>
+            Data final (opcional)
+            <Input
+              type="date"
+              value={form.end_date}
+              onChange={(e) => field("end_date", e.target.value)}
+            />
+          </Label>
+          <Label>
+            Próxima execução
+            <Input
+              type="date"
+              value={form.next_run_date}
+              onChange={(e) => field("next_run_date", e.target.value)}
+            />
+          </Label>
+          <Select
+            label="Cliente (opcional)"
+            value={form.client_id || "all"}
+            set={(v: string) => field("client_id", v === "all" ? "" : v)}
+            options={data.clients.map((x: any) => [x.id, x.name])}
+          />
+          <Select
+            label="Processo (opcional)"
+            value={form.process_id || "all"}
+            set={(v: string) => field("process_id", v === "all" ? "" : v)}
+            options={data.processes.map((x: any) => [x.id, `${x.code} — ${x.title}`])}
+          />
+          <Label className="sm:col-span-2">
+            Observações
+            <Input value={form.notes} onChange={(e) => field("notes", e.target.value)} />
+          </Label>
+        </div>
+        <DialogFooter>
+          <Button
+            disabled={
+              saving ||
+              !form.name.trim() ||
+              Number(form.amount) <= 0 ||
+              Number(form.interval_count) < 1
+            }
+            onClick={async () => {
+              setSaving(true);
+              try {
+                await action.mutateAsync({
+                  rpc: recurrence ? "update_financial_recurrence" : "create_financial_recurrence",
+                  payload: {
+                    ...(recurrence ? { id: recurrence.id } : {}),
+                    ...form,
+                    amount: Number(form.amount),
+                    interval_count: Number(form.interval_count),
+                  },
+                });
+                toast.success(recurrence ? "Recorrência atualizada." : "Recorrência criada.");
+                setOpen(false);
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Não foi possível salvar.");
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            Salvar
           </Button>
         </DialogFooter>
       </DialogContent>

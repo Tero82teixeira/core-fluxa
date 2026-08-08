@@ -40,6 +40,28 @@ export function canManageFinance(role?: string | null) {
   return role === "proprietario" || role === "administrador" || role === "gestor";
 }
 
+export function canReverseFinancialPayment(role?: string | null) {
+  return role === "proprietario" || role === "administrador";
+}
+
+export function paymentBalance(
+  amount: number,
+  payments: { amount: number; reversed_at?: string | null }[],
+) {
+  const confirmed = payments
+    .filter((payment) => !payment.reversed_at)
+    .reduce((total, payment) => total + Number(payment.amount), 0);
+  return Math.max(0, Number(amount) - confirmed);
+}
+
+export function displayedFinancialStatus(
+  status: FinancialStatus,
+  dueDate: string,
+  now = new Date(),
+): FinancialStatus {
+  return financialBuckets(dueDate, status, now).overdue ? "overdue" : status;
+}
+
 export const brl = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value || 0);
 export const brDate = (value?: string | null) =>
