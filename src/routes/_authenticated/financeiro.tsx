@@ -28,13 +28,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useFinance, useFinancialAction, useFinancialPayment } from "@/hooks/use-finance";
+import { useFinance, useFinancialAction, useFinancialPayment, useFinancialPaymentAction } from "@/hooks/use-finance";
+import { Badge } from "@/components/ui/badge";
 import {
   availableFinancialAccounts,
   availableFinancialCategories,
   brDate,
   brl,
   canManageFinance,
+  canReverseFinancialPayment,
+  displayFinancialStatus,
+  paymentTotals,
+  validateFinancialPayment,
   downloadFinancialCsv,
   financialBuckets,
   type FinancialAccount,
@@ -67,6 +72,7 @@ function FinancePage() {
   const query = useFinance(organizationId);
   const action = useFinancialAction(organizationId);
   const payment = useFinancialPayment(organizationId);
+  const paymentAction = useFinancialPaymentAction(organizationId);
   if (!organizationId)
     return (
       <div className="p-6">
@@ -95,10 +101,10 @@ function FinancePage() {
         </Card>
       </div>
     );
-  return <FinanceDashboard {...{ membership, role, action, payment }} data={query.data} />;
+  return <FinanceDashboard {...{ membership, role, action, payment, paymentAction }} data={query.data} />;
 }
 
-function FinanceDashboard({ membership, role, action, payment, data }: any) {
+function FinanceDashboard({ membership, role, action, payment, paymentAction, data }: any) {
   const [tab, setTab] = useState("overview"),
     [search, setSearch] = useState(""),
     [status, setStatus] = useState("all"),
@@ -294,6 +300,8 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
               page={page}
               setPage={setPage}
               payment={payment}
+              paymentAction={paymentAction}
+              role={role}
             />
           </TabsContent>
         ))}
@@ -319,27 +327,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
           />
         </TabsContent>
         <TabsContent value="recurrences">
-          <SimpleList
-            title="Lançamentos recorrentes"
-            rows={data.recurrences}
-            empty="Nenhuma recorrência cadastrada."
-            action={
-              editable ? (
-                <Button
-                  onClick={async () => {
-                    await action.mutateAsync({
-                      rpc: "generate_recurrence_transactions",
-                      payload: { until: new Date().toISOString().slice(0, 10) },
-                    });
-                    toast.success("Próximos lançamentos gerados.");
-                  }}
-                >
-                  <RefreshCw />
-                  Gerar próximos lançamentos
-                </Button>
-              ) : undefined
-            }
-          />
+          <Recurrences data={data} editable={editable} action={action} />
         </TabsContent>
       </Tabs>
     </div>
@@ -405,76 +393,23 @@ function Select({ label, value, set, options }: any) {
     </Label>
   );
 }
-function Transactions({ rows, data, paid, editable, page, setPage, payment }: any) {
+function StatusBadge({ transaction }: any) {
+  const status = displayFinancialStatus(transaction.status, transaction.due_date);
+  const variants: Record<string, string> = { paid: "bg-emerald-600", partial: "bg-amber-500", overdue: "bg-red-600", cancelled: "bg-slate-500", pending: "bg-blue-600" };
+  return <Badge className={variants[status]}>{statusLabel[status]}</Badge>;
+}
+function Transactions({ rows, data, paid, editable, role, page, setPage, payment, paymentAction }: any) {
   const shown = rows.slice(page * 10, page * 10 + 10);
-  return (
-    <Card>
-      <CardContent className="overflow-x-auto pt-6">
-        {!shown.length ? (
-          <p className="py-10 text-center text-muted-foreground">Nenhum lançamento encontrado.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                {[
-                  "Descrição",
-                  "Tipo",
-                  "Valor",
-                  "Vencimento",
-                  "Status",
-                  "Categoria",
-                  "Conta",
-                  "Valor pago",
-                  "Saldo restante",
-                  "Ações",
-                ].map((x) => (
-                  <th className="p-2 text-left" key={x}>
-                    {x}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((x: any) => {
-                const total = paid(x.id);
-                return (
-                  <tr className="border-t" key={x.id}>
-                    <td className="p-2 font-medium">{x.description}</td>
-                    <td>{x.type === "income" ? "Receita" : "Despesa"}</td>
-                    <td>{brl(x.amount)}</td>
-                    <td>{brDate(x.due_date)}</td>
-                    <td>{statusLabel[x.status]}</td>
-                    <td>{data.categories.find((c: any) => c.id === x.category_id)?.name ?? "—"}</td>
-                    <td>{data.accounts.find((a: any) => a.id === x.account_id)?.name ?? "—"}</td>
-                    <td>{brl(total)}</td>
-                    <td>{brl(x.amount - total)}</td>
-                    <td>
-                      {editable && !["paid", "cancelled"].includes(x.status) && (
-                        <PayDialog transaction={x} accounts={data.accounts} payment={payment} />
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-        <div className="no-print mt-4 flex justify-between">
-          <Button variant="outline" disabled={!page} onClick={() => setPage(page - 1)}>
-            Anterior
-          </Button>
-          <span>Página {page + 1}</span>
-          <Button
-            variant="outline"
-            disabled={(page + 1) * 10 >= rows.length}
-            onClick={() => setPage(page + 1)}
-          >
-            Próxima
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  return <Card><CardContent className="overflow-x-auto pt-6">
+    {!shown.length ? <p className="py-10 text-center text-muted-foreground">Nenhum lançamento encontrado.</p> :
+    <table className="w-full text-sm"><thead><tr>{["Descrição","Tipo","Valor","Vencimento","Status","Categoria","Conta","Valor pago","Saldo restante","Ações"].map(x=><th className="p-2 text-left" key={x}>{x}</th>)}</tr></thead>
+    <tbody>{shown.map((transaction:any)=>{const total=paid(transaction.id), txPayments=data.payments.filter((p:any)=>p.transaction_id===transaction.id);return <tr className="border-t" key={transaction.id}>
+      <td className="p-2 font-medium">{transaction.description}</td><td>{transaction.type==="income"?"Receita":"Despesa"}</td><td>{brl(transaction.amount)}</td><td>{brDate(transaction.due_date)}</td><td><StatusBadge transaction={transaction}/></td>
+      <td>{data.categories.find((c:any)=>c.id===transaction.category_id)?.name??"—"}</td><td>{data.accounts.find((a:any)=>a.id===transaction.account_id)?.name??"—"}</td><td>{brl(total)}</td><td>{brl(transaction.amount-total)}</td>
+      <td><div className="flex min-w-52 flex-wrap gap-1">{editable&&!transaction.archived_at&&!["paid","cancelled"].includes(transaction.status)&&<PayDialog transaction={transaction} payments={txPayments} accounts={data.accounts} payment={payment} paymentAction={paymentAction}/>}<PaymentHistory transaction={transaction} payments={txPayments} accounts={data.accounts} canReverse={canReverseFinancialPayment(role)} paymentAction={paymentAction}/></div></td>
+    </tr>})}</tbody></table>}
+    <div className="no-print mt-4 flex justify-between"><Button variant="outline" disabled={!page} onClick={()=>setPage(page-1)}>Anterior</Button><span>Página {page+1}</span><Button variant="outline" disabled={(page+1)*10>=rows.length} onClick={()=>setPage(page+1)}>Próxima</Button></div>
+  </CardContent></Card>;
 }
 function TransactionDialog({ data, onSave }: any) {
   const [open, setOpen] = useState(false),
@@ -578,60 +513,21 @@ function TransactionDialog({ data, onSave }: any) {
     </Dialog>
   );
 }
-function PayDialog({ transaction, accounts, payment }: any) {
-  const available = availableFinancialAccounts(accounts),
-    [open, setOpen] = useState(false),
-    [amount, setAmount] = useState(String(transaction.amount)),
-    [accountId, setAccount] = useState(transaction.account_id || available[0]?.id || "");
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <WalletCards />
-          Pagar
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Registrar pagamento</DialogTitle>
-        </DialogHeader>
-        <Label>
-          Valor
-          <Input
-            type="number"
-            min="0.01"
-            max={transaction.amount}
-            step="0.01"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-        </Label>
-        <Select
-          label="Conta"
-          value={accountId}
-          set={setAccount}
-          options={available.map((x: any) => [x.id, x.name])}
-        />
-        <DialogFooter>
-          <Button
-            disabled={!accountId || Number(amount) <= 0 || payment.isPending}
-            onClick={async () => {
-              await payment.mutateAsync({
-                transactionId: transaction.id,
-                amount: Number(amount),
-                accountId,
-              });
-              toast.success("Pagamento registrado.");
-              setOpen(false);
-            }}
-          >
-            Confirmar pagamento
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+function PayDialog({ transaction, payments, accounts, payment, paymentAction }: any) {
+  const available=availableFinancialAccounts(accounts), totals=paymentTotals(transaction.amount,payments);
+  const [open,setOpen]=useState(false),[amount,setAmount]=useState(String(totals.remaining)),[accountId,setAccount]=useState(transaction.account_id||available[0]?.id||""),[paymentMethod,setPaymentMethod]=useState("pix"),[notes,setNotes]=useState("");
+  const error=validateFinancialPayment(transaction,payments,Number(amount));
+  const submit=async(settle=false)=>{try{if(settle) await paymentAction.mutateAsync({kind:"settle",transactionId:transaction.id,accountId,paymentMethod});else await payment.mutateAsync({transactionId:transaction.id,amount:Number(amount),accountId,paymentMethod,notes});toast.success(settle?"Saldo quitado.":"Pagamento registrado.");setOpen(false)}catch(e){toast.error(e instanceof Error?e.message:"Não foi possível registrar o pagamento.")}};
+  return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button size="sm" variant="outline"><WalletCards/>Registrar pagamento</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>Registrar pagamento</DialogTitle></DialogHeader>
+    <div className="grid gap-3"><p className="font-medium">{transaction.description}</p><div className="grid grid-cols-3 gap-2 text-sm"><span>Total: {brl(transaction.amount)}</span><span>Pago: {brl(totals.paid)}</span><span>Saldo: {brl(totals.remaining)}</span></div>
+    <Select label="Conta financeira" value={accountId} set={setAccount} options={available.map((x:any)=>[x.id,x.name])}/><Label>Valor do novo pagamento<Input type="number" min="0.01" max={totals.remaining} step="0.01" value={amount} onChange={e=>setAmount(e.target.value)}/></Label>
+    <Select label="Forma de pagamento" value={paymentMethod} set={setPaymentMethod} options={[["pix","PIX"],["bank_transfer","Transferência"],["cash","Dinheiro"],["credit_card","Cartão"]]}/><Label>Observação<Input value={notes} onChange={e=>setNotes(e.target.value)}/></Label>{error&&<p role="alert" className="text-sm text-destructive">{error==="PAYMENT_EXCEEDS_BALANCE"?"O valor não pode superar o saldo restante.":"Informe um valor válido."}</p>}</div>
+    <DialogFooter><Button variant="outline" disabled={!accountId||paymentAction.isPending} onClick={()=>submit(true)}>Quitar saldo</Button><Button disabled={!accountId||!!error||payment.isPending} onClick={()=>submit(false)}>Confirmar pagamento</Button></DialogFooter>
+  </DialogContent></Dialog>;
 }
+function PaymentHistory({transaction,payments,accounts,canReverse,paymentAction}:any){const [open,setOpen]=useState(false),totals=paymentTotals(transaction.amount,payments);return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button size="sm" variant="ghost">Ver pagamentos</Button></DialogTrigger><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Histórico de pagamentos</DialogTitle></DialogHeader><div className="grid grid-cols-2 gap-2 rounded bg-muted p-3 text-sm"><span>Valor original: {brl(totals.original)}</span><span>Total pago: {brl(totals.paid)}</span><span>Total estornado: {brl(totals.reversed)}</span><span>Saldo restante: {brl(totals.remaining)}</span></div>{!payments.length?<p>Nenhum pagamento registrado.</p>:<div className="space-y-2">{payments.map((p:any)=><div key={p.id} className="rounded border p-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><strong>{brl(p.amount)} · {brDate(p.created_at)}</strong><Badge variant={p.reversed_at?"destructive":"default"}>{p.reversed_at?"Estornado":"Confirmado"}</Badge></div><p>Conta: {accounts.find((a:any)=>a.id===p.account_id)?.name??"—"} · Forma: {p.payment_method||"—"}</p><p>Observação: {p.notes||"—"}</p>{p.reversed_at&&<p>Estornado em {new Date(p.reversed_at).toLocaleString("pt-BR")}</p>}{canReverse&&!p.reversed_at&&<Button className="mt-2" size="sm" variant="destructive" disabled={paymentAction.isPending} onClick={async()=>{if(!window.confirm("O estorno desfará a movimentação financeira desta conta. Deseja continuar?"))return;try{await paymentAction.mutateAsync({kind:"reverse",paymentId:p.id});toast.success("Pagamento estornado.")}catch(e){toast.error(e instanceof Error?e.message:"Não foi possível estornar.")}}}>Estornar pagamento</Button>}</div>)}</div>}</DialogContent></Dialog>}
+function Recurrences({data,editable,action}:any){const generated=(id:string)=>data.transactions.filter((x:any)=>x.recurrence_id===id).length;const generate=async()=>{if(!window.confirm("Gerar todos os lançamentos recorrentes pendentes até hoje? A operação não criará duplicidades."))return;try{const count=await action.mutateAsync({rpc:"generate_recurrence_transactions",payload:{until:new Date().toISOString().slice(0,10)}});toast.success(`${Number(count)||0} lançamento(s) gerado(s).`)}catch(e){toast.error(e instanceof Error?e.message:"Não foi possível gerar recorrências.")}};return <Card><CardHeader className="flex-row flex-wrap items-center justify-between gap-2"><CardTitle>Recorrências</CardTitle>{editable&&<div className="flex gap-2"><RecurrenceDialog data={data} action={action}/><Button disabled={action.isPending} onClick={generate}><RefreshCw/>Gerar lançamentos pendentes</Button></div>}</CardHeader><CardContent className="overflow-x-auto">{!data.recurrences.length?<p className="py-10 text-center text-muted-foreground">Nenhuma recorrência cadastrada.</p>:<table className="w-full text-sm"><thead><tr>{["Nome","Tipo","Valor","Frequência","Próxima execução","Status","Categoria","Conta","Gerados","Ações"].map(x=><th key={x} className="p-2 text-left">{x}</th>)}</tr></thead><tbody>{data.recurrences.map((r:any)=><tr key={r.id} className="border-t"><td className="p-2 font-medium">{r.name}</td><td>{r.type==="income"?"Receita":"Despesa"}</td><td>{brl(r.amount)}</td><td>{({weekly:"Semanal",monthly:"Mensal",quarterly:"Trimestral",yearly:"Anual"} as any)[r.frequency]} · {r.interval_count}</td><td>{brDate(r.next_run_date)}</td><td><Badge variant={r.status==="active"?"default":"secondary"}>{({active:"Ativa",paused:"Pausada",finished:"Encerrada"} as any)[r.status]||r.status}</Badge></td><td>{data.categories.find((x:any)=>x.id===r.category_id)?.name??"—"}</td><td>{data.accounts.find((x:any)=>x.id===r.account_id)?.name??"—"}</td><td>{generated(r.id)}</td><td>{editable&&<div className="flex gap-1"><RecurrenceDialog data={data} action={action} row={r}/>{r.status!=="finished"&&<Button size="sm" variant="outline" disabled={action.isPending} onClick={async()=>{await action.mutateAsync({rpc:"update_financial_recurrence",payload:{id:r.id,status:r.status==="active"?"paused":"active"}});toast.success(r.status==="active"?"Recorrência pausada.":"Recorrência reativada.")}}>{r.status==="active"?"Pausar":"Reativar"}</Button>}</div>}</td></tr>)}</tbody></table>}</CardContent></Card>}
+function RecurrenceDialog({data,action,row}:any){const [open,setOpen]=useState(false),[form,setForm]=useState(()=>({name:row?.name||"",type:row?.type||"expense",amount:String(row?.amount||""),category_id:row?.category_id||"",account_id:row?.account_id||"",frequency:row?.frequency||"monthly",interval_count:String(row?.interval_count||1),start_date:row?.start_date||new Date().toISOString().slice(0,10),end_date:row?.end_date||"",next_run_date:row?.next_run_date||new Date().toISOString().slice(0,10),client_id:row?.client_id||"",process_id:row?.process_id||"",notes:row?.notes||""}));const categories=availableFinancialCategories(data.categories,form.type),accounts=availableFinancialAccounts(data.accounts);const save=async()=>{try{await action.mutateAsync({rpc:row?"update_financial_recurrence":"create_financial_recurrence",payload:{...(row?{id:row.id}:{}),...form,amount:Number(form.amount),interval_count:Number(form.interval_count)}});toast.success(row?"Recorrência atualizada.":"Recorrência criada.");setOpen(false)}catch(e){toast.error(e instanceof Error?e.message:"Não foi possível salvar a recorrência.")}};const field=(key:string,value:string)=>setForm((old:any)=>({...old,[key]:value}));return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button size={row?"sm":"default"} variant={row?"ghost":"default"}>{row?"Editar":<><Plus/>Nova recorrência</>}</Button></DialogTrigger><DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{row?"Editar recorrência":"Nova recorrência"}</DialogTitle></DialogHeader><div className="grid gap-3 sm:grid-cols-2"><Label>Nome<Input value={form.name} onChange={e=>field("name",e.target.value)}/></Label><Select label="Tipo" value={form.type} set={(v:string)=>field("type",v)} options={[["income","Receita"],["expense","Despesa"]]}/><Label>Valor<Input type="number" min="0.01" step="0.01" value={form.amount} onChange={e=>field("amount",e.target.value)}/></Label><Select label="Frequência" value={form.frequency} set={(v:string)=>field("frequency",v)} options={[["weekly","Semanal"],["monthly","Mensal"],["quarterly","Trimestral"],["yearly","Anual"]]}/><Label>Intervalo<Input type="number" min="1" value={form.interval_count} onChange={e=>field("interval_count",e.target.value)}/></Label><Select label="Categoria" value={form.category_id||"all"} set={(v:string)=>field("category_id",v==="all"?"":v)} options={categories.map((x:any)=>[x.id,x.name])}/><Select label="Conta" value={form.account_id||"all"} set={(v:string)=>field("account_id",v==="all"?"":v)} options={accounts.map((x:any)=>[x.id,x.name])}/><Label>Data inicial<Input type="date" value={form.start_date} disabled={!!row} onChange={e=>field("start_date",e.target.value)}/></Label><Label>Data final (opcional)<Input type="date" value={form.end_date} onChange={e=>field("end_date",e.target.value)}/></Label><Label>Próxima execução<Input type="date" value={form.next_run_date} onChange={e=>field("next_run_date",e.target.value)}/></Label><Select label="Cliente (opcional)" value={form.client_id||"all"} set={(v:string)=>field("client_id",v==="all"?"":v)} options={data.clients.map((x:any)=>[x.id,x.name])}/><Select label="Processo (opcional)" value={form.process_id||"all"} set={(v:string)=>field("process_id",v==="all"?"":v)} options={data.processes.map((x:any)=>[x.id,`${x.code} — ${x.title}`])}/><Label className="sm:col-span-2">Observações<Input value={form.notes} onChange={e=>field("notes",e.target.value)}/></Label></div><DialogFooter><Button disabled={action.isPending||!form.name.trim()||Number(form.amount)<=0||Number(form.interval_count)<1} onClick={save}>{action.isPending?"Salvando…":"Salvar"}</Button></DialogFooter></DialogContent></Dialog>}
 function Chart({ title, data, keys = ["receitas", "despesas"] }: any) {
   return (
     <Card>
