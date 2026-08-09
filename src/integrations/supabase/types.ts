@@ -449,6 +449,153 @@ export type Database = {
           },
         ]
       }
+      communication_entries: {
+        Row: {
+          contact_made: boolean
+          content: string
+          created_at: string
+          created_by: string
+          entry_type: Database["public"]["Enums"]["communication_entry_type"]
+          id: string
+          is_internal: boolean
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          thread_id: string
+        }
+        Insert: {
+          contact_made?: boolean
+          content: string
+          created_at?: string
+          created_by: string
+          entry_type: Database["public"]["Enums"]["communication_entry_type"]
+          id?: string
+          is_internal?: boolean
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+          thread_id: string
+        }
+        Update: {
+          contact_made?: boolean
+          content?: string
+          created_at?: string
+          created_by?: string
+          entry_type?: Database["public"]["Enums"]["communication_entry_type"]
+          id?: string
+          is_internal?: boolean
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_entries_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_entries_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_threads: {
+        Row: {
+          archived_at: string | null
+          assigned_to: string | null
+          channel: Database["public"]["Enums"]["communication_channel"]
+          client_id: string
+          created_at: string
+          created_by: string
+          follow_up_at: string | null
+          id: string
+          organization_id: string
+          priority: Database["public"]["Enums"]["communication_priority"]
+          process_id: string | null
+          status: Database["public"]["Enums"]["communication_status"]
+          subject: string
+          task_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          assigned_to?: string | null
+          channel?: Database["public"]["Enums"]["communication_channel"]
+          client_id: string
+          created_at?: string
+          created_by: string
+          follow_up_at?: string | null
+          id?: string
+          organization_id: string
+          priority?: Database["public"]["Enums"]["communication_priority"]
+          process_id?: string | null
+          status?: Database["public"]["Enums"]["communication_status"]
+          subject: string
+          task_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          assigned_to?: string | null
+          channel?: Database["public"]["Enums"]["communication_channel"]
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          follow_up_at?: string | null
+          id?: string
+          organization_id?: string
+          priority?: Database["public"]["Enums"]["communication_priority"]
+          process_id?: string | null
+          status?: Database["public"]["Enums"]["communication_status"]
+          subject?: string
+          task_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_threads_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_threads_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_types: {
         Row: {
           active: boolean
@@ -2497,8 +2644,24 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      add_communication_entry: {
+        Args: {
+          _contact_made?: boolean
+          _content: string
+          _entry_type: Database["public"]["Enums"]["communication_entry_type"]
+          _is_internal?: boolean
+          _metadata?: Json
+          _occurred_at?: string
+          _thread_id: string
+        }
+        Returns: string
+      }
       archive_automation_rule: {
         Args: { _rule_id: string }
+        Returns: undefined
+      }
+      archive_communication_thread: {
+        Args: { _thread_id: string }
         Returns: undefined
       }
       archive_financial_account: {
@@ -2515,6 +2678,10 @@ export type Database = {
       }
       archive_notification: {
         Args: { _notification: string }
+        Returns: undefined
+      }
+      assign_communication_thread: {
+        Args: { _assigned_to: string; _thread_id: string }
         Returns: undefined
       }
       automation_can_manage: { Args: { _org: string }; Returns: boolean }
@@ -2540,6 +2707,13 @@ export type Database = {
         Returns: string
       }
       cancel_invitation: { Args: { _invitation: string }; Returns: undefined }
+      change_communication_thread_status: {
+        Args: {
+          _status: Database["public"]["Enums"]["communication_status"]
+          _thread_id: string
+        }
+        Returns: undefined
+      }
       change_member_role: {
         Args: {
           _member: string
@@ -2565,6 +2739,10 @@ export type Database = {
           zip_code: string
         }[]
       }
+      communication_assert_role: {
+        Args: { _administrative?: boolean; _org: string }
+        Returns: undefined
+      }
       create_automation_rule: {
         Args: {
           _organization_id: string
@@ -2575,6 +2753,21 @@ export type Database = {
           is_active: boolean
           name: string
           trigger_type: string
+        }
+        Returns: string
+      }
+      create_communication_thread: {
+        Args: {
+          _assigned_to?: string
+          _channel?: Database["public"]["Enums"]["communication_channel"]
+          _client_id: string
+          _first_content?: string
+          _follow_up_at?: string
+          _organization_id: string
+          _priority?: Database["public"]["Enums"]["communication_priority"]
+          _process_id?: string
+          _subject: string
+          _task_id?: string
         }
         Returns: string
       }
@@ -2738,6 +2931,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_communication_thread: {
+        Args: {
+          _channel?: Database["public"]["Enums"]["communication_channel"]
+          _clear_follow_up?: boolean
+          _follow_up_at?: string
+          _priority?: Database["public"]["Enums"]["communication_priority"]
+          _process_id?: string
+          _process_id_provided?: boolean
+          _subject?: string
+          _task_id?: string
+          _task_id_provided?: boolean
+          _thread_id: string
+        }
+        Returns: undefined
+      }
       update_financial_account: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
@@ -2788,6 +2996,31 @@ export type Database = {
         | "com_pendencia"
         | "inativo"
         | "arquivado"
+      communication_channel:
+        | "whatsapp"
+        | "telefone"
+        | "email"
+        | "presencial"
+        | "interno"
+        | "outro"
+      communication_entry_type:
+        | "mensagem"
+        | "nota_interna"
+        | "ligacao"
+        | "email"
+        | "whatsapp"
+        | "reuniao"
+        | "outro"
+        | "status"
+        | "lembrete"
+        | "anexo"
+      communication_priority: "baixa" | "normal" | "alta" | "urgente"
+      communication_status:
+        | "aberta"
+        | "aguardando_cliente"
+        | "aguardando_equipe"
+        | "resolvida"
+        | "arquivada"
       document_category:
         | "identificacao"
         | "certidao"
@@ -2988,6 +3221,34 @@ export const Constants = {
         "com_pendencia",
         "inativo",
         "arquivado",
+      ],
+      communication_channel: [
+        "whatsapp",
+        "telefone",
+        "email",
+        "presencial",
+        "interno",
+        "outro",
+      ],
+      communication_entry_type: [
+        "mensagem",
+        "nota_interna",
+        "ligacao",
+        "email",
+        "whatsapp",
+        "reuniao",
+        "outro",
+        "status",
+        "lembrete",
+        "anexo",
+      ],
+      communication_priority: ["baixa", "normal", "alta", "urgente"],
+      communication_status: [
+        "aberta",
+        "aguardando_cliente",
+        "aguardando_equipe",
+        "resolvida",
+        "arquivada",
       ],
       document_category: [
         "identificacao",
