@@ -1,234 +1,558 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Layers, Lock } from "lucide-react";
+import { Building2, Lock, Save } from "lucide-react";
 import { toast } from "sonner";
-
 import { useWorkspace } from "@/lib/workspace";
-import { usePermissions } from "@/lib/permissions";
-import { useAllServiceTypes, useArchiveServiceType, useSaveServiceType } from "@/hooks/use-mutations";
+import { useSession } from "@/hooks/use-session";
+import {
+  useOrganizationSettings,
+  useUpdateOrganizationSettings,
+} from "@/hooks/use-organization-settings";
+import {
+  ORGANIZATION_SETTINGS_DEFAULTS,
+  validateOrganizationSettings,
+  type OrganizationSettings,
+} from "@/lib/organization-settings";
+import { ROLE } from "@/lib/domain";
 import { describeError } from "@/lib/errors";
-
-import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { EmptyState } from "@/components/shared/empty-state";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
     meta: [
       { title: "Configurações — FLUXA" },
-      { name: "description", content: "Catálogo de tipos de serviço, prazos padrão e checklists da empresa." },
-      { property: "og:title", content: "Configurações — FLUXA" },
-      { property: "og:description", content: "Catálogo de tipos de serviço, prazos padrão e checklists da empresa." },
+      { name: "description", content: "Central de Administração da organização." },
     ],
   }),
   component: SettingsPage,
 });
 
-function checklistOf(type: { default_checklist: unknown }): string[] {
-  return Array.isArray(type.default_checklist) ? (type.default_checklist as string[]) : [];
+const tabs = [
+  ["geral", "Geral"],
+  ["organizacao", "Organização"],
+  ["preferencias", "Preferências"],
+  ["operacao", "Operação"],
+  ["financeiro", "Financeiro"],
+  ["comunicacao", "Comunicação"],
+  ["monitoramento", "Monitoramento"],
+  ["notificacoes", "Notificações"],
+  ["seguranca", "Segurança"],
+] as const;
+const sensitiveRoles = new Set(["superadmin", "proprietario", "administrador"]);
+
+type Draft = Partial<OrganizationSettings>;
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  disabled = false,
+}: {
+  label: string;
+  value: string | number | null | undefined;
+  onChange: (value: string) => void;
+  type?: string;
+  disabled?: boolean;
+}) {
+  const id = `setting-${label.toLowerCase().replace(/\W/g, "-")}`;
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        type={type}
+        value={value ?? ""}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+function Toggle({
+  label,
+  checked,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+      <Label>{label}</Label>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />
+    </div>
+  );
+}
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4 sm:grid-cols-2">{children}</CardContent>
+    </Card>
+  );
 }
 
-const emptyForm = { id: "", name: "", description: "", default_days: "", default_value: "", checklist: "" };
-
 function SettingsPage() {
-  const { organizationId, membership } = useWorkspace();
-  const permissions = usePermissions();
-  const serviceTypes = useAllServiceTypes(organizationId);
-  const saveServiceType = useSaveServiceType(organizationId);
-  const archiveServiceType = useArchiveServiceType(organizationId);
-  const [form, setForm] = useState(emptyForm);
-
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (form.name.trim().length < 3) {
-      toast.error("Informe o nome do tipo de serviço.");
+  const { organizationId, role } = useWorkspace();
+  const { session } = useSession();
+  const query = useOrganizationSettings(organizationId);
+  const update = useUpdateOrganizationSettings(organizationId);
+  const [draft, setDraft] = useState<Draft>({});
+  const canEdit = Boolean(role && sensitiveRoles.has(role));
+  useEffect(() => {
+    if (query.data) setDraft(query.data);
+  }, [query.data]);
+  const dirty = useMemo(
+    () => Boolean(query.data && JSON.stringify(draft) !== JSON.stringify(query.data)),
+    [draft, query.data],
+  );
+  const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
+    setDraft((current) => ({ ...current, [key]: value }));
+  const save = async () => {
+    const errors = validateOrganizationSettings(draft);
+    if (errors.length) {
+      toast.error(errors[0]);
       return;
     }
     try {
-      await saveServiceType.mutateAsync({
-        id: form.id || undefined,
-        values: {
-          name: form.name.trim(),
-          description: form.description.trim() || null,
-          default_days: form.default_days ? Number(form.default_days) : null,
-          default_value: form.default_value ? Number(form.default_value.replace(",", ".")) : null,
-          is_active: true,
-          default_checklist: form.checklist
-            .split("\n")
-            .map((item) => item.trim())
-            .filter(Boolean),
-        },
-      });
-      setForm(emptyForm);
-      toast.success(form.id ? "Tipo de serviço atualizado." : "Tipo de serviço criado.");
+      const payload = {
+        ...draft,
+        recent_audit: undefined,
+        member_count: undefined,
+        client_count: undefined,
+        active_process_count: undefined,
+        created_at: undefined,
+        updated_at: undefined,
+        organization_id: undefined,
+      };
+      await update.mutateAsync(payload);
+      toast.success("Configurações atualizadas com segurança.");
     } catch (error) {
-      toast.error(describeError(error, "servico"));
+      toast.error(describeError(error, "salvar"));
     }
   };
-
+  if (query.isLoading)
+    return (
+      <div className="mx-auto max-w-6xl space-y-4 p-6">
+        <Skeleton className="h-10 w-72" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  if (query.isError || !query.data)
+    return (
+      <div className="mx-auto max-w-6xl p-6">
+        <Card>
+          <CardContent className="p-6">
+            Não foi possível carregar as configurações da organização.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  const d = draft as OrganizationSettings;
+  const notify = d.notification_preferences ?? {};
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-6">
-      <header className="space-y-1">
-        <h1 className="page-title">Configurações</h1>
-        <p className="page-subtitle">
-          Catálogo operacional de {membership?.organizations?.trade_name || membership?.organizations?.legal_name || "sua empresa"}: prazos padrão, valores e checklists reutilizáveis.
-        </p>
+    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="page-title">Configurações</h1>
+          <p className="page-subtitle">
+            Central de Administração de {d.trade_name || d.legal_name}.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {dirty && <Badge variant="outline">Alterações não salvas</Badge>}
+          <Button onClick={save} disabled={!canEdit || !dirty || update.isPending}>
+            <Save className="size-4" />
+            {update.isPending ? "Salvando…" : "Salvar alterações"}
+          </Button>
+        </div>
       </header>
-
-      {!permissions.canManageServiceTypes && (
+      {!canEdit && (
         <Card>
-          <CardContent className="flex items-center gap-3 p-4 text-sm text-muted-foreground">
-            <Lock className="size-4 shrink-0" aria-hidden />
-            Seu perfil pode consultar o catálogo, mas não alterá-lo.
+          <CardContent className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
+            <Lock className="size-4" />
+            Seu papel possui acesso somente para leitura. As permissões também são verificadas no
+            banco.
           </CardContent>
         </Card>
       )}
-
-      {permissions.canManageServiceTypes && (
-        <Card>
-          <CardContent className="p-5 sm:p-6">
-            <h2 className="section-title">{form.id ? "Editar tipo de serviço" : "Novo tipo de serviço"}</h2>
-            <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="st-name">Nome</Label>
-                <Input
-                  id="st-name"
-                  maxLength={120}
-                  value={form.name}
-                  placeholder="Ex.: Registro de produto"
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
-                />
+      <Tabs defaultValue="geral">
+        <TabsList className="h-auto w-full flex-wrap justify-start">
+          {tabs.map(([key, label]) => (
+            <TabsTrigger key={key} value={key}>
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="geral">
+          <Section title="Resumo da organização">
+            <div className="sm:col-span-2 flex items-center gap-3">
+              <Building2 className="size-8 text-primary" />
+              <div>
+                <p className="font-semibold">{d.trade_name || d.legal_name}</p>
+                <Badge variant="secondary">Ativa</Badge>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="st-days">Prazo padrão (dias)</Label>
-                <Input
-                  id="st-days"
-                  inputMode="numeric"
-                  value={form.default_days}
-                  onChange={(event) => setForm({ ...form, default_days: event.target.value.replace(/\D/g, "") })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="st-value">Valor padrão (R$)</Label>
-                <Input
-                  id="st-value"
-                  inputMode="decimal"
-                  value={form.default_value}
-                  onChange={(event) => setForm({ ...form, default_value: event.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="st-description">Descrição</Label>
-                <Input
-                  id="st-description"
-                  maxLength={240}
-                  value={form.description}
-                  onChange={(event) => setForm({ ...form, description: event.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="st-checklist">Checklist padrão (um item por linha)</Label>
-                <Textarea
-                  id="st-checklist"
-                  rows={4}
-                  value={form.checklist}
-                  placeholder={"Coletar documentos\nConferir dados cadastrais\nProtocolar no órgão"}
-                  onChange={(event) => setForm({ ...form, checklist: event.target.value })}
-                />
-              </div>
-              <div className="flex gap-2 sm:col-span-2">
-                <Button type="submit" disabled={saveServiceType.isPending}>
-                  {saveServiceType.isPending ? "Salvando…" : form.id ? "Salvar alterações" : "Criar tipo de serviço"}
-                </Button>
-                {form.id && (
-                  <Button type="button" variant="ghost" onClick={() => setForm(emptyForm)}>
-                    Cancelar edição
-                  </Button>
-                )}
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardContent className="p-0">
-          {serviceTypes.isLoading ? (
-            <div className="space-y-3 p-6">
-              {[0, 1, 2].map((row) => (
-                <Skeleton key={row} className="h-12 w-full" />
-              ))}
             </div>
-          ) : (serviceTypes.data ?? []).length === 0 ? (
-            <EmptyState
-              icon={Layers}
-              title="Nenhum tipo de serviço cadastrado"
-              description="Cadastre os serviços recorrentes para padronizar prazos e checklists dos processos."
+            <Field label="Membros ativos" value={d.member_count} onChange={() => {}} disabled />
+            <Field label="Clientes" value={d.client_count} onChange={() => {}} disabled />
+            <Field
+              label="Processos ativos"
+              value={d.active_process_count}
+              onChange={() => {}}
+              disabled
             />
-          ) : (
-            <ul className="divide-y divide-border">
-              {(serviceTypes.data ?? []).map((type) => (
-                <li key={type.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{type.name}</p>
-                    <p className="helper-text mt-0.5 truncate">
-                      {type.default_days ? `${type.default_days} dias` : "Sem prazo padrão"}
-                      {" · "}
-                      {checklistOf(type).length} itens de checklist
-                      {type.description ? ` · ${type.description}` : ""}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <StatusBadge
-                      label={type.is_active ? "Ativo" : "Inativo"}
-                      tone={type.is_active ? "success" : "neutral"}
-                    />
-                    {permissions.canManageServiceTypes && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            setForm({
-                              id: type.id,
-                              name: type.name,
-                              description: type.description ?? "",
-                              default_days: type.default_days ? String(type.default_days) : "",
-                              default_value: type.default_value ? String(type.default_value) : "",
-                              checklist: checklistOf(type).join("\n"),
-                            })
-                          }
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={async () => {
-                            try {
-                              await archiveServiceType.mutateAsync({ id: type.id, active: !type.is_active });
-                              toast.success(type.is_active ? "Tipo desativado." : "Tipo reativado.");
-                            } catch (error) {
-                              toast.error(describeError(error, "servico"));
-                            }
-                          }}
-                        >
-                          {type.is_active ? "Desativar" : "Reativar"}
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+            <Field
+              label="Criada em"
+              value={new Date(d.created_at).toLocaleDateString("pt-BR")}
+              onChange={() => {}}
+              disabled
+            />
+          </Section>
+        </TabsContent>
+        <TabsContent value="organizacao">
+          <Section title="Dados institucionais">
+            <Field
+              label="Nome da organização"
+              value={d.legal_name}
+              disabled={!canEdit}
+              onChange={(v) => set("legal_name", v)}
+            />
+            <Field
+              label="Nome de exibição"
+              value={d.trade_name}
+              disabled={!canEdit}
+              onChange={(v) => set("trade_name", v)}
+            />
+            <Field
+              label="CNPJ / identificador fiscal"
+              value={d.document}
+              onChange={() => {}}
+              disabled
+            />
+            <Field
+              label="Telefone"
+              value={d.phone}
+              disabled={!canEdit}
+              onChange={(v) => set("phone", v)}
+            />
+            <Field
+              label="E-mail institucional"
+              type="email"
+              value={d.email}
+              disabled={!canEdit}
+              onChange={(v) => set("email", v)}
+            />
+            <Field
+              label="Site"
+              type="url"
+              value={d.website}
+              disabled={!canEdit}
+              onChange={(v) => set("website", v)}
+            />
+            <Field
+              label="Endereço"
+              value={d.street}
+              disabled={!canEdit}
+              onChange={(v) => set("street", v)}
+            />
+            <Field
+              label="Número"
+              value={d.number}
+              disabled={!canEdit}
+              onChange={(v) => set("number", v)}
+            />
+            <Field
+              label="Cidade"
+              value={d.city}
+              disabled={!canEdit}
+              onChange={(v) => set("city", v)}
+            />
+            <Field
+              label="Estado"
+              value={d.state}
+              disabled={!canEdit}
+              onChange={(v) => set("state", v)}
+            />
+            <Field
+              label="CEP"
+              value={d.zip_code}
+              disabled={!canEdit}
+              onChange={(v) => set("zip_code", v)}
+            />
+          </Section>
+        </TabsContent>
+        <TabsContent value="preferencias">
+          <Section title="Preferências regionais">
+            <Field
+              label="Fuso horário"
+              value={d.timezone}
+              disabled={!canEdit}
+              onChange={(v) => set("timezone", v)}
+            />
+            <Field
+              label="Idioma"
+              value={d.locale}
+              disabled={!canEdit}
+              onChange={(v) => set("locale", v)}
+            />
+            <Field
+              label="Formato de data"
+              value={d.date_format}
+              disabled={!canEdit}
+              onChange={(v) => set("date_format", v)}
+            />
+            <Field
+              label="Moeda"
+              value={d.currency}
+              disabled={!canEdit}
+              onChange={(v) => set("currency", v)}
+            />
+            <Field
+              label="Primeiro dia da semana (0–6)"
+              type="number"
+              value={d.week_starts_on}
+              disabled={!canEdit}
+              onChange={(v) => set("week_starts_on", Number(v))}
+            />
+            <Field
+              label="Início do expediente"
+              type="time"
+              value={d.business_hours_start}
+              disabled={!canEdit}
+              onChange={(v) => set("business_hours_start", v)}
+            />
+            <Field
+              label="Fim do expediente"
+              type="time"
+              value={d.business_hours_end}
+              disabled={!canEdit}
+              onChange={(v) => set("business_hours_end", v)}
+            />
+            <Button
+              variant="outline"
+              disabled={!canEdit}
+              onClick={() =>
+                setDraft((current) => ({ ...current, ...ORGANIZATION_SETTINGS_DEFAULTS }))
+              }
+            >
+              Restaurar valores padrão
+            </Button>
+          </Section>
+        </TabsContent>
+        <TabsContent value="operacao">
+          <Section title="Padrões operacionais">
+            <Field
+              label="Prazo padrão de tarefa (dias)"
+              type="number"
+              value={d.default_task_due_days}
+              disabled={!canEdit}
+              onChange={(v) => set("default_task_due_days", Number(v))}
+            />
+            <Field
+              label="Prioridade padrão"
+              value={d.default_task_priority}
+              disabled={!canEdit}
+              onChange={(v) =>
+                set("default_task_priority", v as OrganizationSettings["default_task_priority"])
+              }
+            />
+            <Field
+              label="Processo sem movimentação (dias)"
+              type="number"
+              value={d.stale_process_days}
+              disabled={!canEdit}
+              onChange={(v) => set("stale_process_days", Number(v))}
+            />
+            <Toggle
+              label="Concluir tarefa vencida sem justificativa"
+              checked={d.allow_overdue_task_without_reason}
+              disabled={!canEdit}
+              onChange={(v) => set("allow_overdue_task_without_reason", v)}
+            />
+          </Section>
+        </TabsContent>
+        <TabsContent value="financeiro">
+          <Section title="Padrões financeiros">
+            <Field
+              label="Moeda padrão"
+              value={d.currency}
+              disabled={!canEdit}
+              onChange={(v) => set("currency", v)}
+            />
+            <Field
+              label="Antecedência de alertas (dias)"
+              type="number"
+              value={d.financial_alert_days}
+              disabled={!canEdit}
+              onChange={(v) => set("financial_alert_days", Number(v))}
+            />
+            <Field
+              label="Limite de prioridade alta"
+              type="number"
+              value={d.monitoring_financial_high_threshold}
+              disabled={!canEdit}
+              onChange={(v) => set("monitoring_financial_high_threshold", Number(v))}
+            />
+            <Field
+              label="Limite de prioridade crítica"
+              type="number"
+              value={d.monitoring_financial_critical_threshold}
+              disabled={!canEdit}
+              onChange={(v) => set("monitoring_financial_critical_threshold", Number(v))}
+            />
+          </Section>
+        </TabsContent>
+        <TabsContent value="comunicacao">
+          <Section title="Preferências internas de comunicação">
+            <Field
+              label="Canal padrão"
+              value={d.default_communication_channel}
+              disabled={!canEdit}
+              onChange={(v) => set("default_communication_channel", v)}
+            />
+            <Field
+              label="Prioridade padrão"
+              value={d.default_communication_priority}
+              disabled={!canEdit}
+              onChange={(v) =>
+                set(
+                  "default_communication_priority",
+                  v as OrganizationSettings["default_communication_priority"],
+                )
+              }
+            />
+            <Field
+              label="Prazo de retorno (horas)"
+              type="number"
+              value={d.default_follow_up_hours}
+              disabled={!canEdit}
+              onChange={(v) => set("default_follow_up_hours", Number(v))}
+            />
+            <Toggle
+              label="Destacar notas internas"
+              checked={d.highlight_internal_notes}
+              disabled={!canEdit}
+              onChange={(v) => set("highlight_internal_notes", v)}
+            />
+          </Section>
+        </TabsContent>
+        <TabsContent value="monitoramento">
+          <Section title="Janelas e alertas">
+            <Field
+              label="Sem movimentação (dias)"
+              type="number"
+              value={d.stale_process_days}
+              disabled={!canEdit}
+              onChange={(v) => set("stale_process_days", Number(v))}
+            />
+            <Field
+              label="Alertas próximos (dias)"
+              type="number"
+              value={d.monitoring_upcoming_days}
+              disabled={!canEdit}
+              onChange={(v) => set("monitoring_upcoming_days", Number(v))}
+            />
+            <Field
+              label="Documentos vencendo (dias)"
+              type="number"
+              value={d.monitoring_document_expiration_days}
+              disabled={!canEdit}
+              onChange={(v) => set("monitoring_document_expiration_days", Number(v))}
+            />
+            <Toggle
+              label="Alertas financeiros"
+              checked={d.monitoring_show_financial}
+              disabled={!canEdit}
+              onChange={(v) => set("monitoring_show_financial", v)}
+            />
+            <Toggle
+              label="Alertas de comunicação"
+              checked={d.monitoring_show_communication}
+              disabled={!canEdit}
+              onChange={(v) => set("monitoring_show_communication", v)}
+            />
+            <Toggle
+              label="Alertas de documentos"
+              checked={d.monitoring_show_documents}
+              disabled={!canEdit}
+              onChange={(v) => set("monitoring_show_documents", v)}
+            />
+          </Section>
+        </TabsContent>
+        <TabsContent value="notificacoes">
+          <Section title="Notificações internas">
+            {[
+              ["overdue_tasks", "Tarefas atrasadas"],
+              ["stale_processes", "Processos sem movimentação"],
+              ["overdue_communications", "Retornos vencidos"],
+              ["overdue_accounts", "Contas vencidas"],
+              ["expiring_documents", "Documentos vencendo"],
+              ["critical_monitoring", "Alertas críticos"],
+            ].map(([key, label]) => (
+              <Toggle
+                key={key}
+                label={label}
+                checked={notify[key] ?? true}
+                disabled={!canEdit}
+                onChange={(v) => set("notification_preferences", { ...notify, [key]: v })}
+              />
+            ))}
+          </Section>
+        </TabsContent>
+        <TabsContent value="seguranca">
+          <Section title="Acesso e auditoria">
+            <Field
+              label="Sessão atual"
+              value={session?.user.email ?? "Sessão autenticada"}
+              onChange={() => {}}
+              disabled
+            />
+            <Field
+              label="Papel atual"
+              value={role ? ROLE[role].label : "—"}
+              onChange={() => {}}
+              disabled
+            />
+            <Field label="Membros ativos" value={d.member_count} onChange={() => {}} disabled />
+            <Field
+              label="Última atualização"
+              value={
+                d.updated_at ? new Date(d.updated_at).toLocaleString("pt-BR") : "Ainda não alterada"
+              }
+              onChange={() => {}}
+              disabled
+            />
+            <div className="sm:col-span-2">
+              <p className="mb-2 text-sm font-medium">Auditoria recente</p>
+              {d.recent_audit.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma alteração registrada.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {d.recent_audit.map((a) => (
+                    <li key={a.id} className="rounded border p-2 text-sm">
+                      {String(a.metadata.key ?? "Configuração")} ·{" "}
+                      {new Date(a.created_at).toLocaleString("pt-BR")} ·{" "}
+                      {a.actor_name || "Usuário autenticado"}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </Section>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
