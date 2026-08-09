@@ -1527,6 +1527,113 @@ export type Database = {
           },
         ]
       }
+      monitoring_state_history: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          id: string
+          monitoring_state_id: string
+          note: string | null
+          organization_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          monitoring_state_id: string
+          note?: string | null
+          organization_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          monitoring_state_id?: string
+          note?: string | null
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_state_history_monitoring_state_id_fkey"
+            columns: ["monitoring_state_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_states"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_state_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monitoring_states: {
+        Row: {
+          alert_kind: string
+          assigned_to: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          ignored_at: string | null
+          monitoring_status: string
+          notes: string | null
+          organization_id: string
+          priority_override: string | null
+          resolved_at: string | null
+          source_id: string
+          source_type: string
+          updated_at: string
+        }
+        Insert: {
+          alert_kind: string
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ignored_at?: string | null
+          monitoring_status?: string
+          notes?: string | null
+          organization_id: string
+          priority_override?: string | null
+          resolved_at?: string | null
+          source_id: string
+          source_type: string
+          updated_at?: string
+        }
+        Update: {
+          alert_kind?: string
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ignored_at?: string | null
+          monitoring_status?: string
+          notes?: string | null
+          organization_id?: string
+          priority_override?: string | null
+          resolved_at?: string | null
+          source_id?: string
+          source_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_states_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -2633,6 +2740,36 @@ export type Database = {
           },
         ]
       }
+      operational_monitoring_alerts: {
+        Row: {
+          alert_kind: string | null
+          assigned_name: string | null
+          assigned_to: string | null
+          client_id: string | null
+          client_name: string | null
+          days_delta: number | null
+          description: string | null
+          last_movement_at: string | null
+          monitoring_status: string | null
+          notes: string | null
+          organization_id: string | null
+          priority_override: string | null
+          process_code: string | null
+          process_id: string | null
+          reason: string | null
+          relevant_at: string | null
+          responsible_id: string | null
+          responsible_name: string | null
+          source_id: string | null
+          source_priority: string | null
+          source_status: string | null
+          source_type: string | null
+          state_updated_at: string | null
+          suggested_priority: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_invitation: {
@@ -2653,6 +2790,16 @@ export type Database = {
           _metadata?: Json
           _occurred_at?: string
           _thread_id: string
+        }
+        Returns: string
+      }
+      add_monitoring_note: {
+        Args: {
+          _alert_kind: string
+          _note: string
+          _organization_id: string
+          _source_id: string
+          _source_type: string
         }
         Returns: string
       }
@@ -2683,6 +2830,16 @@ export type Database = {
       assign_communication_thread: {
         Args: { _assigned_to: string; _thread_id: string }
         Returns: undefined
+      }
+      assign_monitoring_item: {
+        Args: {
+          _alert_kind: string
+          _assigned_to: string
+          _organization_id: string
+          _source_id: string
+          _source_type: string
+        }
+        Returns: string
       }
       automation_can_manage: { Args: { _org: string }; Returns: boolean }
       automation_conditions_match: {
@@ -2720,6 +2877,16 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: undefined
+      }
+      change_monitoring_status: {
+        Args: {
+          _alert_kind: string
+          _organization_id: string
+          _source_id: string
+          _source_type: string
+          _status: string
+        }
+        Returns: string
       }
       client_sensitive: {
         Args: { _client: string }
@@ -2860,6 +3027,11 @@ export type Database = {
         Args: { _notification: string }
         Returns: undefined
       }
+      monitoring_assert_admin: { Args: { _org: string }; Returns: undefined }
+      monitoring_assert_source: {
+        Args: { _id: string; _org: string; _type: string }
+        Returns: undefined
+      }
       next_process_code: { Args: { _org: string }; Returns: string }
       process_automation_event: {
         Args: {
@@ -2960,6 +3132,16 @@ export type Database = {
       }
       update_financial_transaction: {
         Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      upsert_monitoring_state: {
+        Args: {
+          _alert_kind: string
+          _organization_id: string
+          _priority_override?: string
+          _source_id: string
+          _source_type: string
+        }
         Returns: string
       }
       validate_automation: {
