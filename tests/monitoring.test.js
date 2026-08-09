@@ -16,8 +16,12 @@ describe("regras da central de monitoramento",()=>{
 });
 describe("segurança e acompanhamento",()=>{
  test("status separado e reabertura são auditados",()=>{assert.match(migration,/monitoring_status/);assert.match(migration,/monitoring\.reopened/)});
- test("visualizador não recebe escrita e operacional não acessa ações administrativas",()=>{assert.doesNotMatch(migration,/monitoring_assert_source[\s\S]*visualizador/);assert.match(migration,/REVOKE INSERT, UPDATE, DELETE ON public\.monitoring_states FROM authenticated/)});
+ test("visualizador não recebe escrita",()=>{assert.doesNotMatch(migration,/monitoring_assert_source[\s\S]*visualizador/);assert.match(migration,/REVOKE INSERT, UPDATE, DELETE ON public\.monitoring_states FROM authenticated/)});
+ test("operacional não atribui responsável nem altera prioridade",()=>{assert.match(migration,/upsert_monitoring_state[\s\S]*monitoring_assert_admin/);assert.match(migration,/assign_monitoring_item[\s\S]*monitoring_assert_admin/)});
+ test("gestor, administrador e proprietário possuem validação administrativa",()=>assert.match(migration,/monitoring_assert_admin[\s\S]*'proprietario','administrador','gestor'/));
+ test("operacional atualiza apenas análise e acompanhamento",()=>assert.match(migration,/status NOT IN \('em_analise','acompanhado'\) THEN PERFORM public\.monitoring_assert_admin/));
  test("protege organização da origem e do responsável",()=>{assert.match(migration,/MONITORING_SOURCE_ORG_MISMATCH/);assert.match(migration,/MONITORING_ASSIGNEE_ORG_MISMATCH/)});
  test("RLS e RPCs não são públicas ou anônimas",()=>{assert.match(migration,/ENABLE ROW LEVEL SECURITY/);assert.match(migration,/REVOKE ALL ON FUNCTION[\s\S]+FROM PUBLIC,anon/);assert.match(migration,/GRANT EXECUTE[\s\S]+TO authenticated/)});
  test("não permite duplicação nem delete físico",()=>{assert.match(migration,/UNIQUE \(organization_id, source_type, source_id, alert_kind\)/);assert.doesNotMatch(migration,/DELETE FROM public\.monitoring_states/)});
+ test("view executa como invocador e preserva RLS financeiro",()=>{assert.match(migration,/operational_monitoring_alerts WITH \(security_invoker=true\)/);assert.match(migration,/FROM public\.financial_transactions f/);assert.doesNotMatch(migration,/operational_monitoring_alerts[\s\S]*SECURITY DEFINER/)});
 });

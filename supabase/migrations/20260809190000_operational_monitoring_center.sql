@@ -38,9 +38,15 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN
  OR (_type='outro' AND NOT EXISTS(SELECT 1 FROM public.monitoring_items WHERE id=_id AND organization_id=_org)) THEN RAISE EXCEPTION 'MONITORING_SOURCE_ORG_MISMATCH'; END IF;
 END $$;
 
+CREATE OR REPLACE FUNCTION public.monitoring_assert_admin(_org uuid) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN
+ IF auth.uid() IS NULL OR NOT public.has_org_role(_org,ARRAY['superadmin','proprietario','administrador','gestor']::public.app_role[]) THEN RAISE EXCEPTION 'MONITORING_ADMIN_PERMISSION_DENIED'; END IF;
+END $$;
+
 CREATE OR REPLACE FUNCTION public.upsert_monitoring_state(_organization_id uuid,_source_type text,_source_id uuid,_alert_kind text,_priority_override text DEFAULT NULL) RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE v uuid; BEGIN
  PERFORM public.monitoring_assert_source(_organization_id,_source_type,_source_id);
+ PERFORM public.monitoring_assert_admin(_organization_id);
  IF _priority_override IS NOT NULL AND _priority_override NOT IN ('baixa','media','alta','critica') THEN RAISE EXCEPTION 'MONITORING_PRIORITY_INVALID'; END IF;
  INSERT INTO public.monitoring_states(organization_id,source_type,source_id,alert_kind,priority_override) VALUES(_organization_id,_source_type,_source_id,_alert_kind,_priority_override)
  ON CONFLICT(organization_id,source_type,source_id,alert_kind) DO UPDATE SET priority_override=EXCLUDED.priority_override,updated_at=now() RETURNING id INTO v;
@@ -51,6 +57,7 @@ END $$;
 CREATE OR REPLACE FUNCTION public.change_monitoring_status(_organization_id uuid,_source_type text,_source_id uuid,_alert_kind text,_status text) RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE v uuid; old text; BEGIN
  PERFORM public.monitoring_assert_source(_organization_id,_source_type,_source_id); IF _status NOT IN ('novo','em_analise','acompanhado','resolvido','ignorado') THEN RAISE EXCEPTION 'MONITORING_STATUS_INVALID'; END IF;
+ IF _status NOT IN ('em_analise','acompanhado') THEN PERFORM public.monitoring_assert_admin(_organization_id); END IF;
  SELECT monitoring_status INTO old FROM public.monitoring_states WHERE organization_id=_organization_id AND source_type=_source_type AND source_id=_source_id AND alert_kind=_alert_kind;
  INSERT INTO public.monitoring_states(organization_id,source_type,source_id,alert_kind,monitoring_status,resolved_at,ignored_at) VALUES(_organization_id,_source_type,_source_id,_alert_kind,_status,CASE WHEN _status='resolvido' THEN now() END,CASE WHEN _status='ignorado' THEN now() END)
  ON CONFLICT(organization_id,source_type,source_id,alert_kind) DO UPDATE SET monitoring_status=_status,resolved_at=CASE WHEN _status='resolvido' THEN now() END,ignored_at=CASE WHEN _status='ignorado' THEN now() END,updated_at=now() RETURNING id INTO v;
@@ -59,7 +66,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE v uuid; o
 END $$;
 
 CREATE OR REPLACE FUNCTION public.assign_monitoring_item(_organization_id uuid,_source_type text,_source_id uuid,_alert_kind text,_assigned_to uuid) RETURNS uuid
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE v uuid; BEGIN PERFORM public.monitoring_assert_source(_organization_id,_source_type,_source_id);
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE v uuid; BEGIN PERFORM public.monitoring_assert_source(_organization_id,_source_type,_source_id); PERFORM public.monitoring_assert_admin(_organization_id);
  IF _assigned_to IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.organization_members WHERE organization_id=_organization_id AND user_id=_assigned_to AND is_active) THEN RAISE EXCEPTION 'MONITORING_ASSIGNEE_ORG_MISMATCH'; END IF;
  INSERT INTO public.monitoring_states(organization_id,source_type,source_id,alert_kind,assigned_to) VALUES(_organization_id,_source_type,_source_id,_alert_kind,_assigned_to) ON CONFLICT(organization_id,source_type,source_id,alert_kind) DO UPDATE SET assigned_to=_assigned_to,updated_at=now() RETURNING id INTO v;
  INSERT INTO public.monitoring_state_history(organization_id,monitoring_state_id,action,details) VALUES(_organization_id,v,'responsavel_alterado',jsonb_build_object('assigned_to',_assigned_to)); INSERT INTO public.audit_logs(organization_id,actor_id,action,entity,entity_id,metadata) VALUES(_organization_id,auth.uid(),'monitoring.assignee.changed','monitoring_state',v,jsonb_build_object('assigned_to',_assigned_to)); RETURN v; END $$;
@@ -69,7 +76,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE v uuid; B
  INSERT INTO public.monitoring_states(organization_id,source_type,source_id,alert_kind,notes) VALUES(_organization_id,_source_type,_source_id,_alert_kind,trim(_note)) ON CONFLICT(organization_id,source_type,source_id,alert_kind) DO UPDATE SET notes=CASE WHEN monitoring_states.notes IS NULL THEN trim(_note) ELSE monitoring_states.notes||E'\n'||trim(_note) END,updated_at=now() RETURNING id INTO v;
  INSERT INTO public.monitoring_state_history(organization_id,monitoring_state_id,action,note) VALUES(_organization_id,v,'nota_adicionada',trim(_note)); INSERT INTO public.audit_logs(organization_id,actor_id,action,entity,entity_id) VALUES(_organization_id,auth.uid(),'monitoring.note.added','monitoring_state',v); RETURN v; END $$;
 
-REVOKE ALL ON FUNCTION public.monitoring_assert_source(uuid,text,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.monitoring_assert_source(uuid,text,uuid),public.monitoring_assert_admin(uuid) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.upsert_monitoring_state(uuid,text,uuid,text,text),public.change_monitoring_status(uuid,text,uuid,text,text),public.assign_monitoring_item(uuid,text,uuid,text,uuid),public.add_monitoring_note(uuid,text,uuid,text,text) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.upsert_monitoring_state(uuid,text,uuid,text,text),public.change_monitoring_status(uuid,text,uuid,text,text),public.assign_monitoring_item(uuid,text,uuid,text,uuid),public.add_monitoring_note(uuid,text,uuid,text,text) TO authenticated;
 
