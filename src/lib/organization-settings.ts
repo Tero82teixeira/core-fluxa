@@ -1,3 +1,8 @@
+export type CommunicationChannel =
+  "whatsapp" | "telefone" | "email" | "presencial" | "interno" | "outro";
+export type CommunicationPriority = "baixa" | "normal" | "alta" | "urgente";
+export type TaskPriority = "baixa" | "media" | "alta" | "critica";
+
 export const ORGANIZATION_SETTINGS_DEFAULTS = {
   timezone: "America/Sao_Paulo",
   locale: "pt-BR",
@@ -7,11 +12,11 @@ export const ORGANIZATION_SETTINGS_DEFAULTS = {
   business_hours_start: "08:00",
   business_hours_end: "18:00",
   default_task_due_days: 7,
-  default_task_priority: "media",
+  default_task_priority: "media" as TaskPriority,
   stale_process_days: 14,
   allow_overdue_task_without_reason: false,
-  default_communication_channel: "interno",
-  default_communication_priority: "media",
+  default_communication_channel: "interno" as CommunicationChannel,
+  default_communication_priority: "normal" as CommunicationPriority,
   default_follow_up_hours: 24,
   highlight_internal_notes: true,
   financial_alert_days: 7,
@@ -63,7 +68,16 @@ export type OrganizationSettings = {
   default_income_category_id: string | null;
   default_expense_category_id: string | null;
   default_responsible_id: string | null;
-} & Omit<typeof ORGANIZATION_SETTINGS_DEFAULTS, "notification_preferences"> & {
+  default_task_priority: TaskPriority;
+  default_communication_channel: CommunicationChannel;
+  default_communication_priority: CommunicationPriority;
+} & Omit<
+  typeof ORGANIZATION_SETTINGS_DEFAULTS,
+  | "notification_preferences"
+  | "default_task_priority"
+  | "default_communication_channel"
+  | "default_communication_priority"
+> & {
     notification_preferences: Record<string, boolean>;
   };
 
@@ -89,6 +103,18 @@ export function validateOrganizationSettings(value: Partial<OrganizationSettings
     errors.push("Idioma inválido.");
   if (value.currency && !["BRL", "USD", "EUR"].includes(value.currency))
     errors.push("Moeda inválida.");
+  if (
+    value.default_communication_channel &&
+    !["whatsapp", "telefone", "email", "presencial", "interno", "outro"].includes(
+      value.default_communication_channel,
+    )
+  )
+    errors.push("Canal de comunicação inválido.");
+  if (
+    value.default_communication_priority &&
+    !["baixa", "normal", "alta", "urgente"].includes(value.default_communication_priority)
+  )
+    errors.push("Prioridade de comunicação inválida.");
   if (
     value.business_hours_start &&
     value.business_hours_end &&

@@ -93,6 +93,39 @@ function Toggle({
     </div>
   );
 }
+function SettingSelect({
+  label,
+  value,
+  options,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  options: ReadonlyArray<readonly [string, string]>;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  const id = `setting-${label.toLowerCase().replace(/\W/g, "-")}`;
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <select
+        id={id}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {options.map(([option, text]) => (
+          <option key={option} value={option}>
+            {text}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card>
@@ -416,15 +449,34 @@ function SettingsPage() {
         </TabsContent>
         <TabsContent value="comunicacao">
           <Section title="Preferências internas de comunicação">
-            <Field
+            <SettingSelect
               label="Canal padrão"
               value={d.default_communication_channel}
+              options={[
+                ["interno", "Interno"],
+                ["whatsapp", "WhatsApp"],
+                ["telefone", "Telefone"],
+                ["email", "E-mail"],
+                ["presencial", "Presencial"],
+                ["outro", "Outro"],
+              ]}
               disabled={!canEdit}
-              onChange={(v) => set("default_communication_channel", v)}
+              onChange={(v) =>
+                set(
+                  "default_communication_channel",
+                  v as OrganizationSettings["default_communication_channel"],
+                )
+              }
             />
-            <Field
+            <SettingSelect
               label="Prioridade padrão"
               value={d.default_communication_priority}
+              options={[
+                ["baixa", "Baixa"],
+                ["normal", "Normal"],
+                ["alta", "Alta"],
+                ["urgente", "Urgente"],
+              ]}
               disabled={!canEdit}
               onChange={(v) =>
                 set(
