@@ -15,7 +15,7 @@ export function useOperationalMonitoring(organizationId: string | null) {
   });
 }
 
-function mutation(organizationId: string | null, rpc: string) {
+function useMonitoringMutation(organizationId: string | null, rpc: string) {
   const client = useQueryClient();
   return useMutation({ mutationFn: async (args: Record<string, unknown>) => {
     const { error } = await db().rpc(rpc, { _organization_id: organizationId, ...args }); if (error) throw error;
@@ -23,10 +23,10 @@ function mutation(organizationId: string | null, rpc: string) {
 }
 
 export function useMonitoringActions(organizationId: string | null) {
-  const status = mutation(organizationId, "change_monitoring_status");
-  const assign = mutation(organizationId, "assign_monitoring_item");
-  const note = mutation(organizationId, "add_monitoring_note");
-  const priority = mutation(organizationId, "upsert_monitoring_state");
+  const status = useMonitoringMutation(organizationId, "change_monitoring_status");
+  const assign = useMonitoringMutation(organizationId, "assign_monitoring_item");
+  const note = useMonitoringMutation(organizationId, "add_monitoring_note");
+  const priority = useMonitoringMutation(organizationId, "upsert_monitoring_state");
   return {
     pending: status.isPending || assign.isPending || note.isPending || priority.isPending,
     changeStatus: (a: MonitoringAlert, value: MonitoringStatus) => status.mutateAsync({ _source_type: a.source_type, _source_id: a.source_id, _alert_kind: a.alert_kind, _status: value }),
