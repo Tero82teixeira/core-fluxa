@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { readFileSync } from "node:fs";
-import { canAdminCommunication, canWriteCommunication, communicationIndicators, filterCommunication, followUpState } from "../src/lib/communication.ts";
+import { canAdminCommunication, canWriteCommunication, communicationIndicators, filterCommunication, followUpState, isCommunicationReadOnly, syncCommunicationSelection } from "../src/lib/communication.ts";
 const sql=readFileSync(new URL("../supabase/migrations/20260809120000_communication_module.sql",import.meta.url),"utf8");
 const baseMigration=readFileSync(new URL("../supabase/migrations/20260729200845_a6d2d33f-8402-4678-be5e-9fc776bbd7ee.sql",import.meta.url),"utf8");
-const row=(o={})=>({status:"aberta",priority:"normal",channel:"interno",follow_up_at:null,archived_at:null,updated_at:"2026-08-09T10:00:00Z",subject:"Documentos",client_name:"Ana",assigned_name:"Bia",searchable_content:"Ligação realizada",...o});
+const row=(o={})=>({id:"thread-1",status:"aberta",priority:"normal",channel:"interno",follow_up_at:null,archived_at:null,updated_at:"2026-08-09T10:00:00Z",subject:"Documentos",client_name:"Ana",assigned_name:"Bia",searchable_content:"Ligação realizada",...o});
 describe("helpers da comunicação",()=>{
  test("classifica retornos hoje, atrasados e futuros",()=>{const now=new Date("2026-08-09T12:00:00Z");assert.equal(followUpState("2026-08-09T18:00:00Z",now),"today");assert.equal(followUpState("2026-08-08T18:00:00Z",now),"overdue");assert.equal(followUpState("2026-08-10T18:00:00Z",now),"future")});
  test("filtra status, prioridade e canal",()=>assert.equal(filterCommunication([row(),row({status:"resolvida",priority:"alta",channel:"email"})],{status:"resolvida",priority:"alta",channel:"email"}).length,1));
@@ -13,6 +13,11 @@ describe("helpers da comunicação",()=>{
  test("visualizador não escreve",()=>assert.equal(canWriteCommunication("visualizador"),false));
  test("operacional escreve sem administrar",()=>{assert.equal(canWriteCommunication("operacional"),true);assert.equal(canAdminCommunication("operacional"),false)});
  test("atendimento não recebe acesso implícito ao módulo",()=>assert.equal(canWriteCommunication("atendimento"),false));
+ test("mantém somente a seleção que ainda pertence às linhas filtradas",()=>{assert.equal(syncCommunicationSelection("thread-1",[row()]),"thread-1");assert.equal(syncCommunicationSelection("thread-1",[]),null)});
+ test("arquivamento limpa a seleção quando sai do status filtrado",()=>{const rows=filterCommunication([row({status:"arquivada",archived_at:"2026-08-09T12:00:00Z"})],{status:"aguardando_cliente"});assert.equal(syncCommunicationSelection("thread-1",rows),null)});
+ test("mudança de status limpa a seleção quando sai do filtro",()=>{const rows=filterCommunication([row({status:"resolvida"})],{status:"aguardando_cliente"});assert.equal(syncCommunicationSelection("thread-1",rows),null)});
+ test("busca e demais filtros limpam seleção incompatível",()=>{const current=row();for(const filters of [{search:"outro cliente"},{priority:"urgente"},{channel:"email"},{client:"Bruno"},{assignee:"Caio"},{followUp:"today"}])assert.equal(syncCommunicationSelection("thread-1",filterCommunication([current],filters,new Date("2026-08-09T12:00:00Z"))),null)});
+ test("conversa arquivada é somente leitura",()=>{assert.equal(isCommunicationReadOnly(row({status:"arquivada"})),true);assert.equal(isCommunicationReadOnly(row({archived_at:"2026-08-09T12:00:00Z"})),true);assert.equal(isCommunicationReadOnly(row()),false)});
 });
 describe("RPC e RLS da comunicação",()=>{
  test("criação e primeira mensagem usam RPC",()=>assert.match(sql,/create_communication_thread[\s\S]+INSERT INTO public\.communication_threads[\s\S]+communication_entries/));
