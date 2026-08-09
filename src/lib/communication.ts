@@ -70,6 +70,15 @@ export function filterCommunication<T extends CommunicationSummary>(rows: readon
   });
 }
 
+export function syncCommunicationSelection<T extends { id: string }>(selectedId: string | null, rows: readonly T[]): string | null {
+  if (!selectedId) return null;
+  return rows.some((row) => row.id === selectedId) ? selectedId : null;
+}
+
+export function isCommunicationReadOnly(thread: Pick<CommunicationSummary, "status" | "archived_at">) {
+  return thread.status === "arquivada" || Boolean(thread.archived_at);
+}
+
 export function canWriteCommunication(role: string | null) {
   return ["superadmin", "proprietario", "administrador", "gestor", "operacional"].includes(role ?? "");
 }
