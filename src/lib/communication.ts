@@ -71,7 +71,7 @@ export function filterCommunication<T extends CommunicationSummary>(rows: readon
 }
 
 export function canWriteCommunication(role: string | null) {
-  return ["superadmin", "proprietario", "administrador", "gestor", "operacional", "atendimento"].includes(role ?? "");
+  return ["superadmin", "proprietario", "administrador", "gestor", "operacional"].includes(role ?? "");
 }
 
 export function canAdminCommunication(role: string | null) {

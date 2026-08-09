@@ -3,6 +3,7 @@ import { describe, test } from "node:test";
 import { readFileSync } from "node:fs";
 import { canAdminCommunication, canWriteCommunication, communicationIndicators, filterCommunication, followUpState } from "../src/lib/communication.ts";
 const sql=readFileSync(new URL("../supabase/migrations/20260809120000_communication_module.sql",import.meta.url),"utf8");
+const baseMigration=readFileSync(new URL("../supabase/migrations/20260729200845_a6d2d33f-8402-4678-be5e-9fc776bbd7ee.sql",import.meta.url),"utf8");
 const row=(o={})=>({status:"aberta",priority:"normal",channel:"interno",follow_up_at:null,archived_at:null,updated_at:"2026-08-09T10:00:00Z",subject:"Documentos",client_name:"Ana",assigned_name:"Bia",searchable_content:"Ligação realizada",...o});
 describe("helpers da comunicação",()=>{
  test("classifica retornos hoje, atrasados e futuros",()=>{const now=new Date("2026-08-09T12:00:00Z");assert.equal(followUpState("2026-08-09T18:00:00Z",now),"today");assert.equal(followUpState("2026-08-08T18:00:00Z",now),"overdue");assert.equal(followUpState("2026-08-10T18:00:00Z",now),"future")});
@@ -11,6 +12,7 @@ describe("helpers da comunicação",()=>{
  test("calcula indicadores",()=>assert.deepEqual(communicationIndicators([row(),row({status:"aguardando_cliente"}),row({status:"aguardando_equipe"}),row({status:"resolvida"}),row({follow_up_at:"2026-08-08"})],new Date("2026-08-09")),{open:2,waitingClient:1,waitingTeam:1,overdue:1,resolved:1}));
  test("visualizador não escreve",()=>assert.equal(canWriteCommunication("visualizador"),false));
  test("operacional escreve sem administrar",()=>{assert.equal(canWriteCommunication("operacional"),true);assert.equal(canAdminCommunication("operacional"),false)});
+ test("atendimento não recebe acesso implícito ao módulo",()=>assert.equal(canWriteCommunication("atendimento"),false));
 });
 describe("RPC e RLS da comunicação",()=>{
  test("criação e primeira mensagem usam RPC",()=>assert.match(sql,/create_communication_thread[\s\S]+INSERT INTO public\.communication_threads[\s\S]+communication_entries/));
@@ -22,6 +24,11 @@ describe("RPC e RLS da comunicação",()=>{
  test("RPCs não são públicas nem anon",()=>{assert.match(sql,/REVOKE ALL ON FUNCTION[\s\S]+FROM PUBLIC, anon/);assert.match(sql,/GRANT EXECUTE ON FUNCTION[\s\S]+TO authenticated/)});
  test("visualizador é bloqueado no backend",()=>assert.doesNotMatch(sql,/visualizador[^\n]*communication_assert_role/));
  test("operacional não executa ações administrativas",()=>assert.match(sql,/COMMUNICATION_ADMIN_PERMISSION_DENIED/));
+ test("atribuição e arquivamento exigem ação administrativa",()=>{assert.match(sql,/IF _assigned_to IS NOT NULL THEN PERFORM public\.communication_assert_role\(_organization_id, true\)/);assert.match(sql,/assign_communication_thread[\s\S]+communication_assert_role\(v_thread\.organization_id,true\)/);assert.match(sql,/change_communication_thread_status[\s\S]+communication_assert_role\(v_thread\.organization_id, _status='arquivada'\)/)});
+ test("remove process_id quando null foi informado explicitamente",()=>assert.match(sql,/process_id=CASE WHEN _process_id_provided THEN _process_id ELSE process_id END/));
+ test("remove task_id quando null foi informado explicitamente",()=>assert.match(sql,/task_id=CASE WHEN _task_id_provided THEN _task_id ELSE task_id END/));
+ test("hook distingue campo omitido de vínculo explicitamente nulo",()=>{const hook=readFileSync(new URL("../src/hooks/use-communication.ts",import.meta.url),"utf8");assert.match(hook,/_process_id_provided: processId !== undefined/);assert.match(hook,/_task_id_provided: taskId !== undefined/)});
+ test("papéis usados pela comunicação existem no app_role sem criar enum novo",()=>{const enumValues=baseMigration.match(/CREATE TYPE public\.app_role AS ENUM \(([^)]+)\)/)[1].match(/'[^']+'/g).map(v=>v.slice(1,-1));const roleArrays=[...sql.matchAll(/ARRAY\[([^\]]+)\]::public\.app_role\[\]/g)].flatMap(match=>match[1].match(/'[^']+'/g).map(v=>v.slice(1,-1)));assert.ok(roleArrays.every(role=>enumValues.includes(role)));assert.doesNotMatch(sql,/CREATE TYPE public\.app_role|ALTER TYPE public\.app_role/);assert.doesNotMatch(sql,/atendimento/)});
  test("operações importantes geram auditoria",()=>{for(const action of ["thread.created","entry.added","thread.updated","status.changed","assignee.changed"])assert.match(sql,new RegExp(action.replace(".","\\.")))});
  test("não há delete físico, Edge Function ou integração externa",()=>{assert.doesNotMatch(sql,/DELETE FROM public\.communication/);assert.doesNotMatch(sql,/service_role|http_request|net\.http/) });
 });

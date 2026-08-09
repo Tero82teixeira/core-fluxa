@@ -84,8 +84,8 @@ RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
   IF auth.uid() IS NULL THEN RAISE EXCEPTION 'AUTHENTICATION_REQUIRED'; END IF;
   IF _administrative THEN
-    IF NOT public.has_org_role(_org, ARRAY['proprietario','administrador','gestor']::public.app_role[]) THEN RAISE EXCEPTION 'COMMUNICATION_ADMIN_PERMISSION_DENIED'; END IF;
-  ELSIF NOT public.has_org_role(_org, ARRAY['proprietario','administrador','gestor','operacional','atendimento']::public.app_role[]) THEN
+    IF NOT public.has_org_role(_org, ARRAY['superadmin','proprietario','administrador','gestor']::public.app_role[]) THEN RAISE EXCEPTION 'COMMUNICATION_ADMIN_PERMISSION_DENIED'; END IF;
+  ELSIF NOT public.has_org_role(_org, ARRAY['superadmin','proprietario','administrador','gestor','operacional']::public.app_role[]) THEN
     RAISE EXCEPTION 'COMMUNICATION_WRITE_PERMISSION_DENIED';
   END IF;
 END $$;
@@ -95,6 +95,7 @@ RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE v_id uuid;
 BEGIN
   PERFORM public.communication_assert_role(_organization_id, false);
+  IF _assigned_to IS NOT NULL THEN PERFORM public.communication_assert_role(_organization_id, true); END IF;
   INSERT INTO public.communication_threads(organization_id,client_id,subject,channel,assigned_to,priority,process_id,task_id,follow_up_at,created_by)
   VALUES(_organization_id,_client_id,btrim(_subject),_channel,_assigned_to,_priority,_process_id,_task_id,_follow_up_at,auth.uid()) RETURNING id INTO v_id;
   IF nullif(btrim(_first_content),'') IS NOT NULL THEN INSERT INTO public.communication_entries(organization_id,thread_id,entry_type,content,created_by,is_internal) VALUES(_organization_id,v_id,'mensagem',btrim(_first_content),auth.uid(),false); END IF;
@@ -116,13 +117,13 @@ BEGIN
   RETURN v_id;
 END $$;
 
-CREATE OR REPLACE FUNCTION public.update_communication_thread(_thread_id uuid, _subject text DEFAULT NULL, _channel public.communication_channel DEFAULT NULL, _priority public.communication_priority DEFAULT NULL, _process_id uuid DEFAULT NULL, _task_id uuid DEFAULT NULL, _follow_up_at timestamptz DEFAULT NULL, _clear_follow_up boolean DEFAULT false)
+CREATE OR REPLACE FUNCTION public.update_communication_thread(_thread_id uuid, _subject text DEFAULT NULL, _channel public.communication_channel DEFAULT NULL, _priority public.communication_priority DEFAULT NULL, _process_id uuid DEFAULT NULL, _task_id uuid DEFAULT NULL, _follow_up_at timestamptz DEFAULT NULL, _clear_follow_up boolean DEFAULT false, _process_id_provided boolean DEFAULT false, _task_id_provided boolean DEFAULT false)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE v_thread public.communication_threads%ROWTYPE;
 BEGIN
  SELECT * INTO v_thread FROM public.communication_threads WHERE id=_thread_id FOR UPDATE; IF NOT FOUND THEN RAISE EXCEPTION 'COMMUNICATION_THREAD_NOT_FOUND'; END IF;
  PERFORM public.communication_assert_role(v_thread.organization_id, false);
- UPDATE public.communication_threads SET subject=coalesce(nullif(btrim(_subject),''),subject),channel=coalesce(_channel,channel),priority=coalesce(_priority,priority),process_id=coalesce(_process_id,process_id),task_id=coalesce(_task_id,task_id),follow_up_at=CASE WHEN _clear_follow_up THEN NULL ELSE coalesce(_follow_up_at,follow_up_at) END WHERE id=_thread_id;
+ UPDATE public.communication_threads SET subject=coalesce(nullif(btrim(_subject),''),subject),channel=coalesce(_channel,channel),priority=coalesce(_priority,priority),process_id=CASE WHEN _process_id_provided THEN _process_id ELSE process_id END,task_id=CASE WHEN _task_id_provided THEN _task_id ELSE task_id END,follow_up_at=CASE WHEN _clear_follow_up THEN NULL ELSE coalesce(_follow_up_at,follow_up_at) END WHERE id=_thread_id;
  INSERT INTO public.audit_logs(organization_id,actor_id,action,entity,entity_id) VALUES(v_thread.organization_id,auth.uid(),'communication.thread.updated','communication_thread',_thread_id);
 END $$;
 
@@ -147,5 +148,5 @@ BEGIN SELECT * INTO v_thread FROM public.communication_threads WHERE id=_thread_
 CREATE OR REPLACE FUNCTION public.archive_communication_thread(_thread_id uuid)
 RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$ SELECT public.change_communication_thread_status(_thread_id,'arquivada') $$;
 
-REVOKE ALL ON FUNCTION public.communication_assert_role(uuid,boolean), public.create_communication_thread(uuid,uuid,text,public.communication_channel,uuid,public.communication_priority,uuid,uuid,text,timestamptz), public.add_communication_entry(uuid,public.communication_entry_type,text,timestamptz,boolean,boolean,jsonb), public.update_communication_thread(uuid,text,public.communication_channel,public.communication_priority,uuid,uuid,timestamptz,boolean), public.change_communication_thread_status(uuid,public.communication_status), public.assign_communication_thread(uuid,uuid), public.archive_communication_thread(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.create_communication_thread(uuid,uuid,text,public.communication_channel,uuid,public.communication_priority,uuid,uuid,text,timestamptz), public.add_communication_entry(uuid,public.communication_entry_type,text,timestamptz,boolean,boolean,jsonb), public.update_communication_thread(uuid,text,public.communication_channel,public.communication_priority,uuid,uuid,timestamptz,boolean), public.change_communication_thread_status(uuid,public.communication_status), public.assign_communication_thread(uuid,uuid), public.archive_communication_thread(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.communication_assert_role(uuid,boolean), public.create_communication_thread(uuid,uuid,text,public.communication_channel,uuid,public.communication_priority,uuid,uuid,text,timestamptz), public.add_communication_entry(uuid,public.communication_entry_type,text,timestamptz,boolean,boolean,jsonb), public.update_communication_thread(uuid,text,public.communication_channel,public.communication_priority,uuid,uuid,timestamptz,boolean,boolean,boolean), public.change_communication_thread_status(uuid,public.communication_status), public.assign_communication_thread(uuid,uuid), public.archive_communication_thread(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.create_communication_thread(uuid,uuid,text,public.communication_channel,uuid,public.communication_priority,uuid,uuid,text,timestamptz), public.add_communication_entry(uuid,public.communication_entry_type,text,timestamptz,boolean,boolean,jsonb), public.update_communication_thread(uuid,text,public.communication_channel,public.communication_priority,uuid,uuid,timestamptz,boolean,boolean,boolean), public.change_communication_thread_status(uuid,public.communication_status), public.assign_communication_thread(uuid,uuid), public.archive_communication_thread(uuid) TO authenticated;
