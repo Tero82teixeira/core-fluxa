@@ -24,7 +24,14 @@ describe("central de ajuda", () => {
   });
   test("abre artigo e navega internamente para o módulo", () => {
     assert.match(route, /setSelected\(a\)/);
-    assert.match(route, /navigate\(\{to:selected\.relatedRoute/);
+    assert.match(route, /useNavigate/);
+    assert.match(route, />\s*Ir para o módulo\s*</);
+    assert.match(
+      route,
+      /navigate\s*\(\s*\{\s*to\s*:\s*selected\.relatedRoute(?:\s+as\s+["'][^"']+["'])?\s*\}\s*\)/,
+    );
+    assert.doesNotMatch(route, /window\.open\s*\(/);
+    assert.doesNotMatch(route, /href\s*=\s*["']https?:\/\//i);
     assert.doesNotMatch(route, /target="_blank"/);
   });
   test("exibe estados vazios de busca e solicitações", () => {
