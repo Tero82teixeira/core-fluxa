@@ -1,457 +1,451 @@
-import { useMemo, useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
-  ArrowUpRight,
   CalendarClock,
-  CheckCircle2,
-  Clock3,
+  CheckSquare,
+  FileClock,
   FileStack,
-  Flame,
-  PauseCircle,
-  Sparkles,
-      Users,
+  MessageCircle,
+  Plus,
+  RefreshCw,
   Wallet,
 } from "lucide-react";
-
-import { useWorkspace } from "@/lib/workspace";
-import { useClients, useCompleteTask, useProcesses, useRecentActivity, useTasks } from "@/hooks/use-operations";
-import type { ProcessRow } from "@/hooks/use-operations";
-import { Card, CardContent } from "@/components/ui/card";
-import { useDocumentsSummary, useMonitoring } from "@/hooks/use-documents";
-import { taskIndicators } from "@/lib/tasks";
+import type { LucideIcon } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { PIPELINE_STAGES, PRIORITY, PROCESS_STAGE, type ProcessStage } from "@/lib/domain";
-import {
-  daysUntil,
-  firstName,
-  formatCompactCurrency,
-  formatDate,
-  formatTime,
-  greeting,
-  relativeTime,
-} from "@/lib/format";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useWorkspace } from "@/lib/workspace";
+import { useProcesses, useRecentActivity, useTasks } from "@/hooks/use-operations";
+import { useOperationalMonitoring } from "@/hooks/use-monitoring-center";
+import { useFinance } from "@/hooks/use-finance";
+import { useCommunicationThreads } from "@/hooks/use-communication";
+import { useDocumentsSummary } from "@/hooks/use-documents";
+import { monitoringAttention, financeSummary, communicationSummary } from "@/lib/command-center";
+import { effectivePriority } from "@/lib/monitoring";
+import { taskIndicators } from "@/lib/tasks";
+import { brl, brDate } from "@/lib/finance";
+import { formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/central")({
-  head: () => ({
-    meta: [
-      { title: "Central de Comando — FLUXA" },
-      { name: "description", content: "Visão executiva de processos, prazos, prioridades e tarefas da operação." },
-      { property: "og:title", content: "Central de Comando — FLUXA" },
-      { property: "og:description", content: "Visão executiva de processos, prazos, prioridades e tarefas da operação." },
-    ],
-  }),
   component: Central,
+  head: () => ({ meta: [{ title: "Central de Comando — FLUXA" }] }),
 });
+const closed = ["finalizado", "arquivado", "cancelado"];
+const today = () => new Date().toISOString().slice(0, 10);
 
-const CLOSED: ProcessStage[] = ["finalizado", "arquivado", "cancelado"];
-
-const isStale = (process: ProcessRow) => {
-  const days = daysUntil(process.last_movement_at);
-  return days !== null && days <= -14;
-};
-
-function Central() {
-  const navigate = useNavigate();
-  const { organizationId, displayName } = useWorkspace();
-  const processes = useProcesses(organizationId);
-  const clients = useClients(organizationId);
-  const tasks = useTasks(organizationId);
-  const activity = useRecentActivity(organizationId);
-  const completeTask = useCompleteTask(organizationId);
-  const monitoring = useMonitoring(organizationId);
-  const documentsSummary = useDocumentsSummary(organizationId);
-  const [drawer, setDrawer] = useState<string | null>(null);
-
-  const rows = processes.data ?? [];
-  const open = rows.filter((process) => !CLOSED.includes(process.stage));
-
-  const groups = useMemo(() => {
-    const critical = open.filter((process) => {
-      const days = daysUntil(process.due_date);
-      return days !== null && days <= 2;
-    });
-    return {
-      urgentes: open.filter((process) => process.priority === "critica"),
-      hoje: open.filter((process) => daysUntil(process.due_date) === 0),
-      aguardando: open.filter((process) => process.stage === "aguardando_documentos"),
-      parados: open.filter(isStale),
-      oportunidades: open.filter((process) => process.financial_status === "pendente" && process.stage === "novo"),
-      criticos: critical,
-    };
-  }, [open]);
-
-  const pendingTasks = (tasks.data ?? []).filter((task) => task.status !== "concluida");
-  const taskStats = taskIndicators(tasks.data ?? []);
-  const activeClients = (clients.data ?? []).filter((client) => client.status === "ativo");
-  const forecast = open.reduce((total, process) => total + (process.value ?? 0), 0);
-
-  const metrics = [
-    {
-      key: "tarefas-abertas",
-      label: "Tarefas em aberto",
-      value: taskStats.open,
-      description: `${taskStats.overdue} atrasada(s) exigem atenção`,
-      tooltip: "Tarefas pendentes, em andamento ou aguardando na organização.",
-      icon: CheckCircle2,
-      onClick: () => navigate({ to: "/tarefas" }),
-    },
-    {
-      key: "vencimentos",
-      label: "Vencimentos em 30 dias",
-      value: (monitoring.data ?? []).filter((item) => item.is_expiring_soon).length,
-      description: "Licenças, certidões e registros",
-      tooltip: "Itens monitorados que vencem nos próximos 30 dias.",
-      icon: CalendarClock,
-      onClick: () => navigate({ to: "/monitoramento" }),
-    },
-    {
-      key: "vencidos",
-      label: "Itens vencidos",
-      value: (monitoring.data ?? []).filter((item) => item.is_expired).length,
-      description: "Exigem regularização imediata",
-      tooltip: "Itens monitorados com validade já expirada.",
-      icon: AlertTriangle,
-      onClick: () => navigate({ to: "/monitoramento" }),
-    },
-    {
-      key: "docs-analise",
-      label: "Documentos em análise",
-      value: documentsSummary.data?.pending ?? 0,
-      description: "Aguardando conferência interna",
-      tooltip: "Documentos recebidos que ainda não foram aprovados ou rejeitados.",
-      icon: FileStack,
-      onClick: () => navigate({ to: "/documentos" }),
-    },
-    {
-      key: "ativos",
-      label: "Processos ativos",
-      value: open.length,
-      description: "Em andamento em todas as etapas",
-      tooltip: "Processos que ainda não foram finalizados, arquivados ou cancelados.",
-      icon: FileStack,
-      onClick: () => navigate({ to: "/processos" }),
-    },
-    {
-      key: "documentos",
-      label: "Aguardando documentos",
-      value: groups.aguardando.length,
-      description: "Dependem de envio do cliente",
-      tooltip: "Processos parados na etapa de coleta documental.",
-      icon: Clock3,
-      onClick: () => setDrawer("aguardando"),
-    },
-    {
-      key: "analise",
-      label: "Em análise",
-      value: open.filter((p) => p.stage === "em_analise").length,
-      description: "Sob avaliação dos órgãos",
-      tooltip: "Processos protocolados e em análise pelo órgão competente.",
-      icon: Sparkles,
-      onClick: () => navigate({ to: "/processos", search: { etapa: "em_analise" } }),
-    },
-    {
-      key: "prazos",
-      label: "Prazos críticos",
-      value: groups.criticos.length,
-      description: "Vencem em até 2 dias ou atrasados",
-      tooltip: "Considera prazos vencidos e os que vencem nas próximas 48 horas.",
-      icon: AlertTriangle,
-      onClick: () => setDrawer("criticos"),
-    },
-    {
-      key: "clientes",
-      label: "Clientes ativos",
-      value: activeClients.length,
-      description: "Com relacionamento em curso",
-      tooltip: "Clientes com status ativo na carteira.",
-      icon: Users,
-      onClick: () => navigate({ to: "/clientes" }),
-    },
-    {
-      key: "receita",
-      label: "Receita prevista",
-      value: formatCompactCurrency(forecast),
-      description: "Somatório dos processos ativos",
-      tooltip: "Valor contratado dos processos que seguem em andamento.",
-      icon: Wallet,
-      onClick: () => navigate({ to: "/financeiro" }),
-    },
-  ];
-
-  const pulse = [
-    { key: "urgentes", label: "Urgentes", count: groups.urgentes.length, icon: Flame, tone: "danger" as const },
-    { key: "hoje", label: "Vencem hoje", count: groups.hoje.length, icon: CalendarClock, tone: "warning" as const },
-    { key: "aguardando", label: "Aguardando cliente", count: groups.aguardando.length, icon: Clock3, tone: "caution" as const },
-    { key: "parados", label: "Sem movimentação", count: groups.parados.length, icon: PauseCircle, tone: "neutral" as const },
-    { key: "oportunidades", label: "Oportunidades", count: groups.oportunidades.length, icon: Sparkles, tone: "info" as const },
-  ];
-
-  const radar = useMemo(() => {
-    const score = (process: ProcessRow) => {
-      const days = daysUntil(process.due_date) ?? 99;
-      const priorityWeight = { critica: 0, alta: 1, media: 2, baixa: 3 }[process.priority];
-      return days * 2 + priorityWeight;
-    };
-    return [...open].sort((a, b) => score(a) - score(b)).slice(0, 5);
-  }, [open]);
-
-  const agenda = [...(tasks.data ?? [])].sort((a, b) => (a.due_at ?? "").localeCompare(b.due_at ?? ""));
-
-  const drawerItems = drawer ? (groups[drawer as keyof typeof groups] ?? []) : [];
-  const drawerTitles: Record<string, string> = {
-    urgentes: "Processos urgentes",
-    hoje: "Prazos que vencem hoje",
-    aguardando: "Aguardando o cliente",
-    parados: "Sem movimentação há 14 dias ou mais",
-    oportunidades: "Oportunidades comerciais",
-    criticos: "Prazos críticos",
-  };
-
+function Block({
+  title,
+  href,
+  action,
+  loading,
+  error,
+  children,
+}: {
+  title: string;
+  href: string;
+  action: string;
+  loading?: boolean;
+  error?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <TooltipProvider delayDuration={200}>
-      <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6">
-        <header>
-          <h1 className="page-title text-balance sm:text-[1.6rem]">
-            {greeting()}, {firstName(displayName)}. Aqui está o pulso da sua operação.
-          </h1>
-          <p className="page-subtitle mt-2">
-            Você possui {radar.length} prioridades, {groups.criticos.length} prazos críticos e{" "}
-            {groups.aguardando.length + groups.parados.length} processos aguardando ação.
+    <Card className="min-w-0">
+      <CardHeader className="flex-row items-center justify-between gap-3">
+        <CardTitle>{title}</CardTitle>
+        <Button variant="ghost" size="sm" asChild>
+          <Link to={href}>{action}</Link>
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div aria-label={`Carregando ${title}`} className="space-y-2">
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        ) : error ? (
+          <p role="alert" className="text-sm text-destructive">
+            Não foi possível carregar este bloco.
           </p>
-        </header>
-
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {metrics.map((metric) => (
-            <Tooltip key={metric.key}>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={metric.onClick}
-                  className="rounded-xl text-left outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Card
-                    className={`h-full transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md ${
-                      metric.key === "prazos" && Number(metric.value) > 0 ? "border-destructive/40 bg-destructive/[0.04]" : ""
-                    }`}
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="field-label">{metric.label}</p>
-                        <metric.icon className="size-4.5 shrink-0 text-muted-foreground" aria-hidden />
-                      </div>
-                      <p
-                        className={`metric-value mt-3 ${
-                          metric.key === "prazos" && Number(metric.value) > 0 ? "text-destructive" : ""
-                        }`}
-                      >
-                        {metric.value}
-                      </p>
-                      <p className="helper-text mt-1.5">{metric.description}</p>
-                    </CardContent>
-                  </Card>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{metric.tooltip}</TooltipContent>
-            </Tooltip>
-          ))}
-        </section>
-
-        <section>
-          <h2 className="section-title">Pulso da operação</h2>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {pulse.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setDrawer(item.key)}
-                aria-label={`${item.label}: ${item.count} processo(s)`}
-                className="min-h-[104px] rounded-xl border border-border bg-card p-5 text-left transition hover:border-brand/40 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-              >
-                <item.icon className={`size-4.5 ${item.tone === "danger" ? "text-destructive" : "text-muted-foreground"}`} aria-hidden />
-                <p className={`metric-value mt-3 text-2xl ${item.tone === "danger" && item.count > 0 ? "text-destructive" : ""}`}>{item.count}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{item.label}</p>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-          <Card className="min-w-0 border-brand/30 shadow-panel">
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex min-w-0 items-center justify-between gap-3">
-                <h2 className="section-title min-w-0 truncate">Radar de prioridades</h2>
-                <Button variant="ghost" size="sm" className="shrink-0" asChild>
-                  <Link to="/processos">Ver todos</Link>
-                </Button>
-              </div>
-
-              <ul className="mt-4 space-y-3">
-                {radar.map((process) => {
-                  const days = daysUntil(process.due_date);
-                  const risk =
-                    days !== null && days < 0 ? "Risco alto" : days !== null && days <= 2 ? "Risco médio" : "Sob controle";
-                  const riskTone = risk === "Risco alto" ? "danger" : risk === "Risco médio" ? "warning" : "success";
-                  return (
-                    <li
-                      key={process.id}
-                      className={`rounded-lg border p-4 transition hover:bg-muted/40 ${
-                        riskTone === "danger" ? "border-destructive/40 bg-destructive/[0.04]" : "border-border"
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold">{process.clients?.name}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {process.code} · {process.service_types?.name}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          <StatusBadge label={PRIORITY[process.priority].label} tone={PRIORITY[process.priority].tone} />
-                          <StatusBadge label={risk} tone={riskTone} />
-                        </div>
-                      </div>
-                      <p className="helper-text mt-2">Etapa atual: {PROCESS_STAGE[process.stage].label}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        <span>Prazo {formatDate(process.due_date)}</span>
-                        <span>Responsável {process.owner_name}</span>
-                      </div>
-                      <div className="mt-3">
-                        <Button variant="outline" asChild>
-                          <Link to="/processos/$processId" params={{ processId: process.id }}>
-                            Abrir processo
-                          </Link>
-                        </Button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </CardContent>
-          </Card>
-
-          <div className="min-w-0 space-y-4">
-            <Card>
-              <CardContent className="p-5">
-                <h2 className="section-title">Pipeline</h2>
-                <ul className="mt-4 space-y-3">
-                  {PIPELINE_STAGES.map((stage) => {
-                    const count = open.filter((process) => stage.key.includes(process.stage)).length;
-                    const pct = open.length ? Math.round((count / open.length) * 100) : 0;
-                    return (
-                      <li key={stage.label}>
-                        <Link
-                          to="/processos"
-                          search={{ etapa: stage.key[0] }}
-                          className="block rounded-md p-1 transition hover:bg-muted/50"
-                        >
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium">{stage.label}</span>
-                            <span className="text-muted-foreground">{count}</span>
-                          </div>
-                          <Progress value={pct} className="mt-2 h-2" />
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="border-brand/25">
-              <CardContent className="p-5 sm:p-6">
-                <h2 className="section-title">Agenda operacional</h2>
-                <ul className="mt-4 space-y-3">
-                  {agenda.map((task) => (
-                    <li key={task.id} className="flex items-start gap-3">
-                      <button
-                        type="button"
-                        aria-label={`Concluir ${task.title}`}
-                        disabled={task.status === "concluida"}
-                        onClick={() => completeTask.mutate(task.id)}
-                        className="-m-1.5 mt-0 grid size-9 shrink-0 place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-success focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:text-success"
-                      >
-                        <CheckCircle2 className="size-4.5" aria-hidden />
-                      </button>
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={`truncate text-sm ${
-                            task.status === "concluida" ? "text-muted-foreground line-through" : "font-medium"
-                          }`}
-                        >
-                          {task.title}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {formatTime(task.due_at)} · {task.clients?.name} · {task.assignee_name}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <p className="helper-text mt-4">
-                  Conclusões são salvas e registradas na auditoria da empresa.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+        ) : (
+          children
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+function Central() {
+  const { organizationId, membership, can } = useWorkspace();
+  const canProcesses = can("processes.view"),
+    canFinance = can("finance.view");
+  const tasks = useTasks(organizationId);
+  const processes = useProcesses(canProcesses ? organizationId : null);
+  const monitoring = useOperationalMonitoring(canProcesses ? organizationId : null);
+  const finance = useFinance(canFinance ? organizationId : null);
+  const communication = useCommunicationThreads(organizationId);
+  const documents = useDocumentsSummary(organizationId);
+  const activity = useRecentActivity(canProcesses ? organizationId : null);
+  const taskStats = taskIndicators(tasks.data ?? []);
+  const openTasks = (tasks.data ?? []).filter((t) => t.status !== "concluida");
+  const processRows = (processes.data ?? []).filter((p) => !closed.includes(p.stage));
+  const attention = monitoringAttention(monitoring.data ?? []).slice(0, 8);
+  const fs = financeSummary(finance.data);
+  const cs = communicationSummary(communication.data ?? []);
+  const alerts = (monitoring.data ?? []).filter(
+    (a) => !["resolvido", "ignorado"].includes(a.monitoring_status),
+  );
+  const org =
+    membership?.organizations?.trade_name || membership?.organizations?.legal_name || "Organização";
+  const metrics: Array<[string, number, string, LucideIcon]> = [
+    ["Tarefas atrasadas", taskStats.overdue, "/tarefas", AlertTriangle],
+    [
+      "Tarefas para hoje",
+      openTasks.filter((t) => t.due_at?.slice(0, 10) === today()).length,
+      "/tarefas",
+      CheckSquare,
+    ],
+    ["Retornos atrasados", cs.overdue, "/comunicacao", MessageCircle],
+    ["Documentos vencendo", documents.data?.expiring ?? 0, "/documentos", FileClock],
+  ];
+  if (canProcesses)
+    metrics.splice(
+      2,
+      0,
+      [
+        "Processos críticos",
+        processRows.filter((p) => p.priority === "critica").length,
+        "/processos",
+        FileStack,
+      ],
+      [
+        "Alertas críticos",
+        alerts.filter((a) => effectivePriority(a) === "critica").length,
+        "/monitoramento",
+        AlertTriangle,
+      ],
+    );
+  if (canFinance)
+    metrics.push(
+      [
+        "Contas vencidas",
+        fs.due.filter((t: any) => t.due_date < today()).length,
+        "/financeiro",
+        Wallet,
+      ],
+      [
+        "Próximos vencimentos",
+        fs.due.filter((t: any) => t.due_date >= today()).length,
+        "/financeiro",
+        CalendarClock,
+      ],
+    );
+  const updated = Math.max(
+    ...[
+      tasks.dataUpdatedAt,
+      processes.dataUpdatedAt,
+      monitoring.dataUpdatedAt,
+      finance.dataUpdatedAt,
+      communication.dataUpdatedAt,
+      documents.dataUpdatedAt,
+    ].filter(Boolean),
+  );
+  return (
+    <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
+      <header className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+        <div>
+          <h1 className="page-title">Central de Comando</h1>
+          <p className="page-subtitle">Visão geral da operação da organização.</p>
+          <p className="mt-2 text-sm font-medium">
+            {org} · {formatDate(new Date().toISOString())}
+          </p>
         </div>
-
-        <Card>
-          <CardContent className="p-5">
-            <h3 className="font-display text-base font-semibold">Atividade recente</h3>
-            <ul className="mt-4 space-y-4">
-              {(activity.data ?? []).slice(0, 10).map((item) => (
-                <li key={item.id} className="border-l-2 border-border pl-4">
-                  <p className="text-sm font-medium">{item.description}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {item.processes?.code} · {item.processes?.clients?.name}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {item.actor_name ?? "Sistema"} · {relativeTime(item.created_at)}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Sheet open={drawer !== null} onOpenChange={(open) => !open && setDrawer(null)}>
-          <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-            <SheetHeader>
-              <SheetTitle>{drawer ? drawerTitles[drawer] : ""}</SheetTitle>
-              <SheetDescription>{drawerItems.length} registro(s) nesta seleção.</SheetDescription>
-            </SheetHeader>
-            <ul className="space-y-2 px-4 pb-6">
-              {drawerItems.map((process) => (
-                <li key={process.id}>
-                  <Link
-                    to="/processos/$processId"
-                    params={{ processId: process.id }}
-                    onClick={() => setDrawer(null)}
-                    className="flex items-start justify-between gap-3 rounded-lg border border-border p-3 hover:bg-muted/50"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{process.clients?.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {process.code} · {PROCESS_STAGE[process.stage].label}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">Prazo {formatDate(process.due_date)}</p>
-                    </div>
-                    <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+          <RefreshCw className="size-3" />
+          Dados atualizados{" "}
+          {updated
+            ? new Date(updated).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+            : "ao carregar"}
+        </p>
+      </header>
+      <section
+        aria-label="Indicadores principais"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        {metrics.map(([label, value, href, Icon]) => (
+          <Link
+            key={label}
+            to={href}
+            aria-label={`${label}: ${value}. Abrir módulo`}
+            className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Card className="h-full transition hover:border-primary">
+              <CardContent className="flex items-center justify-between p-5">
+                <div>
+                  <p className="text-sm text-muted-foreground">{label}</p>
+                  <strong className="text-2xl">{value}</strong>
+                </div>
+                <Icon className="size-5" aria-hidden />
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </section>
+      {canProcesses && (
+        <Block
+          title="Precisa de atenção"
+          href="/monitoramento"
+          action="Ver alertas"
+          loading={monitoring.isLoading}
+          error={monitoring.isError}
+        >
+          {attention.length ? (
+            <ul className="divide-y">
+              {attention.map((i) => (
+                <li key={i.id} className="py-3">
+                  <Link to={i.href} className="font-medium hover:underline">
+                    {i.title}
                   </Link>
+                  <p className="text-xs text-muted-foreground">
+                    {i.origin} · {i.related || "Sem vínculo"} · {i.responsible || "Não atribuído"} ·{" "}
+                    {i.priority} · {i.reason}
+                  </p>
                 </li>
               ))}
-              {drawerItems.length === 0 && (
-                <li className="py-6 text-sm text-muted-foreground">Nenhum registro nesta seleção.</li>
-              )}
             </ul>
-          </SheetContent>
-        </Sheet>
-      </div>
-    </TooltipProvider>
+          ) : (
+            <p>Nenhum alerta crítico no momento.</p>
+          )}
+        </Block>
+      )}
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {canProcesses && (
+          <Block
+            title="Alertas do Monitoramento"
+            href="/monitoramento"
+            action="Ver todos os alertas"
+            loading={monitoring.isLoading}
+            error={monitoring.isError}
+          >
+            {alerts.length ? (
+              <ul className="space-y-2">
+                {alerts.slice(0, 5).map((a) => (
+                  <li key={`${a.source_id}-${a.alert_kind}`} className="text-sm">
+                    <b>{a.title}</b>
+                    <p className="text-muted-foreground">
+                      {effectivePriority(a)} · {a.monitoring_status} ·{" "}
+                      {a.assigned_name || a.responsible_name || "Não atribuído"}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>Nenhum alerta crítico no momento.</p>
+            )}
+          </Block>
+        )}
+        <Block
+          title="Tarefas"
+          href="/tarefas"
+          action="Ver todas as tarefas"
+          loading={tasks.isLoading}
+          error={tasks.isError}
+        >
+          <p className="mb-3 text-sm">
+            {taskStats.overdue} atrasadas ·{" "}
+            {openTasks.filter((t) => t.due_at?.slice(0, 10) === today()).length} hoje ·{" "}
+            {openTasks.filter((t) => t.due_at && t.due_at.slice(0, 10) > today()).length} próximas
+          </p>
+          {openTasks.length ? (
+            <ul className="space-y-2">
+              {openTasks.slice(0, 5).map((t) => (
+                <li key={t.id} className="text-sm">
+                  <b>{t.title}</b>
+                  <p className="text-muted-foreground">
+                    {t.assignee_name || "Não atribuída"} ·{" "}
+                    {t.due_at ? formatDate(t.due_at) : "Sem prazo"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>Não há tarefas atrasadas.</p>
+          )}
+        </Block>
+        {canProcesses && (
+          <Block
+            title="Processos"
+            href="/processos"
+            action="Ver processos"
+            loading={processes.isLoading}
+            error={processes.isError}
+          >
+            <p className="mb-3 text-sm">
+              {processRows.length} ativos ·{" "}
+              {processRows.filter((p) => p.due_date && p.due_date < today()).length} atrasados ·{" "}
+              {processRows.filter((p) => p.priority === "critica").length} críticos
+            </p>
+            {processRows.length ? (
+              <ul className="space-y-2">
+                {processRows.slice(0, 5).map((p) => (
+                  <li key={p.id} className="text-sm">
+                    <b>
+                      {p.code} · {p.title}
+                    </b>
+                    <p className="text-muted-foreground">
+                      {p.clients?.name || "Sem cliente"} · {p.owner_name || "Não atribuído"} ·{" "}
+                      {p.due_date ? formatDate(p.due_date) : "Sem prazo"}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>Nenhum processo exige atenção.</p>
+            )}
+          </Block>
+        )}
+        {canFinance && (
+          <Block
+            title="Financeiro"
+            href="/financeiro"
+            action="Ver financeiro"
+            loading={finance.isLoading}
+            error={finance.isError}
+          >
+            <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+              {[
+                ["Saldo atual", fs.balance],
+                ["A receber", fs.receivable],
+                ["A pagar", fs.payable],
+                ["Vencidos", fs.overdue],
+                ["Receitas do mês", fs.incomeMonth],
+                ["Despesas do mês", fs.expenseMonth],
+              ].map(([l, v]) => (
+                <div key={String(l)}>
+                  <span className="text-muted-foreground">{l}</span>
+                  <p className="font-semibold">{brl(Number(v))}</p>
+                </div>
+              ))}
+            </div>
+            <h3 className="mt-4 font-semibold">Vencimentos financeiros</h3>
+            {fs.due.length ? (
+              <ul>
+                {fs.due.map((t: any) => (
+                  <li key={t.id} className="py-1 text-sm">
+                    {t.description} · {brDate(t.due_date)} · {brl(t.remaining)}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm">Não há contas vencidas.</p>
+            )}
+          </Block>
+        )}
+        <Block
+          title="Retornos e comunicação"
+          href="/comunicacao"
+          action="Ver comunicação"
+          loading={communication.isLoading}
+          error={communication.isError}
+        >
+          <p className="mb-3 text-sm">
+            {cs.waitingClient} aguardando cliente · {cs.waitingTeam} equipe · {cs.overdue} atrasados
+            · {cs.open} abertas
+          </p>
+          {cs.attention.length ? (
+            <ul>
+              {cs.attention.map((t: any) => (
+                <li key={t.id} className="py-1 text-sm">
+                  <b>
+                    {t.clients?.name} · {t.subject}
+                  </b>
+                  <p className="text-muted-foreground">
+                    {t.assigned_to || "Não atribuído"} ·{" "}
+                    {t.follow_up_at ? formatDate(t.follow_up_at) : "Sem retorno"} · {t.status}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>Todos os retornos estão em dia.</p>
+          )}
+        </Block>
+        <Block
+          title="Documentos"
+          href="/documentos"
+          action="Ver documentos"
+          loading={documents.isLoading}
+          error={documents.isError}
+        >
+          <p>
+            {documents.data?.expired ?? 0} vencidos · {documents.data?.expiring ?? 0} vencendo ·{" "}
+            {documents.data?.pending ?? 0} pendentes
+          </p>
+        </Block>
+        {canProcesses && (
+          <Block
+            title="Atividade recente"
+            href="/processos"
+            action="Ver processos"
+            loading={activity.isLoading}
+            error={activity.isError}
+          >
+            {activity.data?.length ? (
+              <ul>
+                {activity.data.slice(0, 5).map((a) => (
+                  <li key={a.id} className="py-1 text-sm">
+                    {a.description} ·{" "}
+                    <span className="text-muted-foreground">{a.actor_name || "Sistema"}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>Nenhuma atividade recente.</p>
+            )}
+          </Block>
+        )}
+      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>Atalhos rápidos</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          {can("clients.create") && (
+            <Button asChild>
+              <Link to="/clientes/novo">
+                <Plus />
+                Novo cliente
+              </Link>
+            </Button>
+          )}
+          {can("processes.create") && (
+            <Button asChild>
+              <Link to="/processos/novo">
+                <Plus />
+                Novo processo
+              </Link>
+            </Button>
+          )}
+          <Button variant="outline" asChild>
+            <Link to="/tarefas">
+              <Plus />
+              Nova tarefa
+            </Link>
+          </Button>
+          {canFinance && (
+            <Button variant="outline" asChild>
+              <Link to="/financeiro">
+                <Plus />
+                Novo lançamento
+              </Link>
+            </Button>
+          )}
+          <Button variant="outline" asChild>
+            <Link to="/comunicacao">
+              <Plus />
+              Nova conversa
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </main>
   );
 }
