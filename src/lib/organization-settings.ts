@@ -52,7 +52,7 @@ export type OrganizationSettings = {
   district: string | null;
   city: string | null;
   state: string | null;
-  created_at: string;
+  created_at: string | null;
   updated_at: string | null;
   member_count: number;
   client_count: number;
@@ -61,7 +61,7 @@ export type OrganizationSettings = {
     id: string;
     action: string;
     metadata: Record<string, unknown>;
-    created_at: string;
+    created_at: string | null;
     actor_name: string | null;
   }>;
   default_financial_account_id: string | null;
@@ -80,6 +80,95 @@ export type OrganizationSettings = {
 > & {
     notification_preferences: Record<string, boolean>;
   };
+
+const nullableStringFields = [
+  "trade_name",
+  "document",
+  "email",
+  "phone",
+  "website",
+  "zip_code",
+  "street",
+  "number",
+  "complement",
+  "district",
+  "city",
+  "state",
+  "created_at",
+  "updated_at",
+  "default_financial_account_id",
+  "default_income_category_id",
+  "default_expense_category_id",
+  "default_responsible_id",
+] as const;
+
+/** Converts the versioned RPC payload into the complete shape consumed by the page. */
+export function normalizeOrganizationSettings(data: unknown): OrganizationSettings {
+  if (data === null || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Resposta inválida ao carregar as configurações da organização.");
+  }
+
+  const source = data as Record<string, unknown>;
+  const normalized: Record<string, unknown> = {
+    ...ORGANIZATION_SETTINGS_DEFAULTS,
+    organization_id: typeof source.organization_id === "string" ? source.organization_id : "",
+    legal_name: typeof source.legal_name === "string" ? source.legal_name : "Organização",
+    member_count: typeof source.member_count === "number" ? source.member_count : 0,
+    client_count: typeof source.client_count === "number" ? source.client_count : 0,
+    active_process_count:
+      typeof source.active_process_count === "number" ? source.active_process_count : 0,
+  };
+
+  for (const [key, fallback] of Object.entries(ORGANIZATION_SETTINGS_DEFAULTS)) {
+    if (key === "notification_preferences") continue;
+    normalized[key] = source[key] ?? fallback;
+  }
+  for (const key of nullableStringFields) {
+    normalized[key] = typeof source[key] === "string" ? source[key] : null;
+  }
+
+  const preferences = source.notification_preferences;
+  normalized.notification_preferences = {
+    ...ORGANIZATION_SETTINGS_DEFAULTS.notification_preferences,
+    ...(preferences !== null && typeof preferences === "object" && !Array.isArray(preferences)
+      ? preferences
+      : {}),
+  };
+  normalized.recent_audit = Array.isArray(source.recent_audit)
+    ? source.recent_audit
+        .filter((entry): entry is Record<string, unknown> =>
+          Boolean(entry && typeof entry === "object" && !Array.isArray(entry)),
+        )
+        .map((entry, index) => ({
+          id: typeof entry.id === "string" ? entry.id : `audit-${index}`,
+          action: typeof entry.action === "string" ? entry.action : "update",
+          metadata:
+            entry.metadata !== null &&
+            typeof entry.metadata === "object" &&
+            !Array.isArray(entry.metadata)
+              ? (entry.metadata as Record<string, unknown>)
+              : {},
+          created_at: typeof entry.created_at === "string" ? entry.created_at : null,
+          actor_name: typeof entry.actor_name === "string" ? entry.actor_name : null,
+        }))
+    : [];
+
+  return normalized as OrganizationSettings;
+}
+
+export function formatOptionalDate(value: unknown, includeTime = false): string {
+  if (typeof value !== "string" || !value.trim()) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return includeTime ? date.toLocaleString("pt-BR") : date.toLocaleDateString("pt-BR");
+}
+
+export function getRoleLabel(
+  role: string | null | undefined,
+  roles: Record<string, { label: string }>,
+): string {
+  return (role && roles[role]?.label) || "—";
+}
 
 export function validateOrganizationSettings(value: Partial<OrganizationSettings>): string[] {
   const errors: string[] = [];

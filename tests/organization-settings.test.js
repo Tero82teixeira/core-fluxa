@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import {
+  ORGANIZATION_SETTINGS_DEFAULTS,
+  formatOptionalDate,
+  getRoleLabel,
+  normalizeOrganizationSettings,
+} from "../src/lib/organization-settings.ts";
 
 const lib = readFileSync("src/lib/organization-settings.ts", "utf8");
 const migration = readFileSync(
@@ -73,4 +79,76 @@ test("monitoramento usa configuração com fallback", () => {
   for (const fallback of ["50000", "10000", ",14", ",7", ",30"])
     assert.ok(monitoring.includes(fallback));
   assert.match(monitoring, /monitoring_show_financial/);
+});
+
+test("recent_audit undefined não quebra", () => {
+  assert.deepEqual(normalizeOrganizationSettings({}).recent_audit, []);
+});
+
+test("recent_audit null não quebra", () => {
+  assert.deepEqual(normalizeOrganizationSettings({ recent_audit: null }).recent_audit, []);
+});
+
+test("notification_preferences undefined usa defaults", () => {
+  assert.deepEqual(
+    normalizeOrganizationSettings({}).notification_preferences,
+    ORGANIZATION_SETTINGS_DEFAULTS.notification_preferences,
+  );
+});
+
+test("payload parcial é normalizado", () => {
+  const result = normalizeOrganizationSettings({ legal_name: "FLUXA", member_count: 3 });
+  assert.equal(result.legal_name, "FLUXA");
+  assert.equal(result.member_count, 3);
+  assert.equal(result.client_count, 0);
+  assert.equal(result.active_process_count, 0);
+  assert.equal(result.trade_name, null);
+  assert.equal(result.timezone, ORGANIZATION_SETTINGS_DEFAULTS.timezone);
+});
+
+test("payload inválido gera erro controlado", () => {
+  for (const invalid of [null, [], "settings"])
+    assert.throws(
+      () => normalizeOrganizationSettings(invalid),
+      /Resposta inválida ao carregar as configurações/,
+    );
+});
+
+test("created_at ausente ou inválido não quebra", () => {
+  assert.equal(formatOptionalDate(normalizeOrganizationSettings({}).created_at), "—");
+  assert.equal(formatOptionalDate("não é uma data"), "—");
+});
+
+test("role desconhecido não quebra", () => {
+  assert.equal(getRoleLabel("papel-antigo", { administrador: { label: "Administrador" } }), "—");
+});
+
+test("página mantém os dados de um payload completo", () => {
+  const payload = {
+    organization_id: "org-1",
+    legal_name: "FLUXA Tecnologia",
+    trade_name: "FLUXA",
+    member_count: 4,
+    client_count: 20,
+    active_process_count: 8,
+    created_at: "2026-08-10T12:00:00Z",
+    recent_audit: [
+      {
+        id: "audit-1",
+        action: "update",
+        metadata: { key: "timezone" },
+        created_at: "2026-08-10T12:30:00Z",
+        actor_name: "Admin",
+      },
+    ],
+    notification_preferences: { overdue_tasks: false },
+    timezone: "UTC",
+  };
+  const result = normalizeOrganizationSettings(payload);
+  assert.equal(result.organization_id, payload.organization_id);
+  assert.equal(result.trade_name, payload.trade_name);
+  assert.equal(result.timezone, "UTC");
+  assert.equal(result.recent_audit[0].id, "audit-1");
+  assert.equal(result.notification_preferences.overdue_tasks, false);
+  assert.equal(result.notification_preferences.expiring_documents, true);
 });
