@@ -41,7 +41,34 @@ CREATE OR REPLACE FUNCTION public.update_automation_rule(_rule_id uuid,name text
 CREATE OR REPLACE FUNCTION public.set_automation_rule_active(_rule_id uuid,_is_active boolean) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE org uuid; BEGIN SELECT organization_id INTO org FROM public.automation_rules WHERE id=_rule_id AND archived_at IS NULL; IF org IS NULL OR NOT public.automation_can_manage(org) THEN RAISE EXCEPTION 'NOT_ALLOWED'; END IF; UPDATE public.automation_rules SET is_active=_is_active,updated_at=now() WHERE id=_rule_id AND organization_id=org; INSERT INTO public.audit_logs(organization_id,actor_id,action,entity,entity_id,metadata) VALUES(org,auth.uid(),'automation.active_changed','automation_rule',_rule_id,jsonb_build_object('active',_is_active)); END $$;
 CREATE OR REPLACE FUNCTION public.duplicate_automation_rule(_rule_id uuid) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE r public.automation_rules%ROWTYPE; newid uuid; BEGIN SELECT * INTO r FROM public.automation_rules WHERE id=_rule_id AND archived_at IS NULL; IF r.id IS NULL OR NOT public.automation_can_manage(r.organization_id) THEN RAISE EXCEPTION 'NOT_ALLOWED'; END IF; INSERT INTO public.automation_rules(organization_id,name,description,trigger_type,conditions,action_type,action_config,is_active,created_by,creator_name) VALUES(r.organization_id,left(r.name||' (cópia)',120),r.description,r.trigger_type,r.conditions,r.action_type,r.action_config,false,auth.uid(),r.creator_name) RETURNING id INTO newid; INSERT INTO public.audit_logs(organization_id,actor_id,action,entity,entity_id) VALUES(r.organization_id,auth.uid(),'automation.duplicated','automation_rule',newid); RETURN newid; END $$;
 CREATE OR REPLACE FUNCTION public.archive_automation_rule(_rule_id uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE org uuid; BEGIN SELECT organization_id INTO org FROM public.automation_rules WHERE id=_rule_id AND archived_at IS NULL; IF org IS NULL OR NOT public.automation_can_manage(org) THEN RAISE EXCEPTION 'NOT_ALLOWED'; END IF; UPDATE public.automation_rules SET archived_at=now(),is_active=false,updated_at=now() WHERE id=_rule_id; INSERT INTO public.audit_logs(organization_id,actor_id,action,entity,entity_id) VALUES(org,auth.uid(),'automation.archived','automation_rule',_rule_id); END $$;
-CREATE OR REPLACE FUNCTION public.automation_conditions_match(_conditions jsonb,_payload jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=public AS $$ DECLARE c jsonb; actual text; expected text; BEGIN FOR c IN SELECT value FROM jsonb_array_elements(_conditions) LOOP actual:=_payload->>(c->>'field'); expected:=c->>'value'; IF CASE c->>'operator' WHEN 'equals' THEN actual IS DISTINCT FROM expected WHEN 'not_equals' THEN actual IS NOT DISTINCT FROM expected WHEN 'contains' THEN position(lower(coalesce(expected,'')) in lower(coalesce(actual,'')))=0 WHEN 'is_empty' THEN actual IS NOT NULL AND actual<>'' WHEN 'is_not_empty' THEN actual IS NULL OR actual='' WHEN 'before' THEN actual IS NULL OR actual::timestamptz>=expected::timestamptz WHEN 'after' THEN actual IS NULL OR actual::timestamptz<=expected::timestamptz ELSE true END THEN RETURN false; END IF; END LOOP; RETURN true; END $$;
+CREATE OR REPLACE FUNCTION public.automation_conditions_match(_conditions jsonb,_payload jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=public AS $$
+DECLARE
+ c jsonb;
+ actual text;
+ expected text;
+ condition_failed boolean;
+BEGIN
+ FOR c IN SELECT value FROM jsonb_array_elements(_conditions) LOOP
+  actual := _payload->>(c->>'field');
+  expected := c->>'value';
+  condition_failed := CASE c->>'operator'
+    WHEN 'equals' THEN actual IS DISTINCT FROM expected
+    WHEN 'not_equals' THEN actual IS NOT DISTINCT FROM expected
+    WHEN 'contains' THEN position(lower(coalesce(expected,'')) in lower(coalesce(actual,''))) = 0
+    WHEN 'is_empty' THEN actual IS NOT NULL AND actual <> ''
+    WHEN 'is_not_empty' THEN actual IS NULL OR actual = ''
+    WHEN 'before' THEN actual IS NULL OR actual::timestamptz >= expected::timestamptz
+    WHEN 'after' THEN actual IS NULL OR actual::timestamptz <= expected::timestamptz
+    ELSE true
+  END;
+
+  IF condition_failed THEN
+   RETURN false;
+  END IF;
+ END LOOP;
+
+ RETURN true;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.process_automation_event(_organization_id uuid,_event_type text,_entity_type text,_entity_id uuid,_payload jsonb,_source_automation_rule_id uuid DEFAULT NULL,_execution_depth integer DEFAULT 0,_event_version text DEFAULT NULL) RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 DECLARE r public.automation_rules%ROWTYPE; eid uuid; key text; successes int:=0; recipient uuid; task_org uuid;
