@@ -42,7 +42,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/automacoes", label: "Automações", icon: Bot, description: "Regras e disparos", ready: true, group: "gestao" },
   { to: "/configuracoes", label: "Configurações", icon: Settings, description: "Workspace e preferências", ready: false, group: "sistema" },
   { to: "/ajuda", label: "Ajuda e suporte", icon: LifeBuoy, description: "Documentação e atendimento", ready: false, group: "sistema" },
-  { to: "/novidades", label: "Novidades", icon: Sparkles, description: "Entregas e melhorias", ready: false, group: "sistema" },
+  { to: "/novidades", label: "Novidades", icon: Sparkles, description: "Entregas e melhorias", ready: true, group: "sistema" },
 ];
 
 export const NAV_GROUPS: { key: NavGroupKey; label: string }[] = [
