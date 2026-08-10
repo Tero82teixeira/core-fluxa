@@ -8,13 +8,11 @@ import {
   ChevronDown,
   CreditCard,
   FilePlus2,
-  FileStack,
   ListPlus,
   Plus,
   Search,
   UploadCloud,
   UserPlus,
-  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,28 +36,19 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/lib/workspace";
-import { useGlobalSearch } from "@/hooks/use-operations";
 import { useMarkNotificationRead, useNotifications, useUnreadNotificationCount } from "@/hooks/use-notifications";
-import { initials, maskDocument, relativeTime } from "@/lib/format";
+import { initials, relativeTime } from "@/lib/format";
 import { NAV_ITEMS } from "@/lib/navigation";
+import { GlobalSearch } from "@/components/global-search";
 
 export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { displayName, memberships, membership, switchWorkspace, organizationId } = useWorkspace();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [term, setTerm] = useState("");
 
   const current = NAV_ITEMS.find((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
   const isDetail = Boolean(current) && pathname !== current?.to;
@@ -67,7 +56,6 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const notifications = useNotifications(organizationId, 5);
   const unreadQuery = useUnreadNotificationCount(organizationId);
   const markNotification = useMarkNotificationRead(organizationId);
-  const results = useGlobalSearch(organizationId, term);
   const unread = unreadQuery.data ?? 0;
 
   useEffect(() => {
@@ -236,75 +224,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
         </div>
       </div>
 
-      <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <CommandInput
-          placeholder="Buscar clientes, CPF/CNPJ, telefone, protocolo, processos…"
-          value={term}
-          onValueChange={setTerm}
-        />
-        <CommandList>
-          <CommandEmpty>
-            {term.length < 2 ? "Digite ao menos 2 caracteres." : "Nenhum registro encontrado."}
-          </CommandEmpty>
-          {(results.data?.clients ?? []).length > 0 && (
-            <CommandGroup heading="Clientes">
-              {results.data!.clients.map((client) => (
-                <CommandItem
-                  key={client.id}
-                  value={`cliente-${client.id}-${client.name}`}
-                  onSelect={() => {
-                    setSearchOpen(false);
-                    navigate({ to: "/clientes/$clientId", params: { clientId: client.id } });
-                  }}
-                >
-                  <Users className="size-4" aria-hidden />
-                  <span className="truncate">{client.name}</span>
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    {client.document ? maskDocument(client.document) : ""}
-                  </span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
-          {(results.data?.processes ?? []).length > 0 && (
-            <CommandGroup heading="Processos">
-              {results.data!.processes.map((process) => (
-                <CommandItem
-                  key={process.id}
-                  value={`processo-${process.id}-${process.code}`}
-                  onSelect={() => {
-                    setSearchOpen(false);
-                    navigate({ to: "/processos/$processId", params: { processId: process.id } });
-                  }}
-                >
-                  <FileStack className="size-4" aria-hidden />
-                  <span className="truncate">
-                    {process.code} — {process.title}
-                  </span>
-                  {process.protocol && (
-                    <span className="ml-auto text-xs text-muted-foreground">{process.protocol}</span>
-                  )}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
-          <CommandGroup heading="Navegação">
-            {NAV_ITEMS.map((item) => (
-              <CommandItem
-                key={item.to}
-                value={`ir-${item.label}`}
-                onSelect={() => {
-                  setSearchOpen(false);
-                  navigate({ to: item.to });
-                }}
-              >
-                <item.icon className="size-4" aria-hidden />
-                {item.label}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </CommandList>
-      </CommandDialog>
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </header>
   );
 }

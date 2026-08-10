@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import { digits } from "@/lib/format";
+import { rankGlobalSearchResults, type GlobalSearchResult } from "@/lib/global-search";
 import type {
   ClientStatus,
   FinancialStatus,
@@ -430,48 +431,35 @@ export function useNotifications(organizationId: string | null) {
   });
 }
 
-export type SearchResults = {
-  clients: { id: string; name: string; document: string | null }[];
-  processes: { id: string; code: string; title: string | null; protocol: string | null }[];
-  tasks: { id: string; title: string; process_id: string | null; client_id: string | null }[];
-};
+export type GlobalSearchAccess = { clients: boolean; processes: boolean; finance: boolean };
 
-const EMPTY_SEARCH: SearchResults = { clients: [], processes: [], tasks: [] };
-
-export function useGlobalSearch(organizationId: string | null, term: string) {
+export function useGlobalSearch(organizationId: string | null, term: string, access: GlobalSearchAccess) {
   const trimmed = term.trim();
-  const query = useQuery({
+  return useQuery({
     enabled: Boolean(organizationId) && trimmed.length >= 2,
-    queryKey: ["global-search", organizationId, trimmed],
-    queryFn: async (): Promise<SearchResults> => {
-      const like = `%${trimmed}%`;
-      const numeric = digits(trimmed);
-      const clientFilter = [
-        `name.ilike.${like}`,
-        `email.ilike.${like}`,
-        numeric.length >= 3 ? `document_digits.ilike.%${numeric}%` : null,
-        numeric.length >= 3 ? `phone.ilike.%${numeric}%` : null,
-      ]
-        .filter(Boolean)
-        .join(",");
-
-      const [clientsRes, processesRes] = await Promise.all([
-        db().from(CLIENTS_SOURCE).select("id, name, document").eq("organization_id", organizationId).or(clientFilter).limit(6),
-        db()
-          .from("processes")
-          .select("id, code, title, protocol")
-          .eq("organization_id", organizationId)
-          .or(`code.ilike.${like},title.ilike.${like},protocol.ilike.${like}`)
-          .limit(6),
+    queryKey: ["global-search", organizationId, trimmed, access],
+    queryFn: async (): Promise<GlobalSearchResult[]> => {
+      const safe = trimmed.replace(/[%,()]/g, " ");
+      const like = `%${safe}%`;
+      const source = async (enabled: boolean, run: () => PromiseLike<{ data: any[] | null; error: any }>, map: (row: any) => GlobalSearchResult) => {
+        if (!enabled) return [];
+        const { data, error } = await run();
+        if (error) throw error;
+        return (data ?? []).map(map);
+      };
+      const operational = access.processes;
+      const sources = await Promise.allSettled([
+        source(access.clients, () => db().from(CLIENTS_SOURCE).select("id,name,trade_name,status").eq("organization_id", organizationId).or(`name.ilike.${like},trade_name.ilike.${like}`).limit(5), (r) => ({ id: r.id, type: "Cliente", title: r.name, subtitle: [r.trade_name, r.status].filter(Boolean).join(" · "), keywords: [r.trade_name], route: `/clientes/${r.id}` })),
+        source(access.processes, () => db().from("processes").select("id,code,title,stage,updated_at,clients(name)").eq("organization_id", organizationId).or(`code.ilike.${like},title.ilike.${like},description.ilike.${like}`).limit(5), (r) => ({ id: r.id, type: "Processo", title: r.title || r.code, subtitle: [r.code, r.clients?.name, r.stage].filter(Boolean).join(" · "), keywords: [r.code, r.clients?.name], route: `/processos/${r.id}`, recentAt: r.updated_at })),
+        source(operational, () => db().from("tasks").select("id,title,description,status,due_at,assignee_name,clients(name),processes(code)").eq("organization_id", organizationId).is("deleted_at", null).or(`title.ilike.${like},description.ilike.${like},assignee_name.ilike.${like}`).limit(5), (r) => ({ id: r.id, type: "Tarefa", title: r.title, subtitle: [r.status, r.due_at, r.assignee_name].filter(Boolean).join(" · "), keywords: [r.clients?.name, r.processes?.code], route: "/tarefas" })),
+        source(operational, () => db().from("documents").select("id,title,original_file_name,status,clients(name),processes(code),document_types(name)").eq("organization_id", organizationId).is("archived_at", null).or(`title.ilike.${like},original_file_name.ilike.${like},document_number.ilike.${like}`).limit(5), (r) => ({ id: r.id, type: "Documento", title: r.title || r.original_file_name, subtitle: [r.document_types?.name, r.clients?.name, r.processes?.code].filter(Boolean).join(" · "), keywords: [r.original_file_name], route: "/documentos" })),
+        source(operational, () => db().from("communication_threads").select("id,subject,status,priority,assigned_to,updated_at,clients(name),processes(code)").eq("organization_id", organizationId).is("archived_at", null).or(`subject.ilike.${like},assigned_to.ilike.${like}`).limit(5), (r) => ({ id: r.id, type: "Comunicação", title: r.subject, subtitle: [r.clients?.name, r.status, r.assigned_to].filter(Boolean).join(" · "), keywords: [r.processes?.code], route: "/comunicacao", recentAt: r.updated_at })),
+        source(access.finance, () => db().from("financial_transactions").select("id,description,type,status,amount,due_date,clients(name),financial_categories(name),financial_accounts(name)").eq("organization_id", organizationId).or(`description.ilike.${like},type.ilike.${like}`).limit(5), (r) => ({ id: r.id, type: "Financeiro", title: r.description, subtitle: [r.type, r.amount != null ? `R$ ${Number(r.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : null, r.status].filter(Boolean).join(" · "), keywords: [r.clients?.name, r.financial_categories?.name, r.financial_accounts?.name], route: "/financeiro", recentAt: r.due_date })),
+        source(operational, () => db().from("operational_monitoring_alerts").select("source_type,source_id,alert_kind,title,description,client_name,process_code,responsible_name,suggested_priority,monitoring_status,relevant_at").eq("organization_id", organizationId).or(`title.ilike.${like},client_name.ilike.${like},process_code.ilike.${like},responsible_name.ilike.${like},alert_kind.ilike.${like}`).limit(5), (r) => ({ id: `${r.source_type}:${r.source_id}:${r.alert_kind}`, type: "Monitoramento", title: r.title, subtitle: [r.suggested_priority, r.monitoring_status, r.responsible_name].filter(Boolean).join(" · "), keywords: [r.client_name, r.process_code, r.alert_kind], route: "/monitoramento", recentAt: r.relevant_at })),
       ]);
-      if (clientsRes.error) throw clientsRes.error;
-      if (processesRes.error) throw processesRes.error;
-      return { clients: clientsRes.data ?? [], processes: processesRes.data ?? [], tasks: [] };
+      return rankGlobalSearchResults(sources.flatMap((result) => result.status === "fulfilled" ? result.value : []), trimmed);
     },
   });
-
-  const data = useMemo(() => query.data ?? EMPTY_SEARCH, [query.data]);
-  return { ...query, data };
 }
 
 export function useCompleteTask(organizationId: string | null) {
