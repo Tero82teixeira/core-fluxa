@@ -10,6 +10,8 @@ import {
 } from "@/hooks/use-organization-settings";
 import {
   ORGANIZATION_SETTINGS_DEFAULTS,
+  formatOptionalDate,
+  getRoleLabel,
   validateOrganizationSettings,
   type OrganizationSettings,
 } from "@/lib/organization-settings";
@@ -194,7 +196,8 @@ function SettingsPage() {
       </div>
     );
   const d = draft as OrganizationSettings;
-  const notify = d.notification_preferences ?? {};
+  const notify =
+    d.notification_preferences ?? ORGANIZATION_SETTINGS_DEFAULTS.notification_preferences;
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -248,7 +251,7 @@ function SettingsPage() {
             />
             <Field
               label="Criada em"
-              value={new Date(d.created_at).toLocaleDateString("pt-BR")}
+              value={formatOptionalDate(d.created_at)}
               onChange={() => {}}
               disabled
             />
@@ -573,29 +576,27 @@ function SettingsPage() {
             />
             <Field
               label="Papel atual"
-              value={role ? ROLE[role].label : "—"}
+              value={getRoleLabel(role, ROLE)}
               onChange={() => {}}
               disabled
             />
             <Field label="Membros ativos" value={d.member_count} onChange={() => {}} disabled />
             <Field
               label="Última atualização"
-              value={
-                d.updated_at ? new Date(d.updated_at).toLocaleString("pt-BR") : "Ainda não alterada"
-              }
+              value={d.updated_at ? formatOptionalDate(d.updated_at, true) : "Ainda não alterada"}
               onChange={() => {}}
               disabled
             />
             <div className="sm:col-span-2">
               <p className="mb-2 text-sm font-medium">Auditoria recente</p>
-              {d.recent_audit.length === 0 ? (
+              {(d.recent_audit ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma alteração registrada.</p>
               ) : (
                 <ul className="space-y-2">
-                  {d.recent_audit.map((a) => (
+                  {(d.recent_audit ?? []).map((a) => (
                     <li key={a.id} className="rounded border p-2 text-sm">
                       {String(a.metadata.key ?? "Configuração")} ·{" "}
-                      {new Date(a.created_at).toLocaleString("pt-BR")} ·{" "}
+                      {formatOptionalDate(a.created_at, true)} ·{" "}
                       {a.actor_name || "Usuário autenticado"}
                     </li>
                   ))}

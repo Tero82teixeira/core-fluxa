@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { OrganizationSettings } from "@/lib/organization-settings";
+import {
+  normalizeOrganizationSettings,
+  type OrganizationSettings,
+} from "@/lib/organization-settings";
 
 const rpc = supabase as unknown as {
   rpc: (
@@ -18,7 +21,7 @@ export function useOrganizationSettings(organizationId: string | null) {
         _organization_id: organizationId,
       });
       if (error) throw error;
-      return data as OrganizationSettings;
+      return normalizeOrganizationSettings(data);
     },
   });
 }
@@ -32,7 +35,7 @@ export function useUpdateOrganizationSettings(organizationId: string | null) {
         _changes: values,
       });
       if (error) throw error;
-      return data as OrganizationSettings;
+      return normalizeOrganizationSettings(data);
     },
     onSuccess: (data) => client.setQueryData(["organization-settings", organizationId], data),
   });
