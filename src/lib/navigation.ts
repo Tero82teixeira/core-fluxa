@@ -40,8 +40,8 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/relatorios", label: "Relatórios", icon: PieChart, description: "Indicadores e exportações", ready: true, group: "gestao" },
   { to: "/equipe", label: "Equipe", icon: CalendarClock, description: "Usuários e permissões", ready: true, group: "gestao" },
   { to: "/automacoes", label: "Automações", icon: Bot, description: "Regras e disparos", ready: true, group: "gestao" },
-  { to: "/configuracoes", label: "Configurações", icon: Settings, description: "Workspace e preferências", ready: false, group: "sistema" },
-  { to: "/ajuda", label: "Ajuda e suporte", icon: LifeBuoy, description: "Documentação e atendimento", ready: false, group: "sistema" },
+  { to: "/configuracoes", label: "Configurações", icon: Settings, description: "Workspace e preferências", ready: true, group: "sistema" },
+  { to: "/ajuda", label: "Ajuda e suporte", icon: LifeBuoy, description: "Documentação e atendimento", ready: true, group: "sistema" },
   { to: "/novidades", label: "Novidades", icon: Sparkles, description: "Entregas e melhorias", ready: true, group: "sistema" },
 ];
 
