@@ -4,7 +4,13 @@
 ALTER TABLE public.organization_invitations
   ADD COLUMN IF NOT EXISTS accepted_by uuid;
 
-CREATE OR REPLACE FUNCTION public.accept_invitation(_token text)
+-- PostgreSQL cannot replace a function when the OUT row type changes. The
+-- previous versions return (organization_id, role), while this version adds
+-- membership_id and organization_name. No policies, triggers, or views depend
+-- on this function; its only privilege is restored explicitly below.
+DROP FUNCTION IF EXISTS public.accept_invitation(text);
+
+CREATE FUNCTION public.accept_invitation(_token text)
 RETURNS TABLE(organization_id uuid, membership_id uuid, role public.app_role, organization_name text)
 LANGUAGE plpgsql
 SECURITY DEFINER
