@@ -1818,63 +1818,168 @@ export type Database = {
       }
       organization_settings: {
         Row: {
+          allow_overdue_task_without_reason: boolean | null
+          business_hours_end: string | null
+          business_hours_start: string | null
           city: string | null
           clients_range: string | null
           complement: string | null
           created_at: string
+          currency: string | null
           current_control: string | null
+          date_format: string | null
+          default_communication_channel:
+            | Database["public"]["Enums"]["communication_channel"]
+            | null
+          default_communication_priority:
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
+          default_expense_category_id: string | null
+          default_financial_account_id: string | null
+          default_follow_up_hours: number | null
+          default_income_category_id: string | null
+          default_responsible_id: string | null
+          default_task_due_days: number | null
+          default_task_priority:
+            | Database["public"]["Enums"]["priority_level"]
+            | null
           district: string | null
           employees_range: string | null
+          financial_alert_days: number | null
+          highlight_internal_notes: boolean | null
+          locale: string | null
           logo_url: string | null
           main_services: string | null
+          monitoring_document_expiration_days: number | null
+          monitoring_financial_critical_threshold: number | null
+          monitoring_financial_high_threshold: number | null
+          monitoring_show_communication: boolean | null
+          monitoring_show_documents: boolean | null
+          monitoring_show_financial: boolean | null
+          monitoring_upcoming_days: number | null
+          notification_preferences: Json | null
           number: string | null
           organization_id: string
           portal_name: string | null
           primary_color: string | null
+          stale_process_days: number | null
           state: string | null
           street: string | null
           theme_preference: string
+          timezone: string | null
           updated_at: string
+          updated_by: string | null
+          week_starts_on: number | null
           zip_code: string | null
         }
         Insert: {
+          allow_overdue_task_without_reason?: boolean | null
+          business_hours_end?: string | null
+          business_hours_start?: string | null
           city?: string | null
           clients_range?: string | null
           complement?: string | null
           created_at?: string
+          currency?: string | null
           current_control?: string | null
+          date_format?: string | null
+          default_communication_channel?:
+            | Database["public"]["Enums"]["communication_channel"]
+            | null
+          default_communication_priority?:
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
+          default_expense_category_id?: string | null
+          default_financial_account_id?: string | null
+          default_follow_up_hours?: number | null
+          default_income_category_id?: string | null
+          default_responsible_id?: string | null
+          default_task_due_days?: number | null
+          default_task_priority?:
+            | Database["public"]["Enums"]["priority_level"]
+            | null
           district?: string | null
           employees_range?: string | null
+          financial_alert_days?: number | null
+          highlight_internal_notes?: boolean | null
+          locale?: string | null
           logo_url?: string | null
           main_services?: string | null
+          monitoring_document_expiration_days?: number | null
+          monitoring_financial_critical_threshold?: number | null
+          monitoring_financial_high_threshold?: number | null
+          monitoring_show_communication?: boolean | null
+          monitoring_show_documents?: boolean | null
+          monitoring_show_financial?: boolean | null
+          monitoring_upcoming_days?: number | null
+          notification_preferences?: Json | null
           number?: string | null
           organization_id: string
           portal_name?: string | null
           primary_color?: string | null
+          stale_process_days?: number | null
           state?: string | null
           street?: string | null
           theme_preference?: string
+          timezone?: string | null
           updated_at?: string
+          updated_by?: string | null
+          week_starts_on?: number | null
           zip_code?: string | null
         }
         Update: {
+          allow_overdue_task_without_reason?: boolean | null
+          business_hours_end?: string | null
+          business_hours_start?: string | null
           city?: string | null
           clients_range?: string | null
           complement?: string | null
           created_at?: string
+          currency?: string | null
           current_control?: string | null
+          date_format?: string | null
+          default_communication_channel?:
+            | Database["public"]["Enums"]["communication_channel"]
+            | null
+          default_communication_priority?:
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
+          default_expense_category_id?: string | null
+          default_financial_account_id?: string | null
+          default_follow_up_hours?: number | null
+          default_income_category_id?: string | null
+          default_responsible_id?: string | null
+          default_task_due_days?: number | null
+          default_task_priority?:
+            | Database["public"]["Enums"]["priority_level"]
+            | null
           district?: string | null
           employees_range?: string | null
+          financial_alert_days?: number | null
+          highlight_internal_notes?: boolean | null
+          locale?: string | null
           logo_url?: string | null
           main_services?: string | null
+          monitoring_document_expiration_days?: number | null
+          monitoring_financial_critical_threshold?: number | null
+          monitoring_financial_high_threshold?: number | null
+          monitoring_show_communication?: boolean | null
+          monitoring_show_documents?: boolean | null
+          monitoring_show_financial?: boolean | null
+          monitoring_upcoming_days?: number | null
+          notification_preferences?: Json | null
           number?: string | null
           organization_id?: string
           portal_name?: string | null
           primary_color?: string | null
+          stale_process_days?: number | null
           state?: string | null
           street?: string | null
           theme_preference?: string
+          timezone?: string | null
           updated_at?: string
+          updated_by?: string | null
+          week_starts_on?: number | null
           zip_code?: string | null
         }
         Relationships: [
@@ -2992,6 +3097,10 @@ export type Database = {
         Args: { _organization_id: string; _payload: Json }
         Returns: number
       }
+      get_organization_settings: {
+        Args: { _organization_id: string }
+        Returns: Json
+      }
       has_org_role: {
         Args: {
           _org: string
@@ -3133,6 +3242,10 @@ export type Database = {
       update_financial_transaction: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
+      }
+      update_organization_settings: {
+        Args: { _changes: Json; _organization_id: string }
+        Returns: Json
       }
       upsert_monitoring_state: {
         Args: {
