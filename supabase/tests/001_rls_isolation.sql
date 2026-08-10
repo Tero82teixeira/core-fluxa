@@ -69,6 +69,7 @@ select throws_ok($$select * from public.clients limit 1$$,'42501','permission de
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000004',true);
 select lives_ok($$insert into audit_logs(organization_id,actor_id,action,entity) values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',auth.uid(),'KNOWN_SECURITY_FINDING_AUDIT_LOGS_DIRECT_INSERT','test')$$,'KNOWN_SECURITY_FINDING_AUDIT_LOGS_DIRECT_INSERT: ordinary member can insert');
+select diag('KNOWN SECURITY FINDING: direct audit_logs insert is currently allowed');
 
 select * from finish();
 rollback;

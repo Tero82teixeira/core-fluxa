@@ -28,3 +28,7 @@ communication, monitoring, settings, invitations and support; payment and invita
 concurrency; incremental upgrade fixtures; per-role write matrices for every table; and
 real GoTrue-issued access tokens over PostgREST (the SQL suite currently uses equivalent
 database roles and JWT claims). These gaps are stated rather than represented as covered.
+
+GitHub Actions executes this runner in the separate `integration-supabase` job. Its only
+configuration input is the repository's `supabase/config.toml`; the workflow declares no
+Supabase secret, project reference, access token, or remote database password.
