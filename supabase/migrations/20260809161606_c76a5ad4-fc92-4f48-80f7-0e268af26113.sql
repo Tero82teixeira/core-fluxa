@@ -72,7 +72,9 @@ CREATE TRIGGER communication_entry_validate_scope_trg BEFORE INSERT OR UPDATE ON
 
 ALTER TABLE public.communication_threads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.communication_entries ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS communication_threads_select ON public.communication_threads;
 CREATE POLICY communication_threads_select ON public.communication_threads FOR SELECT TO authenticated USING (public.is_org_member(organization_id));
+DROP POLICY IF EXISTS communication_entries_select ON public.communication_entries;
 CREATE POLICY communication_entries_select ON public.communication_entries FOR SELECT TO authenticated USING (public.is_org_member(organization_id));
 -- Escritas são exclusivamente pelas RPCs abaixo; nenhuma policy INSERT/UPDATE/DELETE.
 REVOKE ALL ON public.communication_threads, public.communication_entries FROM PUBLIC, anon;
