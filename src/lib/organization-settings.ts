@@ -163,6 +163,14 @@ export function formatOptionalDate(value: unknown, includeTime = false): string 
   return includeTime ? date.toLocaleString("pt-BR") : date.toLocaleDateString("pt-BR");
 }
 
+export function formatUpcomingDaysLabel(value: unknown): string {
+  const days =
+    typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 365
+      ? value
+      : ORGANIZATION_SETTINGS_DEFAULTS.monitoring_upcoming_days;
+  return days === 1 ? "Próximo 1 dia" : `Próximos ${days} dias`;
+}
+
 export function getRoleLabel(
   role: string | null | undefined,
   roles: Record<string, { label: string }>,

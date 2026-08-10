@@ -4,9 +4,18 @@ import { readFileSync } from "node:fs";
 import {
   ORGANIZATION_SETTINGS_DEFAULTS,
   formatOptionalDate,
+  formatUpcomingDaysLabel,
   getRoleLabel,
   normalizeOrganizationSettings,
 } from "../src/lib/organization-settings.ts";
+
+test("label da janela de monitoramento acompanha a configuração com fallback seguro", () => {
+  assert.equal(formatUpcomingDaysLabel(1), "Próximo 1 dia");
+  assert.equal(formatUpcomingDaysLabel(3), "Próximos 3 dias");
+  assert.equal(formatUpcomingDaysLabel(7), "Próximos 7 dias");
+  assert.equal(formatUpcomingDaysLabel(undefined), "Próximos 7 dias");
+  assert.equal(formatUpcomingDaysLabel("inválido"), "Próximos 7 dias");
+});
 
 const lib = readFileSync("src/lib/organization-settings.ts", "utf8");
 const migration = readFileSync(
