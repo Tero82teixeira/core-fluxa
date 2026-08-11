@@ -1,0 +1,23 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path = public, extensions;
+SELECT plan(16);
+
+SELECT ok(has_function('public','bootstrap_organization',ARRAY[]::text[]),'bootstrap_organization exists');
+SELECT ok(NOT has_function_privilege('anon','public.bootstrap_organization()','EXECUTE'),'anon cannot bootstrap an organization');
+SELECT ok(has_function_privilege('authenticated','public.bootstrap_organization()','EXECUTE'),'authenticated can bootstrap an organization');
+SELECT ok(NOT has_function_privilege('anon','public.accept_invitation(text)','EXECUTE'),'anon cannot accept invitations');
+SELECT ok(has_function_privilege('authenticated','public.accept_invitation(text)','EXECUTE'),'authenticated can accept invitations');
+SELECT ok(NOT has_function_privilege('anon','public.create_communication_thread(uuid,uuid,text,communication_channel,uuid,communication_priority,uuid,uuid,text,timestamp with time zone)','EXECUTE'),'anon cannot create communication threads');
+SELECT ok(has_function_privilege('authenticated','public.create_communication_thread(uuid,uuid,text,communication_channel,uuid,communication_priority,uuid,uuid,text,timestamp with time zone)','EXECUTE'),'authenticated can create communication threads');
+SELECT ok(NOT has_function_privilege('anon','public.change_monitoring_status(uuid,text,uuid,text,text)','EXECUTE'),'anon cannot change monitoring status');
+SELECT ok(has_function_privilege('authenticated','public.change_monitoring_status(uuid,text,uuid,text,text)','EXECUTE'),'authenticated can change monitoring status');
+SELECT ok(NOT has_function_privilege('anon','public.create_support_request(uuid,text,text,text,text,text,text)','EXECUTE'),'anon cannot create support requests');
+SELECT ok(has_function_privilege('authenticated','public.create_support_request(uuid,text,text,text,text,text,text)','EXECUTE'),'authenticated can create support requests');
+SELECT ok(NOT has_function_privilege('anon','public.update_support_request_status(uuid,text)','EXECUTE'),'anon cannot update support request status');
+SELECT ok(NOT has_function_privilege('anon','public.assign_support_request(uuid,uuid)','EXECUTE'),'anon cannot assign support requests');
+SELECT ok(NOT has_function_privilege('anon','public.archive_support_request(uuid)','EXECUTE'),'anon cannot archive support requests');
+SELECT ok(NOT has_function_privilege('anon','public.mark_all_notifications_read(uuid)','EXECUTE'),'anon cannot mark notifications read');
+SELECT ok(has_function_privilege('authenticated','public.mark_all_notifications_read(uuid)','EXECUTE'),'authenticated can mark notifications read');
+SELECT * FROM finish();
+ROLLBACK;
