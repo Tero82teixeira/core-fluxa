@@ -12,6 +12,10 @@
     "lint": "eslint . --max-warnings=0",
     "test:run": "node --test tests/**/*.test.js",
     "test:coverage": "node --experimental-test-coverage --test --test-coverage-include='src/lib/{access-control,communication,documents,finance,format,help-center,product-updates,tasks}.ts' tests/**/*.test.js",
+    "test:integration": "bash tests/integration/supabase/run-local.sh",
+    "test:integration:setup": "supabase start && supabase db reset --local",
+    "test:integration:rls": "supabase test db --local",
+    "test:integration:parity": "node tests/integration/supabase/schema-parity.mjs",
     "check": "npm run typecheck && npm run lint && npm run test:run && npm run build",
     "format": "prettier --write ."
   },
