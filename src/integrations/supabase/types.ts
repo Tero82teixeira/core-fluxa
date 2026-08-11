@@ -2444,6 +2444,82 @@ export type Database = {
           },
         ]
       }
+      support_requests: {
+        Row: {
+          archived_at: string | null
+          assigned_to: string | null
+          category: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          organization_id: string
+          priority: string
+          related_module: string | null
+          related_route: string | null
+          resolved_at: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          assigned_to?: string | null
+          category: string
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          organization_id: string
+          priority?: string
+          related_module?: string | null
+          related_route?: string | null
+          resolved_at?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          assigned_to?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          organization_id?: string
+          priority?: string
+          related_module?: string | null
+          related_route?: string | null
+          resolved_at?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_requests_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_comments: {
         Row: {
           archived_at: string | null
@@ -2932,6 +3008,10 @@ export type Database = {
         Args: { _notification: string }
         Returns: undefined
       }
+      archive_support_request: {
+        Args: { _request_id: string }
+        Returns: undefined
+      }
       assign_communication_thread: {
         Args: { _assigned_to: string; _thread_id: string }
         Returns: undefined
@@ -2945,6 +3025,10 @@ export type Database = {
           _source_type: string
         }
         Returns: string
+      }
+      assign_support_request: {
+        Args: { _assigned_to: string; _request_id: string }
+        Returns: undefined
       }
       automation_can_manage: { Args: { _org: string }; Returns: boolean }
       automation_conditions_match: {
@@ -3071,6 +3155,18 @@ export type Database = {
           token: string
         }[]
       }
+      create_support_request: {
+        Args: {
+          _category: string
+          _description: string
+          _organization_id: string
+          _priority?: string
+          _related_module?: string
+          _related_route?: string
+          _subject: string
+        }
+        Returns: string
+      }
       create_test_notification: {
         Args: { _organization: string }
         Returns: {
@@ -3142,6 +3238,18 @@ export type Database = {
         Returns: undefined
       }
       next_process_code: { Args: { _org: string }; Returns: string }
+      pending_invitation_diagnostics: {
+        Args: never
+        Returns: {
+          accessed_by_user: boolean
+          email: string
+          has_membership: boolean
+          invitation_id: string
+          matched_user_id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }[]
+      }
       process_automation_event: {
         Args: {
           _entity_id: string
@@ -3191,6 +3299,7 @@ export type Database = {
         Returns: undefined
       }
       storage_path_org: { Args: { _name: string }; Returns: string }
+      support_assert_admin: { Args: { _org: string }; Returns: undefined }
       transfer_member_responsibilities: {
         Args: { _from: string; _org: string; _to: string }
         Returns: {
@@ -3246,6 +3355,10 @@ export type Database = {
       update_organization_settings: {
         Args: { _changes: Json; _organization_id: string }
         Returns: Json
+      }
+      update_support_request_status: {
+        Args: { _request_id: string; _status: string }
+        Returns: undefined
       }
       upsert_monitoring_state: {
         Args: {
