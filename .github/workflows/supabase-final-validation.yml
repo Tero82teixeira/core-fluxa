@@ -1,0 +1,65 @@
+name: Supabase Final Validation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate Supabase and application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Reset local Supabase database
+        run: supabase db reset --local
+
+      - name: Run Supabase database tests
+        run: supabase test db --local
+
+      - name: Run integration parity tests
+        run: npm run test:integration:parity
+
+      - name: Run typecheck
+        run: npm run typecheck
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test:run
+
+      - name: Run test coverage
+        run: npm run test:coverage
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run checks
+        run: npm run check
+
+      - name: Check whitespace errors
+        run: git diff --check
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup
