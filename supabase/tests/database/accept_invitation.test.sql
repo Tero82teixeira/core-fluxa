@@ -26,7 +26,7 @@ VALUES ('20000000-0000-0000-0000-000000000001', 'Fluxa Invitation Test Ltda', 'F
 INSERT INTO public.organization_invitations (id, organization_id, email, role, status, token_hash, expires_at)
 VALUES
   ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'member@fluxa.test', 'gestor', 'pending', encode(extensions.digest(repeat('v', 32), 'sha256'), 'hex'), now() + interval '1 day'),
-  ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', 'member@fluxa.test', 'operacional', 'pending', encode(extensions.digest(repeat('m', 32), 'sha256'), 'hex'), now() + interval '1 day'),
+  ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', 'invited@fluxa.test', 'operacional', 'pending', encode(extensions.digest(repeat('m', 32), 'sha256'), 'hex'), now() + interval '1 day'),
   ('30000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', 'expired@fluxa.test', 'visualizador', 'pending', encode(extensions.digest(repeat('e', 32), 'sha256'), 'hex'), now() - interval '1 minute'),
   ('30000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000001', 'member@fluxa.test', 'operacional', 'accepted', encode(extensions.digest(repeat('u', 32), 'sha256'), 'hex'), now() + interval '1 day');
 
