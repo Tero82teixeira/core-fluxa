@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.support_assert_admin(uuid) FROM PUBLIC, anon, authenticated;
