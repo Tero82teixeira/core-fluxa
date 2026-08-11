@@ -1,0 +1,47 @@
+name: Supabase final validation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  supabase-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: bun install --frozen-lockfile
+      - run: supabase start
+      - run: supabase db reset --local
+      - run: supabase test db --local
+      - run: npm run test:integration:parity
+      - if: always()
+        run: supabase stop --no-backup
+
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:run
+      - run: npm run test:coverage
+      - run: npm run build
+      - run: npm run check
+      - run: git diff --check
