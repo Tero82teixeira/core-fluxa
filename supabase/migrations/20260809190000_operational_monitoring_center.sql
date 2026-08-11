@@ -1,5 +1,7 @@
--- Central operacional: alertas são derivados; esta tabela guarda somente o acompanhamento humano.
-CREATE TABLE public.monitoring_states (
+-- A migration 20260809174220 criou esta mesma estrutura primeiro. As duas
+-- versões foram comparadas e são idênticas; IF NOT EXISTS preserva dados e torna
+-- esta cópia histórica segura sem omitir qualquer elemento do schema final.
+CREATE TABLE IF NOT EXISTS public.monitoring_states (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   source_type text NOT NULL CHECK (source_type IN ('tarefa','processo','documento','comunicacao','financeiro','outro')),
   source_id uuid NOT NULL, alert_kind text NOT NULL,
@@ -9,19 +11,21 @@ CREATE TABLE public.monitoring_states (
   created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (organization_id, source_type, source_id, alert_kind)
 );
-CREATE INDEX monitoring_states_org_status_idx ON public.monitoring_states(organization_id, monitoring_status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS monitoring_states_org_status_idx ON public.monitoring_states(organization_id, monitoring_status, updated_at DESC);
 ALTER TABLE public.monitoring_states ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS monitoring_states_read_member ON public.monitoring_states;
 CREATE POLICY monitoring_states_read_member ON public.monitoring_states FOR SELECT TO authenticated USING (public.is_org_member(organization_id));
 REVOKE ALL ON public.monitoring_states FROM PUBLIC, anon;
 REVOKE INSERT, UPDATE, DELETE ON public.monitoring_states FROM authenticated;
 GRANT SELECT ON public.monitoring_states TO authenticated;
 
-CREATE TABLE public.monitoring_state_history (
+CREATE TABLE IF NOT EXISTS public.monitoring_state_history (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   monitoring_state_id uuid NOT NULL REFERENCES public.monitoring_states(id) ON DELETE RESTRICT,
   action text NOT NULL, details jsonb NOT NULL DEFAULT '{}'::jsonb, note text, actor_id uuid DEFAULT auth.uid(), created_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.monitoring_state_history ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS monitoring_state_history_read_member ON public.monitoring_state_history;
 CREATE POLICY monitoring_state_history_read_member ON public.monitoring_state_history FOR SELECT TO authenticated USING (public.is_org_member(organization_id));
 REVOKE ALL ON public.monitoring_state_history FROM PUBLIC, anon;
 GRANT SELECT ON public.monitoring_state_history TO authenticated;
@@ -80,7 +84,7 @@ REVOKE ALL ON FUNCTION public.monitoring_assert_source(uuid,text,uuid),public.mo
 REVOKE ALL ON FUNCTION public.upsert_monitoring_state(uuid,text,uuid,text,text),public.change_monitoring_status(uuid,text,uuid,text,text),public.assign_monitoring_item(uuid,text,uuid,text,uuid),public.add_monitoring_note(uuid,text,uuid,text,text) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.upsert_monitoring_state(uuid,text,uuid,text,text),public.change_monitoring_status(uuid,text,uuid,text,text),public.assign_monitoring_item(uuid,text,uuid,text,uuid),public.add_monitoring_note(uuid,text,uuid,text,text) TO authenticated;
 
-CREATE VIEW public.operational_monitoring_alerts WITH (security_invoker=true) AS
+CREATE OR REPLACE VIEW public.operational_monitoring_alerts WITH (security_invoker=true) AS
 WITH alerts AS (
  SELECT t.organization_id,'tarefa'::text source_type,t.id source_id,CASE WHEN t.due_at::date<current_date THEN 'tarefa_atrasada' WHEN t.due_at::date=current_date THEN 'tarefa_hoje' ELSE 'tarefa_proxima' END alert_kind,t.title,t.description,t.client_id,t.process_id,t.assignee_id responsible_id,t.assignee_name responsible_name,t.priority::text source_priority,t.due_at relevant_at,t.updated_at last_movement_at,(t.due_at::date-current_date)::int days_delta,t.status::text source_status,NULL::numeric amount FROM public.tasks t WHERE t.archived_at IS NULL AND t.deleted_at IS NULL AND t.completed_at IS NULL AND t.status NOT IN ('concluida','cancelada') AND t.due_at::date<=current_date+7
  UNION ALL SELECT p.organization_id,'processo',p.id,CASE WHEN p.due_date<current_date THEN 'processo_atrasado' WHEN p.due_date<=current_date+7 THEN 'processo_prazo_proximo' ELSE 'processo_sem_movimentacao' END,COALESCE(p.title,p.code),NULL,p.client_id,p.id,p.owner_id,p.owner_name,p.priority::text,p.due_date::timestamptz,p.last_movement_at,(p.due_date-current_date)::int,p.stage::text,NULL FROM public.processes p WHERE p.archived_at IS NULL AND (p.due_date<=current_date+7 OR p.last_movement_at<now()-interval '14 days')
