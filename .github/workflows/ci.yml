@@ -6,6 +6,25 @@ on:
 permissions:
   contents: read
 jobs:
+  supabase-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase start
+      - run: supabase db reset --local
+      - run: supabase test db --local
+      - run: npm run test:integration:parity
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
+
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15
