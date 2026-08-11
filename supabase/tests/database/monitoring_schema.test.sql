@@ -38,7 +38,7 @@ SELECT lives_ok($$SELECT public.change_monitoring_status('20000000-0000-0000-000
 SELECT lives_ok($$SELECT public.change_monitoring_status('20000000-0000-0000-0000-000000000020','tarefa','40000000-0000-0000-0000-000000000020','test_authorized','novo')$$, 'authorized user reopens a monitoring alert');
 RESET ROLE;
 SELECT is((SELECT status::text FROM public.tasks WHERE id='40000000-0000-0000-0000-000000000020'), 'pendente', 'resolve and reopen do not change the source entity');
-SELECT is((SELECT array_agg(action ORDER BY created_at) FROM public.monitoring_state_history h JOIN public.monitoring_states s ON s.id=h.monitoring_state_id WHERE s.source_id='40000000-0000-0000-0000-000000000020'), ARRAY['resolvido','reaberto']::text[], 'resolve and reopen are recorded only in monitoring history');
+SELECT is((SELECT array_agg(action ORDER BY h.created_at) FROM public.monitoring_state_history h JOIN public.monitoring_states s ON s.id=h.monitoring_state_id WHERE s.source_id='40000000-0000-0000-0000-000000000020'), ARRAY['resolvido','reaberto']::text[], 'resolve and reopen are recorded only in monitoring history');
 
 SELECT * FROM finish();
 ROLLBACK;
