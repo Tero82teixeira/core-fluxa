@@ -18,3 +18,25 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: npm run check
       - run: npm run test:coverage
+
+  integration-supabase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Install project dependencies
+        run: bun install --frozen-lockfile
+      - name: Verify local container runtime
+        run: docker info
+      - name: Run migrations, pgTAP, RLS, RPC and schema parity locally
+        run: npm run test:integration
+      - name: Stop disposable Supabase stack
+        if: always()
+        run: supabase stop --no-backup || true
