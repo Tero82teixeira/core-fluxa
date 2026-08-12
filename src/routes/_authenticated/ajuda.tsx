@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BookOpen, ChevronRight, LifeBuoy, Search } from "lucide-react";
+import { BookOpen, ChevronRight, History, LifeBuoy, MessageSquare, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useWorkspace } from "@/lib/workspace";
 import {
@@ -14,11 +14,18 @@ import {
 } from "@/lib/help-center";
 import {
   useCreateSupportRequest,
+  useAddSupportRequestComment,
+  useArchiveSupportRequest,
+  useAssignSupportRequest,
+  useSupportRequestComments,
+  useSupportRequestTimeline,
   useSupportRequests,
   useUpdateSupportStatus,
   type SupportPriority,
+  type SupportRequest,
   type SupportStatus,
 } from "@/hooks/use-support-requests";
+import { useTeamMembers } from "@/hooks/use-team";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -395,6 +402,7 @@ function SupportArea({
 }) {
   const requests = useSupportRequests(organizationId);
   const update = useUpdateSupportStatus(organizationId);
+  const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null);
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [category, setCategory] = useState("");
@@ -448,11 +456,23 @@ function SupportArea({
       )}
       {requests.isLoading ? (
         <p className="text-sm text-muted-foreground">Carregando solicitações…</p>
+      ) : requests.isError ? (
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-destructive">
+            Não foi possível carregar as solicitações.
+          </CardContent>
+        </Card>
       ) : visible.length ? (
         <div className="space-y-2">
           {visible.map((r) => (
-            <Card key={r.id}>
-              <CardContent className="flex flex-col justify-between gap-3 p-4 sm:flex-row">
+            <Card key={r.id} className="transition hover:border-primary/50 hover:shadow-sm">
+              <CardContent
+                className="flex flex-col justify-between gap-3 p-4 sm:flex-row"
+                onClick={() => setSelectedRequest(r)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === "Enter" && setSelectedRequest(r)}
+              >
                 <div>
                   <div className="flex flex-wrap gap-2">
                     <strong>{r.subject}</strong>
@@ -466,6 +486,7 @@ function SupportArea({
                 </div>
                 {admin ? (
                   <select
+                    onClick={(e) => e.stopPropagation()}
                     aria-label={`Status de ${r.subject}`}
                     className="h-9 rounded-md border bg-background px-2 text-sm"
                     value={r.status}
@@ -498,7 +519,269 @@ function SupportArea({
           </CardContent>
         </Card>
       )}
+      <SupportRequestDetail
+        request={
+          selectedRequest
+            ? (requests.data?.find((item) => item.id === selectedRequest.id) ?? selectedRequest)
+            : null
+        }
+        organizationId={organizationId}
+        admin={admin}
+        onClose={() => setSelectedRequest(null)}
+      />
     </section>
+  );
+}
+
+const eventLabel: Record<string, string> = {
+  created: "Chamado criado",
+  status_changed: "Status alterado",
+  assigned: "Responsável atribuído",
+  unassigned: "Responsável removido",
+  comment_added: "Comentário adicionado",
+  resolved: "Chamado resolvido",
+  reopened: "Chamado reaberto",
+  archived: "Chamado arquivado",
+};
+const formatDateTime = (value: string) => new Date(value).toLocaleString("pt-BR");
+
+function SupportRequestDetail({
+  request,
+  organizationId,
+  admin,
+  onClose,
+}: {
+  request: SupportRequest | null;
+  organizationId: string | null;
+  admin: boolean;
+  onClose: () => void;
+}) {
+  const timeline = useSupportRequestTimeline(request?.id ?? null);
+  const comments = useSupportRequestComments(request?.id ?? null);
+  const addComment = useAddSupportRequestComment(organizationId, request?.id ?? null);
+  const update = useUpdateSupportStatus(organizationId);
+  const assign = useAssignSupportRequest(organizationId);
+  const archive = useArchiveSupportRequest(organizationId);
+  const team = useTeamMembers(organizationId);
+  const [body, setBody] = useState("");
+  const names = new Map(
+    (team.data ?? []).map((member) => [
+      member.user_id,
+      member.full_name || member.email || "Usuário",
+    ]),
+  );
+  if (!request)
+    return (
+      <Dialog open={false}>
+        <DialogContent />
+      </Dialog>
+    );
+  const submitComment = async () => {
+    if (!body.trim()) return;
+    try {
+      await addComment.mutateAsync(body.trim());
+      setBody("");
+      toast.success("Comentário adicionado.");
+    } catch {
+      toast.error("Não foi possível adicionar o comentário.");
+    }
+  };
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[94vh] w-[calc(100vw-1rem)] max-w-4xl overflow-y-auto p-4 sm:p-6">
+        <DialogHeader>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary">{statusLabel[request.status]}</Badge>
+            <Badge variant="outline">Prioridade {request.priority}</Badge>
+          </div>
+          <DialogTitle className="text-left text-xl">{request.subject}</DialogTitle>
+          <DialogDescription className="text-left">
+            Detalhes e acompanhamento do chamado.
+          </DialogDescription>
+        </DialogHeader>
+        {admin && request.status !== "arquivado" && (
+          <div className="grid gap-2 rounded-lg border bg-muted/30 p-3 sm:grid-cols-[1fr_1fr_auto]">
+            <select
+              aria-label="Alterar status"
+              className="h-9 min-w-0 rounded-md border bg-background px-2 text-sm"
+              value={request.status}
+              disabled={update.isPending}
+              onChange={async (e) => {
+                try {
+                  await update.mutateAsync({
+                    id: request.id,
+                    status: e.target.value as SupportStatus,
+                  });
+                  toast.success("Status atualizado.");
+                } catch {
+                  toast.error("Não foi possível alterar o status.");
+                }
+              }}
+            >
+              {Object.entries(statusLabel)
+                .filter(([value]) => value !== "arquivado")
+                .map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+            </select>
+            <select
+              aria-label="Atribuir responsável"
+              className="h-9 min-w-0 rounded-md border bg-background px-2 text-sm"
+              value={request.assigned_to ?? ""}
+              disabled={assign.isPending || team.isLoading}
+              onChange={async (e) => {
+                try {
+                  await assign.mutateAsync({ id: request.id, assignedTo: e.target.value || null });
+                  toast.success("Responsável atualizado.");
+                } catch {
+                  toast.error("Não foi possível atribuir o responsável.");
+                }
+              }}
+            >
+              <option value="">Sem responsável</option>
+              {(team.data ?? [])
+                .filter((m) => m.is_active)
+                .map((m) => (
+                  <option key={m.user_id} value={m.user_id}>
+                    {names.get(m.user_id)}
+                  </option>
+                ))}
+            </select>
+            <Button
+              variant="outline"
+              disabled={archive.isPending}
+              onClick={async () => {
+                try {
+                  await archive.mutateAsync(request.id);
+                  toast.success("Chamado arquivado.");
+                  onClose();
+                } catch {
+                  toast.error("Não foi possível arquivar.");
+                }
+              }}
+            >
+              Arquivar
+            </Button>
+          </div>
+        )}
+        <dl className="grid gap-3 rounded-lg border p-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+          <Summary label="Categoria" value={request.category} />
+          <Summary label="Criado por" value={names.get(request.created_by) ?? "Usuário"} />
+          <Summary
+            label="Responsável"
+            value={
+              request.assigned_to
+                ? (names.get(request.assigned_to) ?? "Usuário")
+                : "Sem responsável"
+            }
+          />
+          <Summary label="Criação" value={formatDateTime(request.created_at)} />
+          <Summary label="Atualização" value={formatDateTime(request.updated_at)} />
+          <Summary
+            label="Resolução"
+            value={request.resolved_at ? formatDateTime(request.resolved_at) : "Não resolvido"}
+          />
+          {request.related_module && (
+            <Summary label="Módulo relacionado" value={request.related_module} />
+          )}
+        </dl>
+        <section>
+          <h3 className="font-semibold">Descrição</h3>
+          <p className="mt-2 whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-4 text-sm">
+            {request.description}
+          </p>
+        </section>
+        <section>
+          <h3 className="mb-3 flex items-center font-semibold">
+            <MessageSquare className="mr-2 size-4" />
+            Comentários
+          </h3>
+          {comments.isLoading ? (
+            <p className="text-sm text-muted-foreground">Carregando comentários…</p>
+          ) : comments.isError ? (
+            <p className="text-sm text-destructive">Não foi possível carregar os comentários.</p>
+          ) : comments.data?.length ? (
+            <div className="space-y-2">
+              {comments.data.map((comment) => (
+                <article key={comment.id} className="rounded-lg border p-3">
+                  <div className="flex flex-wrap justify-between gap-1 text-xs text-muted-foreground">
+                    <strong className="text-foreground">
+                      {names.get(comment.author_user_id) ?? "Usuário"}
+                    </strong>
+                    <time>{formatDateTime(comment.created_at)}</time>
+                  </div>
+                  <p className="mt-2 whitespace-pre-wrap break-words text-sm">{comment.body}</p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Ainda não há comentários.</p>
+          )}
+          {request.status !== "arquivado" && (
+            <div className="mt-3 space-y-2">
+              <Textarea
+                aria-label="Novo comentário"
+                placeholder="Escreva um comentário…"
+                value={body}
+                maxLength={5000}
+                onChange={(e) => setBody(e.target.value)}
+              />
+              <div className="flex justify-end">
+                <Button
+                  disabled={!body.trim() || addComment.isPending}
+                  onClick={() => void submitComment()}
+                >
+                  {addComment.isPending ? "Enviando…" : "Adicionar comentário"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </section>
+        <section>
+          <h3 className="mb-3 flex items-center font-semibold">
+            <History className="mr-2 size-4" />
+            Timeline
+          </h3>
+          {timeline.isLoading ? (
+            <p className="text-sm text-muted-foreground">Carregando histórico…</p>
+          ) : timeline.isError ? (
+            <p className="text-sm text-destructive">Não foi possível carregar o histórico.</p>
+          ) : timeline.data?.length ? (
+            <ol className="space-y-3 border-l pl-4">
+              {timeline.data.map((event) => (
+                <li
+                  key={event.id}
+                  className="relative text-sm before:absolute before:-left-[21px] before:top-1.5 before:size-2 before:rounded-full before:bg-primary"
+                >
+                  <div className="font-medium">
+                    {eventLabel[event.event_type] ?? event.event_type}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {names.get(event.actor_user_id ?? "") ?? "Sistema"} ·{" "}
+                    {formatDateTime(event.created_at)}
+                  </div>
+                  {event.message && (
+                    <p className="mt-1 break-words text-muted-foreground">{event.message}</p>
+                  )}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-sm text-muted-foreground">Nenhum evento registrado.</p>
+          )}
+        </section>
+      </DialogContent>
+    </Dialog>
+  );
+}
+function Summary({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="break-words font-medium">{value}</dd>
+    </div>
   );
 }
 function Filter({

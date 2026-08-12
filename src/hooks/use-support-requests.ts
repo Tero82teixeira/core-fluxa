@@ -23,6 +23,25 @@ export type SupportRequest = {
   resolved_at: string | null;
   archived_at: string | null;
 };
+export type SupportRequestEvent = {
+  id: string;
+  request_id: string;
+  actor_user_id: string | null;
+  event_type: string;
+  old_value: Record<string, unknown> | null;
+  new_value: Record<string, unknown> | null;
+  message: string | null;
+  created_at: string;
+};
+export type SupportRequestComment = {
+  id: string;
+  request_id: string;
+  author_user_id: string;
+  body: string;
+  created_at: string;
+  edited_at: string | null;
+  archived_at: string | null;
+};
 export function useSupportRequests(organizationId: string | null) {
   return useQuery({
     enabled: Boolean(organizationId),
@@ -40,7 +59,65 @@ export function useSupportRequests(organizationId: string | null) {
 }
 function useRefresh(organizationId: string | null) {
   const q = useQueryClient();
-  return () => q.invalidateQueries({ queryKey: ["support-requests", organizationId] });
+  return () =>
+    Promise.all([
+      q.invalidateQueries({ queryKey: ["support-requests", organizationId] }),
+      q.invalidateQueries({ queryKey: ["support-request-events"] }),
+    ]);
+}
+export function useSupportRequestTimeline(requestId: string | null) {
+  return useQuery({
+    enabled: Boolean(requestId),
+    queryKey: ["support-request-events", requestId],
+    queryFn: async () => {
+      const { data, error } = await db()
+        .from("support_request_events")
+        .select("*")
+        .eq("request_id", requestId)
+        .order("created_at");
+      if (error) throw error;
+      return (data ?? []) as SupportRequestEvent[];
+    },
+  });
+}
+export function useSupportRequestComments(requestId: string | null) {
+  return useQuery({
+    enabled: Boolean(requestId),
+    queryKey: ["support-request-comments", requestId],
+    queryFn: async () => {
+      const { data, error } = await db()
+        .from("support_request_comments")
+        .select("*")
+        .eq("request_id", requestId)
+        .is("archived_at", null)
+        .order("created_at");
+      if (error) throw error;
+      return (data ?? []) as SupportRequestComment[];
+    },
+  });
+}
+export function useAddSupportRequestComment(
+  organizationId: string | null,
+  requestId: string | null,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: string) => {
+      const { data, error } = await db().rpc("add_support_request_comment", {
+        _request_id: requestId,
+        _body: body,
+      });
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["support-request-comments", requestId] }),
+        queryClient.invalidateQueries({ queryKey: ["support-request-events", requestId] }),
+        queryClient.invalidateQueries({ queryKey: ["support-requests", organizationId] }),
+      ]);
+    },
+  });
 }
 export function useCreateSupportRequest(organizationId: string | null) {
   const refresh = useRefresh(organizationId);
