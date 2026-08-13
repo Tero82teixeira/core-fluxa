@@ -5,6 +5,7 @@ import {
   canManageFinance,
   canReverseFinancialPayment,
   displayedFinancialStatus,
+  matchesDisplayedFinancialStatus,
   monthlyCashFlow,
   paymentBalance,
 } from "../src/lib/finance.ts";
@@ -120,6 +121,32 @@ describe("pagamentos financeiros", () => {
       "overdue",
     );
     assert.equal(displayedFinancialStatus("paid", "2026-08-01", new Date("2026-08-08")), "paid");
+  });
+  test("filtro usa o status efetivamente exibido em todas as situações financeiras", () => {
+    const now = new Date("2026-08-08T12:00:00Z");
+    const cases = [
+      ["pending", "2026-08-01", "overdue"],
+      ["partial", "2026-08-01", "overdue"],
+      ["pending", "2026-08-09", "pending"],
+      ["partial", "2026-08-09", "partial"],
+      ["paid", "2026-08-01", "paid"],
+      ["cancelled", "2026-08-01", "cancelled"],
+    ];
+
+    for (const [transactionStatus, dueDate, displayedStatus] of cases) {
+      assert.equal(
+        matchesDisplayedFinancialStatus(transactionStatus, dueDate, displayedStatus, now),
+        true,
+      );
+      for (const otherStatus of ["pending", "partial", "paid", "overdue", "cancelled"]) {
+        if (otherStatus !== displayedStatus) {
+          assert.equal(
+            matchesDisplayedFinancialStatus(transactionStatus, dueDate, otherStatus, now),
+            false,
+          );
+        }
+      }
+    }
   });
 });
 

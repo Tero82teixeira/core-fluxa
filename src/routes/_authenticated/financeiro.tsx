@@ -48,9 +48,11 @@ import {
   displayedFinancialStatus,
   downloadFinancialCsv,
   financialBuckets,
+  matchesDisplayedFinancialStatus,
   monthlyCashFlow,
   type FinancialAccount,
   type FinancialCategory,
+  type FinancialStatus,
   type FinancialType,
 } from "@/lib/finance";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -122,7 +124,7 @@ function FinancePage() {
 function FinanceDashboard({ membership, role, action, payment, data }: any) {
   const [tab, setTab] = useState("overview"),
     [search, setSearch] = useState(""),
-    [status, setStatus] = useState("all"),
+    [status, setStatus] = useState<FinancialStatus | "all">("all"),
     [type, setType] = useState("all"),
     [category, setCategory] = useState("all"),
     [account, setAccount] = useState("all"),
@@ -136,7 +138,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
         (x: any) =>
           !x.archived_at &&
           (type === "all" || x.type === type) &&
-          (status === "all" || x.status === status) &&
+          matchesDisplayedFinancialStatus(x.status, x.due_date, status) &&
           (category === "all" || x.category_id === category) &&
           (account === "all" || x.account_id === account) &&
           (!from || x.due_date >= from) &&
