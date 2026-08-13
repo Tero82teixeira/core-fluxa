@@ -109,6 +109,16 @@ export function displayedFinancialStatus(
   return financialBuckets(dueDate, status, now).overdue ? "overdue" : status;
 }
 
+/** Matches the status filter against the same effective status shown in financial lists. */
+export function matchesDisplayedFinancialStatus(
+  status: FinancialStatus,
+  dueDate: string,
+  filter: FinancialStatus | "all",
+  now = new Date(),
+) {
+  return filter === "all" || displayedFinancialStatus(status, dueDate, now) === filter;
+}
+
 export const brl = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value || 0);
 export const brDate = (value?: string | null) =>
