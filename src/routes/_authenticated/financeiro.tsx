@@ -56,7 +56,6 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import type { Tone } from "@/lib/domain";
 import { useWorkspace } from "@/lib/workspace";
 
-
 export const Route = createFileRoute("/_authenticated/financeiro")({
   head: () => ({
     meta: [
@@ -81,20 +80,7 @@ const statusTone: Record<string, Tone> = {
   overdue: "danger",
   cancelled: "neutral",
 };
-const financeColumns = [
-  { label: "Descrição", className: "min-w-[220px]", align: "text-left" },
-  { label: "Tipo", className: "min-w-[110px]", align: "text-left" },
-  { label: "Valor", className: "min-w-[130px]", align: "text-right" },
-  { label: "Vencimento", className: "min-w-[130px]", align: "text-center" },
-  { label: "Status", className: "min-w-[130px]", align: "text-left" },
-  { label: "Categoria", className: "min-w-[150px]", align: "text-left" },
-  { label: "Conta", className: "min-w-[150px]", align: "text-left" },
-  { label: "Valor pago", className: "min-w-[130px]", align: "text-right" },
-  { label: "Saldo restante", className: "min-w-[140px]", align: "text-right" },
-  { label: "Ações", className: "min-w-[220px]", align: "text-right" },
-];
 const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
-
 
 function FinancePage() {
   const { organizationId, membership, role } = useWorkspace();
@@ -422,90 +408,138 @@ function Select({ label, value, set, options }: any) {
 }
 function Transactions({ rows, data, paid, editable, page, setPage, payment, role }: any) {
   const shown = rows.slice(page * 10, page * 10 + 10);
+  const categoryName = (transaction: any) =>
+    data.categories.find((category: any) => category.id === transaction.category_id)?.name;
+  const accountName = (transaction: any) =>
+    data.accounts.find((account: any) => account.id === transaction.account_id)?.name;
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="px-3 pt-4 sm:px-6 sm:pt-6">
         {!shown.length ? (
           <p className="py-10 text-center text-muted-foreground">Nenhum lançamento encontrado.</p>
         ) : (
-          <div className="-mx-2 overflow-x-auto px-2">
-            <table className="w-full min-w-[1180px] border-separate border-spacing-0 text-sm">
-              <thead>
-                <tr className="bg-muted/40">
-                  {financeColumns.map((column) => (
-                    <th
-                      className={`border-b px-4 py-3 text-xs font-semibold tracking-wide whitespace-nowrap text-muted-foreground uppercase ${column.className} ${column.align}`}
-                      key={column.label}
-                    >
-                      {column.label}
+          <>
+            <div className="space-y-3 lg:hidden">
+              {shown.map((transaction: any) => {
+                const total = paid(transaction.id);
+                const currentStatus = displayedFinancialStatus(
+                  transaction.status,
+                  transaction.due_date,
+                );
+                return (
+                  <article className="rounded-lg border p-3" key={transaction.id}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="font-medium break-words">{transaction.description}</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {transaction.type === "income" ? "Receita" : "Despesa"} · Vence em{" "}
+                          {brDate(transaction.due_date)}
+                        </p>
+                      </div>
+                      <StatusBadge
+                        label={statusLabel[currentStatus]}
+                        tone={statusTone[currentStatus]}
+                      />
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <div>
+                        <span className="block text-xs text-muted-foreground">Valor</span>
+                        <strong className="tabular-nums">{brl(transaction.amount)}</strong>
+                      </div>
+                      <div>
+                        <span className="block text-xs text-muted-foreground">Saldo restante</span>
+                        <strong className="tabular-nums">{brl(transaction.amount - total)}</strong>
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-xs text-muted-foreground">Categoria</span>
+                        <span className="block truncate">{categoryName(transaction) ?? "—"}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-xs text-muted-foreground">Conta</span>
+                        <span className="block truncate">{accountName(transaction) ?? "—"}</span>
+                      </div>
+                    </div>
+                    <TransactionActions
+                      transaction={transaction}
+                      data={data}
+                      editable={editable}
+                      payment={payment}
+                      role={role}
+                      className="mt-3 border-t pt-3"
+                    />
+                  </article>
+                );
+              })}
+            </div>
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full min-w-[760px] table-fixed border-separate border-spacing-0 text-sm">
+                <thead>
+                  <tr className="bg-muted/40">
+                    <th className="w-[30%] border-b px-2 py-2 text-left text-xs font-semibold uppercase">
+                      Lançamento
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {shown.map((x: any) => {
-                  const total = paid(x.id);
-                  const status = displayedFinancialStatus(x.status, x.due_date);
-                  return (
-                    <tr className="align-top hover:bg-muted/30" key={x.id}>
-                      <td className="border-b px-4 py-3 font-medium break-words">{x.description}</td>
-                      <td className="border-b px-4 py-3 whitespace-nowrap">
-                        {x.type === "income" ? "Receita" : "Despesa"}
-                      </td>
-                      <td className="border-b px-4 py-3 text-right font-medium tabular-nums whitespace-nowrap">
-                        {brl(x.amount)}
-                      </td>
-                      <td className="border-b px-4 py-3 text-center tabular-nums whitespace-nowrap">
-                        {brDate(x.due_date)}
-                      </td>
-                      <td className="border-b px-4 py-3 whitespace-nowrap">
-                        <StatusBadge label={statusLabel[status]} tone={statusTone[status]} />
-                      </td>
-                      <td className="border-b px-4 py-3 break-words">
-                        {data.categories.find((c: any) => c.id === x.category_id)?.name ?? (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="border-b px-4 py-3 break-words">
-                        {data.accounts.find((a: any) => a.id === x.account_id)?.name ?? (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="border-b px-4 py-3 text-right tabular-nums whitespace-nowrap">
-                        {brl(total)}
-                      </td>
-                      <td className="border-b px-4 py-3 text-right tabular-nums whitespace-nowrap">
-                        {brl(x.amount - total)}
-                      </td>
-                      <td className="border-b px-4 py-3">
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                          {editable &&
-                            !["paid", "cancelled"].includes(x.status) &&
-                            !x.archived_at && (
-                              <PayDialog
-                                transaction={x}
-                                accounts={data.accounts}
-                                payments={data.payments.filter(
-                                  (p: any) => p.transaction_id === x.id,
-                                )}
-                                payment={payment}
-                              />
-                            )}
-                          <PaymentHistory
+                    <th className="w-[13%] border-b px-2 py-2 text-right text-xs font-semibold uppercase">
+                      Valor
+                    </th>
+                    <th className="w-[13%] border-b px-2 py-2 text-center text-xs font-semibold uppercase">
+                      Vencimento
+                    </th>
+                    <th className="w-[13%] border-b px-2 py-2 text-left text-xs font-semibold uppercase">
+                      Status
+                    </th>
+                    <th className="w-[15%] border-b px-2 py-2 text-right text-xs font-semibold uppercase">
+                      Pagamento
+                    </th>
+                    <th className="w-[16%] border-b px-2 py-2 text-right text-xs font-semibold uppercase">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((x: any) => {
+                    const total = paid(x.id);
+                    const status = displayedFinancialStatus(x.status, x.due_date);
+                    return (
+                      <tr className="align-top hover:bg-muted/30" key={x.id}>
+                        <td className="border-b px-2 py-3 align-middle">
+                          <span className="font-medium break-words">{x.description}</span>
+                          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                            {x.type === "income" ? "Receita" : "Despesa"} ·{" "}
+                            {categoryName(x) ?? "Sem categoria"} · {accountName(x) ?? "Sem conta"}
+                          </span>
+                        </td>
+                        <td className="border-b px-2 py-3 text-right font-medium tabular-nums whitespace-nowrap">
+                          {brl(x.amount)}
+                        </td>
+                        <td className="border-b px-2 py-3 text-center tabular-nums whitespace-nowrap">
+                          {brDate(x.due_date)}
+                        </td>
+                        <td className="border-b px-2 py-3 whitespace-nowrap">
+                          <StatusBadge label={statusLabel[status]} tone={statusTone[status]} />
+                        </td>
+                        <td className="border-b px-2 py-3 text-right text-xs tabular-nums whitespace-nowrap">
+                          <span className="block">Pago {brl(total)}</span>
+                          <span className="block text-muted-foreground">
+                            Saldo {brl(x.amount - total)}
+                          </span>
+                        </td>
+                        <td className="border-b px-2 py-3">
+                          <TransactionActions
                             transaction={x}
-                            payments={data.payments.filter((p: any) => p.transaction_id === x.id)}
-                            accounts={data.accounts}
+                            data={data}
+                            editable={editable}
                             payment={payment}
-                            canReverse={canReverseFinancialPayment(role)}
+                            role={role}
+                            stacked
                           />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         <div className="no-print mt-4 flex justify-between">
@@ -523,6 +557,42 @@ function Transactions({ rows, data, paid, editable, page, setPage, payment, role
         </div>
       </CardContent>
     </Card>
+  );
+}
+function TransactionActions({
+  transaction,
+  data,
+  editable,
+  payment,
+  role,
+  className = "",
+  stacked = false,
+}: any) {
+  const transactionPayments = data.payments.filter(
+    (item: any) => item.transaction_id === transaction.id,
+  );
+  return (
+    <div
+      className={`flex ${stacked ? "flex-col items-stretch" : "flex-wrap items-center"} justify-end gap-1 ${className}`}
+    >
+      {editable &&
+        !["paid", "cancelled"].includes(transaction.status) &&
+        !transaction.archived_at && (
+          <PayDialog
+            transaction={transaction}
+            accounts={data.accounts}
+            payments={transactionPayments}
+            payment={payment}
+          />
+        )}
+      <PaymentHistory
+        transaction={transaction}
+        payments={transactionPayments}
+        accounts={data.accounts}
+        payment={payment}
+        canReverse={canReverseFinancialPayment(role)}
+      />
+    </div>
   );
 }
 function TransactionDialog({ data, onSave }: any) {
