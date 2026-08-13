@@ -54,6 +54,53 @@ export function paymentBalance(
   return Math.max(0, Number(amount) - confirmed);
 }
 
+type CashFlowTransaction = { id: string; type: FinancialType };
+type CashFlowPayment = {
+  transaction_id: string;
+  amount: number;
+  paid_at: string;
+  reversed_at?: string | null;
+};
+
+export type MonthlyCashFlow = {
+  month: string;
+  entradas: number;
+  saidas: number;
+  fluxo: number;
+};
+
+/** Groups realized payments and their reversals by the month in which cash actually moved. */
+export function monthlyCashFlow(
+  transactions: CashFlowTransaction[],
+  payments: CashFlowPayment[],
+): MonthlyCashFlow[] {
+  const transactionTypes = new Map(transactions.map(({ id, type }) => [id, type]));
+  const months = new Map<string, MonthlyCashFlow>();
+
+  const addMovement = (date: string, type: FinancialType, amount: number) => {
+    const month = date.slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(month)) return;
+    const current = months.get(month) ?? { month, entradas: 0, saidas: 0, fluxo: 0 };
+    if (type === "income") current.entradas += amount;
+    else current.saidas += amount;
+    current.fluxo += type === "income" ? amount : -amount;
+    months.set(month, current);
+  };
+
+  payments.forEach((payment) => {
+    const type = transactionTypes.get(payment.transaction_id);
+    const amount = Number(payment.amount);
+    if (!type || !Number.isFinite(amount) || amount <= 0) return;
+
+    addMovement(payment.paid_at, type, amount);
+    if (payment.reversed_at) {
+      addMovement(payment.reversed_at, type === "income" ? "expense" : "income", amount);
+    }
+  });
+
+  return [...months.values()].sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
+}
+
 export function displayedFinancialStatus(
   status: FinancialStatus,
   dueDate: string,
