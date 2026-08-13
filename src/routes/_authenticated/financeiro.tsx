@@ -48,6 +48,7 @@ import {
   displayedFinancialStatus,
   downloadFinancialCsv,
   financialBuckets,
+  monthlyCashFlow,
   type FinancialAccount,
   type FinancialCategory,
   type FinancialType,
@@ -183,6 +184,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
   const monthIncome = metrics.find((x) => x[0] === "Receitas do mês")?.[1] ?? 0,
     monthExpense = metrics.find((x) => x[0] === "Despesas do mês")?.[1] ?? 0;
   const chart = monthly(data?.transactions ?? []),
+    cashFlowChart = monthlyCashFlow(data?.transactions ?? [], data?.payments ?? []),
     expenseCategories = byCategory(data, "expense"),
     incomeCategories = byCategory(data, "income");
   const exportRows = () =>
@@ -263,11 +265,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <Chart title="Receitas x despesas por mês" data={chart} />
-            <Chart
-              title="Fluxo de caixa mensal"
-              data={chart.map((x) => ({ ...x, fluxo: x.receitas - x.despesas }))}
-              keys={["fluxo"]}
-            />
+            <Chart title="Fluxo de caixa mensal" data={cashFlowChart} keys={["fluxo"]} />
             <PieBlock title="Despesas por categoria" data={expenseCategories} />
             <PieBlock title="Receitas por categoria" data={incomeCategories} />
             <PieBlock
@@ -319,11 +317,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
           </TabsContent>
         ))}
         <TabsContent value="cashflow">
-          <Chart
-            title="Fluxo de caixa mensal"
-            data={chart.map((x) => ({ ...x, fluxo: x.receitas - x.despesas }))}
-            keys={["fluxo"]}
-          />
+          <Chart title="Fluxo de caixa mensal" data={cashFlowChart} keys={["fluxo"]} />
         </TabsContent>
         <TabsContent value="categories">
           <CategoriesManager

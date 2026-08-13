@@ -5,6 +5,7 @@ import {
   canManageFinance,
   canReverseFinancialPayment,
   displayedFinancialStatus,
+  monthlyCashFlow,
   paymentBalance,
 } from "../src/lib/finance.ts";
 
@@ -33,6 +34,43 @@ const updateMigration = readFileSync(
 );
 
 describe("pagamentos financeiros", () => {
+  test("fluxo de caixa ignora lançamento pendente sem pagamento", () => {
+    assert.deepEqual(monthlyCashFlow([{ id: "pending", type: "income" }], []), []);
+  });
+  test("recebimento aumenta e pagamento de despesa diminui o caixa", () => {
+    assert.deepEqual(
+      monthlyCashFlow(
+        [
+          { id: "income", type: "income" },
+          { id: "expense", type: "expense" },
+        ],
+        [
+          { transaction_id: "income", amount: 340, paid_at: "2026-08-05T10:00:00Z" },
+          { transaction_id: "expense", amount: 121, paid_at: "2026-08-06T10:00:00Z" },
+        ],
+      ),
+      [{ month: "2026-08", entradas: 340, saidas: 121, fluxo: 219 }],
+    );
+  });
+  test("estorno desfaz o efeito no caixa no mês em que ocorreu", () => {
+    assert.deepEqual(
+      monthlyCashFlow(
+        [{ id: "expense", type: "expense" }],
+        [
+          {
+            transaction_id: "expense",
+            amount: 121,
+            paid_at: "2026-08-06T10:00:00Z",
+            reversed_at: "2026-09-01T10:00:00Z",
+          },
+        ],
+      ),
+      [
+        { month: "2026-08", entradas: 0, saidas: 121, fluxo: -121 },
+        { month: "2026-09", entradas: 121, saidas: 0, fluxo: 121 },
+      ],
+    );
+  });
   test("calcula pagamento parcial e saldo somente com pagamentos confirmados", () => {
     assert.equal(
       paymentBalance(100, [{ amount: 30 }, { amount: 20, reversed_at: "2026-08-08" }]),
