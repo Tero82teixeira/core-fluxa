@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE, type AppRole } from "@/lib/domain";
-import { WORKSPACE_STORAGE_KEY } from "@/lib/workspace";
+import { writeWorkspacePreference } from "@/lib/workspace-preference";
 
 const INVITATION_STORAGE_KEY = "fluxa-pending-invitation";
 
@@ -67,7 +67,9 @@ function InvitationPage() {
       if (result.error) throw result.error;
       const accepted = ((result.data as AcceptResult[] | null)?.[0]) ?? null;
       if (!accepted?.organization_id) throw new Error("INVITE_ACCEPT_EMPTY_RESULT");
-      window.localStorage.setItem(WORKSPACE_STORAGE_KEY, accepted.organization_id);
+      const acceptedBy = (await supabase.auth.getUser()).data.user;
+      if (!acceptedBy) throw new Error("NOT_AUTHENTICATED");
+      writeWorkspacePreference(window.localStorage, acceptedBy.id, accepted.organization_id);
       window.localStorage.removeItem(INVITATION_STORAGE_KEY);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["team-members", accepted.organization_id] }),

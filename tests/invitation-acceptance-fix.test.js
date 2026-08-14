@@ -29,7 +29,9 @@ describe("aceite de convite e organização ativa", () => {
   test("corrida de dois aceites é protegida", () => assert.match(migration, /FOR UPDATE[\s\S]+WHERE i\.id = v_inv\.id AND i\.status = 'pending'/));
   test("bootstrap normal continua funcionando sem convite", () => assert.match(workspace, /options\.bootstrap && window\.localStorage\.getItem\(INVITATION_STORAGE_KEY\) !== "1"/));
   test("bootstrap não substitui organização convidante", () => assert.match(workspace, /bootstrap adiado para aceite de convite/));
-  test("organização convidante vira ativa", () => assert.match(invite, /setItem\(WORKSPACE_STORAGE_KEY, accepted\.organization_id\)/));
+  test("organização convidante vira ativa para o usuário autenticado", () => {
+    assert.match(invite, /writeWorkspacePreference\(window\.localStorage, acceptedBy\.id, accepted\.organization_id\)/);
+  });
   test("role exibida vem da organização ativa", () => assert.match(workspace, /role: membership\?\.role/));
   test("cache de equipe e convites é invalidado", () => assert.match(invite, /team-members[\s\S]+members[\s\S]+invitations/));
   test("novo membro aparece como responsável", () => assert.match(invite, /task-list[\s\S]+processes[\s\S]+monitoring/));

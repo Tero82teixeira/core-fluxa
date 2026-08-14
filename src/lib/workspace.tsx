@@ -6,8 +6,11 @@ import { useAuth } from "@/lib/auth";
 import { useRolePermissions, type Membership } from "@/hooks/use-session";
 import type { AppRole, PermissionKey } from "@/lib/domain";
 import { resolveSessionMembership } from "@/lib/access-control";
+import {
+  readWorkspacePreference,
+  writeWorkspacePreference,
+} from "@/lib/workspace-preference";
 
-export const WORKSPACE_STORAGE_KEY = "fluxa-workspace";
 const INVITATION_STORAGE_KEY = "fluxa-pending-invitation";
 const WORKSPACE_TIMEOUT_MS = 12_000;
 
@@ -89,20 +92,26 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile>(null);
   const [list, setList] = useState<Membership[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selection, setSelection] = useState<{ userId: string; organizationId: string | null }>(() => ({
+    userId: userId ?? "",
+    organizationId: userId ? readWorkspacePreference(window.localStorage, userId) : null,
+  }));
 
   // Trava central: uma única sequência de bootstrap/carregamento por vez.
   const inflight = useRef<Promise<void> | null>(null);
   const runId = useRef(0);
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
-      if (stored) setSelected(stored);
-    } catch {
-      /* armazenamento indisponível */
+    if (!userId) {
+      setSelection({ userId: "", organizationId: null });
+      return;
     }
-  }, []);
+    try {
+      setSelection({ userId, organizationId: readWorkspacePreference(window.localStorage, userId) });
+    } catch {
+      setSelection({ userId, organizationId: null });
+    }
+  }, [userId]);
 
   const fetchWorkspace = useCallback(async (currentUserId: string) => {
     const [profileResult, membershipsResult] = await Promise.all([
@@ -231,7 +240,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // list can still contain the previous render's data while React processes an
   // auth event. Never expose it unless the row belongs to the current user.
-  const membership = resolveSessionMembership(list, userId, selected);
+  const selectedOrganizationId = selection.userId === userId ? selection.organizationId : null;
+  const membership = resolveSessionMembership(list, userId, selectedOrganizationId);
   const permissions = useRolePermissions(membership?.role);
 
   const value = useMemo<WorkspaceContextValue>(() => {
@@ -254,17 +264,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       bootstrapError: status === "error" ? error ?? "Não foi possível configurar seu acesso." : null,
       can: (permission) => granted.has(permission),
       switchWorkspace: (organizationId) => {
+        if (!userId) return;
         try {
-          window.localStorage.setItem(WORKSPACE_STORAGE_KEY, organizationId);
+          writeWorkspacePreference(window.localStorage, userId, organizationId);
         } catch {
           /* armazenamento indisponível */
         }
-        setSelected(organizationId);
+        setSelection({ userId, organizationId });
       },
       refreshWorkspace,
       retryWorkspace,
     };
-  }, [permissions.data, status, error, user, profile, list, membership, refreshWorkspace, retryWorkspace]);
+  }, [permissions.data, status, error, user, userId, profile, list, membership, refreshWorkspace, retryWorkspace]);
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
