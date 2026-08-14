@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronsLeft, ChevronsRight, LogOut, Moon, Sparkles, Sun } from "lucide-react";
+import { Building2, ChevronsLeft, ChevronsRight, LogOut, Moon, Sparkles, Sun } from "lucide-react";
 
 import {
   Sidebar,
@@ -146,6 +146,11 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
               <p className="truncate text-sm font-medium">{displayName}</p>
               <p className="truncate text-xs text-muted-foreground">
                 {loading ? "Carregando…" : role ? ROLE[role].label : "Configurando acesso…"}
+              </p>
+              <p className="mt-1 flex min-w-0 items-center gap-1 border-t border-sidebar-border/70 pt-1 text-xs text-sidebar-primary">
+                <Building2 className="size-3 shrink-0" aria-hidden />
+                <span className="shrink-0 font-medium">Empresa:</span>
+                <span className="truncate">{membership?.organizations?.trade_name ?? "Configurando…"}</span>
               </p>
             </div>
           )}

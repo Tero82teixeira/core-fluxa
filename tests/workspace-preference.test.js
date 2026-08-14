@@ -15,8 +15,8 @@ class MemoryStorage {
 }
 
 const memberships = [
-  { id: "h-own", organization_id: "heloiza", user_id: "user-h", role: "proprietario", is_active: true },
-  { id: "h-ronaldo", organization_id: "ronaldo", user_id: "user-h", role: "operacional", is_active: true },
+  { id: "h-own", organization_id: "heloiza", user_id: "user-h", role: "proprietario", is_active: true, organizations: { trade_name: "Heloiza" } },
+  { id: "h-ronaldo", organization_id: "ronaldo", user_id: "user-h", role: "operacional", is_active: true, organizations: { trade_name: "Ronaldo" } },
 ];
 
 describe("preferência de workspace por usuário", () => {
@@ -29,6 +29,20 @@ describe("preferência de workspace por usuário", () => {
     const own = resolveSessionMembership(memberships, "user-h", "heloiza");
     assert.equal(own?.role, "proprietario");
     assert.equal(permissionsForRole(own?.role ?? null).canManageTeam, true);
+  });
+
+  test("mantém a identidade autenticada ao trocar workspace e função exibidos", () => {
+    const authenticatedDisplayName = "Heloiza";
+    const ronaldo = resolveSessionMembership(memberships, "user-h", "ronaldo");
+
+    assert.equal(authenticatedDisplayName, "Heloiza");
+    assert.equal(ronaldo?.organizations.trade_name, "Ronaldo");
+    assert.equal(ronaldo?.role, "operacional");
+
+    const heloiza = resolveSessionMembership(memberships, "user-h", "heloiza");
+    assert.equal(authenticatedDisplayName, "Heloiza");
+    assert.equal(heloiza?.organizations.trade_name, "Heloiza");
+    assert.equal(heloiza?.role, "proprietario");
   });
 
   test("a seleção sobrevive a um novo carregamento", () => {
