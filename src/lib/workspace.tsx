@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useRolePermissions, type Membership } from "@/hooks/use-session";
 import type { AppRole, PermissionKey } from "@/lib/domain";
+import { resolveSessionMembership } from "@/lib/access-control";
 
 export const WORKSPACE_STORAGE_KEY = "fluxa-workspace";
 const INVITATION_STORAGE_KEY = "fluxa-pending-invitation";
@@ -228,7 +229,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     void load({ bootstrap: true });
   }, [load]);
 
-  const membership = list.find((m) => m.organization_id === selected) ?? list[0] ?? null;
+  // list can still contain the previous render's data while React processes an
+  // auth event. Never expose it unless the row belongs to the current user.
+  const membership = resolveSessionMembership(list, userId, selected);
   const permissions = useRolePermissions(membership?.role);
 
   const value = useMemo<WorkspaceContextValue>(() => {

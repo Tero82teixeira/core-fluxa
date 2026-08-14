@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,16 +29,24 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<Session | null>(null);
   const [status, setStatus] = useState<AuthStatus>("initializing");
   const [signingOut, setSigningOut] = useState(false);
   const mounted = useRef(true);
+  const appliedUserId = useRef<string | null>(null);
 
   useEffect(() => {
     mounted.current = true;
 
     const apply = (next: Session | null) => {
       if (!mounted.current) return;
+      const nextUserId = next?.user.id ?? null;
+      if (appliedUserId.current !== nextUserId) {
+        // Organization-scoped query results must never cross an identity boundary.
+        queryClient.clear();
+        appliedUserId.current = nextUserId;
+      }
       setSession(next);
       setStatus(next?.user ? "authenticated" : "unauthenticated");
     };
@@ -52,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted.current = false;
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -91,6 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         message: error instanceof Error ? error.message : undefined,
       });
     } finally {
+      queryClient.clear();
+      appliedUserId.current = null;
       try {
         window.localStorage.removeItem("fluxa-workspace");
       } catch {
@@ -99,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSigningOut(false);
       window.location.replace("/entrar");
     }
-  }, []);
+  }, [queryClient]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
