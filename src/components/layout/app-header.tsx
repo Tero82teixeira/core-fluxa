@@ -176,10 +176,16 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
           {memberships.length > 1 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="hidden h-10 gap-1.5 md:flex">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 max-w-48 gap-1.5 px-2 sm:max-w-64 sm:px-3"
+                  aria-label={`Workspace atual: ${membership?.organizations?.trade_name ?? "Workspace"}`}
+                >
                   <Building className="size-4" aria-hidden />
-                  <span className="max-w-32 truncate">
-                    {membership?.organizations?.trade_name ?? "Workspace"}
+                  <span className="hidden min-w-0 sm:inline">
+                    <span className="hidden text-muted-foreground lg:inline">Workspace atual: </span>
+                    <span className="font-medium">{membership?.organizations?.trade_name ?? "Workspace"}</span>
                   </span>
                   <ChevronDown className="size-3.5" aria-hidden />
                 </Button>
