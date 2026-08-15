@@ -3238,18 +3238,6 @@ export type Database = {
         Returns: undefined
       }
       next_process_code: { Args: { _org: string }; Returns: string }
-      pending_invitation_diagnostics: {
-        Args: never
-        Returns: {
-          accessed_by_user: boolean
-          email: string
-          has_membership: boolean
-          invitation_id: string
-          matched_user_id: string
-          organization_id: string
-          role: Database["public"]["Enums"]["app_role"]
-        }[]
-      }
       process_automation_event: {
         Args: {
           _entity_id: string
