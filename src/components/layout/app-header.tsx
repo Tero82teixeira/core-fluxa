@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { organizationDisplayName } from "@/lib/organization-name";
 import { DEMO_MODE } from "@/lib/demo";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
@@ -39,7 +40,11 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/lib/workspace";
-import { useMarkNotificationRead, useNotifications, useUnreadNotificationCount } from "@/hooks/use-notifications";
+import {
+  useMarkNotificationRead,
+  useNotifications,
+  useUnreadNotificationCount,
+} from "@/hooks/use-notifications";
 import { initials, relativeTime } from "@/lib/format";
 import { NAV_ITEMS } from "@/lib/navigation";
 import { GlobalSearch } from "@/components/global-search";
@@ -50,7 +55,9 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const { displayName, memberships, membership, switchWorkspace, organizationId } = useWorkspace();
   const [searchOpen, setSearchOpen] = useState(false);
 
-  const current = NAV_ITEMS.find((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
+  const current = NAV_ITEMS.find(
+    (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
+  );
   const isDetail = Boolean(current) && pathname !== current?.to;
 
   const notifications = useNotifications(organizationId, 5);
@@ -122,7 +129,13 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
             <span className="truncate text-sm">Buscar em tudo…</span>
             <kbd className="ml-auto rounded border border-border px-1.5 py-0.5 text-xs">Ctrl K</kbd>
           </Button>
-          <Button variant="ghost" size="icon" className="size-10 lg:hidden" aria-label="Busca global" onClick={() => setSearchOpen(true)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-10 lg:hidden"
+            aria-label="Busca global"
+            onClick={() => setSearchOpen(true)}
+          >
             <Search className="size-4" aria-hidden />
           </Button>
 
@@ -147,9 +160,21 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative size-10" aria-label="Central de notificações">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative size-10"
+                aria-label="Central de notificações"
+              >
                 <Bell className="size-4" aria-hidden />
-                {unread > 0 && <span className="absolute -top-1 -right-1 min-w-5 rounded-full bg-destructive px-1 text-center text-[10px] font-bold leading-5 text-destructive-foreground" aria-label={`${unread} não lidas`}>{unread > 99 ? "99+" : unread}</span>}
+                {unread > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 min-w-5 rounded-full bg-destructive px-1 text-center text-[10px] font-bold leading-5 text-destructive-foreground"
+                    aria-label={`${unread} não lidas`}
+                  >
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-80 p-0">
@@ -159,17 +184,30 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
               </div>
               <div className="max-h-80 divide-y divide-border overflow-y-auto">
                 {(notifications.data ?? []).length === 0 && (
-                  <p className="px-4 py-6 text-sm text-muted-foreground">Nenhuma notificação por enquanto.</p>
+                  <p className="px-4 py-6 text-sm text-muted-foreground">
+                    Nenhuma notificação por enquanto.
+                  </p>
                 )}
                 {(notifications.data ?? []).map((item) => (
-                  <button type="button" key={item.id} className={`block w-full px-4 py-3 text-left ${!item.read_at ? "bg-brand/5" : ""}`} onClick={() => markNotification.mutate({ _notification: item.id })}>
+                  <button
+                    type="button"
+                    key={item.id}
+                    className={`block w-full px-4 py-3 text-left ${!item.read_at ? "bg-brand/5" : ""}`}
+                    onClick={() => markNotification.mutate({ _notification: item.id })}
+                  >
                     <p className="text-sm font-medium">{item.title}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{item.body}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{relativeTime(item.created_at)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {relativeTime(item.created_at)}
+                    </p>
                   </button>
                 ))}
               </div>
-              <div className="border-t p-2"><Button asChild variant="ghost" className="w-full"><Link to="/notificacoes">Ver todas</Link></Button></div>
+              <div className="border-t p-2">
+                <Button asChild variant="ghost" className="w-full">
+                  <Link to="/notificacoes">Ver todas</Link>
+                </Button>
+              </div>
             </PopoverContent>
           </Popover>
 
@@ -180,12 +218,16 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
                   variant="outline"
                   size="sm"
                   className="h-10 max-w-48 gap-1.5 px-2 sm:max-w-64 sm:px-3"
-                  aria-label={`Workspace atual: ${membership?.organizations?.trade_name ?? "Workspace"}`}
+                  aria-label={`Workspace atual: ${organizationDisplayName(membership?.organizations)}`}
                 >
                   <Building className="size-4" aria-hidden />
                   <span className="hidden min-w-0 sm:inline">
-                    <span className="hidden text-muted-foreground lg:inline">Workspace atual: </span>
-                    <span className="font-medium">{membership?.organizations?.trade_name ?? "Workspace"}</span>
+                    <span className="hidden text-muted-foreground lg:inline">
+                      Workspace atual:{" "}
+                    </span>
+                    <span className="font-medium">
+                      {organizationDisplayName(membership?.organizations)}
+                    </span>
                   </span>
                   <ChevronDown className="size-3.5" aria-hidden />
                 </Button>
@@ -201,7 +243,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
                       toast.success("Workspace alterado.");
                     }}
                   >
-                    {item.organizations?.trade_name ?? item.organizations?.legal_name}
+                    {organizationDisplayName(item.organizations)}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -210,7 +252,11 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Menu do usuário">
+              <button
+                type="button"
+                className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Menu do usuário"
+              >
                 <Avatar className="size-8">
                   <AvatarFallback className="bg-primary text-xs text-primary-foreground">
                     {initials(displayName)}
@@ -221,8 +267,12 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel className="truncate">{displayName}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => navigate({ to: "/configuracoes" })}>Configurações</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => navigate({ to: "/ajuda" })}>Ajuda e suporte</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate({ to: "/configuracoes" })}>
+                Configurações
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate({ to: "/ajuda" })}>
+                Ajuda e suporte
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={onSignOut}>Sair da conta</DropdownMenuItem>
             </DropdownMenuContent>

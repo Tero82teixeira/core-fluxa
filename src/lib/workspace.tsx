@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { User } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -6,10 +15,7 @@ import { useAuth } from "@/lib/auth";
 import { useRolePermissions, type Membership } from "@/hooks/use-session";
 import type { AppRole, PermissionKey } from "@/lib/domain";
 import { resolveSessionMembership } from "@/lib/access-control";
-import {
-  readWorkspacePreference,
-  writeWorkspacePreference,
-} from "@/lib/workspace-preference";
+import { readWorkspacePreference, writeWorkspacePreference } from "@/lib/workspace-preference";
 
 const INVITATION_STORAGE_KEY = "fluxa-pending-invitation";
 const WORKSPACE_TIMEOUT_MS = 12_000;
@@ -19,7 +25,12 @@ const MEMBERSHIP_SELECT =
 
 export type WorkspaceStatus = "idle" | "loading" | "bootstrapping" | "ready" | "error";
 
-type Profile = { id: string; full_name: string | null; email: string | null; avatar_url: string | null } | null;
+type Profile = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+} | null;
 
 type WorkspaceContextValue = {
   status: WorkspaceStatus;
@@ -62,13 +73,16 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
 
 /** Mensagem específica — nunca genérica — para cada falha real do acesso. */
 function describeWorkspaceError(error: unknown): string {
-  const message = error instanceof Error ? error.message : String((error as { message?: string })?.message ?? "");
+  const message =
+    error instanceof Error ? error.message : String((error as { message?: string })?.message ?? "");
   const code = (error as { code?: string })?.code ?? "";
 
   if (message.includes("WORKSPACE_TIMEOUT"))
     return "A configuração do seu acesso demorou mais que o esperado. Tente novamente.";
   if (message.includes("BOOTSTRAP_NO_SESSION") || code === "28000")
     return "Sua sessão expirou. Entre novamente para continuar.";
+  if (message.includes("BOOTSTRAP_INVITATION_PENDING"))
+    return "Há um convite pendente para este e-mail. Abra o link do convite para entrar na empresa.";
   if (message.includes("BOOTSTRAP_PROFILE_NOT_FOUND"))
     return "Seu perfil não pôde ser carregado (BOOTSTRAP_PROFILE_NOT_FOUND).";
   if (message.includes("BOOTSTRAP_ORGANIZATION_NOT_FOUND"))
@@ -79,9 +93,14 @@ function describeWorkspaceError(error: unknown): string {
     return "Seu vínculo com a empresa está inativo. Peça a reativação a um administrador.";
   if (code === "42501" || message.toLowerCase().includes("row-level security"))
     return "Seu usuário não tem permissão para ler os dados da empresa.";
-  if (message.toLowerCase().includes("failed to fetch") || message.toLowerCase().includes("network"))
+  if (
+    message.toLowerCase().includes("failed to fetch") ||
+    message.toLowerCase().includes("network")
+  )
     return "Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.";
-  return message ? `Não foi possível configurar seu acesso: ${message}` : "Não foi possível configurar seu acesso.";
+  return message
+    ? `Não foi possível configurar seu acesso: ${message}`
+    : "Não foi possível configurar seu acesso.";
 }
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
@@ -92,10 +111,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile>(null);
   const [list, setList] = useState<Membership[]>([]);
-  const [selection, setSelection] = useState<{ userId: string; organizationId: string | null }>(() => ({
-    userId: userId ?? "",
-    organizationId: userId ? readWorkspacePreference(window.localStorage, userId) : null,
-  }));
+  const [selection, setSelection] = useState<{ userId: string; organizationId: string | null }>(
+    () => ({
+      userId: userId ?? "",
+      organizationId: userId ? readWorkspacePreference(window.localStorage, userId) : null,
+    }),
+  );
 
   // Trava central: uma única sequência de bootstrap/carregamento por vez.
   const inflight = useRef<Promise<void> | null>(null);
@@ -107,7 +128,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return;
     }
     try {
-      setSelection({ userId, organizationId: readWorkspacePreference(window.localStorage, userId) });
+      setSelection({
+        userId,
+        organizationId: readWorkspacePreference(window.localStorage, userId),
+      });
     } catch {
       setSelection({ userId, organizationId: null });
     }
@@ -115,7 +139,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const fetchWorkspace = useCallback(async (currentUserId: string) => {
     const [profileResult, membershipsResult] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, email, avatar_url").eq("id", currentUserId).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("id, full_name, email, avatar_url")
+        .eq("id", currentUserId)
+        .maybeSingle(),
       supabase
         .from("organization_members")
         .select(MEMBERSHIP_SELECT)
@@ -261,7 +289,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       role: membership?.role ?? null,
       onboardingCompleted: Boolean(membership?.organizations?.onboarding_completed_at),
       onboardingStep: membership?.organizations?.onboarding_step ?? 0,
-      bootstrapError: status === "error" ? error ?? "Não foi possível configurar seu acesso." : null,
+      bootstrapError:
+        status === "error" ? (error ?? "Não foi possível configurar seu acesso.") : null,
       can: (permission) => granted.has(permission),
       switchWorkspace: (organizationId) => {
         if (!userId) return;
@@ -275,7 +304,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       refreshWorkspace,
       retryWorkspace,
     };
-  }, [permissions.data, status, error, user, userId, profile, list, membership, refreshWorkspace, retryWorkspace]);
+  }, [
+    permissions.data,
+    status,
+    error,
+    user,
+    userId,
+    profile,
+    list,
+    membership,
+    refreshWorkspace,
+    retryWorkspace,
+  ]);
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }

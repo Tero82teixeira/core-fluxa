@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { organizationDisplayName } from "@/lib/organization-name";
 import { NAV_GROUPS, NAV_ITEMS } from "@/lib/navigation";
 import { initials } from "@/lib/format";
 import { useTheme } from "@/lib/theme";
@@ -48,9 +49,11 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
           </span>
           {!collapsed && (
             <span className="min-w-0">
-              <span className="block truncate font-display text-base font-semibold tracking-tight">FLUXA</span>
+              <span className="block truncate font-display text-base font-semibold tracking-tight">
+                FLUXA
+              </span>
               <span className="block truncate text-xs text-muted-foreground">
-                {membership?.organizations?.trade_name ?? "Central de processos"}
+                {organizationDisplayName(membership?.organizations, "Central de processos")}
               </span>
             </span>
           )}
@@ -84,7 +87,13 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
                           className="h-10 text-sm data-[active=true]:font-semibold"
                         >
                           {locked ? (
-                            <span onClick={() => toast.info("Conclua a configuração inicial da empresa para acessar este módulo.")}>
+                            <span
+                              onClick={() =>
+                                toast.info(
+                                  "Conclua a configuração inicial da empresa para acessar este módulo.",
+                                )
+                              }
+                            >
                               <item.icon className="size-4.5 shrink-0" aria-hidden />
                               <span className="truncate">{item.label}</span>
                             </span>
@@ -118,12 +127,20 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
               tooltip={theme === "dark" ? "Modo claro" : "Modo escuro"}
               className="h-10 gap-3 text-sm"
             >
-              {theme === "dark" ? <Sun className="size-4.5 shrink-0" aria-hidden /> : <Moon className="size-4.5 shrink-0" aria-hidden />}
+              {theme === "dark" ? (
+                <Sun className="size-4.5 shrink-0" aria-hidden />
+              ) : (
+                <Moon className="size-4.5 shrink-0" aria-hidden />
+              )}
               <span className="truncate">{theme === "dark" ? "Modo claro" : "Modo escuro"}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={onSignOut} tooltip="Sair da conta" className="h-10 gap-3 text-sm">
+            <SidebarMenuButton
+              onClick={onSignOut}
+              tooltip="Sair da conta"
+              className="h-10 gap-3 text-sm"
+            >
               <LogOut className="size-4.5 shrink-0" aria-hidden />
               <span className="truncate">Sair</span>
             </SidebarMenuButton>
@@ -150,7 +167,9 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
               <p className="mt-1 flex min-w-0 items-center gap-1 border-t border-sidebar-border/70 pt-1 text-xs text-sidebar-primary">
                 <Building2 className="size-3 shrink-0" aria-hidden />
                 <span className="shrink-0 font-medium">Empresa:</span>
-                <span className="truncate">{membership?.organizations?.trade_name ?? "Configurando…"}</span>
+                <span className="truncate">
+                  {organizationDisplayName(membership?.organizations, "Configurando…")}
+                </span>
               </p>
             </div>
           )}
