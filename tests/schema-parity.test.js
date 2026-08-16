@@ -50,6 +50,18 @@ test("ignores Constants differences", () => {
   assert.equal(schemasAreEqual(schema(), changed), true);
 });
 
+test("accepts equivalent empty RPC Args representations", () => {
+  const committed = schema().replace(
+    "Args: { message: string; code?: number }",
+    "Args: never",
+  );
+  const generated = schema().replace(
+    "Args: { message: string; code?: number }",
+    "Args: { [_ in never]: never }",
+  );
+  assert.equal(schemasAreEqual(committed, generated), true);
+});
+
 test("rejects a changed column type", () => {
   assert.equal(schemasAreEqual(schema(), schema({ column: "number" })), false);
 });
