@@ -145,6 +145,54 @@ export function buildStoragePath(input: {
   };
 }
 
+export type StorageUploadLocation = ReturnType<typeof buildStoragePath>;
+
+type StorageUploadResult = { error: unknown | null };
+
+/** Reconhece somente a colisão de chave devolvida pelo Supabase Storage. */
+export function isStorageKeyAlreadyExists(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const value = error as Record<string, unknown>;
+  const code = typeof value.code === "string" ? value.code : "";
+  const statusCode = String(value.statusCode ?? value.status ?? "");
+  const text = [value.error, value.message, value.name, value.code]
+    .filter((item): item is string => typeof item === "string")
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    code === "KeyAlreadyExists" ||
+    text.includes("keyalreadyexists") ||
+    text.includes("the resource already exists") ||
+    (statusCode === "409" && text.includes("already exists"))
+  );
+}
+
+/**
+ * Faz até três tentativas de upload, sempre com um novo caminho quando a única
+ * falha for colisão de chave. Outros erros são propagados imediatamente e nunca
+ * usamos upsert, preservando a imutabilidade dos arquivos existentes.
+ */
+export async function uploadWithFreshStoragePath(
+  createLocation: () => StorageUploadLocation,
+  upload: (path: string) => Promise<StorageUploadResult>,
+  maxAttempts = 3,
+): Promise<StorageUploadLocation> {
+  const attempts = Math.max(1, Math.trunc(maxAttempts));
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const location = createLocation();
+    const result = await upload(location.path);
+    if (!result.error) return location;
+
+    lastError = result.error;
+    if (!isStorageKeyAlreadyExists(lastError) || attempt === attempts - 1) throw lastError;
+  }
+
+  throw lastError ?? new Error("Não foi possível reservar um caminho para o arquivo.");
+}
+
 /** Validade sugerida a partir do tipo de documento. */
 export function suggestExpiration(issueDate: string, days?: number | null) {
   if (!issueDate || !days) return "";
