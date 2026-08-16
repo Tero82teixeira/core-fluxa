@@ -126,6 +126,7 @@ export function useCreateClient(organizationId: string | null) {
         .insert({
           ...values,
           organization_id: organizationId,
+          owner_id: actor.userId,
           owner_name: values.owner_name || actor.name,
           created_by: actor.userId,
           updated_by: actor.userId,
