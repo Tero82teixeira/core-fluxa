@@ -11,6 +11,30 @@ export type TaskSummary = {
 export const isTaskOpen = (status: TaskStatus) => TASK_OPEN_STATUSES.includes(status);
 export const isTaskArchived = (task: TaskSummary) => Boolean(task.archived_at) || task.status === "arquivada";
 
+export type TaskStatusUpdate = {
+  status: TaskStatus;
+  completed_at: string | null;
+  completed_by: string | null;
+};
+
+/**
+ * Monta os campos derivados de uma mudança de status.
+ * Um status ausente preserva todos os campos para compatibilidade com edições legadas.
+ */
+export function buildTaskStatusUpdate(
+  status: TaskStatus | undefined,
+  actorId: string | null,
+  completedAt = new Date().toISOString(),
+): TaskStatusUpdate | Record<string, never> {
+  if (status === undefined) return {};
+  const completed = status === "concluida";
+  return {
+    status,
+    completed_at: completed ? completedAt : null,
+    completed_by: completed ? actorId : null,
+  };
+}
+
 export function isTaskOverdue(task: TaskSummary, now = new Date()) {
   return isTaskOpen(task.status) && Boolean(task.due_at) && new Date(task.due_at!).getTime() < now.getTime();
 }
