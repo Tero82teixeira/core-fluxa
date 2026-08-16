@@ -22,11 +22,19 @@ function isEmptyRecord(node) {
   );
 }
 
+function isEmptyMappedType(node) {
+  return (
+    ts.isMappedTypeNode(node) &&
+    node.typeParameter.constraint?.kind === ts.SyntaxKind.NeverKeyword
+  );
+}
+
 function canonicalType(node, context = "") {
   if (
     context === "Args" &&
     (node.kind === ts.SyntaxKind.NeverKeyword ||
       isEmptyRecord(node) ||
+      isEmptyMappedType(node) ||
       (ts.isTypeLiteralNode(node) && node.members.length === 0))
   ) {
     return { kind: "empty" };
@@ -97,6 +105,101 @@ function findProperty(type, name) {
   );
 }
 
+function namedMembers(items) {
+  if (
+    !items.every(
+      (item) => item && typeof item === "object" && typeof item.name === "string",
+    )
+  ) {
+    return null;
+  }
+  return new Map(items.map((item) => [item.name, item]));
+}
+
+function firstDifference(left, right, path = "Database.public") {
+  if (Object.is(left, right)) return null;
+
+  if (
+    left === null ||
+    right === null ||
+    typeof left !== "object" ||
+    typeof right !== "object"
+  ) {
+    return { path, committed: left, generated: right };
+  }
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right)) {
+      return { path, committed: left, generated: right };
+    }
+
+    const leftNamed = namedMembers(left);
+    const rightNamed = namedMembers(right);
+    if (leftNamed && rightNamed) {
+      const names = [...new Set([...leftNamed.keys(), ...rightNamed.keys()])].sort();
+      for (const name of names) {
+        if (!leftNamed.has(name) || !rightNamed.has(name)) {
+          return {
+            path: `${path}.${name}`,
+            committed: leftNamed.has(name) ? "<present>" : "<missing>",
+            generated: rightNamed.has(name) ? "<present>" : "<missing>",
+          };
+        }
+      }
+      for (const name of names) {
+        const difference = firstDifference(
+          leftNamed.get(name),
+          rightNamed.get(name),
+          `${path}.${name}`,
+        );
+        if (difference) return difference;
+      }
+      return null;
+    }
+
+    if (left.length !== right.length) {
+      return {
+        path: `${path}.length`,
+        committed: left.length,
+        generated: right.length,
+      };
+    }
+    for (let index = 0; index < left.length; index += 1) {
+      const difference = firstDifference(left[index], right[index], `${path}[${index}]`);
+      if (difference) return difference;
+    }
+    return null;
+  }
+
+  const leftKeys = Object.keys(left).sort();
+  const rightKeys = Object.keys(right).sort();
+  const allKeys = [...new Set([...leftKeys, ...rightKeys])].sort();
+
+  for (const key of allKeys) {
+    if (!Object.hasOwn(left, key) || !Object.hasOwn(right, key)) {
+      return {
+        path: `${path}.${key}`,
+        committed: Object.hasOwn(left, key) ? left[key] : "<missing>",
+        generated: Object.hasOwn(right, key) ? right[key] : "<missing>",
+      };
+    }
+    const difference = firstDifference(left[key], right[key], `${path}.${key}`);
+    if (difference) return difference;
+  }
+
+  return null;
+}
+
+function compactValue(value) {
+  const serialized = JSON.stringify(value);
+  if (serialized === undefined) return String(value);
+  return serialized.length > 600 ? `${serialized.slice(0, 597)}...` : serialized;
+}
+
+function escapeWorkflowCommand(value) {
+  return value.replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A");
+}
+
 export function extractPublicSchema(sourceText, fileName = "types.ts") {
   const source = ts.createSourceFile(
     fileName,
@@ -150,6 +253,14 @@ export function checkSchemaParity() {
 
   if (JSON.stringify(generatedSchema) !== JSON.stringify(committedSchema)) {
     console.error("Schema parity falhou: o contrato de Database.public divergiu.");
+    const difference = firstDifference(committedSchema, generatedSchema);
+    if (difference) {
+      const summary = `${difference.path}: committed=${compactValue(difference.committed)} generated=${compactValue(difference.generated)}`;
+      console.error(`Primeira divergência: ${summary}`);
+      console.error(
+        `::error title=Schema parity mismatch::${escapeWorkflowCommand(summary)}`,
+      );
+    }
     console.error(
       JSON.stringify({ committed: committedSchema, generated: generatedSchema }, null, 2),
     );
