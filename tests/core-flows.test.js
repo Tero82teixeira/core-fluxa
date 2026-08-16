@@ -13,7 +13,9 @@ import {
   buildStoragePath,
   fileExtension,
   formatFileSize,
+  isStorageKeyAlreadyExists,
   suggestExpiration,
+  uploadWithFreshStoragePath,
   validateFile,
 } from "../src/lib/documents.ts";
 import {
@@ -65,6 +67,53 @@ describe("documentos", () => {
   test("formata tamanho", () => assert.equal(formatFileSize(2048), "2 KB"));
   test("calcula validade", () => assert.equal(suggestExpiration("2026-01-01", 30), "2026-01-31"));
   test("identifica aprovação", () => assert.equal(DOCUMENT_STATUS.aprovado.tone, "success"));
+  test("reconhece colisão KeyAlreadyExists do Storage", () =>
+    assert.equal(
+      isStorageKeyAlreadyExists({
+        statusCode: "409",
+        error: "Duplicate",
+        message: "The resource already exists",
+        code: "KeyAlreadyExists",
+      }),
+      true,
+    ));
+  test("não confunde erro de permissão com colisão", () =>
+    assert.equal(isStorageKeyAlreadyExists({ statusCode: "403", message: "Unauthorized" }), false));
+  test("gera novo caminho e tenta novamente após colisão", async () => {
+    const locations = [
+      { path: "org/clientes/a/duplicado.pdf", storedFileName: "duplicado.pdf" },
+      { path: "org/clientes/a/novo.pdf", storedFileName: "novo.pdf" },
+    ];
+    const attempted = [];
+    let locationIndex = 0;
+
+    const result = await uploadWithFreshStoragePath(
+      () => locations[locationIndex++],
+      async (path) => {
+        attempted.push(path);
+        return attempted.length === 1
+          ? { error: { code: "KeyAlreadyExists", message: "The resource already exists", statusCode: "409" } }
+          : { error: null };
+      },
+    );
+
+    assert.equal(result.path, "org/clientes/a/novo.pdf");
+    assert.deepEqual(attempted, ["org/clientes/a/duplicado.pdf", "org/clientes/a/novo.pdf"]);
+  });
+  test("não repete upload para erro diferente de colisão", async () => {
+    let attempts = 0;
+    await assert.rejects(
+      uploadWithFreshStoragePath(
+        () => ({ path: `org/arquivo-${attempts}.pdf`, storedFileName: `arquivo-${attempts}.pdf` }),
+        async () => {
+          attempts += 1;
+          return { error: new Error("permission denied") };
+        },
+      ),
+      /permission denied/,
+    );
+    assert.equal(attempts, 1);
+  });
 });
 describe("monitoramento", () => {
   test("vencimento é crítico", () => assert.equal(MONITORING_SITUATION.vencido.tone, "danger"));
