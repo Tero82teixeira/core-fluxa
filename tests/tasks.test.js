@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { readFileSync } from "node:fs";
-import { filterTasks, groupTasksByStatus, isTaskArchived, isTaskOpen, isTaskOverdue, taskDateKey, taskIndicators } from "../src/lib/tasks.ts";
+import { buildTaskStatusUpdate, filterTasks, groupTasksByStatus, isTaskArchived, isTaskOpen, isTaskOverdue, taskDateKey, taskIndicators } from "../src/lib/tasks.ts";
 
 const task = (overrides = {}) => ({ status: "pendente", priority: "media", due_at: "2026-08-01T12:00:00Z", archived_at: null, assignee_name: "Ana", ...overrides });
 const migration = readFileSync(new URL("../supabase/migrations/20260802190000_complete_tasks_module.sql", import.meta.url), "utf8");
@@ -27,6 +27,19 @@ describe("módulo de tarefas", () => {
   test("filtra arquivadas", () => assert.equal(filterTasks([task(), task({ archived_at: "2026-08-01" })], { archived: true }).length, 1));
   test("calcula indicadores", () => assert.deepEqual(taskIndicators([task(), task({ status: "concluida" }), task({ status: "arquivada" })], new Date("2026-08-02")), { open: 1, overdue: 1, completed: 1, archived: 1 }));
   test("agrupa colunas do quadro", () => assert.equal(groupTasksByStatus([task(), task({ status: "aguardando" })]).aguardando.length, 1));
+  test("inclui em andamento no payload de atualização", () => assert.equal(buildTaskStatusUpdate("em_andamento", "user-1").status, "em_andamento"));
+  test("inclui aguardando no payload de atualização", () => assert.equal(buildTaskStatusUpdate("aguardando", "user-1").status, "aguardando"));
+  test("conclusão registra autor e instante", () => assert.deepEqual(buildTaskStatusUpdate("concluida", "user-1", "2026-08-16T12:00:00.000Z"), {
+    status: "concluida",
+    completed_at: "2026-08-16T12:00:00.000Z",
+    completed_by: "user-1",
+  }));
+  test("reabertura limpa os campos de conclusão", () => assert.deepEqual(buildTaskStatusUpdate("pendente", "user-1"), {
+    status: "pendente",
+    completed_at: null,
+    completed_by: null,
+  }));
+  test("edição legada sem status preserva o status atual", () => assert.deepEqual(buildTaskStatusUpdate(undefined, "user-1"), {}));
 });
 
 describe("segurança SQL de tarefas", () => {

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { recordAudit } from "@/lib/audit";
 import { useActor } from "@/hooks/use-mutations";
 import type { PriorityLevel, RecurrenceType, TaskStatus } from "@/lib/domain";
+import { buildTaskStatusUpdate } from "@/lib/tasks";
 
 const db = () => supabase as unknown as { from: (table: string) => any; rpc: (fn: string, args?: any) => any };
 
@@ -203,9 +204,10 @@ export function useSaveTask(organizationId: string | null) {
       };
 
       if (id) {
+        const statusUpdate = buildTaskStatusUpdate(values.status, actor.userId);
         const { error } = await db()
           .from("tasks")
-          .update({ ...payload, updated_by: actor.userId })
+          .update({ ...payload, ...statusUpdate, updated_by: actor.userId })
           .eq("id", id)
           .eq("organization_id", organizationId);
         if (error) throw error;
@@ -216,7 +218,7 @@ export function useSaveTask(organizationId: string | null) {
           action: "task.updated",
           entity: "task",
           entityId: id,
-          metadata: { title: values.title },
+          metadata: { title: values.title, ...(values.status === undefined ? {} : { status: values.status }) },
         });
         await notifyAssignee({
           organizationId: organizationId!,
@@ -295,9 +297,7 @@ export function useChangeTaskStatus(organizationId: string | null) {
       const { error } = await db()
         .from("tasks")
         .update({
-          status,
-          completed_at: done ? new Date().toISOString() : null,
-          completed_by: done ? actor.userId : null,
+          ...buildTaskStatusUpdate(status, actor.userId),
           updated_by: actor.userId,
         })
         .eq("id", task.id)
