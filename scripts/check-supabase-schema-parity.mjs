@@ -105,6 +105,17 @@ function findProperty(type, name) {
   );
 }
 
+function namedMembers(items) {
+  if (
+    !items.every(
+      (item) => item && typeof item === "object" && typeof item.name === "string",
+    )
+  ) {
+    return null;
+  }
+  return new Map(items.map((item) => [item.name, item]));
+}
+
 function firstDifference(left, right, path = "Database.public") {
   if (Object.is(left, right)) return null;
 
@@ -121,6 +132,31 @@ function firstDifference(left, right, path = "Database.public") {
     if (!Array.isArray(left) || !Array.isArray(right)) {
       return { path, committed: left, generated: right };
     }
+
+    const leftNamed = namedMembers(left);
+    const rightNamed = namedMembers(right);
+    if (leftNamed && rightNamed) {
+      const names = [...new Set([...leftNamed.keys(), ...rightNamed.keys()])].sort();
+      for (const name of names) {
+        if (!leftNamed.has(name) || !rightNamed.has(name)) {
+          return {
+            path: `${path}.${name}`,
+            committed: leftNamed.has(name) ? "<present>" : "<missing>",
+            generated: rightNamed.has(name) ? "<present>" : "<missing>",
+          };
+        }
+      }
+      for (const name of names) {
+        const difference = firstDifference(
+          leftNamed.get(name),
+          rightNamed.get(name),
+          `${path}.${name}`,
+        );
+        if (difference) return difference;
+      }
+      return null;
+    }
+
     if (left.length !== right.length) {
       return {
         path: `${path}.length`,
