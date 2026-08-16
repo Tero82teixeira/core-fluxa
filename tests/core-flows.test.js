@@ -14,6 +14,7 @@ import {
   fileExtension,
   formatFileSize,
   suggestExpiration,
+  uploadDocumentWithRetry,
   validateFile,
 } from "../src/lib/documents.ts";
 import {
@@ -65,6 +66,57 @@ describe("documentos", () => {
   test("formata tamanho", () => assert.equal(formatFileSize(2048), "2 KB"));
   test("calcula validade", () => assert.equal(suggestExpiration("2026-01-01", 30), "2026-01-31"));
   test("identifica aprovação", () => assert.equal(DOCUMENT_STATUS.aprovado.tone, "success"));
+  test("upload funciona na primeira tentativa e mantém upsert desativado", async () => {
+    const calls = [];
+    const result = await uploadDocumentWithRetry({
+      buildPath: () => ({ path: "path-1", storedFileName: "file-1.pdf" }),
+      upload: async (path, options) => (calls.push({ path, options }), { error: null }),
+      contentType: "application/pdf",
+    });
+    assert.equal(result.path, "path-1");
+    assert.deepEqual(calls, [{ path: "path-1", options: { contentType: "application/pdf", upsert: false } }]);
+  });
+  test("colisão gera caminho diferente e a segunda tentativa funciona", async () => {
+    let generated = 0;
+    const paths = [];
+    const result = await uploadDocumentWithRetry({
+      buildPath: () => ({ path: `path-${++generated}`, storedFileName: `file-${generated}.pdf` }),
+      upload: async (path) => {
+        paths.push(path);
+        return { error: paths.length === 1 ? { code: "KeyAlreadyExists" } : null };
+      },
+      contentType: "application/pdf",
+    });
+    assert.equal(result.path, "path-2");
+    assert.deepEqual(paths, ["path-1", "path-2"]);
+    assert.equal(new Set(paths).size, paths.length);
+  });
+  test("propaga a terceira colisão", async () => {
+    const collision = { code: "KeyAlreadyExists", message: "The resource already exists" };
+    let attempts = 0;
+    await assert.rejects(
+      uploadDocumentWithRetry({
+        buildPath: () => ({ path: `path-${++attempts}`, storedFileName: `file-${attempts}.pdf` }),
+        upload: async () => ({ error: collision }),
+        contentType: "application/pdf",
+      }),
+      (error) => error === collision,
+    );
+    assert.equal(attempts, 3);
+  });
+  test("não repete erro diferente de colisão", async () => {
+    const denied = { statusCode: "403", message: "RLS denied" };
+    let attempts = 0;
+    await assert.rejects(
+      uploadDocumentWithRetry({
+        buildPath: () => ({ path: `path-${++attempts}`, storedFileName: "file.pdf" }),
+        upload: async () => ({ error: denied }),
+        contentType: "application/pdf",
+      }),
+      (error) => error === denied,
+    );
+    assert.equal(attempts, 1);
+  });
 });
 describe("monitoramento", () => {
   test("vencimento é crítico", () => assert.equal(MONITORING_SITUATION.vencido.tone, "danger"));
