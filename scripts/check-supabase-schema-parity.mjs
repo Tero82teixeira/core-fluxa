@@ -22,11 +22,19 @@ function isEmptyRecord(node) {
   );
 }
 
+function isEmptyMappedType(node) {
+  return (
+    ts.isMappedTypeNode(node) &&
+    node.typeParameter.constraint?.kind === ts.SyntaxKind.NeverKeyword
+  );
+}
+
 function canonicalType(node, context = "") {
   if (
     context === "Args" &&
     (node.kind === ts.SyntaxKind.NeverKeyword ||
       isEmptyRecord(node) ||
+      isEmptyMappedType(node) ||
       (ts.isTypeLiteralNode(node) && node.members.length === 0))
   ) {
     return { kind: "empty" };
