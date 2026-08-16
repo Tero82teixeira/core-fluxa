@@ -7,6 +7,7 @@ import {
   DOCUMENTS_BUCKET,
   buildStoragePath,
   fileExtension,
+  uploadWithFreshStoragePath,
   validateFile,
   type DocumentCategory,
   type DocumentStatus,
@@ -290,18 +291,22 @@ export function useUploadDocument(organizationId: string | null) {
       if (invalid) throw new Error(invalid);
 
       const extension = fileExtension(input.file.name);
-      const { path, storedFileName } = buildStoragePath({
-        organizationId,
-        clientId: input.client_id,
-        processId: input.process_id,
-        extension,
-      });
-
-      const { error: uploadError } = await storage().upload(path, input.file, {
-        contentType: input.file.type || "application/octet-stream",
-        upsert: false,
-      });
-      if (uploadError) throw uploadError;
+      const { path, storedFileName } = await uploadWithFreshStoragePath(
+        () =>
+          buildStoragePath({
+            organizationId,
+            clientId: input.client_id,
+            processId: input.process_id,
+            extension,
+          }),
+        async (candidatePath) => {
+          const { error } = await storage().upload(candidatePath, input.file, {
+            contentType: input.file.type || "application/octet-stream",
+            upsert: false,
+          });
+          return { error };
+        },
+      );
 
       try {
         const { data, error } = await db()
@@ -410,18 +415,22 @@ export function useUploadDocumentVersion(organizationId: string | null) {
       if (invalid) throw new Error(invalid);
 
       const extension = fileExtension(file.name);
-      const { path, storedFileName } = buildStoragePath({
-        organizationId: organizationId!,
-        clientId: document.client_id,
-        processId: document.process_id,
-        extension,
-      });
-
-      const { error: uploadError } = await storage().upload(path, file, {
-        contentType: file.type || "application/octet-stream",
-        upsert: false,
-      });
-      if (uploadError) throw uploadError;
+      const { path, storedFileName } = await uploadWithFreshStoragePath(
+        () =>
+          buildStoragePath({
+            organizationId: organizationId!,
+            clientId: document.client_id,
+            processId: document.process_id,
+            extension,
+          }),
+        async (candidatePath) => {
+          const { error } = await storage().upload(candidatePath, file, {
+            contentType: file.type || "application/octet-stream",
+            upsert: false,
+          });
+          return { error };
+        },
+      );
 
       const nextVersion = (document.current_version ?? 1) + 1;
       try {
