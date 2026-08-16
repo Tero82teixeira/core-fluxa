@@ -3,7 +3,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = public, extensions;
 
-SELECT plan(9);
+SELECT plan(10);
 
 SELECT has_function(
   'public',
@@ -22,6 +22,17 @@ SELECT has_function(
   'has_org_role',
   ARRAY['uuid', 'app_role[]']::name[],
   'has_org_role(uuid, app_role[]) exists'
+);
+SELECT is(
+  (
+    SELECT count(*)
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = 'public'
+       AND p.proname = 'pending_invitation_diagnostics'
+  ),
+  0::bigint,
+  'legacy pending invitation diagnostics RPC is absent from the public schema'
 );
 
 SELECT ok(
