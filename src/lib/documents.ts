@@ -145,6 +145,48 @@ export function buildStoragePath(input: {
   };
 }
 
+type StorageUploadError = {
+  code?: string;
+  statusCode?: string | number;
+  error?: string;
+  message?: string;
+};
+
+export type StorageUploadResult = ReturnType<typeof buildStoragePath>;
+
+/** Only an object-key collision is safe to retry; every other failure is returned immediately. */
+export function isStorageKeyCollision(error: StorageUploadError | null | undefined) {
+  if (!error) return false;
+  if (error.code === "KeyAlreadyExists") return true;
+
+  const statusCode = String(error.statusCode ?? "");
+  const description = `${error.error ?? ""} ${error.message ?? ""}`.toLowerCase();
+  return statusCode === "409" && (description.includes("duplicate") || description.includes("already exists"));
+}
+
+/** Uploads without overwriting and regenerates the key up to three times on a genuine collision. */
+export async function uploadDocumentWithRetry(input: {
+  buildPath: () => StorageUploadResult;
+  upload: (path: string, options: { contentType: string; upsert: false }) => Promise<{ error: StorageUploadError | null }>;
+  contentType: string;
+  maxAttempts?: number;
+}): Promise<StorageUploadResult> {
+  const maxAttempts = input.maxAttempts ?? 3;
+  if (!Number.isInteger(maxAttempts) || maxAttempts < 1) throw new Error("maxAttempts deve ser pelo menos 1.");
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const destination = input.buildPath();
+    const { error } = await input.upload(destination.path, {
+      contentType: input.contentType,
+      upsert: false,
+    });
+    if (!error) return destination;
+    if (!isStorageKeyCollision(error) || attempt === maxAttempts) throw error;
+  }
+
+  throw new Error("Não foi possível gerar um caminho para o documento.");
+}
+
 /** Validade sugerida a partir do tipo de documento. */
 export function suggestExpiration(issueDate: string, days?: number | null) {
   if (!issueDate || !days) return "";

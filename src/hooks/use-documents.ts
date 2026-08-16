@@ -7,6 +7,7 @@ import {
   DOCUMENTS_BUCKET,
   buildStoragePath,
   fileExtension,
+  uploadDocumentWithRetry,
   validateFile,
   type DocumentCategory,
   type DocumentStatus,
@@ -290,18 +291,16 @@ export function useUploadDocument(organizationId: string | null) {
       if (invalid) throw new Error(invalid);
 
       const extension = fileExtension(input.file.name);
-      const { path, storedFileName } = buildStoragePath({
-        organizationId,
-        clientId: input.client_id,
-        processId: input.process_id,
-        extension,
-      });
-
-      const { error: uploadError } = await storage().upload(path, input.file, {
+      const { path, storedFileName } = await uploadDocumentWithRetry({
+        buildPath: () => buildStoragePath({
+          organizationId,
+          clientId: input.client_id,
+          processId: input.process_id,
+          extension,
+        }),
+        upload: (path, options) => storage().upload(path, input.file, options),
         contentType: input.file.type || "application/octet-stream",
-        upsert: false,
       });
-      if (uploadError) throw uploadError;
 
       try {
         const { data, error } = await db()
@@ -410,18 +409,16 @@ export function useUploadDocumentVersion(organizationId: string | null) {
       if (invalid) throw new Error(invalid);
 
       const extension = fileExtension(file.name);
-      const { path, storedFileName } = buildStoragePath({
-        organizationId: organizationId!,
-        clientId: document.client_id,
-        processId: document.process_id,
-        extension,
-      });
-
-      const { error: uploadError } = await storage().upload(path, file, {
+      const { path, storedFileName } = await uploadDocumentWithRetry({
+        buildPath: () => buildStoragePath({
+          organizationId: organizationId!,
+          clientId: document.client_id,
+          processId: document.process_id,
+          extension,
+        }),
+        upload: (path, options) => storage().upload(path, file, options),
         contentType: file.type || "application/octet-stream",
-        upsert: false,
       });
-      if (uploadError) throw uploadError;
 
       const nextVersion = (document.current_version ?? 1) + 1;
       try {
