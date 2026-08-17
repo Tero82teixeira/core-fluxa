@@ -108,8 +108,9 @@ DECLARE
   v_version_submission boolean := false;
   v_actor_name text;
 BEGIN
-  -- service_role é usado somente por rotinas administrativas confiáveis.
-  IF auth.role() = 'service_role' THEN
+  -- Ações SQL administrativas e service_role são rotinas confiáveis; usuários
+  -- da aplicação chegam a este trigger como role authenticated.
+  IF current_user IN ('postgres','service_role','supabase_admin') OR auth.role() = 'service_role' THEN
     RETURN NEW;
   END IF;
 
@@ -220,7 +221,7 @@ AS $$
 DECLARE
   v_actor_name text;
 BEGIN
-  IF auth.role() = 'service_role' THEN
+  IF current_user IN ('postgres','service_role','supabase_admin') OR auth.role() = 'service_role' THEN
     RETURN NEW;
   END IF;
 
