@@ -38,6 +38,12 @@ export type ConditionOperator = (typeof CONDITION_OPERATORS)[number];
 export type AutomationCondition = { field: string; operator: ConditionOperator; value?: string };
 export type AssigneeMode = "process_owner" | "fixed_user" | "rule_creator" | "unassigned";
 
+export const PROCESS_AUTOMATION_TRIGGERS: readonly AutomationTrigger[] = [
+  "process.created",
+  "process.stage_changed",
+  "process.owner_changed",
+];
+
 export const ASSIGNEE_MODE_LABELS: Record<AssigneeMode, string> = {
   process_owner: "Responsável do processo",
   fixed_user: "Usuário específico",
@@ -53,6 +59,28 @@ export function stageConditionValue(conditions: AutomationCondition[]) {
   return conditions.find(
     (condition) => condition.field === "to_stage" || condition.field === "stage",
   )?.value;
+}
+
+export function removeStageConditions(conditions: AutomationCondition[]) {
+  return conditions.filter(
+    (condition) => condition.field !== "to_stage" && condition.field !== "stage",
+  );
+}
+
+export function triggerHasProcessContext(trigger: AutomationTrigger) {
+  return PROCESS_AUTOMATION_TRIGGERS.includes(trigger);
+}
+
+export function actionsForTrigger(trigger: AutomationTrigger): AutomationAction[] {
+  return AUTOMATION_ACTIONS.filter(
+    (action) => action !== "create_checklist_item" || triggerHasProcessContext(trigger),
+  );
+}
+
+export function assigneeModesForTrigger(trigger: AutomationTrigger): AssigneeMode[] {
+  return (Object.keys(ASSIGNEE_MODE_LABELS) as AssigneeMode[]).filter(
+    (mode) => mode !== "process_owner" || triggerHasProcessContext(trigger),
+  );
 }
 
 export function automationDueDays(value: unknown) {

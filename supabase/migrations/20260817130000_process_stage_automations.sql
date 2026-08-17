@@ -11,6 +11,7 @@ DECLARE
 BEGIN
   IF NOT (_trigger = ANY(allowed)) THEN RAISE EXCEPTION 'INVALID_TRIGGER'; END IF;
   IF NOT (_action = ANY(actions)) THEN RAISE EXCEPTION 'INVALID_ACTION'; END IF;
+  IF _action='create_checklist_item' AND _trigger<>ALL(ARRAY['process.created','process.stage_changed','process.owner_changed']) THEN RAISE EXCEPTION 'CHECKLIST_ACTION_REQUIRES_PROCESS_TRIGGER'; END IF;
   IF jsonb_typeof(_conditions) <> 'array' OR jsonb_array_length(_conditions) > 10 OR jsonb_typeof(_config) <> 'object' THEN RAISE EXCEPTION 'INVALID_JSON'; END IF;
   FOR c IN SELECT value FROM jsonb_array_elements(_conditions) LOOP
     IF c - ARRAY['field','operator','value'] <> '{}'::jsonb OR NOT(c?'field') OR NOT(c?'operator') OR NOT(c->>'operator'=ANY(ARRAY['equals','not_equals','contains','is_empty','is_not_empty','before','after'])) OR c->>'field' !~ '^[a-z_]{1,40}$' THEN RAISE EXCEPTION 'INVALID_CONDITION'; END IF;
@@ -26,6 +27,10 @@ BEGIN
        coalesce(_config->>'assignee_mode',CASE WHEN _config?'assignee_id' THEN 'fixed_user' ELSE 'unassigned' END) <> ALL(ARRAY['process_owner','fixed_user','rule_creator','unassigned']) OR
        (coalesce(_config->>'assignee_mode','')='fixed_user' AND nullif(_config->>'assignee_id','') IS NULL)
     THEN RAISE EXCEPTION 'INVALID_CREATE_TASK_CONFIG'; END IF;
+    IF coalesce(_config->>'assignee_mode',CASE WHEN _config?'assignee_id' THEN 'fixed_user' ELSE 'unassigned' END)='process_owner'
+       AND _trigger<>ALL(ARRAY['process.created','process.stage_changed','process.owner_changed'])
+       AND nullif(_config->>'process_id','') IS NULL
+    THEN RAISE EXCEPTION 'PROCESS_OWNER_REQUIRES_PROCESS'; END IF;
     due_text := _config->>'due_in_days';
   ELSIF _action = 'create_checklist_item' THEN
     IF NOT _config?'title' OR length(_config->>'title') NOT BETWEEN 1 AND 160 OR
@@ -63,6 +68,7 @@ BEGIN
       IF NOT public.automation_conditions_match(r.conditions,_payload) THEN
         UPDATE public.automation_executions SET status='skipped',finished_at=now(),output_payload='{"reason":"conditions_not_met"}' WHERE id=eid; CONTINUE;
       END IF;
+      process_row:=NULL; inherited_process:=NULL; inherited_client:=NULL; recipient:=NULL; task_id:=NULL; checklist_id:=NULL;
       IF r.action_type IN ('create_task','create_checklist_item') AND _entity_type='process' THEN
         SELECT * INTO process_row FROM public.processes WHERE id=_entity_id AND organization_id=_organization_id AND archived_at IS NULL;
         IF process_row.id IS NULL THEN RAISE EXCEPTION 'PROCESS_NOT_FOUND'; END IF;
@@ -75,8 +81,13 @@ BEGIN
           inherited_client := nullif(r.action_config->>'client_id','')::uuid;
           IF inherited_process IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.processes WHERE id=inherited_process AND organization_id=_organization_id) THEN RAISE EXCEPTION 'INVALID_PROCESS_LINK'; END IF;
           IF inherited_client IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.clients WHERE id=inherited_client AND organization_id=_organization_id) THEN RAISE EXCEPTION 'INVALID_CLIENT_LINK'; END IF;
+          IF inherited_process IS NOT NULL THEN
+            SELECT * INTO process_row FROM public.processes WHERE id=inherited_process AND organization_id=_organization_id AND archived_at IS NULL;
+            IF process_row.id IS NULL THEN RAISE EXCEPTION 'PROCESS_OWNER_REQUIRES_PROCESS'; END IF;
+          END IF;
         END IF;
         assignee_mode:=coalesce(r.action_config->>'assignee_mode',CASE WHEN r.action_config?'assignee_id' THEN 'fixed_user' ELSE 'unassigned' END);
+        IF assignee_mode='process_owner' AND process_row.id IS NULL THEN RAISE EXCEPTION 'PROCESS_OWNER_REQUIRES_PROCESS'; END IF;
         recipient:=CASE assignee_mode WHEN 'process_owner' THEN process_row.owner_id WHEN 'fixed_user' THEN nullif(r.action_config->>'assignee_id','')::uuid WHEN 'rule_creator' THEN r.created_by ELSE NULL END;
         IF recipient IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.organization_members WHERE organization_id=_organization_id AND user_id=recipient AND is_active) THEN RAISE EXCEPTION 'INVALID_ASSIGNEE'; END IF;
         INSERT INTO public.tasks(organization_id,title,description,priority,status,due_at,assignee_id,process_id,client_id,monitoring_item_id,created_by)
@@ -98,7 +109,7 @@ BEGIN
       UPDATE public.automation_executions SET status='success',finished_at=now(),output_payload=jsonb_strip_nulls(jsonb_build_object('action',r.action_type,'task_id',task_id,'checklist_item_id',checklist_id)) WHERE id=eid;
       UPDATE public.automation_rules SET execution_count=execution_count+1,last_executed_at=now() WHERE id=r.id; successes:=successes+1;
     EXCEPTION WHEN OTHERS THEN
-      safe_error:=CASE WHEN SQLSTATE='P0001' AND SQLERRM=ANY(ARRAY['INVALID_ASSIGNEE','INVALID_PROCESS_LINK','INVALID_CLIENT_LINK','PROCESS_NOT_FOUND','PROCESS_REQUIRED','TASK_NOT_FOUND','INVALID_RECIPIENT']) THEN SQLERRM ELSE 'AUTOMATION_ACTION_FAILED' END;
+      safe_error:=CASE WHEN SQLSTATE='P0001' AND SQLERRM=ANY(ARRAY['INVALID_ASSIGNEE','INVALID_PROCESS_LINK','INVALID_CLIENT_LINK','PROCESS_NOT_FOUND','PROCESS_REQUIRED','PROCESS_OWNER_REQUIRES_PROCESS','TASK_NOT_FOUND','INVALID_RECIPIENT']) THEN SQLERRM ELSE 'AUTOMATION_ACTION_FAILED' END;
       UPDATE public.automation_executions SET status='failed',finished_at=now(),error_code=SQLSTATE,error_message=safe_error WHERE id=eid;
       UPDATE public.automation_rules SET failure_count=failure_count+1,last_executed_at=now() WHERE id=r.id;
     END;

@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import {
+  actionsForTrigger,
+  assigneeModesForTrigger,
+  removeStageConditions,
+} from "../src/lib/automations.ts";
 const migration = fs.readFileSync(
   "supabase/migrations/20260803120000_automations_module.sql",
   "utf8",
@@ -121,4 +126,23 @@ test("vínculos de processo, checklist, movimento e execução são tenant-safe"
   assert.match(phaseTwoMigration, /coalesce\(max\(i\.position\),0\)\+1/);
   assert.match(phaseTwoMigration, /process_movements/);
   assert.match(phaseTwoMigration, /status='skipped'/);
+});
+
+test("ações compatíveis dependem do contexto do gatilho", () => {
+  assert.ok(!actionsForTrigger("task.created").includes("create_checklist_item"));
+  assert.ok(actionsForTrigger("process.stage_changed").includes("create_checklist_item"));
+});
+
+test("process_owner só é oferecido em gatilhos de processo", () => {
+  assert.ok(assigneeModesForTrigger("process.stage_changed").includes("process_owner"));
+  assert.ok(!assigneeModesForTrigger("monitoring.created").includes("process_owner"));
+});
+
+test("troca de gatilho remove apenas condições de etapa", () => {
+  const remaining = removeStageConditions([
+    { field: "stage", operator: "equals", value: "novo" },
+    { field: "to_stage", operator: "equals", value: "aguardando_documentos" },
+    { field: "priority", operator: "equals", value: "alta" },
+  ]);
+  assert.deepEqual(remaining, [{ field: "priority", operator: "equals", value: "alta" }]);
 });

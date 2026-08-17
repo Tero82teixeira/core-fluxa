@@ -33,11 +33,14 @@ import { useWorkspace } from "@/lib/workspace";
 import {
   ACTION_LABELS,
   ASSIGNEE_MODE_LABELS,
-  AUTOMATION_ACTIONS,
   AUTOMATION_TRIGGERS,
+  actionsForTrigger,
+  assigneeModesForTrigger,
   canManageAutomations,
+  removeStageConditions,
   stageCondition,
   stageConditionValue,
+  triggerHasProcessContext,
   TRIGGER_LABELS,
   type AutomationAction,
   type AutomationTrigger,
@@ -432,13 +435,33 @@ function AutomationForm({
             <Select
               value={form.trigger_type}
               onValueChange={(v) =>
-                setForm({
-                  ...form,
-                  trigger_type: v as AutomationTrigger,
-                  conditions:
-                    v === "process.stage_changed"
-                      ? stageCondition(stageConditionValue(form.conditions) ?? "novo")
-                      : form.conditions,
+                setForm((current) => {
+                  const nextTrigger = v as AutomationTrigger;
+                  const compatibleActions = actionsForTrigger(nextTrigger);
+                  const actionRemainsCompatible = compatibleActions.includes(current.action_type);
+                  const nextConfig = actionRemainsCompatible
+                    ? { ...current.action_config }
+                    : { ...empty.action_config, assignee_mode: "unassigned" };
+                  if (
+                    current.action_type === "create_task" &&
+                    nextConfig.assignee_mode === "process_owner" &&
+                    !triggerHasProcessContext(nextTrigger)
+                  ) {
+                    nextConfig.assignee_mode = "unassigned";
+                  }
+                  return {
+                    ...current,
+                    trigger_type: nextTrigger,
+                    conditions:
+                      nextTrigger === "process.stage_changed"
+                        ? [
+                            ...removeStageConditions(current.conditions),
+                            ...stageCondition(stageConditionValue(current.conditions) ?? "novo"),
+                          ]
+                        : removeStageConditions(current.conditions),
+                    action_type: actionRemainsCompatible ? current.action_type : "create_task",
+                    action_config: nextConfig,
+                  };
                 })
               }
             >
@@ -495,7 +518,7 @@ function AutomationForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {AUTOMATION_ACTIONS.map((a) => (
+                {actionsForTrigger(form.trigger_type).map((a) => (
                   <SelectItem value={a} key={a}>
                     {ACTION_LABELS[a]}
                   </SelectItem>
@@ -587,9 +610,9 @@ function AutomationForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(ASSIGNEE_MODE_LABELS).map(([value, label]) => (
+                    {assigneeModesForTrigger(form.trigger_type).map((value) => (
                       <SelectItem key={value} value={value}>
-                        {label}
+                        {ASSIGNEE_MODE_LABELS[value]}
                       </SelectItem>
                     ))}
                   </SelectContent>

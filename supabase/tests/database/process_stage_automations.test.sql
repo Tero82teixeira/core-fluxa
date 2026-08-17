@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path=public,extensions;
-SELECT plan(20);
+SELECT plan(24);
 
 INSERT INTO auth.users(id,email,raw_user_meta_data,aud,role,encrypted_password,email_confirmed_at) VALUES
  ('13000000-0000-0000-0000-000000000001','owner-auto@fluxa.test','{"full_name":"Owner"}','authenticated','authenticated','',now()),
@@ -24,6 +24,10 @@ INSERT INTO public.processes(id,organization_id,code,client_id,title,stage,owner
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','13000000-0000-0000-0000-000000000001',true);
 SELECT lives_ok($$SELECT public.create_automation_rule('23000000-0000-0000-0000-000000000001','Solicitar documentação',NULL,'process.stage_changed','[{"field":"to_stage","operator":"equals","value":"aguardando_documentos"}]','create_task','{"title":"Solicitar documentos","priority":"alta","status":"em_andamento","due_in_days":3,"assignee_mode":"process_owner"}',true)$$,'proprietário cria regra');
+SELECT throws_ok($$SELECT public.create_automation_rule('23000000-0000-0000-0000-000000000001','Checklist de tarefa',NULL,'task.created','[]','create_checklist_item','{"title":"Inválido"}',false)$$,'P0001','CHECKLIST_ACTION_REQUIRES_PROCESS_TRIGGER','task.created rejeita checklist');
+SELECT throws_ok($$SELECT public.create_automation_rule('23000000-0000-0000-0000-000000000001','Checklist de monitoramento',NULL,'monitoring.created','[]','create_checklist_item','{"title":"Inválido"}',false)$$,'P0001','CHECKLIST_ACTION_REQUIRES_PROCESS_TRIGGER','monitoring.created rejeita checklist');
+SELECT lives_ok($$SELECT public.create_automation_rule('23000000-0000-0000-0000-000000000001','Checklist de processo permitido',NULL,'process.stage_changed','[{"field":"to_stage","operator":"equals","value":"finalizado"}]','create_checklist_item','{"title":"Válido"}',false)$$,'process.stage_changed permite checklist');
+SELECT throws_ok($$SELECT public.create_automation_rule('23000000-0000-0000-0000-000000000001','Owner sem processo',NULL,'task.created','[]','create_task','{"title":"Inválido","assignee_mode":"process_owner"}',false)$$,'P0001','PROCESS_OWNER_REQUIRES_PROCESS','task.created rejeita process_owner sem processo');
 SELECT set_config('request.jwt.claim.sub','13000000-0000-0000-0000-000000000002',true);
 SELECT throws_ok($$SELECT public.create_automation_rule('23000000-0000-0000-0000-000000000001','Proibida',NULL,'process.stage_changed','[]','add_audit_log','{"message":"x"}',true)$$,'P0001','NOT_ALLOWED','operacional não cria regra');
 RESET ROLE;
