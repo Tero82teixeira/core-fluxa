@@ -83,6 +83,26 @@ export function assigneeModesForTrigger(trigger: AutomationTrigger): AssigneeMod
   );
 }
 
+export function defaultCreateTaskConfig(trigger: AutomationTrigger): Record<string, unknown> {
+  return {
+    title: "Nova tarefa automática",
+    description: "",
+    priority: "media",
+    status: "pendente",
+    due_in_days: 0,
+    assignee_mode: triggerHasProcessContext(trigger) ? "process_owner" : "unassigned",
+  };
+}
+
+export function normalizeCreateTaskConfig(
+  trigger: AutomationTrigger,
+  config: Record<string, unknown>,
+): Record<string, unknown> {
+  return config.assignee_mode === "process_owner" && !triggerHasProcessContext(trigger)
+    ? { ...config, assignee_mode: "unassigned" }
+    : { ...config };
+}
+
 export function automationDueDays(value: unknown) {
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isInteger(parsed) && parsed >= 0 && parsed <= 365 ? parsed : 0;

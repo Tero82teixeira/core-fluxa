@@ -37,10 +37,11 @@ import {
   actionsForTrigger,
   assigneeModesForTrigger,
   canManageAutomations,
+  defaultCreateTaskConfig,
+  normalizeCreateTaskConfig,
   removeStageConditions,
   stageCondition,
   stageConditionValue,
-  triggerHasProcessContext,
   TRIGGER_LABELS,
   type AutomationAction,
   type AutomationTrigger,
@@ -76,14 +77,7 @@ const empty: AutomationInput = {
   trigger_type: "task.created",
   conditions: [],
   action_type: "create_task",
-  action_config: {
-    title: "Nova tarefa automática",
-    description: "",
-    priority: "media",
-    status: "pendente",
-    due_in_days: 0,
-    assignee_mode: "process_owner",
-  },
+  action_config: defaultCreateTaskConfig("task.created"),
 };
 
 const configText = (config: Record<string, unknown>, key: string) =>
@@ -349,7 +343,10 @@ function AutomationForm({
           trigger_type: rule.trigger_type,
           conditions: rule.conditions,
           action_type: rule.action_type,
-          action_config: rule.action_config,
+          action_config:
+            rule.action_type === "create_task"
+              ? normalizeCreateTaskConfig(rule.trigger_type, rule.action_config)
+              : rule.action_config,
           is_active: rule.is_active,
         }
       : empty,
@@ -366,7 +363,10 @@ function AutomationForm({
             trigger_type: rule.trigger_type,
             conditions: rule.conditions,
             action_type: rule.action_type,
-            action_config: rule.action_config,
+            action_config:
+              rule.action_type === "create_task"
+                ? normalizeCreateTaskConfig(rule.trigger_type, rule.action_config)
+                : rule.action_config,
             is_active: rule.is_active,
           }
         : { ...empty, action_config: { ...empty.action_config } },
@@ -440,15 +440,10 @@ function AutomationForm({
                   const compatibleActions = actionsForTrigger(nextTrigger);
                   const actionRemainsCompatible = compatibleActions.includes(current.action_type);
                   const nextConfig = actionRemainsCompatible
-                    ? { ...current.action_config }
-                    : { ...empty.action_config, assignee_mode: "unassigned" };
-                  if (
-                    current.action_type === "create_task" &&
-                    nextConfig.assignee_mode === "process_owner" &&
-                    !triggerHasProcessContext(nextTrigger)
-                  ) {
-                    nextConfig.assignee_mode = "unassigned";
-                  }
+                    ? current.action_type === "create_task"
+                      ? normalizeCreateTaskConfig(nextTrigger, current.action_config)
+                      : { ...current.action_config }
+                    : defaultCreateTaskConfig(nextTrigger);
                   return {
                     ...current,
                     trigger_type: nextTrigger,
@@ -507,7 +502,7 @@ function AutomationForm({
                   action_type: v as AutomationAction,
                   action_config:
                     v === "create_task"
-                      ? { ...empty.action_config }
+                      ? defaultCreateTaskConfig(form.trigger_type)
                       : v === "create_checklist_item"
                         ? { title: "", description: "", required: true, due_in_days: 0 }
                         : {},

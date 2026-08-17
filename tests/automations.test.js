@@ -4,6 +4,8 @@ import fs from "node:fs";
 import {
   actionsForTrigger,
   assigneeModesForTrigger,
+  defaultCreateTaskConfig,
+  normalizeCreateTaskConfig,
   removeStageConditions,
 } from "../src/lib/automations.ts";
 const migration = fs.readFileSync(
@@ -145,4 +147,23 @@ test("troca de gatilho remove apenas condições de etapa", () => {
     { field: "priority", operator: "equals", value: "alta" },
   ]);
   assert.deepEqual(remaining, [{ field: "priority", operator: "equals", value: "alta" }]);
+});
+
+test("configuração padrão de tarefa respeita o contexto do gatilho", () => {
+  assert.equal(defaultCreateTaskConfig("task.created").assignee_mode, "unassigned");
+  assert.equal(defaultCreateTaskConfig("process.stage_changed").assignee_mode, "process_owner");
+});
+
+test("nova automação e troca de ação usam a configuração contextual", () => {
+  assert.match(page, /action_config: defaultCreateTaskConfig\("task\.created"\)/);
+  assert.match(page, /v === "create_task"[\s\S]*defaultCreateTaskConfig\(form\.trigger_type\)/);
+  assert.equal(defaultCreateTaskConfig("task.created").assignee_mode, "unassigned");
+  assert.equal(defaultCreateTaskConfig("process.stage_changed").assignee_mode, "process_owner");
+});
+
+test("configuração legada inválida é normalizada apenas no formulário", () => {
+  const original = { title: "Legada", assignee_mode: "process_owner" };
+  const normalized = normalizeCreateTaskConfig("task.created", original);
+  assert.equal(normalized.assignee_mode, "unassigned");
+  assert.equal(original.assignee_mode, "process_owner");
 });
