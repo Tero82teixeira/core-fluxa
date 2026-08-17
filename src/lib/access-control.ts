@@ -48,11 +48,21 @@ export type WorkspacePermissions = {
   canManageMonitoring: boolean;
   canManageTeam: boolean;
   canInviteMembers: boolean;
+  canViewFinance: boolean;
+  canManageFinance: boolean;
+  canExportReports: boolean;
 };
 
-const EDITORS: AppRole[] = ["proprietario", "administrador", "gestor", "operacional", "atendimento"];
+/**
+ * Matriz ativa do workspace.
+ * Atendimento, financeiro e cliente_externo existem no enum para evolução
+ * futura, mas não são papéis atribuíveis na gestão de Equipe atual e portanto
+ * não recebem capacidades operacionais por esta matriz.
+ */
+const EDITORS: AppRole[] = ["proprietario", "administrador", "gestor", "operacional"];
 const MANAGERS: AppRole[] = ["superadmin", "proprietario", "administrador", "gestor"];
 const TASK_EDITORS: AppRole[] = ["superadmin", "proprietario", "administrador", "gestor", "operacional"];
+const REPORT_EXPORTERS: AppRole[] = ["superadmin", "proprietario", "administrador", "gestor", "operacional"];
 
 /** Derives UI capabilities exclusively from the authenticated membership role. */
 export function permissionsForRole(role: AppRole | null): WorkspacePermissions {
@@ -75,6 +85,9 @@ export function permissionsForRole(role: AppRole | null): WorkspacePermissions {
     canManageMonitoring: isEditor,
     canManageTeam: isOwnerAdmin,
     canInviteMembers: isOwnerAdmin,
+    canViewFinance: isManager,
+    canManageFinance: isManager,
+    canExportReports: role ? REPORT_EXPORTERS.includes(role) : false,
   };
 }
 

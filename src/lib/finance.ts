@@ -36,12 +36,19 @@ export function availableFinancialAccounts(accounts: FinancialAccount[]) {
   return accounts.filter((account) => !account.archived_at && account.is_active);
 }
 
+const FINANCE_ROLES = new Set(["superadmin", "proprietario", "administrador", "gestor"]);
+
+/** Mirrors the active finance matrix without introducing runtime imports in this Node-tested helper. */
+export function canViewFinance(role?: string | null) {
+  return FINANCE_ROLES.has(role ?? "");
+}
+
 export function canManageFinance(role?: string | null) {
-  return role === "proprietario" || role === "administrador" || role === "gestor";
+  return canViewFinance(role);
 }
 
 export function canReverseFinancialPayment(role?: string | null) {
-  return role === "proprietario" || role === "administrador";
+  return role === "superadmin" || role === "proprietario" || role === "administrador";
 }
 
 export function paymentBalance(
