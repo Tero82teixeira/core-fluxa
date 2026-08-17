@@ -1,3 +1,6 @@
+import type { AppRole } from "@/lib/domain";
+import { permissionsForRole } from "@/lib/access-control";
+
 export type FinancialType = "income" | "expense";
 export type FinancialStatus = "pending" | "partial" | "paid" | "overdue" | "cancelled";
 
@@ -36,12 +39,16 @@ export function availableFinancialAccounts(accounts: FinancialAccount[]) {
   return accounts.filter((account) => !account.archived_at && account.is_active);
 }
 
-export function canManageFinance(role?: string | null) {
-  return role === "proprietario" || role === "administrador" || role === "gestor";
+export function canViewFinance(role?: AppRole | null) {
+  return permissionsForRole(role ?? null).canViewFinance;
 }
 
-export function canReverseFinancialPayment(role?: string | null) {
-  return role === "proprietario" || role === "administrador";
+export function canManageFinance(role?: AppRole | null) {
+  return permissionsForRole(role ?? null).canManageFinance;
+}
+
+export function canReverseFinancialPayment(role?: AppRole | null) {
+  return role === "superadmin" || role === "proprietario" || role === "administrador";
 }
 
 export function paymentBalance(
