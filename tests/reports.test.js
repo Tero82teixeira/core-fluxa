@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { createCsv, filterMonitoringReport, groupCount, isActiveMonitoring, isInPeriod, isOverdue, monitoringBuckets, monitoringExportRows, monitoringReportMetrics, periodRange, sanitizeClient } from "../src/lib/reports.ts";
+import { permissionsForRole } from "../src/lib/access-control.ts";
 
 const route = readFileSync(new URL("../src/routes/_authenticated/relatorios.tsx", import.meta.url), "utf8");
 const hook = readFileSync(new URL("../src/hooks/use-reports.ts", import.meta.url), "utf8");
@@ -36,6 +37,13 @@ describe("módulo de relatórios", () => {
   test("CSV usa BOM UTF-8 e separador do Excel pt-BR", () => { const csv=createCsv([{nome:"João",total:2}]); assert.equal(csv.charCodeAt(0),0xfeff); assert.match(csv,/"nome";"total"/); });
   test("CSV escapa aspas", () => assert.match(createCsv([{nome:'A "B"'}]), /A ""B""/));
   test("exportação usa somente linhas filtradas", () => assert.match(route, /exportRows\(kind,matching\)/));
+  test("operacional pode exportar relatórios", () => assert.equal(permissionsForRole("operacional").canExportReports, true));
+  test("visualizador não pode exportar ou imprimir relatórios", () => {
+    assert.equal(permissionsForRole("visualizador").canExportReports, false);
+    assert.match(route, /canExportReports && <div className="no-print flex gap-2"/);
+    assert.match(route, /if \(!canExportReports\) return/);
+    assert.match(route, /canExportReports && <Button variant="outline" onClick=\{\(\)=>exportRows\(kind,matching\)\}/);
+  });
   test("visualizador não recebe PII sensível", () => { const row=sanitizeClient({name:"Ana",email:"a@x",phone:"1",document:"2"},"visualizador"); assert.deepEqual(row,{name:"Ana"}); });
   test("proprietário e administrador preservam campos autorizados", () => { assert.equal(sanitizeClient({email:"a"},"proprietario").email,"a"); assert.equal(sanitizeClient({email:"a"},"administrador").email,"a"); });
   test("operacional não recebe PII sensível", () => assert.equal("email" in sanitizeClient({email:"a"},"operacional"),false));
