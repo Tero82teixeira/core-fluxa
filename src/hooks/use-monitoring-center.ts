@@ -4,14 +4,17 @@ import type { MonitoringAlert, MonitoringPriority, MonitoringStatus } from "@/li
 
 const db = () => supabase as unknown as { from: (name: string) => any; rpc: (name: string, args: any) => any };
 
+/** Shared, RLS-protected source used by the monitoring center and reports. */
+export async function fetchOperationalMonitoring(organizationId: string) {
+  const { data, error } = await db().from("operational_monitoring_alerts").select("*").eq("organization_id", organizationId).limit(1000);
+  if (error) throw error;
+  return (data ?? []) as MonitoringAlert[];
+}
+
 export function useOperationalMonitoring(organizationId: string | null) {
   return useQuery({
     enabled: Boolean(organizationId), queryKey: ["operational-monitoring", organizationId],
-    queryFn: async () => {
-      const { data, error } = await db().from("operational_monitoring_alerts").select("*").eq("organization_id", organizationId).limit(1000);
-      if (error) throw error;
-      return (data ?? []) as MonitoringAlert[];
-    },
+    queryFn: () => fetchOperationalMonitoring(organizationId!),
   });
 }
 

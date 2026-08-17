@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchOperationalMonitoring } from "@/hooks/use-monitoring-center";
 
 const db = () => supabase as unknown as { from: (table: string) => any };
 const LIMIT = 1000;
@@ -22,7 +23,7 @@ export function useReportData(organizationId: string | null) {
         rows("tasks", "id,title,status,priority,due_at,completed_at,created_at,assignee_id,assignee_name,client_id,process_id,archived_at,deleted_at", organizationId),
         rows("processes", "id,code,title,stage,priority,owner_id,owner_name,client_id,opened_at,last_movement_at,archived_at", organizationId),
         rows("documents", "id,title,status,expiration_date,created_at,client_id,process_id,uploaded_by_name,archived_at", organizationId),
-        rows("monitoring_items_status_view", "id,title,type,status,expiration_date,days_remaining,is_expired,is_expiring_soon,client_id,process_id,responsible_user_id,responsible_name,created_at,archived_at", organizationId),
+        fetchOperationalMonitoring(organizationId),
         rows("organization_members", "id,user_id,role,is_active,created_at", organizationId),
       ]);
       return { clients, tasks, processes, documents, monitoring, members };

@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useReportData } from "@/hooks/use-reports";
 import { useWorkspace } from "@/lib/workspace";
-import { downloadCsv, groupCount, isInPeriod, isOverdue, monitoringBuckets, periodRange, type PeriodPreset } from "@/lib/reports";
+import type { MonitoringAlert } from "@/lib/monitoring";
+import { downloadCsv, filterMonitoringReport, groupCount, isInPeriod, isOverdue, monitoringBuckets, monitoringExportRows, monitoringReportMetrics, periodRange, type PeriodPreset } from "@/lib/reports";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   head: () => ({ meta: [{ title: "Relatórios — FLUXA" }, { name: "description", content: "Indicadores reais da operação." }] }),
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/relatorios")({
 
 type AnyRow = Record<string, any>;
 const COLORS = ["#176b5b", "#28917d", "#d59b36", "#c85b4a", "#66828a", "#7c6ca8"];
-const labels: Record<string, string> = { ativo: "Ativo", inativo: "Inativo", pendente: "Pendente", em_andamento: "Em andamento", aguardando: "Aguardando", concluida: "Concluída", cancelada: "Cancelada", baixa: "Baixa", media: "Média", alta: "Alta", critica: "Crítica", em_analise: "Em análise", aprovado: "Aprovado" };
+const labels: Record<string, string> = { ativo: "Ativo", inativo: "Inativo", pendente: "Pendente", em_andamento: "Em andamento", aguardando: "Aguardando", concluida: "Concluída", cancelada: "Cancelada", baixa: "Baixa", media: "Média", alta: "Alta", critica: "Crítica", novo: "Novo", em_analise: "Em análise", acompanhado: "Acompanhado", resolvido: "Resolvido", ignorado: "Ignorado", aprovado: "Aprovado" };
 const periods: [PeriodPreset, string][] = [["7d", "Últimos 7 dias"], ["30d", "Últimos 30 dias"], ["90d", "Últimos 90 dias"], ["month", "Este mês"], ["previous_month", "Mês anterior"], ["year", "Este ano"], ["custom", "Período personalizado"]];
 const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
 
@@ -39,7 +40,7 @@ function ReportsPage() {
     (assignee === "all" || row.assignee_id === assignee || row.owner_id === assignee || row.responsible_user_id === assignee) &&
     (status === "all" || row.status === status || row.stage === status) && (priority === "all" || row.priority === priority) &&
     (processId === "all" || row.process_id === processId || row.id === processId) && !row.archived_at && !row.deleted_at);
-  const filtered = useMemo(() => data ? ({ clients: filter(data.clients), tasks: filter(data.tasks), processes: filter(data.processes, "opened_at"), documents: filter(data.documents), monitoring: filter(data.monitoring), members: data.members }) : null,
+  const filtered = useMemo(() => data ? ({ clients: filter(data.clients), tasks: filter(data.tasks), processes: filter(data.processes, "opened_at"), documents: filter(data.documents), monitoring: filterMonitoringReport(data.monitoring, { range, clientId: client, assigneeId: assignee, status, priority, processId }), members: data.members }) : null,
     // filter is intentionally derived from these primitive controls
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data, range, client, assignee, status, priority, processId]);
@@ -47,13 +48,14 @@ function ReportsPage() {
   const metrics = useMemo(() => {
     if (!filtered) return [];
     const inactiveStages = ["finalizado", "arquivado", "cancelado"];
+    const monitoringMetrics = monitoringReportMetrics(filtered.monitoring, now);
     return [
       ["Clientes ativos", filtered.clients.filter((x: AnyRow) => x.status === "ativo").length], ["Clientes inativos", filtered.clients.filter((x: AnyRow) => x.status === "inativo").length],
       ["Tarefas em aberto", filtered.tasks.filter((x: AnyRow) => !["concluida", "cancelada", "arquivada"].includes(x.status)).length], ["Tarefas concluídas", filtered.tasks.filter((x: AnyRow) => x.status === "concluida").length],
       ["Tarefas atrasadas", filtered.tasks.filter((x: AnyRow) => isOverdue(x.due_at, x.status, now)).length], ["Processos ativos", filtered.processes.filter((x: AnyRow) => !inactiveStages.includes(x.stage)).length],
       ["Processos concluídos", filtered.processes.filter((x: AnyRow) => ["finalizado", "deferido"].includes(x.stage)).length], ["Documentos pendentes", filtered.documents.filter((x: AnyRow) => x.status === "pendente").length],
-      ["Documentos em análise", filtered.documents.filter((x: AnyRow) => x.status === "em_analise").length], ["Monitoramentos ativos", filtered.monitoring.filter((x: AnyRow) => x.status === "ativo").length],
-      ["Monitoramentos vencidos", filtered.monitoring.filter((x: AnyRow) => monitoringBuckets(x.expiration_date, now).expired).length], ["Vencendo em 30 dias", filtered.monitoring.filter((x: AnyRow) => monitoringBuckets(x.expiration_date, now).in30).length],
+      ["Documentos em análise", filtered.documents.filter((x: AnyRow) => x.status === "em_analise").length], ["Monitoramentos ativos", monitoringMetrics.active],
+      ["Monitoramentos vencidos", monitoringMetrics.overdue], ["Vencendo em 30 dias", monitoringMetrics.in30],
       ["Membros ativos", filtered.members.filter((x: AnyRow) => x.is_active).length],
     ] as [string, number][];
   }, [filtered]);
@@ -61,7 +63,7 @@ function ReportsPage() {
   const taskPriority = Object.entries(groupCount(filtered?.tasks ?? [], (x: AnyRow) => labels[x.priority] ?? x.priority)).map(([name, value]) => ({ name, value }));
   const processStage = Object.entries(groupCount(filtered?.processes ?? [], (x: AnyRow) => x.stage)).map(([name, value]) => ({ name: labels[name] ?? name.replaceAll("_", " "), value }));
   const clear = () => { setPeriod("30d"); setFrom(""); setTo(""); setClient("all"); setAssignee("all"); setStatus("all"); setPriority("all"); setProcessId("all"); setSearch(""); setPage(0); };
-  const exportRows = (kind: string, rows: AnyRow[]) => downloadCsv(kind, rows.map(({ organization_id: _organizationId, deleted_at: _deletedAt, archived_at: _archivedAt, ...row }) => row));
+  const exportRows = (kind: string, rows: AnyRow[]) => downloadCsv(kind, ((kind === "monitoring" || kind === "monitoramentos") && rows.some((row) => "suggested_priority" in row) ? monitoringExportRows(rows as MonitoringAlert[]) : rows.map(({ organization_id: _organizationId, deleted_at: _deletedAt, archived_at: _archivedAt, ...row }) => row)));
   const currentRows = tab === "tasks" ? filtered?.tasks : tab === "processes" ? filtered?.processes : tab === "clients" ? filtered?.clients : tab === "documents" ? filtered?.documents : tab === "monitoring" ? filtered?.monitoring : filtered?.members;
 
   if (!organizationId) return <div className="p-6"><h1 className="page-title">Relatórios</h1><p className="mt-3 text-muted-foreground">Selecione uma organização ativa para consultar os indicadores.</p></div>;
@@ -71,7 +73,7 @@ function ReportsPage() {
       <label className="grid gap-1 text-xs">Período<select className={selectClass} value={period} onChange={(e) => setPeriod(e.target.value as PeriodPreset)}>{periods.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
       {period === "custom" && <><label className="grid gap-1 text-xs">Data inicial<Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label><label className="grid gap-1 text-xs">Data final<Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label></>}
       <Filter label="Cliente" value={client} set={setClient} options={(data?.clients ?? []).map((x: AnyRow) => [x.id, x.name])} />
-      <Filter label="Responsável" value={assignee} set={setAssignee} options={Array.from(new Map((data?.tasks ?? []).filter((x: AnyRow) => x.assignee_id).map((x: AnyRow) => [x.assignee_id, x.assignee_name || "Sem nome"])).entries())} />
+      <Filter label="Responsável" value={assignee} set={setAssignee} options={Array.from(new Map([...(data?.tasks ?? []).filter((x: AnyRow) => x.assignee_id).map((x: AnyRow) => [x.assignee_id, x.assignee_name || "Sem nome"]), ...(data?.monitoring ?? []).flatMap((x: AnyRow) => [[x.assigned_to, x.assigned_name], [x.responsible_id, x.responsible_name]]).filter(([id]: any[]) => id)]).entries())} />
       <Filter label="Status" value={status} set={setStatus} options={Object.entries(labels)} />
       <Filter label="Prioridade" value={priority} set={setPriority} options={[["baixa","Baixa"],["media","Média"],["alta","Alta"],["critica","Crítica"]]} />
       <Filter label="Processo" value={processId} set={setProcessId} options={(data?.processes ?? []).map((x: AnyRow) => [x.id, x.code])} />
@@ -86,7 +88,7 @@ function ReportsPage() {
       <TabsContent value="processes"><Section title="Relatório de processos" summary={`${filtered.processes.filter((x: AnyRow) => x.last_movement_at && new Date(x.last_movement_at).getTime() < Date.now()-30*86400000).length} sem movimentação há mais de 30 dias.`} chart={<ReportChart title="Processos por etapa" data={processStage} />}><DataTable kind="processos" rows={filtered.processes} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} /></Section></TabsContent>
       <TabsContent value="clients"><Section title="Relatório de clientes" summary={`${new Set(filtered.processes.map((x: AnyRow)=>x.client_id)).size} clientes com processos; ${filtered.clients.filter((x: AnyRow)=>!filtered.processes.some(p=>p.client_id===x.id)).length} sem processos.`}><DataTable kind="clientes" rows={filtered.clients} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} /></Section></TabsContent>
       <TabsContent value="documents"><Section title="Relatório de documentos" summary={`${filtered.documents.filter((x: AnyRow)=>x.expiration_date && monitoringBuckets(x.expiration_date).expired).length} vencidos.`}><DataTable kind="documentos" rows={filtered.documents} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} /></Section></TabsContent>
-      <TabsContent value="monitoring"><Section title="Relatório de monitoramentos" summary={`${filtered.monitoring.filter((x: AnyRow)=>monitoringBuckets(x.expiration_date).in7).length} vencendo em 7 dias; ${filtered.monitoring.filter((x: AnyRow)=>monitoringBuckets(x.expiration_date).in30).length} em 30 dias.`}><DataTable kind="monitoramentos" rows={filtered.monitoring} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} /></Section></TabsContent>
+      <TabsContent value="monitoring"><Section title="Relatório de monitoramentos" summary={`${filtered.monitoring.filter((x: AnyRow)=>monitoringBuckets(x.relevant_at).in7).length} vencendo em 7 dias; ${filtered.monitoring.filter((x: AnyRow)=>monitoringBuckets(x.relevant_at).in30).length} em 30 dias.`}><DataTable kind="monitoramentos" rows={monitoringExportRows(filtered.monitoring)} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} /></Section></TabsContent>
       <TabsContent value="team"><Section title="Desempenho da equipe" summary="Carga operacional calculada a partir dos vínculos permitidos pelo RLS."><DataTable kind="equipe" rows={filtered.members.map((m: AnyRow)=>({...m,tarefas:filtered.tasks.filter(t=>t.assignee_id===m.user_id).length,concluidas:filtered.tasks.filter(t=>t.assignee_id===m.user_id&&t.status==='concluida').length,atrasadas:filtered.tasks.filter(t=>t.assignee_id===m.user_id&&isOverdue(t.due_at,t.status)).length,processos:filtered.processes.filter(p=>p.owner_id===m.user_id).length}))} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} /></Section></TabsContent>
     </Tabs>}
   </div>;

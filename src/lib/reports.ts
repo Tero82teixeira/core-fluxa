@@ -1,4 +1,5 @@
 import type { AppRole } from "@/lib/domain";
+import { effectivePriority, type MonitoringAlert } from "./monitoring.ts";
 
 export type PeriodPreset = "7d" | "30d" | "90d" | "month" | "previous_month" | "year" | "custom";
 export type ReportFilters = {
@@ -47,6 +48,52 @@ export function monitoringBuckets(expiration: string | null | undefined, now = n
   const expiry = new Date(`${expiration.slice(0, 10)}T00:00:00`);
   const days = Math.ceil((expiry.getTime() - today.getTime()) / 86_400_000);
   return { expired: days < 0, in7: days >= 0 && days <= 7, in30: days >= 0 && days <= 30 };
+}
+
+export type MonitoringReportFilters = {
+  range: ReturnType<typeof periodRange>;
+  clientId?: string;
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  processId?: string;
+};
+
+export const isActiveMonitoring = (alert: Pick<MonitoringAlert, "monitoring_status">) =>
+  !["resolvido", "ignorado"].includes(alert.monitoring_status);
+
+/** Applies report controls using the operational alert model, without changing the view's RLS semantics. */
+export function filterMonitoringReport(alerts: MonitoringAlert[], filters: MonitoringReportFilters) {
+  return alerts.filter((alert) =>
+    isInPeriod(alert.relevant_at, filters.range) &&
+    (!filters.clientId || filters.clientId === "all" || alert.client_id === filters.clientId) &&
+    (!filters.assigneeId || filters.assigneeId === "all" || alert.assigned_to === filters.assigneeId || alert.responsible_id === filters.assigneeId) &&
+    (!filters.status || filters.status === "all" || alert.monitoring_status === filters.status) &&
+    (!filters.priority || filters.priority === "all" || effectivePriority(alert) === filters.priority) &&
+    (!filters.processId || filters.processId === "all" || alert.process_id === filters.processId));
+}
+
+export function monitoringReportMetrics(alerts: MonitoringAlert[], now = new Date()) {
+  return {
+    active: alerts.filter(isActiveMonitoring).length,
+    overdue: alerts.filter((alert) => monitoringBuckets(alert.relevant_at, now).expired).length,
+    in30: alerts.filter((alert) => monitoringBuckets(alert.relevant_at, now).in30).length,
+  };
+}
+
+/** Stable public columns for the monitoring table and both CSV export entry points. */
+export function monitoringExportRows(alerts: MonitoringAlert[]) {
+  return alerts.map((alert) => ({
+    title: alert.title,
+    source_type: alert.source_type,
+    monitoring_status: alert.monitoring_status,
+    priority: effectivePriority(alert),
+    responsible: alert.assigned_name ?? alert.responsible_name,
+    client: alert.client_name,
+    process: alert.process_code,
+    relevant_at: alert.relevant_at,
+    last_movement_at: alert.last_movement_at,
+  }));
 }
 
 export function groupCount<T>(rows: T[], key: (row: T) => string | null | undefined) {
