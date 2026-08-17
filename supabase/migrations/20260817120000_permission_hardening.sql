@@ -20,6 +20,17 @@ BEGIN
     IF NOT v_reviewer AND (NEW.status IN ('aprovado','rejeitado','arquivado') OR NEW.archived_at IS NOT NULL
       OR NEW.reviewed_by IS NOT NULL OR NEW.reviewed_by_name IS NOT NULL OR NEW.reviewed_at IS NOT NULL OR NEW.rejection_reason IS NOT NULL)
     THEN RAISE EXCEPTION 'DOCUMENT_SENSITIVE_UPDATE_DENIED'; END IF;
+    IF v_reviewer AND NEW.status IN ('aprovado','rejeitado','em_analise') THEN
+      NEW.reviewed_by := v_actor;
+      NEW.reviewed_by_name := v_name;
+      NEW.reviewed_at := now();
+      IF NEW.status <> 'rejeitado' THEN NEW.rejection_reason := NULL; END IF;
+    ELSE
+      NEW.reviewed_by := NULL;
+      NEW.reviewed_by_name := NULL;
+      NEW.reviewed_at := NULL;
+      NEW.rejection_reason := NULL;
+    END IF;
     RETURN NEW;
   END IF;
 

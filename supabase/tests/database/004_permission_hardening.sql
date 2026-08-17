@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = public, extensions;
-SELECT plan(13);
+SELECT plan(15);
 
 INSERT INTO auth.users(id,email,raw_user_meta_data,aud,role,encrypted_password,email_confirmed_at) VALUES
  ('12000000-0000-0000-0000-000000000001','owner-hardening@fluxa.test','{"full_name":"Owner"}','authenticated','authenticated','',now()),
@@ -23,9 +23,14 @@ VALUES ('32000000-0000-0000-0000-000000000001','22000000-0000-0000-0000-00000000
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','12000000-0000-0000-0000-000000000001',true);
 INSERT INTO public.documents(id,organization_id,title,status,file_path,original_file_name,stored_file_name,file_extension,mime_type,file_size,reviewed_by,reviewed_by_name,reviewed_at,rejection_reason)
-VALUES ('42000000-0000-0000-0000-000000000001','22000000-0000-0000-0000-000000000001','Documento A','rejeitado','a/v1.pdf','v1.pdf','v1.pdf','pdf','application/pdf',10,'12000000-0000-0000-0000-000000000001','Owner',now(),'corrigir');
+VALUES ('42000000-0000-0000-0000-000000000001','22000000-0000-0000-0000-000000000001','Documento A','rejeitado','a/v1.pdf','v1.pdf','v1.pdf','pdf','application/pdf',10,'12000000-0000-0000-0000-000000000002','Identidade forjada','2000-01-01','corrigir');
 INSERT INTO public.documents(id,organization_id,title,file_path,original_file_name,stored_file_name,file_extension,mime_type,file_size)
 VALUES ('42000000-0000-0000-0000-000000000002','22000000-0000-0000-0000-000000000002','Documento B','b/v1.pdf','v1.pdf','v1.pdf','pdf','application/pdf',10);
+INSERT INTO public.documents(id,organization_id,title,file_path,original_file_name,stored_file_name,file_extension,mime_type,file_size,reviewed_by,reviewed_by_name,reviewed_at,rejection_reason)
+VALUES ('42000000-0000-0000-0000-000000000003','22000000-0000-0000-0000-000000000001','Upload normal','a/normal.pdf','normal.pdf','normal.pdf','pdf','application/pdf',10,'12000000-0000-0000-0000-000000000002','Identidade forjada','2000-01-01','motivo indevido');
+
+SELECT ok((SELECT reviewed_by='12000000-0000-0000-0000-000000000001' AND reviewed_by_name='Owner' AND reviewed_at IS NOT NULL FROM public.documents WHERE id='42000000-0000-0000-0000-000000000001'),'insert revisado normaliza identidade e data do revisor');
+SELECT ok((SELECT reviewed_by IS NULL AND reviewed_by_name IS NULL AND reviewed_at IS NULL AND rejection_reason IS NULL FROM public.documents WHERE id='42000000-0000-0000-0000-000000000003'),'upload normal remove metadados de revisao enviados no payload');
 
 SELECT is((SELECT count(*) FROM public.financial_transactions),1::bigint,'proprietario le transacao financeira');
 SELECT set_config('request.jwt.claim.sub','12000000-0000-0000-0000-000000000002',true);
