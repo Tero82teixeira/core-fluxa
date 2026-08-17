@@ -1,6 +1,3 @@
-import type { AppRole } from "@/lib/domain";
-import { permissionsForRole } from "@/lib/access-control";
-
 export type FinancialType = "income" | "expense";
 export type FinancialStatus = "pending" | "partial" | "paid" | "overdue" | "cancelled";
 
@@ -39,15 +36,18 @@ export function availableFinancialAccounts(accounts: FinancialAccount[]) {
   return accounts.filter((account) => !account.archived_at && account.is_active);
 }
 
-export function canViewFinance(role?: AppRole | null) {
-  return permissionsForRole(role ?? null).canViewFinance;
+const FINANCE_ROLES = new Set(["superadmin", "proprietario", "administrador", "gestor"]);
+
+/** Mirrors the active finance matrix without introducing runtime imports in this Node-tested helper. */
+export function canViewFinance(role?: string | null) {
+  return FINANCE_ROLES.has(role ?? "");
 }
 
-export function canManageFinance(role?: AppRole | null) {
-  return permissionsForRole(role ?? null).canManageFinance;
+export function canManageFinance(role?: string | null) {
+  return canViewFinance(role);
 }
 
-export function canReverseFinancialPayment(role?: AppRole | null) {
+export function canReverseFinancialPayment(role?: string | null) {
   return role === "superadmin" || role === "proprietario" || role === "administrador";
 }
 
