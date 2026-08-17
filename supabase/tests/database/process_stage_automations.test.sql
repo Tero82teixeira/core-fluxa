@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path=public,extensions;
-SELECT plan(24);
+SELECT plan(25);
 
 INSERT INTO auth.users(id,email,raw_user_meta_data,aud,role,encrypted_password,email_confirmed_at) VALUES
  ('13000000-0000-0000-0000-000000000001','owner-auto@fluxa.test','{"full_name":"Owner"}','authenticated','authenticated','',now()),
@@ -43,6 +43,7 @@ SELECT is((SELECT priority::text FROM public.tasks WHERE title='Solicitar docume
 SELECT is((SELECT status::text FROM public.tasks WHERE title='Solicitar documentos'),'em_andamento','status inicial aplicado');
 SELECT ok(EXISTS(SELECT 1 FROM public.process_movements WHERE process_id='43000000-0000-0000-0000-000000000001' AND actor_name='Automação' AND description LIKE '%Solicitar documentos%'),'movimentação automática criada');
 SELECT is((SELECT status::text FROM public.automation_executions WHERE entity_id='43000000-0000-0000-0000-000000000001' ORDER BY created_at DESC LIMIT 1),'success','execução termina success');
+SELECT ok((SELECT length(dedupe_key)=64 AND dedupe_key ~ '^[0-9a-f]{64}$' FROM public.automation_executions WHERE entity_id='43000000-0000-0000-0000-000000000001' ORDER BY created_at DESC LIMIT 1),'dedupe usa SHA-256 hexadecimal qualificado');
 UPDATE public.processes SET stage='montagem' WHERE id='43000000-0000-0000-0000-000000000001';
 SELECT is((SELECT status::text FROM public.automation_executions WHERE entity_id='43000000-0000-0000-0000-000000000001' ORDER BY created_at DESC LIMIT 1),'skipped','outra etapa é skipped');
 UPDATE public.processes SET title='Sem mudança de etapa' WHERE id='43000000-0000-0000-0000-000000000001';

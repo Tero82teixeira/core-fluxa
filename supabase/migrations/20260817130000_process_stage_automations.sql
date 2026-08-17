@@ -60,7 +60,7 @@ BEGIN
   IF pg_trigger_depth()>4 OR _execution_depth>3 THEN RETURN 0; END IF;
   IF _event_type<>ALL(ARRAY['task.created','task.status_changed','task.assignee_changed','task.due_date_changed','task.completed','process.created','process.stage_changed','process.owner_changed','monitoring.created','monitoring.status_changed','monitoring.expiration_changed','monitoring.responsible_changed']) THEN RAISE EXCEPTION 'INVALID_EVENT'; END IF;
   FOR r IN SELECT * FROM public.automation_rules WHERE organization_id=_organization_id AND trigger_type=_event_type AND is_active AND archived_at IS NULL AND (id IS DISTINCT FROM _source_automation_rule_id) ORDER BY created_at LOOP
-    key:=encode(digest(r.id::text||':'||coalesce(_entity_id::text,'none')||':'||_event_type||':'||coalesce(_event_version,_payload::text),'sha256'),'hex');
+    key:=encode(extensions.digest(r.id::text||':'||coalesce(_entity_id::text,'none')||':'||_event_type||':'||coalesce(_event_version,_payload::text),'sha256'::text),'hex');
     BEGIN
       INSERT INTO public.automation_executions(organization_id,automation_rule_id,event_type,entity_type,entity_id,status,input_payload,source_automation_rule_id,execution_depth,dedupe_key) VALUES(_organization_id,r.id,_event_type,_entity_type,_entity_id,'running',_payload,_source_automation_rule_id,_execution_depth,key) RETURNING id INTO eid;
     EXCEPTION WHEN unique_violation THEN CONTINUE; END;
