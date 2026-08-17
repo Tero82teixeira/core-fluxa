@@ -15,6 +15,7 @@ export const AUTOMATION_TRIGGERS = [
 
 export const AUTOMATION_ACTIONS = [
   "create_task",
+  "create_checklist_item",
   "update_task_priority",
   "update_task_status",
   "add_task_history",
@@ -35,6 +36,29 @@ export type AutomationTrigger = (typeof AUTOMATION_TRIGGERS)[number];
 export type AutomationAction = (typeof AUTOMATION_ACTIONS)[number];
 export type ConditionOperator = (typeof CONDITION_OPERATORS)[number];
 export type AutomationCondition = { field: string; operator: ConditionOperator; value?: string };
+export type AssigneeMode = "process_owner" | "fixed_user" | "rule_creator" | "unassigned";
+
+export const ASSIGNEE_MODE_LABELS: Record<AssigneeMode, string> = {
+  process_owner: "Responsável do processo",
+  fixed_user: "Usuário específico",
+  rule_creator: "Criador da automação",
+  unassigned: "Sem responsável",
+};
+
+export function stageCondition(value: string): AutomationCondition[] {
+  return [{ field: "to_stage", operator: "equals", value }];
+}
+
+export function stageConditionValue(conditions: AutomationCondition[]) {
+  return conditions.find(
+    (condition) => condition.field === "to_stage" || condition.field === "stage",
+  )?.value;
+}
+
+export function automationDueDays(value: unknown) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= 365 ? parsed : 0;
+}
 
 export const TRIGGER_LABELS: Record<AutomationTrigger, string> = Object.fromEntries(
   AUTOMATION_TRIGGERS.map((value) => [
@@ -58,6 +82,7 @@ export const TRIGGER_LABELS: Record<AutomationTrigger, string> = Object.fromEntr
 
 export const ACTION_LABELS: Record<AutomationAction, string> = {
   create_task: "Criar tarefa",
+  create_checklist_item: "Criar item de checklist",
   update_task_priority: "Atualizar prioridade",
   update_task_status: "Atualizar status",
   add_task_history: "Registrar histórico",

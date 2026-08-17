@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Archive, Bot, Copy, History, Loader2, MoreHorizontal, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -32,13 +32,18 @@ import {
 import { useWorkspace } from "@/lib/workspace";
 import {
   ACTION_LABELS,
+  ASSIGNEE_MODE_LABELS,
   AUTOMATION_ACTIONS,
   AUTOMATION_TRIGGERS,
   canManageAutomations,
+  stageCondition,
+  stageConditionValue,
   TRIGGER_LABELS,
   type AutomationAction,
   type AutomationTrigger,
 } from "@/lib/automations";
+import { useTeamMembers } from "@/hooks/use-team";
+import { PRIORITY, PROCESS_STAGE, TASK_STATUS, type ProcessStage } from "@/lib/domain";
 import {
   useArchiveAutomationRule,
   useAutomationExecutions,
@@ -68,8 +73,20 @@ const empty: AutomationInput = {
   trigger_type: "task.created",
   conditions: [],
   action_type: "create_task",
-  action_config: { title: "Nova tarefa automática", priority: "media", status: "pendente" },
+  action_config: {
+    title: "Nova tarefa automática",
+    description: "",
+    priority: "media",
+    status: "pendente",
+    due_in_days: 0,
+    assignee_mode: "process_owner",
+  },
 };
+
+const configText = (config: Record<string, unknown>, key: string) =>
+  typeof config[key] === "string" ? config[key] : "";
+const configNumber = (config: Record<string, unknown>, key: string) =>
+  typeof config[key] === "number" ? config[key] : Number(config[key] ?? 0);
 function Page() {
   const { organizationId, role } = useWorkspace();
   const allowed = canManageAutomations(role);
@@ -212,6 +229,16 @@ function Page() {
                     <strong>{TRIGGER_LABELS[r.trigger_type]}</strong> →{" "}
                     {ACTION_LABELS[r.action_type]}
                   </p>
+                  {r.trigger_type === "process.stage_changed" &&
+                    stageConditionValue(r.conditions) && (
+                      <p className="text-sm text-muted-foreground">
+                        {PROCESS_STAGE[stageConditionValue(r.conditions) as ProcessStage]?.label ??
+                          stageConditionValue(r.conditions)}
+                      </p>
+                    )}
+                  {typeof r.action_config.title === "string" && (
+                    <p className="text-sm">{r.action_config.title}</p>
+                  )}
                 </div>
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground">
                   <div>
@@ -326,6 +353,24 @@ function AutomationForm({
   );
   const create = useCreateAutomationRule(organizationId),
     update = useUpdateAutomationRule(organizationId);
+  const members = useTeamMembers(organizationId);
+  useEffect(() => {
+    setForm(
+      rule
+        ? {
+            name: rule.name,
+            description: rule.description,
+            trigger_type: rule.trigger_type,
+            conditions: rule.conditions,
+            action_type: rule.action_type,
+            action_config: rule.action_config,
+            is_active: rule.is_active,
+          }
+        : { ...empty, action_config: { ...empty.action_config } },
+    );
+  }, [rule, open]);
+  const setConfig = (key: string, value: unknown) =>
+    setForm({ ...form, action_config: { ...form.action_config, [key]: value } });
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
@@ -386,7 +431,16 @@ function AutomationForm({
             <Label>Gatilho</Label>
             <Select
               value={form.trigger_type}
-              onValueChange={(v) => setForm({ ...form, trigger_type: v as AutomationTrigger })}
+              onValueChange={(v) =>
+                setForm({
+                  ...form,
+                  trigger_type: v as AutomationTrigger,
+                  conditions:
+                    v === "process.stage_changed"
+                      ? stageCondition(stageConditionValue(form.conditions) ?? "novo")
+                      : form.conditions,
+                })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -400,6 +454,26 @@ function AutomationForm({
               </SelectContent>
             </Select>
           </div>
+          {form.trigger_type === "process.stage_changed" && (
+            <div>
+              <Label>Quando o processo mudar para</Label>
+              <Select
+                value={stageConditionValue(form.conditions) ?? "novo"}
+                onValueChange={(value) => setForm({ ...form, conditions: stageCondition(value) })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(PROCESS_STAGE) as ProcessStage[]).map((stage) => (
+                    <SelectItem key={stage} value={stage}>
+                      {PROCESS_STAGE[stage].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <Label>Ação</Label>
             <Select
@@ -408,7 +482,12 @@ function AutomationForm({
                 setForm({
                   ...form,
                   action_type: v as AutomationAction,
-                  action_config: v === "create_task" ? empty.action_config : {},
+                  action_config:
+                    v === "create_task"
+                      ? { ...empty.action_config }
+                      : v === "create_checklist_item"
+                        ? { title: "", description: "", required: true, due_in_days: 0 }
+                        : {},
                 })
               }
             >
@@ -424,39 +503,196 @@ function AutomationForm({
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label htmlFor="action-title">Parâmetro principal</Label>
-            <Input
-              id="action-title"
-              required
-              value={String(
-                form.action_config.title ??
-                  form.action_config.message ??
-                  form.action_config.priority ??
-                  form.action_config.status ??
-                  "",
+          {form.action_type === "create_task" && (
+            <div className="space-y-4 rounded-lg border p-4">
+              <div>
+                <Label htmlFor="task-title">Título</Label>
+                <Input
+                  id="task-title"
+                  required
+                  maxLength={160}
+                  value={configText(form.action_config, "title")}
+                  onChange={(e) => setConfig("title", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="task-description">Descrição</Label>
+                <Textarea
+                  id="task-description"
+                  maxLength={2000}
+                  value={configText(form.action_config, "description")}
+                  onChange={(e) => setConfig("description", e.target.value)}
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Prioridade</Label>
+                  <Select
+                    value={configText(form.action_config, "priority") || "media"}
+                    onValueChange={(v) => setConfig("priority", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(["baixa", "media", "alta", "critica"] as const).map((v) => (
+                        <SelectItem key={v} value={v}>
+                          {PRIORITY[v].label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Status inicial</Label>
+                  <Select
+                    value={configText(form.action_config, "status") || "pendente"}
+                    onValueChange={(v) => setConfig("status", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(["pendente", "em_andamento", "aguardando"] as const).map((v) => (
+                        <SelectItem key={v} value={v}>
+                          {TASK_STATUS[v].label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="task-due">Prazo em dias</Label>
+                <Input
+                  id="task-due"
+                  type="number"
+                  required
+                  min={0}
+                  max={365}
+                  value={configNumber(form.action_config, "due_in_days")}
+                  onChange={(e) => setConfig("due_in_days", Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <Label>Responsável</Label>
+                <Select
+                  value={
+                    configText(form.action_config, "assignee_mode") ||
+                    (form.action_config.assignee_id ? "fixed_user" : "unassigned")
+                  }
+                  onValueChange={(v) => setConfig("assignee_mode", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(ASSIGNEE_MODE_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {(configText(form.action_config, "assignee_mode") === "fixed_user" ||
+                (!form.action_config.assignee_mode && Boolean(form.action_config.assignee_id))) && (
+                <div>
+                  <Label>Usuário específico</Label>
+                  <Select
+                    value={configText(form.action_config, "assignee_id")}
+                    onValueChange={(v) => setConfig("assignee_id", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um membro ativo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {members.data
+                        ?.filter((m) => m.is_active)
+                        .map((m) => (
+                          <SelectItem key={m.user_id} value={m.user_id}>
+                            {m.full_name || m.email || "Usuário"}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  action_config: {
-                    ...form.action_config,
-                    [form.action_type === "update_task_priority"
-                      ? "priority"
-                      : form.action_type === "update_task_status"
-                        ? "status"
-                        : form.action_type === "create_task"
-                          ? "title"
+            </div>
+          )}
+          {form.action_type === "create_checklist_item" && (
+            <div className="space-y-4 rounded-lg border p-4">
+              <div>
+                <Label htmlFor="checklist-title">Título</Label>
+                <Input
+                  id="checklist-title"
+                  required
+                  maxLength={160}
+                  value={configText(form.action_config, "title")}
+                  onChange={(e) => setConfig("title", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="checklist-description">Descrição</Label>
+                <Textarea
+                  id="checklist-description"
+                  maxLength={2000}
+                  value={configText(form.action_config, "description")}
+                  onChange={(e) => setConfig("description", e.target.value)}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="checklist-required">Obrigatório</Label>
+                <Switch
+                  id="checklist-required"
+                  checked={form.action_config.required !== false}
+                  onCheckedChange={(v) => setConfig("required", v)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="checklist-due">Prazo em dias</Label>
+                <Input
+                  id="checklist-due"
+                  type="number"
+                  required
+                  min={0}
+                  max={365}
+                  value={configNumber(form.action_config, "due_in_days")}
+                  onChange={(e) => setConfig("due_in_days", Number(e.target.value))}
+                />
+              </div>
+            </div>
+          )}
+          {!(["create_task", "create_checklist_item"] as string[]).includes(form.action_type) && (
+            <div>
+              <Label htmlFor="action-value">Parâmetro principal</Label>
+              <Input
+                id="action-value"
+                required
+                value={String(
+                  form.action_config.message ??
+                    form.action_config.priority ??
+                    form.action_config.status ??
+                    "",
+                )}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    action_config: {
+                      [form.action_type === "update_task_priority"
+                        ? "priority"
+                        : form.action_type === "update_task_status"
+                          ? "status"
                           : "message"]: e.target.value,
-                  },
-                })
-              }
-              placeholder="Título, status, prioridade ou mensagem"
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Não são aceitos código, SQL nem URLs externas.
-            </p>
-          </div>
+                    },
+                  })
+                }
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Não são aceitos código, SQL nem URLs externas.
+              </p>
+            </div>
+          )}
           <Button className="w-full" disabled={create.isPending || update.isPending}>
             {(create.isPending || update.isPending) && <Loader2 className="animate-spin" />}Salvar
             automação
@@ -506,6 +742,15 @@ function HistoryPanel({
                     </time>
                   </div>
                   <p className="mt-2 text-sm">{e.event_type}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Entidade: {e.entity_type}
+                    {e.entity_id ? ` · ${e.entity_id}` : ""}
+                  </p>
+                  {(e.output_payload?.action || rule) && (
+                    <p className="text-xs text-muted-foreground">
+                      Ação: {ACTION_LABELS[e.output_payload?.action ?? rule!.action_type]}
+                    </p>
+                  )}
                   {e.error_message && <p className="text-sm text-destructive">{e.error_message}</p>}
                 </CardContent>
               </Card>

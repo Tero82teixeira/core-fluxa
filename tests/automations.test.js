@@ -78,3 +78,47 @@ test("rota, botão por papel, estados e histórico existem", () => {
   for (const x of ["isLoading", "isError", "Nenhuma automação", "Histórico", "confirm("])
     assert.ok(page.includes(x));
 });
+
+const phaseTwoMigration = fs.readFileSync(
+  "supabase/migrations/20260817130000_process_stage_automations.sql",
+  "utf8",
+);
+test("fase 2 adiciona checklist sem substituir o motor", () => {
+  assert.match(lib, /create_checklist_item/);
+  assert.match(lib, /Criar item de checklist/);
+  assert.match(phaseTwoMigration, /CREATE OR REPLACE FUNCTION public\.process_automation_event/);
+  assert.doesNotMatch(phaseTwoMigration, /CREATE TABLE public\.automation_/);
+});
+test("tarefa automática valida configuração e responsabilidade dinâmica", () => {
+  for (const value of ["process_owner", "fixed_user", "rule_creator", "unassigned"])
+    assert.ok(phaseTwoMigration.includes(value));
+  assert.match(phaseTwoMigration, /due_text::int NOT BETWEEN 0 AND 365/);
+  assert.match(phaseTwoMigration, /pendente','em_andamento','aguardando/);
+  assert.match(phaseTwoMigration, /INVALID_ASSIGNEE/);
+});
+test("evento de etapa expõe transição e mantém stage legado", () => {
+  assert.match(phaseTwoMigration, /'from_stage',OLD\.stage,'to_stage',NEW\.stage/);
+  assert.match(page, /stageCondition\(value\)/);
+  assert.match(lib, /condition\.field === "to_stage" \|\| condition\.field === "stage"/);
+});
+test("UI possui formulários contextuais e controles adequados", () => {
+  for (const value of [
+    "Quando o processo mudar para",
+    "Status inicial",
+    "Prazo em dias",
+    "Usuário específico",
+    "Obrigatório",
+  ])
+    assert.ok(page.includes(value));
+  assert.match(page, /type="number"/);
+  assert.match(page, /PROCESS_STAGE/);
+  assert.match(page, /useTeamMembers/);
+});
+test("vínculos de processo, checklist, movimento e execução são tenant-safe", () => {
+  assert.match(phaseTwoMigration, /id=_entity_id AND organization_id=_organization_id/);
+  assert.match(phaseTwoMigration, /inherited_client := process_row\.client_id/);
+  assert.match(phaseTwoMigration, /process_checklist_items/);
+  assert.match(phaseTwoMigration, /coalesce\(max\(i\.position\),0\)\+1/);
+  assert.match(phaseTwoMigration, /process_movements/);
+  assert.match(phaseTwoMigration, /status='skipped'/);
+});
