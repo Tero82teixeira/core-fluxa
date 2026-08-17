@@ -1,3 +1,5 @@
+export { canManageFinance } from "./access-control.ts";
+
 export type FinancialType = "income" | "expense";
 export type FinancialStatus = "pending" | "partial" | "paid" | "overdue" | "cancelled";
 
@@ -34,10 +36,6 @@ export function availableFinancialCategories(categories: FinancialCategory[], ty
 
 export function availableFinancialAccounts(accounts: FinancialAccount[]) {
   return accounts.filter((account) => !account.archived_at && account.is_active);
-}
-
-export function canManageFinance(role?: string | null) {
-  return role === "proprietario" || role === "administrador" || role === "gestor";
 }
 
 export function canReverseFinancialPayment(role?: string | null) {

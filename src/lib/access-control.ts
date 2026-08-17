@@ -48,9 +48,13 @@ export type WorkspacePermissions = {
   canManageMonitoring: boolean;
   canManageTeam: boolean;
   canInviteMembers: boolean;
+  canViewFinance: boolean;
+  canManageFinance: boolean;
+  canViewReports: boolean;
+  canExportReports: boolean;
 };
 
-const EDITORS: AppRole[] = ["proprietario", "administrador", "gestor", "operacional", "atendimento"];
+const EDITORS: AppRole[] = ["proprietario", "administrador", "gestor", "operacional"];
 const MANAGERS: AppRole[] = ["superadmin", "proprietario", "administrador", "gestor"];
 const TASK_EDITORS: AppRole[] = ["superadmin", "proprietario", "administrador", "gestor", "operacional"];
 
@@ -75,8 +79,15 @@ export function permissionsForRole(role: AppRole | null): WorkspacePermissions {
     canManageMonitoring: isEditor,
     canManageTeam: isOwnerAdmin,
     canInviteMembers: isOwnerAdmin,
+    canViewFinance: isManager,
+    canManageFinance: isManager,
+    canViewReports: role ? ["superadmin", "proprietario", "administrador", "gestor", "operacional", "visualizador"].includes(role) : false,
+    canExportReports: role ? ["superadmin", "proprietario", "administrador", "gestor", "operacional"].includes(role) : false,
   };
 }
+
+export const canViewFinance = (role?: AppRole | null) => permissionsForRole(role ?? null).canViewFinance;
+export const canManageFinance = (role?: AppRole | null) => permissionsForRole(role ?? null).canManageFinance;
 
 export function hasAuthenticatedUser(userId: string | null | undefined): boolean {
   return Boolean(userId?.trim());
