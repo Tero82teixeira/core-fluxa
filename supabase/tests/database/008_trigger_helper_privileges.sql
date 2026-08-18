@@ -37,8 +37,11 @@ INSERT INTO public.processes(id,organization_id,code,client_id,title,stage) VALU
  ('48000000-0000-0000-0000-000000000002','28000000-0000-0000-0000-000000000002','HELP-B','38000000-0000-0000-0000-000000000002','Process B','novo');
 INSERT INTO public.tasks(id,organization_id,title,client_id,process_id,created_by) VALUES
  ('58000000-0000-0000-0000-000000000002','28000000-0000-0000-0000-000000000002','Task B','38000000-0000-0000-0000-000000000002','48000000-0000-0000-0000-000000000002','18000000-0000-0000-0000-000000000002');
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','18000000-0000-0000-0000-000000000002',true);
 INSERT INTO public.documents(id,organization_id,title,file_path,original_file_name,stored_file_name,file_extension,mime_type,file_size,uploaded_by) VALUES
  ('68000000-0000-0000-0000-000000000002','28000000-0000-0000-0000-000000000002','Document B','b/doc.pdf','doc.pdf','doc.pdf','pdf','application/pdf',1,'18000000-0000-0000-0000-000000000002');
+RESET ROLE;
 INSERT INTO public.financial_categories(id,organization_id,name,type,created_by) VALUES
  ('78000000-0000-0000-0000-000000000002','28000000-0000-0000-0000-000000000002','Category B','expense','18000000-0000-0000-0000-000000000002');
 INSERT INTO public.financial_accounts(id,organization_id,name,type,created_by) VALUES
