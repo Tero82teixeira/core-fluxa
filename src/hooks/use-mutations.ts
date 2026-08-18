@@ -87,7 +87,7 @@ export function useUpdateMemberRole(organizationId: string | null) {
   const actor = useActor();
   return useMutation({
     mutationFn: async ({ memberId, role, userId }: { memberId: string; role: AppRole; userId: string }) => {
-      const { error } = await db().from("organization_members").update({ role }).eq("id", memberId);
+      const { error } = await db().rpc("change_member_role", { _member: memberId, _role: role });
       if (error) throw error;
       await recordAudit({
         organizationId: organizationId!,
