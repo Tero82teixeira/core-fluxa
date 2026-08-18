@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = public, extensions;
-SELECT plan(39);
+SELECT plan(47);
 
 INSERT INTO auth.users(id,email,raw_user_meta_data,aud,role,encrypted_password,email_confirmed_at) VALUES
  ('11000000-0000-0000-0000-000000000001','rls-owner@fluxa.test','{}','authenticated','authenticated','',now()),
@@ -68,19 +68,27 @@ SELECT lives_ok($$DELETE FROM public.service_types WHERE name='Admin atualizado'
 
 SELECT set_config('request.jwt.claim.sub','11000000-0000-0000-0000-000000000003',true);
 SELECT throws_ok($$INSERT INTO public.process_stages(organization_id,key,label) VALUES ('21000000-0000-0000-0000-000000000001','montagem','Operacional')$$,'42501',NULL,'operacional não insere etapa');
-SELECT is((WITH changed AS (UPDATE public.process_stages SET label='Operacional' RETURNING 1) SELECT count(*) FROM changed),0::bigint,'operacional não atualiza etapa');
-SELECT is((WITH removed AS (DELETE FROM public.process_stages RETURNING 1) SELECT count(*) FROM removed),0::bigint,'operacional não exclui etapa');
+SELECT lives_ok($$UPDATE public.process_stages SET label='Operacional' WHERE id='31000000-0000-0000-0000-000000000001'$$,'UPDATE de etapa por operacional não encontra linha gravável');
+SELECT is((SELECT label FROM public.process_stages WHERE id='31000000-0000-0000-0000-000000000001'),'A','operacional não atualiza etapa');
+SELECT lives_ok($$DELETE FROM public.process_stages WHERE id='31000000-0000-0000-0000-000000000001'$$,'DELETE de etapa por operacional não encontra linha gravável');
+SELECT is((SELECT count(*) FROM public.process_stages WHERE id='31000000-0000-0000-0000-000000000001'),1::bigint,'operacional não exclui etapa');
 SELECT throws_ok($$INSERT INTO public.service_types(organization_id,name) VALUES ('21000000-0000-0000-0000-000000000001','Operacional')$$,'42501',NULL,'operacional não insere tipo');
-SELECT is((WITH changed AS (UPDATE public.service_types SET name='Operacional' RETURNING 1) SELECT count(*) FROM changed),0::bigint,'operacional não atualiza tipo');
-SELECT is((WITH removed AS (DELETE FROM public.service_types RETURNING 1) SELECT count(*) FROM removed),0::bigint,'operacional não exclui tipo');
+SELECT lives_ok($$UPDATE public.service_types SET name='Operacional' WHERE id='41000000-0000-0000-0000-000000000001'$$,'UPDATE de tipo por operacional não encontra linha gravável');
+SELECT is((SELECT name FROM public.service_types WHERE id='41000000-0000-0000-0000-000000000001'),'Serviço A','operacional não atualiza tipo');
+SELECT lives_ok($$DELETE FROM public.service_types WHERE id='41000000-0000-0000-0000-000000000001'$$,'DELETE de tipo por operacional não encontra linha gravável');
+SELECT is((SELECT count(*) FROM public.service_types WHERE id='41000000-0000-0000-0000-000000000001'),1::bigint,'operacional não exclui tipo');
 
 SELECT set_config('request.jwt.claim.sub','11000000-0000-0000-0000-000000000004',true);
 SELECT throws_ok($$INSERT INTO public.process_stages(organization_id,key,label) VALUES ('21000000-0000-0000-0000-000000000001','montagem','Viewer')$$,'42501',NULL,'visualizador não insere etapa');
-SELECT is((WITH changed AS (UPDATE public.process_stages SET label='Viewer' RETURNING 1) SELECT count(*) FROM changed),0::bigint,'visualizador não atualiza etapa');
-SELECT is((WITH removed AS (DELETE FROM public.process_stages RETURNING 1) SELECT count(*) FROM removed),0::bigint,'visualizador não exclui etapa');
+SELECT lives_ok($$UPDATE public.process_stages SET label='Viewer' WHERE id='31000000-0000-0000-0000-000000000001'$$,'UPDATE de etapa por visualizador não encontra linha gravável');
+SELECT is((SELECT label FROM public.process_stages WHERE id='31000000-0000-0000-0000-000000000001'),'A','visualizador não atualiza etapa');
+SELECT lives_ok($$DELETE FROM public.process_stages WHERE id='31000000-0000-0000-0000-000000000001'$$,'DELETE de etapa por visualizador não encontra linha gravável');
+SELECT is((SELECT count(*) FROM public.process_stages WHERE id='31000000-0000-0000-0000-000000000001'),1::bigint,'visualizador não exclui etapa');
 SELECT throws_ok($$INSERT INTO public.service_types(organization_id,name) VALUES ('21000000-0000-0000-0000-000000000001','Viewer')$$,'42501',NULL,'visualizador não insere tipo');
-SELECT is((WITH changed AS (UPDATE public.service_types SET name='Viewer' RETURNING 1) SELECT count(*) FROM changed),0::bigint,'visualizador não atualiza tipo');
-SELECT is((WITH removed AS (DELETE FROM public.service_types RETURNING 1) SELECT count(*) FROM removed),0::bigint,'visualizador não exclui tipo');
+SELECT lives_ok($$UPDATE public.service_types SET name='Viewer' WHERE id='41000000-0000-0000-0000-000000000001'$$,'UPDATE de tipo por visualizador não encontra linha gravável');
+SELECT is((SELECT name FROM public.service_types WHERE id='41000000-0000-0000-0000-000000000001'),'Serviço A','visualizador não atualiza tipo');
+SELECT lives_ok($$DELETE FROM public.service_types WHERE id='41000000-0000-0000-0000-000000000001'$$,'DELETE de tipo por visualizador não encontra linha gravável');
+SELECT is((SELECT count(*) FROM public.service_types WHERE id='41000000-0000-0000-0000-000000000001'),1::bigint,'visualizador não exclui tipo');
 
 RESET ROLE;
 SELECT * FROM finish();
