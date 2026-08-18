@@ -42,11 +42,13 @@ SELECT throws_ok($$SELECT public.change_member_role('35000000-0000-0000-0000-000
 SELECT throws_ok($$SELECT public.change_member_role('35000000-0000-0000-0000-000000000005','gestor')$$,
   'P0001','NOT_ALLOWED','usuario nao altera membro de outra organizacao');
 SELECT throws_ok($$UPDATE public.organization_members SET role='gestor' WHERE id='35000000-0000-0000-0000-000000000003'$$,
-  'P0001','MEMBER_ROLE_UPDATE_REQUIRES_RPC','UPDATE direto de role e rejeitado');
-SELECT lives_ok($$UPDATE public.organization_members SET is_active=false WHERE id='35000000-0000-0000-0000-000000000003'$$,
-  'UPDATE permitido de outro campo nao sofre regressao');
-SELECT is((SELECT is_active FROM public.organization_members WHERE id='35000000-0000-0000-0000-000000000003'),false,
-  'UPDATE de is_active persiste');
+  '42501','permission denied for table organization_members','UPDATE direto e rejeitado pelo privilegio da tabela');
+SELECT ok(NOT has_table_privilege('authenticated','public.organization_members','UPDATE'),
+  'authenticated nao possui privilegio UPDATE em organization_members');
+SELECT is((SELECT count(*) FROM information_schema.role_table_grants
+  WHERE grantee='authenticated' AND table_schema='public'
+    AND table_name='organization_members' AND privilege_type='UPDATE'),0::bigint,
+  'nenhuma permissao UPDATE e concedida a authenticated');
 
 SELECT set_config('request.jwt.claim.sub','15000000-0000-0000-0000-000000000004',true);
 SELECT throws_ok($$SELECT public.change_member_role('35000000-0000-0000-0000-000000000004','gestor')$$,
