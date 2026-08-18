@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path=public,extensions;
-SELECT plan(25);
+SELECT plan(27);
 
 INSERT INTO auth.users(id,email,raw_user_meta_data,aud,role,encrypted_password,email_confirmed_at) VALUES
  ('13000000-0000-0000-0000-000000000001','owner-auto@fluxa.test','{"full_name":"Owner"}','authenticated','authenticated','',now()),
@@ -64,6 +64,14 @@ INSERT INTO public.automation_rules(organization_id,name,trigger_type,conditions
  ('23000000-0000-0000-0000-000000000001','Auditoria legada','task.created','[]','add_audit_log','{"message":"task.created preservado"}',true,'13000000-0000-0000-0000-000000000001');
 INSERT INTO public.tasks(organization_id,title,created_by) VALUES ('23000000-0000-0000-0000-000000000001','Tarefa manual compatível','13000000-0000-0000-0000-000000000001');
 SELECT ok(EXISTS(SELECT 1 FROM public.audit_logs WHERE action='automation.action' AND metadata->>'message'='task.created preservado'),'task.created com add_audit_log continua funcionando');
+
+INSERT INTO public.automation_rules(organization_id,name,trigger_type,conditions,action_type,action_config,is_active,created_by) VALUES
+ ('23000000-0000-0000-0000-000000000001','Dedupe explícito','process.stage_changed','[]','add_audit_log','{"message":"dedupe explícito"}',true,'13000000-0000-0000-0000-000000000001');
+SELECT public.process_automation_event('23000000-0000-0000-0000-000000000001','process.stage_changed','process','43000000-0000-0000-0000-000000000001','{"stage":"montagem","from_stage":"protocolado","to_stage":"montagem"}',NULL,0,'replay-1');
+SELECT public.process_automation_event('23000000-0000-0000-0000-000000000001','process.stage_changed','process','43000000-0000-0000-0000-000000000001','{"stage":"montagem","from_stage":"protocolado","to_stage":"montagem"}',NULL,0,'replay-1');
+SELECT is((SELECT count(*) FROM public.automation_executions e JOIN public.automation_rules r ON r.id=e.automation_rule_id WHERE r.name='Dedupe explícito'),1::bigint,'replay com a mesma event_version é deduplicado');
+SELECT public.process_automation_event('23000000-0000-0000-0000-000000000001','process.stage_changed','process','43000000-0000-0000-0000-000000000001','{"stage":"montagem","from_stage":"protocolado","to_stage":"montagem"}',NULL,0,'replay-2');
+SELECT is((SELECT count(*) FROM public.automation_executions e JOIN public.automation_rules r ON r.id=e.automation_rule_id WHERE r.name='Dedupe explícito'),2::bigint,'event_version diferente permite nova execução');
 
 SELECT * FROM finish();
 ROLLBACK;

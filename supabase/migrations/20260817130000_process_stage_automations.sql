@@ -121,11 +121,11 @@ DECLARE payload jsonb;
 BEGIN
   IF TG_OP='INSERT' THEN
     payload:=to_jsonb(NEW)||jsonb_build_object('from_stage',NULL,'to_stage',NEW.stage);
-    PERFORM public.process_automation_event(NEW.organization_id,'process.created','process',NEW.id,payload,NULL,0,NEW.updated_at::text);
+    PERFORM public.process_automation_event(NEW.organization_id,'process.created','process',NEW.id,payload,NULL,0,concat_ws(':','created',statement_timestamp()::text,NEW.id::text));
   ELSE
     payload:=to_jsonb(NEW)||jsonb_build_object('from_stage',OLD.stage,'to_stage',NEW.stage);
-    IF OLD.stage IS DISTINCT FROM NEW.stage THEN PERFORM public.process_automation_event(NEW.organization_id,'process.stage_changed','process',NEW.id,payload,NULL,0,NEW.updated_at::text); END IF;
-    IF OLD.owner_id IS DISTINCT FROM NEW.owner_id THEN PERFORM public.process_automation_event(NEW.organization_id,'process.owner_changed','process',NEW.id,payload,NULL,0,NEW.updated_at::text); END IF;
+    IF OLD.stage IS DISTINCT FROM NEW.stage THEN PERFORM public.process_automation_event(NEW.organization_id,'process.stage_changed','process',NEW.id,payload,NULL,0,concat_ws(':','stage',statement_timestamp()::text,coalesce(OLD.stage::text,'null'),coalesce(NEW.stage::text,'null'))); END IF;
+    IF OLD.owner_id IS DISTINCT FROM NEW.owner_id THEN PERFORM public.process_automation_event(NEW.organization_id,'process.owner_changed','process',NEW.id,payload,NULL,0,concat_ws(':','owner',statement_timestamp()::text,coalesce(OLD.owner_id::text,'null'),coalesce(NEW.owner_id::text,'null'))); END IF;
   END IF; RETURN NEW;
 END $$;
 
