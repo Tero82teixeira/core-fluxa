@@ -1,0 +1,53 @@
+name: Supabase Production Deploy
+
+# Production migrations are intentionally triggered only by a human operator.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Inspect pending migrations or explicitly deploy them to production
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - deploy
+        # Inspection is the safe default; deployment must be selected explicitly.
+        default: dry-run
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  production-migrations:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      # Always use main so production receives only migrations that have been merged.
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link production project
+        run: supabase link --project-ref nobtbymxudlcsyurbopl --password "$SUPABASE_DB_PASSWORD"
+
+      - name: List migrations
+        run: supabase migration list --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Preview pending migrations
+        run: supabase db push --dry-run --yes --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Deploy pending migrations
+        if: github.event.inputs.mode == 'deploy'
+        run: supabase db push --yes --password "$SUPABASE_DB_PASSWORD"
