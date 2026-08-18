@@ -84,20 +84,10 @@ export function useMembers(organizationId: string | null) {
 
 export function useUpdateMemberRole(organizationId: string | null) {
   const queryClient = useQueryClient();
-  const actor = useActor();
   return useMutation({
-    mutationFn: async ({ memberId, role, userId }: { memberId: string; role: AppRole; userId: string }) => {
+    mutationFn: async ({ memberId, role }: { memberId: string; role: AppRole }) => {
       const { error } = await db().rpc("change_member_role", { _member: memberId, _role: role });
       if (error) throw error;
-      await recordAudit({
-        organizationId: organizationId!,
-        actorId: actor.userId,
-        actorName: actor.name,
-        action: "member.role_changed",
-        entity: "member",
-        entityId: userId,
-        metadata: { role },
-      });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["members", organizationId] }),
   });
