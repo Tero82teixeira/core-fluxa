@@ -6,6 +6,7 @@ const base=readFileSync("supabase/migrations/20260731184003_213e2283-a433-444c-9
 const edge=readFileSync("supabase/functions/send-team-invitation/index.ts","utf8");
 const page=readFileSync("src/routes/_authenticated/equipe.tsx","utf8");
 const hook=readFileSync("src/hooks/use-team.ts","utf8");
+const mutations=readFileSync("src/hooks/use-mutations.ts","utf8");
 const invite=readFileSync("src/routes/convite.$token.tsx","utf8");
 const all=page+invite+edge+hook;
 describe("equipe e permissões",()=>{
@@ -22,6 +23,7 @@ describe("equipe e permissões",()=>{
  test("aceite não cria organização",()=>assert.doesNotMatch(base.slice(base.indexOf('CREATE OR REPLACE FUNCTION public.accept_invitation'),base.indexOf('CREATE OR REPLACE FUNCTION public.change_member_role')),/INSERT INTO public.organizations/));
  test("impede membership duplicado",()=>assert.match(base,/ON CONFLICT ON CONSTRAINT organization_members_organization_id_user_id_key/));
  test("altera função por RPC",()=>assert.match(base,/change_member_role/));
+ test("mutação de papel usa somente a RPC segura",()=>{const fn=mutations.slice(mutations.indexOf("export function useUpdateMemberRole"),mutations.indexOf("/* ------------------------------------------------------------------ *",mutations.indexOf("export function useUpdateMemberRole")));assert.match(fn,/rpc\("change_member_role", \{ _member: memberId, _role: role \}\)/);assert.doesNotMatch(fn,/from\("organization_members"\).*update\(/s);});
  test("administrador não altera proprietário",()=>assert.match(base,/v_m.role = 'proprietario' OR _role IN \('proprietario','administrador'\)/));
  test("não altera própria função",()=>assert.match(base,/CANNOT_CHANGE_OWN_ROLE/));
  test("mantém proprietário ativo",()=>assert.match(base,/LAST_OWNER/));
