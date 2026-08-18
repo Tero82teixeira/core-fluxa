@@ -235,14 +235,12 @@ export function useCreateProcess(organizationId: string | null) {
         .single();
       if (error) throw error;
 
-      await db().from("process_movements").insert({
-        organization_id: organizationId,
-        process_id: data.id,
-        from_stage: null,
-        to_stage: values.stage,
-        description: "Processo criado.",
-        actor_name: actor.name,
-        created_by: actor.userId,
+      await db().rpc("record_process_movement", {
+        _organization_id: organizationId,
+        _process_id: data.id,
+        _from_stage: null,
+        _to_stage: values.stage,
+        _description: "Processo criado.",
       });
       await recordAudit({
         organizationId: organizationId!,
@@ -286,14 +284,12 @@ export function useMoveProcessStage(organizationId: string | null) {
         .eq("organization_id", organizationId);
       if (error) throw error;
 
-      const { error: movementError } = await db().from("process_movements").insert({
-        organization_id: organizationId,
-        process_id: processId,
-        from_stage: from,
-        to_stage: to,
-        description: `Etapa alterada de ${PROCESS_STAGE[from].label} para ${PROCESS_STAGE[to].label}.`,
-        actor_name: actor.name,
-        created_by: actor.userId,
+      const { error: movementError } = await db().rpc("record_process_movement", {
+        _organization_id: organizationId,
+        _process_id: processId,
+        _from_stage: from,
+        _to_stage: to,
+        _description: `Etapa alterada de ${PROCESS_STAGE[from].label} para ${PROCESS_STAGE[to].label}.`,
       });
       if (movementError) throw movementError;
 
@@ -338,12 +334,10 @@ export function useUpdateProcess(organizationId: string | null) {
       for (const [field, meta] of Object.entries(PROCESS_FIELD_AUDIT)) {
         const key = field as keyof ProcessInput;
         if (values[key] === undefined) continue;
-        await db().from("process_movements").insert({
-          organization_id: organizationId,
-          process_id: id,
-          description: `${meta!.label}: ${String(values[key] ?? "—")}.`,
-          actor_name: actor.name,
-          created_by: actor.userId,
+        await db().rpc("record_process_movement", {
+          _organization_id: organizationId,
+          _process_id: id,
+          _description: `${meta!.label}: ${String(values[key] ?? "—")}.`,
         });
         await recordAudit({
           organizationId: organizationId!,
@@ -398,12 +392,10 @@ export function useCreateTask(organizationId: string | null) {
         .single();
       if (error) throw error;
       if (values.process_id) {
-        await db().from("process_movements").insert({
-          organization_id: organizationId,
-          process_id: values.process_id,
-          description: `Tarefa criada: ${values.title}.`,
-          actor_name: actor.name,
-          created_by: actor.userId,
+        await db().rpc("record_process_movement", {
+          _organization_id: organizationId,
+          _process_id: values.process_id,
+          _description: `Tarefa criada: ${values.title}.`,
         });
       }
       await recordAudit({
@@ -464,12 +456,10 @@ export function useSetTaskStatus(organizationId: string | null) {
       if (error) throw error;
 
       if (processId) {
-        await db().from("process_movements").insert({
-          organization_id: organizationId,
-          process_id: processId,
-          description: done ? `Tarefa concluída: ${title ?? ""}.` : `Tarefa reaberta: ${title ?? ""}.`,
-          actor_name: actor.name,
-          created_by: actor.userId,
+        await db().rpc("record_process_movement", {
+          _organization_id: organizationId,
+          _process_id: processId,
+          _description: done ? `Tarefa concluída: ${title ?? ""}.` : `Tarefa reaberta: ${title ?? ""}.`,
         });
       }
       await recordAudit({
@@ -555,12 +545,10 @@ export function useAddProcessNote(organizationId: string | null) {
   const actor = useActor();
   return useMutation({
     mutationFn: async ({ processId, description }: { processId: string; description: string }) => {
-      const { error } = await db().from("process_movements").insert({
-        organization_id: organizationId,
-        process_id: processId,
-        description,
-        actor_name: actor.name,
-        created_by: actor.userId,
+      const { error } = await db().rpc("record_process_movement", {
+        _organization_id: organizationId,
+        _process_id: processId,
+        _description: description,
       });
       if (error) throw error;
       await db()
@@ -605,12 +593,10 @@ export function useCreateChecklistItem(organizationId: string | null, processId:
         updated_by: actor.userId,
       });
       if (error) throw error;
-      await db().from("process_movements").insert({
-        organization_id: organizationId,
-        process_id: processId,
-        description: `Item de checklist adicionado: ${values.title}.`,
-        actor_name: actor.name,
-        created_by: actor.userId,
+      await db().rpc("record_process_movement", {
+        _organization_id: organizationId,
+        _process_id: processId,
+        _description: `Item de checklist adicionado: ${values.title}.`,
       });
     },
     onSuccess: () => {
@@ -669,12 +655,10 @@ export function useUpdateChecklistItem(organizationId: string | null, processId:
         .eq("organization_id", organizationId);
       if (error) throw error;
       if (movement) {
-        await db().from("process_movements").insert({
-          organization_id: organizationId,
-          process_id: processId,
-          description: movement,
-          actor_name: actor.name,
-          created_by: actor.userId,
+        await db().rpc("record_process_movement", {
+          _organization_id: organizationId,
+          _process_id: processId,
+          _description: movement,
         });
       }
     },

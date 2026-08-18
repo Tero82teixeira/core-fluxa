@@ -245,12 +245,10 @@ export function useSaveTask(organizationId: string | null) {
       const created = data as { id: string };
 
       if (payload.process_id) {
-        await db().from("process_movements").insert({
-          organization_id: organizationId,
-          process_id: payload.process_id,
-          description: `Tarefa criada: ${values.title}.`,
-          actor_name: actor.name,
-          created_by: actor.userId,
+        await db().rpc("record_process_movement", {
+          _organization_id: organizationId,
+          _process_id: payload.process_id,
+          _description: `Tarefa criada: ${values.title}.`,
         });
       }
       await recordAudit({
@@ -328,12 +326,10 @@ export function useChangeTaskStatus(organizationId: string | null) {
           });
         }
         if (task.process_id) {
-          await db().from("process_movements").insert({
-            organization_id: task.organization_id,
-            process_id: task.process_id,
-            description: `Tarefa concluída: ${task.title}.`,
-            actor_name: actor.name,
-            created_by: actor.userId,
+          await db().rpc("record_process_movement", {
+            _organization_id: task.organization_id,
+            _process_id: task.process_id,
+            _description: `Tarefa concluída: ${task.title}.`,
           });
         }
       }

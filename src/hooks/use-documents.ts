@@ -362,12 +362,10 @@ export function useUploadDocument(organizationId: string | null) {
         }
 
         if (input.process_id) {
-          await db().from("process_movements").insert({
-            organization_id: organizationId,
-            process_id: input.process_id,
-            description: `Documento anexado: ${input.title}.`,
-            actor_name: actor.name,
-            created_by: actor.userId,
+          await db().rpc("record_process_movement", {
+            _organization_id: organizationId,
+            _process_id: input.process_id,
+            _description: `Documento anexado: ${input.title}.`,
           });
         }
 
@@ -565,17 +563,15 @@ export function useReviewDocument(organizationId: string | null) {
       }
 
       if (document.process_id) {
-        await db().from("process_movements").insert({
-          organization_id: organizationId,
-          process_id: document.process_id,
-          description:
+        await db().rpc("record_process_movement", {
+          _organization_id: organizationId,
+          _process_id: document.process_id,
+          _description:
             status === "aprovado"
               ? `Documento aprovado: ${document.title}.`
               : status === "rejeitado"
                 ? `Documento rejeitado: ${document.title}. Motivo: ${reason ?? "não informado"}.`
                 : `Documento em análise: ${document.title}.`,
-          actor_name: actor.name,
-          created_by: actor.userId,
         });
       }
 
