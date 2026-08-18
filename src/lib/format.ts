@@ -98,6 +98,16 @@ export function formatDate(value?: string | Date | null) {
   return new Intl.DateTimeFormat("pt-BR", { timeZone: TIMEZONE, dateStyle: "short" }).format(date);
 }
 
+/** Formata uma data civil sem aplicar conversão de fuso horário. */
+export function formatDateOnly(value?: string | Date | null) {
+  if (!value) return "—";
+  if (typeof value === "string") {
+    const match = /^(\d{4})-(\d{2})-(\d{2})(?:$|T)/.exec(value);
+    if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+  return formatDate(value);
+}
+
 export function formatDateTime(value?: string | Date | null) {
   const date = toDate(value);
   if (!date) return "—";
