@@ -33,6 +33,7 @@ export type AutomationExecution = {
   entity_id: string | null;
   status: "running" | "success" | "failed" | "skipped";
   error_message: string | null;
+  output_payload: { action?: AutomationAction } | null;
   started_at: string;
   finished_at: string | null;
   created_at: string;
@@ -72,7 +73,7 @@ export function useAutomationExecutions(organizationId: string | null, ruleId?: 
       let q = db
         .from("automation_executions")
         .select(
-          "id, automation_rule_id, event_type, entity_type, entity_id, status, error_message, started_at, finished_at, created_at",
+          "id, automation_rule_id, event_type, entity_type, entity_id, status, error_message, output_payload, started_at, finished_at, created_at",
         )
         .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
