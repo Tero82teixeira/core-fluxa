@@ -3251,6 +3251,16 @@ export type Database = {
         }
         Returns: number
       }
+      record_audit_event: {
+        Args: {
+          _action: string
+          _entity: string
+          _entity_id?: string
+          _metadata?: Json
+          _organization_id: string
+        }
+        Returns: string
+      }
       register_partial_payment: {
         Args: {
           _account_id: string
