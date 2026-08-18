@@ -53,7 +53,9 @@ export type AuditAction =
 
 type AuditInput = {
   organizationId: string;
+  /** @deprecated Identity is ignored and always derived by the audit RPC. */
   actorId?: string | null;
+  /** @deprecated Identity is ignored and always derived by the audit RPC. */
   actorName?: string | null;
   action: AuditAction;
   entity:
@@ -74,14 +76,12 @@ type AuditInput = {
 /** Registro de auditoria — nunca interrompe a operação principal. */
 export async function recordAudit(input: AuditInput) {
   try {
-    const { error } = await supabase.from("audit_logs").insert({
-      organization_id: input.organizationId,
-      actor_id: input.actorId ?? null,
-      actor_name: input.actorName ?? null,
-      action: input.action,
-      entity: input.entity,
-      entity_id: input.entityId ?? null,
-      metadata: (input.metadata ?? {}) as never,
+    const { error } = await supabase.rpc("record_audit_event", {
+      _organization_id: input.organizationId,
+      _action: input.action,
+      _entity: input.entity,
+      _entity_id: input.entityId ?? undefined,
+      _metadata: (input.metadata ?? {}) as never,
     });
     if (error) throw error;
   } catch (error) {

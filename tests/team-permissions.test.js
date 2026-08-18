@@ -23,7 +23,7 @@ describe("equipe e permissões",()=>{
  test("aceite não cria organização",()=>assert.doesNotMatch(base.slice(base.indexOf('CREATE OR REPLACE FUNCTION public.accept_invitation'),base.indexOf('CREATE OR REPLACE FUNCTION public.change_member_role')),/INSERT INTO public.organizations/));
  test("impede membership duplicado",()=>assert.match(base,/ON CONFLICT ON CONSTRAINT organization_members_organization_id_user_id_key/));
  test("altera função por RPC",()=>assert.match(base,/change_member_role/));
- test("mutação de papel usa somente a RPC segura",()=>{const fn=mutations.slice(mutations.indexOf("export function useUpdateMemberRole"),mutations.indexOf("/* ------------------------------------------------------------------ *",mutations.indexOf("export function useUpdateMemberRole")));assert.match(fn,/rpc\("change_member_role", \{ _member: memberId, _role: role \}\)/);assert.doesNotMatch(fn,/from\("organization_members"\).*update\(/s);});
+ test("mutação de papel usa somente a RPC segura e não duplica auditoria",()=>{const fn=mutations.slice(mutations.indexOf("export function useUpdateMemberRole"),mutations.indexOf("/* ------------------------------------------------------------------ *",mutations.indexOf("export function useUpdateMemberRole")));assert.match(fn,/rpc\("change_member_role", \{ _member: memberId, _role: role \}\)/);assert.doesNotMatch(fn,/recordAudit\(/);assert.doesNotMatch(fn,/from\("organization_members"\).*update\(/s);});
  test("administrador não altera proprietário",()=>assert.match(base,/v_m.role = 'proprietario' OR _role IN \('proprietario','administrador'\)/));
  test("não altera própria função",()=>assert.match(base,/CANNOT_CHANGE_OWN_ROLE/));
  test("mantém proprietário ativo",()=>assert.match(base,/LAST_OWNER/));
