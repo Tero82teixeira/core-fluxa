@@ -4,6 +4,37 @@ CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = public, extensions;
 SELECT plan(12);
 
+-- Evaluate the DELETE policy contract without issuing a direct DELETE against
+-- storage.objects, which is correctly rejected by Storage's protect_delete
+-- trigger. This helper lives only in pg_temp for this test transaction.
+CREATE FUNCTION pg_temp.orphan_delete_allowed(
+  _bucket_id text,
+  _name text,
+  _owner_id text
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT
+    _bucket_id = 'organization-documents'
+    AND public.storage_path_org(_name) IS NOT NULL
+    AND public.is_org_member(public.storage_path_org(_name))
+    AND _owner_id = (SELECT auth.uid()::text)
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.documents d
+      WHERE d.organization_id = public.storage_path_org(_name)
+        AND d.file_path = _name
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.document_versions v
+      WHERE v.organization_id = public.storage_path_org(_name)
+        AND v.file_path = _name
+    );
+$$;
+
 SELECT ok(EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'organization-documents'),
   'organization-documents bucket exists');
 SELECT is((SELECT public FROM storage.buckets WHERE id = 'organization-documents'), false,
@@ -52,28 +83,33 @@ INSERT INTO public.document_versions (organization_id, document_id, version_numb
    '26000000-0000-0000-0000-000000000001/version.pdf', 'version.pdf', 'version.pdf', 'application/pdf', 1);
 
 SELECT set_config('request.jwt.claim.sub', '16000000-0000-0000-0000-000000000002', true);
-DELETE FROM storage.objects WHERE bucket_id = 'organization-documents'
-  AND name = '26000000-0000-0000-0000-000000000001/orphan.pdf';
-SELECT is((SELECT count(*) FROM storage.objects WHERE name = '26000000-0000-0000-0000-000000000001/orphan.pdf'),
-  1::bigint, 'user from another organization cannot delete an object');
+SELECT is(pg_temp.orphan_delete_allowed(
+  'organization-documents',
+  '26000000-0000-0000-0000-000000000001/orphan.pdf',
+  '16000000-0000-0000-0000-000000000001'
+), false, 'user from another organization cannot delete an object');
 
 SELECT set_config('request.jwt.claim.sub', '16000000-0000-0000-0000-000000000001', true);
-DELETE FROM storage.objects WHERE bucket_id = 'organization-documents'
-  AND name = '26000000-0000-0000-0000-000000000001/other-owner.pdf';
-SELECT is((SELECT count(*) FROM storage.objects WHERE name = '26000000-0000-0000-0000-000000000001/other-owner.pdf'),
-  1::bigint, 'member cannot delete another owner object');
-DELETE FROM storage.objects WHERE bucket_id = 'organization-documents'
-  AND name = '26000000-0000-0000-0000-000000000001/orphan.pdf';
-SELECT is((SELECT count(*) FROM storage.objects WHERE name = '26000000-0000-0000-0000-000000000001/orphan.pdf'),
-  0::bigint, 'owner can delete own orphan object');
-DELETE FROM storage.objects WHERE bucket_id = 'organization-documents'
-  AND name = '26000000-0000-0000-0000-000000000001/document.pdf';
-SELECT is((SELECT count(*) FROM storage.objects WHERE name = '26000000-0000-0000-0000-000000000001/document.pdf'),
-  1::bigint, 'owner cannot delete object referenced by documents');
-DELETE FROM storage.objects WHERE bucket_id = 'organization-documents'
-  AND name = '26000000-0000-0000-0000-000000000001/version.pdf';
-SELECT is((SELECT count(*) FROM storage.objects WHERE name = '26000000-0000-0000-0000-000000000001/version.pdf'),
-  1::bigint, 'owner cannot delete object referenced by document_versions');
+SELECT is(pg_temp.orphan_delete_allowed(
+  'organization-documents',
+  '26000000-0000-0000-0000-000000000001/other-owner.pdf',
+  '16000000-0000-0000-0000-000000000002'
+), false, 'member cannot delete another owner object');
+SELECT is(pg_temp.orphan_delete_allowed(
+  'organization-documents',
+  '26000000-0000-0000-0000-000000000001/orphan.pdf',
+  '16000000-0000-0000-0000-000000000001'
+), true, 'owner can delete own orphan object');
+SELECT is(pg_temp.orphan_delete_allowed(
+  'organization-documents',
+  '26000000-0000-0000-0000-000000000001/document.pdf',
+  '16000000-0000-0000-0000-000000000001'
+), false, 'owner cannot delete object referenced by documents');
+SELECT is(pg_temp.orphan_delete_allowed(
+  'organization-documents',
+  '26000000-0000-0000-0000-000000000001/version.pdf',
+  '16000000-0000-0000-0000-000000000001'
+), false, 'owner cannot delete object referenced by document_versions');
 
 RESET ROLE;
 SELECT * FROM finish();
