@@ -28,14 +28,18 @@ INSERT INTO public.organizations (id, legal_name, trade_name) VALUES
   ('26000000-0000-0000-0000-000000000001', 'Storage Stage 16 A', 'Storage 16 A'),
   ('26000000-0000-0000-0000-000000000002', 'Storage Stage 16 B', 'Storage 16 B');
 INSERT INTO public.organization_members (organization_id, user_id, role, is_active) VALUES
-  ('26000000-0000-0000-0000-000000000001', '16000000-0000-0000-0000-000000000001', 'visualizador', true),
-  ('26000000-0000-0000-0000-000000000002', '16000000-0000-0000-0000-000000000002', 'visualizador', true);
+  ('26000000-0000-0000-0000-000000000001', '16000000-0000-0000-0000-000000000001', 'operacional', true),
+  ('26000000-0000-0000-0000-000000000002', '16000000-0000-0000-0000-000000000002', 'operacional', true);
 
 INSERT INTO storage.objects (bucket_id, name, owner_id) VALUES
   ('organization-documents', '26000000-0000-0000-0000-000000000001/orphan.pdf', '16000000-0000-0000-0000-000000000001'),
   ('organization-documents', '26000000-0000-0000-0000-000000000001/other-owner.pdf', '16000000-0000-0000-0000-000000000002'),
   ('organization-documents', '26000000-0000-0000-0000-000000000001/document.pdf', '16000000-0000-0000-0000-000000000001'),
   ('organization-documents', '26000000-0000-0000-0000-000000000001/version.pdf', '16000000-0000-0000-0000-000000000001');
+
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '16000000-0000-0000-0000-000000000001', true);
+
 INSERT INTO public.documents (id, organization_id, title, file_path, original_file_name,
   stored_file_name, file_extension, mime_type, file_size) VALUES
   ('46000000-0000-0000-0000-000000000001', '26000000-0000-0000-0000-000000000001',
@@ -47,7 +51,6 @@ INSERT INTO public.document_versions (organization_id, document_id, version_numb
   ('26000000-0000-0000-0000-000000000001', '46000000-0000-0000-0000-000000000002', 1,
    '26000000-0000-0000-0000-000000000001/version.pdf', 'version.pdf', 'version.pdf', 'application/pdf', 1);
 
-SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub', '16000000-0000-0000-0000-000000000002', true);
 DELETE FROM storage.objects WHERE bucket_id = 'organization-documents'
   AND name = '26000000-0000-0000-0000-000000000001/orphan.pdf';
