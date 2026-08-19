@@ -27,8 +27,7 @@ REVOKE INSERT, UPDATE, DELETE ON TABLE
   public.permissions,
   public.role_permissions,
   public.client_addresses,
-  public.client_contacts,
-  public.process_stages
+  public.client_contacts
 FROM authenticated;
 
 -- Browser-managed resources use soft deletion/archiving. Their reviewed direct
@@ -39,7 +38,6 @@ REVOKE DELETE ON TABLE
   public.clients,
   public.processes,
   public.tasks,
-  public.service_types,
   public.process_checklist_items,
   public.document_types,
   public.documents,

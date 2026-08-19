@@ -22,7 +22,6 @@ test("stage 18 closes known direct-write surfaces without revoking required read
     "role_permissions",
     "client_addresses",
     "client_contacts",
-    "process_stages",
     "audit_logs",
     "financial_transactions",
     "communication_threads",
@@ -31,6 +30,24 @@ test("stage 18 closes known direct-write surfaces without revoking required read
   }
   assert.doesNotMatch(migration, /REVOKE\s+SELECT[\s\S]*FROM authenticated/i);
   assert.doesNotMatch(migration, /FROM service_role/i);
+  assert.doesNotMatch(
+    migration,
+    /REVOKE\s+(?:INSERT, UPDATE, DELETE|DELETE)\s+ON TABLE[\s\S]*?public\.process_stages[\s\S]*?FROM authenticated/i,
+  );
+  assert.doesNotMatch(
+    migration,
+    /REVOKE DELETE ON TABLE[\s\S]*?public\.service_types[\s\S]*?FROM authenticated/i,
+  );
+});
+
+test("stage 18 database test treats PUBLIC as ACL grantee zero", () => {
+  const databaseTest = readFileSync(
+    "supabase/tests/database/017_database_privileges_hardening.sql",
+    "utf8",
+  );
+  assert.doesNotMatch(databaseTest, /has_(?:table|sequence|function)_privilege\('PUBLIC'/);
+  assert.match(databaseTest, /aclexplode/);
+  assert.match(databaseTest, /acl\.grantee = 0/g);
 });
 
 test("stage 18 secures postgres default privileges for every object class", () => {
