@@ -75,7 +75,7 @@ INSERT INTO public.organization_invitations(id,organization_id,email,role,status
  ('45150000-0000-0000-0000-000000000001','25150000-0000-0000-0000-000000000001','accept15@fluxa.test','gestor','pending',encode(extensions.digest(repeat('p',32),'sha256'),'hex'),now()+interval '1 day'),
  ('45150000-0000-0000-0000-000000000002','25150000-0000-0000-0000-000000000001','pending15@fluxa.test','operacional','pending',encode(extensions.digest(repeat('q',32),'sha256'),'hex'),now()+interval '1 day'),
  ('45150000-0000-0000-0000-000000000003','25150000-0000-0000-0000-000000000001','accept15@fluxa.test','operacional','cancelled',encode(extensions.digest(repeat('c',32),'sha256'),'hex'),now()+interval '1 day'),
- ('45150000-0000-0000-0000-000000000004','25150000-0000-0000-0000-000000000001','accept15@fluxa.test','operacional','pending',encode(extensions.digest(repeat('e',32),'sha256'),'hex'),now()-interval '1 day'),
+ ('45150000-0000-0000-0000-000000000004','25150000-0000-0000-0000-000000000001','expired15@fluxa.test','operacional','pending',encode(extensions.digest(repeat('e',32),'sha256'),'hex'),now()-interval '1 day'),
  ('45150000-0000-0000-0000-000000000005','25150000-0000-0000-0000-000000000001','accept15@fluxa.test','operacional','accepted',encode(extensions.digest(repeat('u',32),'sha256'),'hex'),now()+interval '1 day'),
  ('45150000-0000-0000-0000-000000000006','25150000-0000-0000-0000-000000000002','cross15@fluxa.test','operacional','pending',encode(extensions.digest(repeat('x',32),'sha256'),'hex'),now()+interval '1 day');
 
