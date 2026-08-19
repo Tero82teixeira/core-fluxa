@@ -3261,6 +3261,16 @@ export type Database = {
         }
         Returns: string
       }
+      record_process_movement: {
+        Args: {
+          _description: string
+          _from_stage?: Database["public"]["Enums"]["process_stage"]
+          _organization_id: string
+          _process_id: string
+          _to_stage?: Database["public"]["Enums"]["process_stage"]
+        }
+        Returns: string
+      }
       register_partial_payment: {
         Args: {
           _account_id: string
@@ -3286,16 +3296,6 @@ export type Database = {
       }
       set_financial_account_active: {
         Args: { _organization_id: string; _payload: Json }
-        Returns: string
-      }
-      record_process_movement: {
-        Args: {
-          _description: string
-          _from_stage?: Database["public"]["Enums"]["process_stage"]
-          _organization_id: string
-          _process_id: string
-          _to_stage?: Database["public"]["Enums"]["process_stage"]
-        }
         Returns: string
       }
       set_financial_category_active: {
