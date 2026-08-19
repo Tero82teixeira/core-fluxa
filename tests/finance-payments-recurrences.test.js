@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { describe, test } from "node:test";
 import {
   canManageFinance,
@@ -193,7 +193,8 @@ describe("recorrências financeiras", () => {
     );
   });
   test("não há Edge Function nova nem escrita financeira direta no frontend", () => {
-    const functions = readdirSync(new URL("../supabase/functions", import.meta.url));
+    const functionsUrl = new URL("../supabase/functions", import.meta.url);
+    const functions = existsSync(functionsUrl) ? readdirSync(functionsUrl) : [];
     assert.deepEqual(functions, []);
     assert.doesNotMatch(
       route + hook,
