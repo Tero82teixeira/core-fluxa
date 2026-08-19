@@ -15,6 +15,9 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+.env.local
+.env.*.local
+.env.production
 
 # Supabase CLI temporary artifacts
 supabase/.temp/

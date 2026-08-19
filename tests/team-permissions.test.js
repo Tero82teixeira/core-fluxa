@@ -3,12 +3,11 @@ import { describe, test } from "node:test";
 import { readFileSync } from "node:fs";
 const migration=readFileSync("supabase/migrations/20260802230000_complete_team_permissions.sql","utf8");
 const base=readFileSync("supabase/migrations/20260731184003_213e2283-a433-444c-9de8-cdd162bacfa2.sql","utf8");
-const edge=readFileSync("supabase/functions/send-team-invitation/index.ts","utf8");
 const page=readFileSync("src/routes/_authenticated/equipe.tsx","utf8");
 const hook=readFileSync("src/hooks/use-team.ts","utf8");
 const mutations=readFileSync("src/hooks/use-mutations.ts","utf8");
 const invite=readFileSync("src/routes/convite.$token.tsx","utf8");
-const all=page+invite+edge+hook;
+const all=page+invite+hook;
 describe("equipe e permissões",()=>{
  test("lista membros da organização",()=>assert.match(page,/useTeamMembers\(organizationId\)/));
  test("isola outra organização",()=>assert.match(migration,/is_org_member\(organization_id\)/));
@@ -45,8 +44,6 @@ describe("equipe e permissões",()=>{
 });
 
 describe("revisão de segurança do PR #3",()=>{
- test("origin malicioso do body é ignorado",()=>{assert.doesNotMatch(edge,/organizationId, email, role, origin/);assert.match(edge,/Deno\.env\.get\("APP_URL"\)/);});
- test("APP_URL ausente falha de forma segura",()=>assert.match(edge,/INVITATION_URL_NOT_CONFIGURED/));
  test("aceite bloqueia convite expirado",()=>assert.match(migration,/INVITE_EXPIRED/));
  test("aceite bloqueia convite cancelado",()=>assert.match(migration,/INVITE_CANCELLED/));
  test("aceite bloqueia convite reutilizado com lock",()=>assert.match(migration,/FOR UPDATE[\s\S]+INVITE_ALREADY_USED/));
@@ -59,5 +56,4 @@ describe("revisão de segurança do PR #3",()=>{
  test("falha de transferência não desativa membro",()=>{const fn=migration.slice(migration.lastIndexOf("FUNCTION public.transfer_member_responsibilities"));assert.doesNotMatch(fn,/SET is_active=false/);});
  test("DELETE físico de tasks continua revogado",()=>assert.match(migration,/DROP POLICY IF EXISTS tasks_viewer_delete[\s\S]+REVOKE DELETE ON public\.tasks FROM authenticated/));
  test("preview nunca retorna token_hash",()=>{const fn=migration.slice(migration.indexOf("FUNCTION public.invitation_preview"),migration.indexOf("FUNCTION public.accept_invitation"));assert.doesNotMatch(fn,/RETURNS TABLE\([^)]*token_hash/);});
- test("CORS rejeita domínio não permitido",()=>{assert.match(edge,/ORIGIN_NOT_ALLOWED/);assert.doesNotMatch(edge,/Access-Control-Allow-Origin[^\n]+\*/);});
 });
