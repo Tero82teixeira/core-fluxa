@@ -194,7 +194,7 @@ describe("recorrências financeiras", () => {
   });
   test("não há Edge Function nova nem escrita financeira direta no frontend", () => {
     const functions = readdirSync(new URL("../supabase/functions", import.meta.url));
-    assert.deepEqual(functions, ["send-team-invitation"]);
+    assert.deepEqual(functions, []);
     assert.doesNotMatch(
       route + hook,
       /\.from\(["']financial_(?:transaction_payments|account_movements|recurrences)["']\)\.(?:insert|update|upsert|delete)/,

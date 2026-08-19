@@ -1,3 +1,1 @@
 project_id = "nobtbymxudlcsyurbopl"
-[functions.send-team-invitation]
-verify_jwt = true
