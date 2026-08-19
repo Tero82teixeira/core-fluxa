@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const migrationPath = "supabase/migrations/20260818210000_harden_document_privileges_rls.sql";
+const migrationPath = "supabase/migrations/20260818220000_harden_document_privileges_rls.sql";
 const migration = readFileSync(migrationPath, "utf8");
 
 test("stage 13 revokes dangerous document table privileges", () => {
