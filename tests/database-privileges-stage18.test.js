@@ -48,6 +48,11 @@ test("stage 18 database test treats PUBLIC as ACL grantee zero", () => {
   assert.doesNotMatch(databaseTest, /has_(?:table|sequence|function)_privilege\('PUBLIC'/);
   assert.match(databaseTest, /aclexplode/);
   assert.match(databaseTest, /acl\.grantee = 0/g);
+  assert.doesNotMatch(databaseTest, /CREATE FUNCTION public\.stage18_default_function_probe/);
+  assert.match(databaseTest, /FROM pg_default_acl d/);
+  assert.match(databaseTest, /owner_role\.rolname = 'postgres'/);
+  assert.match(databaseTest, /n\.nspname = 'public'/);
+  assert.match(databaseTest, /d\.defaclobjtype = 'f'/);
 });
 
 test("stage 18 secures postgres default privileges for every object class", () => {
