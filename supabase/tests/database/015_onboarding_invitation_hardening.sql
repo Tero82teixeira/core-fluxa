@@ -102,7 +102,22 @@ SELECT throws_ok($$SELECT * FROM public.create_invitation('25150000-0000-0000-00
 
 SELECT set_config('request.jwt.claim.sub','15150000-0000-0000-0000-000000000008',true);
 SELECT throws_ok($$SELECT public.accept_invitation(repeat('c',32))$$, 'P0001', 'INVITE_CANCELLED', 'cancelled invitation blocked');
-SELECT throws_ok($$SELECT public.accept_invitation(repeat('e',32))$$, 'P0001', 'INVITE_EXPIRED', 'expired invitation blocked');
+DO $$
+DECLARE v_expired public.organization_invitations%ROWTYPE;
+BEGIN
+  SELECT * INTO STRICT v_expired
+    FROM public.organization_invitations
+   WHERE id='45150000-0000-0000-0000-000000000004';
+  IF v_expired.status <> 'expired'
+     OR v_expired.expires_at >= now()
+     OR lower(v_expired.email) <> 'expired15@fluxa.test'
+     OR v_expired.token_hash <> encode(extensions.digest(repeat('e',32),'sha256'),'hex') THEN
+    RAISE EXCEPTION 'expired invitation fixture was unexpectedly changed: status=%, expires_at=%, email=%, token_hash=%',
+      v_expired.status, v_expired.expires_at, v_expired.email, v_expired.token_hash;
+  END IF;
+END
+$$;
+SELECT throws_ok($$SELECT public.accept_invitation(repeat('e',32))$$, 'P0001', 'INVITE_ALREADY_USED', 'normalized expired invitation is blocked');
 SELECT throws_ok($$SELECT public.accept_invitation(repeat('u',32))$$, 'P0001', 'INVITE_ALREADY_USED', 'used invitation blocked');
 SELECT lives_ok($$SELECT * FROM public.accept_invitation(repeat('p',32))$$, 'matching user accepts valid invitation');
 SELECT throws_ok($$SELECT public.accept_invitation(repeat('p',32))$$, 'P0001', 'INVITE_NOT_FOUND', 'accepted token cannot be reused');
