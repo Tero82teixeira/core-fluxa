@@ -43,12 +43,20 @@ SELECT set_config('request.jwt.claim.sub','13000000-0000-0000-0000-000000000005'
 SELECT ok((SELECT count(*) > 0 FROM public.document_types WHERE organization_id='23000000-0000-0000-0000-000000000001'), 'common member can select document types');
 
 SELECT set_config('request.jwt.claim.sub','13000000-0000-0000-0000-000000000004',true);
-SELECT throws_ok($$INSERT INTO public.document_types(organization_id,name,category) VALUES('23000000-0000-0000-0000-000000000001','Operator denied','outros')$$, 'operator cannot insert document type');
-SELECT is((WITH changed AS (UPDATE public.document_types SET description='operator denied' WHERE organization_id='23000000-0000-0000-0000-000000000001' RETURNING 1) SELECT count(*) FROM changed), 0::bigint, 'operator cannot update document type');
+SELECT throws_ok($$INSERT INTO public.document_types(organization_id,name,category) VALUES('23000000-0000-0000-0000-000000000001','Operator denied','outros')$$, '42501', NULL, 'operator cannot insert document type');
+WITH changed AS (
+  UPDATE public.document_types SET description='operator denied'
+  WHERE organization_id='23000000-0000-0000-0000-000000000001' RETURNING 1
+)
+SELECT is((SELECT count(*) FROM changed), 0::bigint, 'operator cannot update document type');
 
 SELECT set_config('request.jwt.claim.sub','13000000-0000-0000-0000-000000000003',true);
-SELECT throws_ok($$INSERT INTO public.document_types(organization_id,name,category) VALUES('23000000-0000-0000-0000-000000000001','Manager denied','outros')$$, 'manager cannot insert document type');
-SELECT is((WITH changed AS (UPDATE public.document_types SET description='manager denied' WHERE organization_id='23000000-0000-0000-0000-000000000001' RETURNING 1) SELECT count(*) FROM changed), 0::bigint, 'manager cannot update document type');
+SELECT throws_ok($$INSERT INTO public.document_types(organization_id,name,category) VALUES('23000000-0000-0000-0000-000000000001','Manager denied','outros')$$, '42501', NULL, 'manager cannot insert document type');
+WITH changed AS (
+  UPDATE public.document_types SET description='manager denied'
+  WHERE organization_id='23000000-0000-0000-0000-000000000001' RETURNING 1
+)
+SELECT is((SELECT count(*) FROM changed), 0::bigint, 'manager cannot update document type');
 
 SELECT set_config('request.jwt.claim.sub','13000000-0000-0000-0000-000000000001',true);
 SELECT lives_ok($$INSERT INTO public.document_types(id,organization_id,name,category) VALUES('33000000-0000-0000-0000-000000000001','23000000-0000-0000-0000-000000000001','Owner type 13','outros')$$, 'owner can insert document type');
