@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { readFileSync, readdirSync } from "node:fs";
-import { createCsv, filterMonitoringReport, groupCount, isActiveMonitoring, isInPeriod, isOverdue, monitoringBuckets, monitoringExportRows, monitoringReportMetrics, periodRange, sanitizeClient } from "../src/lib/reports.ts";
+import { clientProcessSummary, createCsv, filterMonitoringReport, filterReportRows, groupCount, isActiveMonitoring, isInPeriod, isOverdue, monitoringBuckets, monitoringExportRows, monitoringReportMetrics, periodRange, sanitizeClient } from "../src/lib/reports.ts";
 import { permissionsForRole } from "../src/lib/access-control.ts";
 
 const route = readFileSync(new URL("../src/routes/_authenticated/relatorios.tsx", import.meta.url), "utf8");
@@ -33,6 +33,19 @@ describe("módulo de relatórios", () => {
   test("exportação recebe colunas do alerta operacional", () => assert.deepEqual(Object.keys(monitoringExportRows([alert()])[0]), ["title","source_type","monitoring_status","priority","responsible","client","process","relevant_at","last_movement_at"]));
   test("filtra últimos 7 dias", () => assert.equal(isInPeriod("2026-08-02", periodRange("7d", new Date("2026-08-06"))), true));
   test("filtra período personalizado", () => assert.equal(isInPeriod("2026-07-15", periodRange("custom", new Date("2026-08-06"), {from:"2026-07-01",to:"2026-07-31"})), true));
+  test("filtro de cliente usa a chave explícita de cada coleção", () => {
+    const clients = [{ id:"client-a", name:"A", created_at:"2026-08-10" }, { id:"client-b", name:"B", created_at:"2026-08-10" }];
+    const processes = [{ id:"process-a", client_id:"client-a", opened_at:"2026-08-10" }, { id:"client-a", client_id:"client-b", opened_at:"2026-08-10" }];
+    const tasks = [{ id:"client-a", client_id:"client-b", created_at:"2026-08-10" }];
+    const documents = [{ id:"client-a", client_id:"client-b", created_at:"2026-08-10" }];
+    const allFilters = { range, clientId:"all", assigneeId:"all", status:"all", priority:"all", processId:"all" };
+    assert.deepEqual(filterReportRows(clients, allFilters, { clientKey:"id" }), clients);
+    assert.deepEqual(filterReportRows(clients, { ...allFilters, clientId:"client-a" }, { clientKey:"id" }), [clients[0]]);
+    assert.deepEqual(filterReportRows(processes, { ...allFilters, clientId:"client-a" }, { clientKey:"client_id", dateKey:"opened_at", processOwnId:true }), [processes[0]]);
+    for (const rows of [tasks, documents]) assert.deepEqual(filterReportRows(rows, { ...allFilters, clientId:"client-a" }, { clientKey:"client_id" }), []);
+    assert.deepEqual(filterReportRows(clients, { ...allFilters, clientId:"all" }, { clientKey:"id" }), clients);
+    assert.deepEqual(clientProcessSummary([clients[0]], [processes[0]]), { withProcesses:1, withoutProcesses:0 });
+  });
   test("filtros de cliente, responsável, status e prioridade estão disponíveis", () => ["Cliente","Responsável","Status","Prioridade"].forEach(x=>assert.match(route,new RegExp(x))));
   test("CSV usa BOM UTF-8 e separador do Excel pt-BR", () => { const csv=createCsv([{nome:"João",total:2}]); assert.equal(csv.charCodeAt(0),0xfeff); assert.match(csv,/"nome";"total"/); });
   test("CSV escapa aspas", () => assert.match(createCsv([{nome:'A "B"'}]), /A ""B""/));
