@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { readFileSync } from "node:fs";
 import { HELP_ARTICLES, searchHelpArticles } from "../src/lib/help-center.ts";
+import { goToHelpArticleModule, openHelpArticle } from "../src/lib/help-center-interactions.ts";
 const sql = readFileSync(
   new URL("../supabase/migrations/20260810180000_help_support_center.sql", import.meta.url),
   "utf8",
@@ -22,23 +23,84 @@ describe("central de ajuda", () => {
     assert.ok(HELP_ARTICLES.length >= 45);
     assert.doesNotMatch(route, /const HELP_ARTICLES/);
   });
-  test("abre artigo e navega internamente para o módulo", () => {
-    assert.match(route, /setSelected\(a\)/);
-    assert.match(route, /useNavigate/);
-    assert.match(route, />\s*Ir para o módulo\s*</);
-    assert.match(
-      route,
-      /navigate\s*\(\s*\{\s*to\s*:\s*selected\.relatedRoute(?:\s+as\s+["'][^"']+["'])?\s*\}\s*\)/,
+  test("artigo, guia rápido e FAQ abrem o diálogo sem navegar", () => {
+    const article = HELP_ARTICLES.find((item) => item.id === "primeira-tarefa");
+    assert.ok(article);
+
+    for (const entry of ["Ler artigo", "Guia rápido", "FAQ"]) {
+      const selected = [];
+      const navigated = [];
+      const event = activationEvent();
+      openHelpArticle(event, article, (value) => selected.push(value));
+
+      assert.deepEqual(selected, [article], `${entry} deve selecionar o artigo`);
+      assert.deepEqual(navigated, [], `${entry} não deve navegar`);
+      assert.equal(event.prevented, 1);
+      assert.equal(event.stopped, 1);
+    }
+  });
+  test("diálogo apresenta título, resumo, passo a passo e dicas", () => {
+    const article = HELP_ARTICLES.find((item) => item.id === "primeira-tarefa");
+    assert.ok(article?.title);
+    assert.ok(article?.summary);
+    assert.ok(article?.content.length);
+    assert.ok(article?.tips.length);
+    assert.match(route, /<DialogTitle[\s\S]*selected\.title/);
+    assert.match(route, /<DialogDescription>\{selected\.summary\}/);
+    assert.match(route, /selected\.content\.map/);
+    assert.match(route, /selected\.tips\.map/);
+  });
+  test("Fechar limpa o artigo sem navegar", () => {
+    const selected = [];
+    const navigated = [];
+    selected.push(null);
+    assert.deepEqual(selected, [null]);
+    assert.deepEqual(navigated, []);
+    assert.match(route, /type="button" variant="outline" onClick=\{\(\) => setSelected\(null\)\}/);
+  });
+  test("Ir para o módulo fecha e navega exatamente uma vez para relatedRoute", () => {
+    const article = HELP_ARTICLES.find((item) => item.id === "primeira-tarefa");
+    assert.ok(article);
+    const selected = [];
+    const navigated = [];
+    const event = activationEvent();
+
+    goToHelpArticleModule(
+      event,
+      article,
+      (value) => selected.push(value),
+      (to) => navigated.push(to),
     );
-    assert.doesNotMatch(route, /window\.open\s*\(/);
-    assert.doesNotMatch(route, /href\s*=\s*["']https?:\/\//i);
-    assert.doesNotMatch(route, /target="_blank"/);
+
+    assert.deepEqual(selected, [null]);
+    assert.deepEqual(navigated, [article.relatedRoute]);
+    assert.equal(navigated[0], "/tarefas");
+  });
+  test("somente a ação explícita do diálogo recebe a navegação", () => {
+    assert.equal(route.match(/\bnavigate\s*\(/g)?.length, 1);
+    assert.match(route, /goToHelpArticleModule\(event, selected/);
+    assert.equal(route.match(/openHelpArticle\(event,/g)?.length, 3);
+    assert.doesNotMatch(route, /window\.open\s*\(|href\s*=\s*["']https?:\/\/|target="_blank"/i);
+    assert.equal(route.match(/type="button"/g)?.length >= 5, true);
   });
   test("exibe estados vazios de busca e solicitações", () => {
     assert.match(route, /Nenhum conteúdo encontrado/);
     assert.match(route, /Você ainda não abriu nenhuma solicitação/);
   });
 });
+
+function activationEvent() {
+  return {
+    prevented: 0,
+    stopped: 0,
+    preventDefault() {
+      this.prevented += 1;
+    },
+    stopPropagation() {
+      this.stopped += 1;
+    },
+  };
+}
 describe("segurança do suporte", () => {
   test("criação usa RPC e não update direto", () => {
     assert.match(hook, /rpc\("create_support_request"/);
