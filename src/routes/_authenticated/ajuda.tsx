@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BookOpen, ChevronRight, LifeBuoy, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import {
   type HelpArticle,
   type HelpCategory,
 } from "@/lib/help-center";
+import { goToHelpArticleModule, openHelpArticle } from "@/lib/help-center-interactions";
 import {
   useCreateSupportRequest,
   useSupportRequests,
@@ -58,6 +59,7 @@ function HelpPage() {
   const [category, setCategory] = useState<HelpCategory | null>(null);
   const [selected, setSelected] = useState<HelpArticle | null>(null);
   const [supportOpen, setSupportOpen] = useState(false);
+  const articleTitleRef = useRef<HTMLHeadingElement>(null);
   const results = useMemo(() => searchHelpArticles(query, category), [query, category]);
   const faq = FAQ_IDS.map((id) => HELP_ARTICLES.find((a) => a.id === id)!).filter(Boolean);
   const guides = QUICK_GUIDE_IDS.map((id) => HELP_ARTICLES.find((a) => a.id === id)!).filter(
@@ -158,8 +160,9 @@ function HelpPage() {
           <div className="space-y-2">
             {guides.map((a) => (
               <button
+                type="button"
                 key={a.id}
-                onClick={() => setSelected(a)}
+                onClick={(event) => openHelpArticle(event, a, setSelected)}
                 className="flex w-full items-center justify-between rounded-lg border bg-card p-3 text-left hover:bg-accent"
               >
                 <span>
@@ -176,8 +179,9 @@ function HelpPage() {
           <div className="space-y-2">
             {faq.map((a) => (
               <button
+                type="button"
                 key={a.id}
-                onClick={() => setSelected(a)}
+                onClick={(event) => openHelpArticle(event, a, setSelected)}
                 className="w-full rounded-lg border bg-card p-3 text-left text-sm font-medium hover:bg-accent"
               >
                 {a.question}
@@ -193,14 +197,22 @@ function HelpPage() {
         openForm={() => setSupportOpen(true)}
       />
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent
+          className="max-h-[85vh] overflow-y-auto sm:max-w-2xl"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            articleTitleRef.current?.focus();
+          }}
+        >
           {selected && (
             <>
               <DialogHeader>
                 <Badge className="w-fit" variant="secondary">
                   {selected.category}
                 </Badge>
-                <DialogTitle>{selected.title}</DialogTitle>
+                <DialogTitle ref={articleTitleRef} tabIndex={-1}>
+                  {selected.title}
+                </DialogTitle>
                 <DialogDescription>{selected.summary}</DialogDescription>
               </DialogHeader>
               <div>
@@ -218,10 +230,17 @@ function HelpPage() {
                 </ul>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setSelected(null)}>
+                <Button type="button" variant="outline" onClick={() => setSelected(null)}>
                   Fechar
                 </Button>
-                <Button onClick={() => void navigate({ to: selected.relatedRoute as "/central" })}>
+                <Button
+                  type="button"
+                  onClick={(event) =>
+                    goToHelpArticleModule(event, selected, setSelected, (relatedRoute) => {
+                      void navigate({ to: relatedRoute as "/central" });
+                    })
+                  }
+                >
                   Ir para o módulo
                 </Button>
               </DialogFooter>
@@ -254,7 +273,12 @@ function ArticleCard({
       </CardHeader>
       <CardContent>
         <p className="line-clamp-2 text-sm text-muted-foreground">{article.summary}</p>
-        <Button className="mt-3 px-0" variant="link" onClick={() => onOpen(article)}>
+        <Button
+          type="button"
+          className="mt-3 px-0"
+          variant="link"
+          onClick={(event) => openHelpArticle(event, article, onOpen)}
+        >
           Ler artigo <ChevronRight />
         </Button>
       </CardContent>
