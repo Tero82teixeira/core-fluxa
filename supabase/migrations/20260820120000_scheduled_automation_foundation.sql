@@ -194,7 +194,7 @@ BEGIN
       ) AT TIME ZONE schedule_record.timezone
     END;
 
-    execution_key := encode(digest(
+    execution_key := encode(extensions.digest(
       'scheduled:' || schedule_record.id::text || ':' || schedule_record.next_execution_at::text,
       'sha256'
     ), 'hex');

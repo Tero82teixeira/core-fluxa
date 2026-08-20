@@ -9,6 +9,10 @@ const migration = readFileSync(
 const frontendTriggers = readFileSync("src/lib/automations.ts", "utf8");
 
 test("scheduled processor is tenant-derived, idempotent, and private", () => {
+  const processor = migration.match(
+    /CREATE OR REPLACE FUNCTION public\.process_due_scheduled_automations[\s\S]*?\n\$\$;/,
+  )?.[0];
+  assert.ok(processor);
   assert.match(migration, /FOREIGN KEY \(automation_rule_id, organization_id\)/);
   assert.match(migration, /FOR UPDATE OF schedule SKIP LOCKED/);
   assert.match(migration, /automation_executions_schedule_cycle_idx/);
@@ -16,6 +20,8 @@ test("scheduled processor is tenant-derived, idempotent, and private", () => {
   assert.match(migration, /ARRAY\['fixed_user','rule_creator','unassigned'\]/);
   assert.match(migration, /WHEN 'rule_creator' THEN schedule_record\.created_by/);
   assert.match(migration, /WHEN 'unassigned' THEN NULL/);
+  assert.match(processor, /extensions\.digest\(/);
+  assert.doesNotMatch(processor, /(^|[^.\w])digest\(/m);
   assert.match(
     migration,
     /REVOKE ALL ON FUNCTION public\.process_due_scheduled_automations[\s\S]*FROM PUBLIC, anon, authenticated/,
