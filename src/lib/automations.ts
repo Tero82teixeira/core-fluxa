@@ -13,6 +13,12 @@ export const AUTOMATION_TRIGGERS = [
   "monitoring.responsible_changed",
 ] as const;
 
+// Reserved for the database scheduler foundation. Intentionally excluded from
+// AUTOMATION_TRIGGERS so the current UI cannot offer it before operations are ready.
+export const SCHEDULED_AUTOMATION_TRIGGER = "scheduled" as const;
+export type ScheduledAutomationTrigger = typeof SCHEDULED_AUTOMATION_TRIGGER;
+export type AutomationScheduleType = "interval_days" | "daily";
+
 export const AUTOMATION_ACTIONS = [
   "create_task",
   "create_checklist_item",
