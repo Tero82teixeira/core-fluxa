@@ -13,6 +13,41 @@ export type ReportFilters = {
   processId?: string;
 };
 
+type ReportRow = Record<string, any>;
+export type ReportRowFilters = {
+  range: ReturnType<typeof periodRange>;
+  clientId?: string;
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  processId?: string;
+};
+
+type ReportRowFilterOptions = {
+  clientKey: "id" | "client_id";
+  dateKey?: string;
+  processOwnId?: boolean;
+};
+
+/** Applies the shared report controls with an explicit client key for each collection. */
+export function filterReportRows<T extends ReportRow>(rows: T[], filters: ReportRowFilters, options: ReportRowFilterOptions) {
+  const dateKey = options.dateKey ?? "created_at";
+  return rows.filter((row) =>
+    isInPeriod(row[dateKey] as string | null | undefined, filters.range) &&
+    (!filters.clientId || filters.clientId === "all" || row[options.clientKey] === filters.clientId) &&
+    (!filters.assigneeId || filters.assigneeId === "all" || row.assignee_id === filters.assigneeId || row.owner_id === filters.assigneeId || row.responsible_user_id === filters.assigneeId) &&
+    (!filters.status || filters.status === "all" || row.status === filters.status || row.stage === filters.status) &&
+    (!filters.priority || filters.priority === "all" || row.priority === filters.priority) &&
+    (!filters.processId || filters.processId === "all" || row.process_id === filters.processId || (options.processOwnId && row.id === filters.processId)) &&
+    !row.archived_at && !row.deleted_at);
+}
+
+export function clientProcessSummary(clients: ReportRow[], processes: ReportRow[]) {
+  const clientIdsWithProcesses = new Set(processes.map((process) => process.client_id));
+  const withProcesses = clients.filter((client) => clientIdsWithProcesses.has(client.id)).length;
+  return { withProcesses, withoutProcesses: clients.length - withProcesses };
+}
+
 export function periodRange(preset: PeriodPreset, now = new Date(), custom?: { from?: string; to?: string }) {
   const end = new Date(now);
   const start = new Date(now);
