@@ -12,6 +12,10 @@ test("scheduled processor is tenant-derived, idempotent, and private", () => {
   assert.match(migration, /FOREIGN KEY \(automation_rule_id, organization_id\)/);
   assert.match(migration, /FOR UPDATE OF schedule SKIP LOCKED/);
   assert.match(migration, /automation_executions_schedule_cycle_idx/);
+  assert.match(migration, /INVALID_SCHEDULED_CREATE_TASK_CONFIG/);
+  assert.match(migration, /ARRAY\['fixed_user','rule_creator','unassigned'\]/);
+  assert.match(migration, /WHEN 'rule_creator' THEN schedule_record\.created_by/);
+  assert.match(migration, /WHEN 'unassigned' THEN NULL/);
   assert.match(
     migration,
     /REVOKE ALL ON FUNCTION public\.process_due_scheduled_automations[\s\S]*FROM PUBLIC, anon, authenticated/,

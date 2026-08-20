@@ -24,6 +24,11 @@ BEGIN
   IF _config::text ~* '(https?://|javascript:|<script|\m(select|insert|update|delete|drop|alter)\M)' THEN RAISE EXCEPTION 'UNSAFE_CONFIG'; END IF;
 
   IF _action = 'create_task' THEN
+    IF _trigger = 'scheduled' AND (
+      _config - ARRAY['title','description','priority','status','due_in_days','assignee_mode','assignee_id'] <> '{}'::jsonb OR
+      coalesce(_config->>'assignee_mode',CASE WHEN _config?'assignee_id' THEN 'fixed_user' ELSE 'unassigned' END) <> ALL(ARRAY['fixed_user','rule_creator','unassigned']) OR
+      (coalesce(_config->>'assignee_mode',CASE WHEN _config?'assignee_id' THEN 'fixed_user' ELSE 'unassigned' END) = 'fixed_user') <> (_config ? 'assignee_id')
+    ) THEN RAISE EXCEPTION 'INVALID_SCHEDULED_CREATE_TASK_CONFIG'; END IF;
     IF NOT _config?'title' OR length(_config->>'title') NOT BETWEEN 1 AND 160 OR
        length(coalesce(_config->>'description','')) > 2000 OR
        _config - ARRAY['title','description','priority','status','due_in_days','assignee_mode','assignee_id','process_id','client_id','monitoring_item_id'] <> '{}'::jsonb OR
@@ -155,6 +160,8 @@ DECLARE
   execution_key text;
   processed_count integer := 0;
   recipient uuid;
+  assignee_mode text;
+  task_assignee uuid;
   next_at timestamptz;
   safe_error text;
 BEGIN
@@ -225,10 +232,19 @@ BEGIN
       END IF;
 
       IF schedule_record.action_type = 'create_task' THEN
-        IF schedule_record.action_config ? 'assignee_id' AND NOT EXISTS (
+        assignee_mode := coalesce(
+          schedule_record.action_config->>'assignee_mode',
+          CASE WHEN schedule_record.action_config ? 'assignee_id' THEN 'fixed_user' ELSE 'unassigned' END
+        );
+        task_assignee := CASE assignee_mode
+          WHEN 'fixed_user' THEN (schedule_record.action_config->>'assignee_id')::uuid
+          WHEN 'rule_creator' THEN schedule_record.created_by
+          WHEN 'unassigned' THEN NULL
+        END;
+        IF assignee_mode = 'fixed_user' AND NOT EXISTS (
           SELECT 1 FROM public.organization_members
           WHERE organization_id = schedule_record.organization_id
-            AND user_id = (schedule_record.action_config->>'assignee_id')::uuid
+            AND user_id = task_assignee
             AND is_active
         ) THEN
           RAISE EXCEPTION 'INVALID_RECIPIENT';
@@ -245,7 +261,7 @@ BEGIN
           CASE WHEN schedule_record.action_config ? 'due_in_days'
             THEN _as_of + make_interval(days => (schedule_record.action_config->>'due_in_days')::integer)
           END,
-          (schedule_record.action_config->>'assignee_id')::uuid,
+          task_assignee,
           schedule_record.created_by
         );
       ELSIF schedule_record.action_type = 'create_notification' THEN
