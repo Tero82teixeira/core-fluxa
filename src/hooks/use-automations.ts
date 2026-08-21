@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { AutomationAction, AutomationCondition, AutomationTrigger } from "@/lib/automations";
+import type { AutomationScheduleType } from "@/lib/automations";
 
 const db = supabase as unknown as {
   from: (name: string) => any;
@@ -37,6 +38,19 @@ export type AutomationExecution = {
   started_at: string;
   finished_at: string | null;
   created_at: string;
+};
+export type AutomationSchedule = {
+  id: string;
+  automation_rule_id: string;
+  organization_id: string;
+  schedule_type: AutomationScheduleType;
+  interval_days: number | null;
+  run_at: string | null;
+  timezone: string;
+  last_scheduled_for: string | null;
+  last_executed_at: string | null;
+  next_execution_at: string;
+  is_active: boolean;
 };
 export type AutomationInput = Pick<
   AutomationRule,

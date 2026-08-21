@@ -60,6 +60,7 @@ export type Database = {
       }
       automation_executions: {
         Row: {
+          automation_schedule_id: string | null
           automation_rule_id: string
           created_at: string
           dedupe_key: string
@@ -74,11 +75,13 @@ export type Database = {
           input_payload: Json
           organization_id: string
           output_payload: Json | null
+          scheduled_for: string | null
           source_automation_rule_id: string | null
           started_at: string
           status: string
         }
         Insert: {
+          automation_schedule_id?: string | null
           automation_rule_id: string
           created_at?: string
           dedupe_key: string
@@ -93,11 +96,13 @@ export type Database = {
           input_payload?: Json
           organization_id: string
           output_payload?: Json | null
+          scheduled_for?: string | null
           source_automation_rule_id?: string | null
           started_at?: string
           status: string
         }
         Update: {
+          automation_schedule_id?: string | null
           automation_rule_id?: string
           created_at?: string
           dedupe_key?: string
@@ -112,11 +117,19 @@ export type Database = {
           input_payload?: Json
           organization_id?: string
           output_payload?: Json | null
+          scheduled_for?: string | null
           source_automation_rule_id?: string | null
           started_at?: string
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "automation_executions_automation_schedule_id_fkey"
+            columns: ["automation_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_schedules"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "automation_executions_automation_rule_id_fkey"
             columns: ["automation_rule_id"]
@@ -137,6 +150,69 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "automation_rules"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_schedules: {
+        Row: {
+          automation_rule_id: string
+          created_at: string
+          id: string
+          interval_days: number | null
+          is_active: boolean
+          last_executed_at: string | null
+          last_scheduled_for: string | null
+          next_execution_at: string
+          organization_id: string
+          run_at: string | null
+          schedule_type: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          automation_rule_id: string
+          created_at?: string
+          id?: string
+          interval_days?: number | null
+          is_active?: boolean
+          last_executed_at?: string | null
+          last_scheduled_for?: string | null
+          next_execution_at: string
+          organization_id: string
+          run_at?: string | null
+          schedule_type: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          automation_rule_id?: string
+          created_at?: string
+          id?: string
+          interval_days?: number | null
+          is_active?: boolean
+          last_executed_at?: string | null
+          last_scheduled_for?: string | null
+          next_execution_at?: string
+          organization_id?: string
+          run_at?: string | null
+          schedule_type?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_schedules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_schedules_rule_organization_fkey"
+            columns: ["automation_rule_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id", "organization_id"]
           },
         ]
       }
@@ -3249,6 +3325,10 @@ export type Database = {
           _payload: Json
           _source_automation_rule_id?: string
         }
+        Returns: number
+      }
+      process_due_scheduled_automations: {
+        Args: { _as_of?: string; _batch_size?: number }
         Returns: number
       }
       record_audit_event: {
