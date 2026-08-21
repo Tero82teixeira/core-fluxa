@@ -131,16 +131,16 @@ INSERT INTO public.automation_schedules(
 );
 
 SELECT throws_ok(
-  $UPDATE public.automation_schedules
+  $sql$UPDATE public.automation_schedules
     SET timezone = 'Invalid/Timezone'
-    WHERE id = '49210000-0000-0000-0000-000000000002'$,
+    WHERE id = '49210000-0000-0000-0000-000000000002'$sql$,
   'P0001', 'INVALID_TIMEZONE', 'invalid timezone is rejected'
 );
 
 SELECT throws_ok(
-  $UPDATE public.automation_rules
+  $sql$UPDATE public.automation_rules
     SET trigger_type = 'task.created'
-    WHERE id = '39210000-0000-0000-0000-000000000001'$,
+    WHERE id = '39210000-0000-0000-0000-000000000001'$sql$,
   'P0001', 'SCHEDULED_RULE_HAS_SCHEDULE',
   'scheduled rule cannot change trigger while its schedule exists'
 );

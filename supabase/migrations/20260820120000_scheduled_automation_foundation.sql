@@ -154,7 +154,7 @@ CREATE OR REPLACE FUNCTION public.guard_scheduled_automation_rule_trigger()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = public
-AS $
+AS $guard$
 BEGIN
   IF OLD.trigger_type = 'scheduled'
      AND NEW.trigger_type IS DISTINCT FROM 'scheduled'
@@ -170,7 +170,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$;
+$guard$;
 
 CREATE TRIGGER guard_scheduled_automation_rule_trigger_before_update
   BEFORE UPDATE OF trigger_type ON public.automation_rules
