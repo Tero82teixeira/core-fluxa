@@ -210,7 +210,7 @@ export type Database = {
           {
             foreignKeyName: "automation_schedules_rule_organization_fkey"
             columns: ["automation_rule_id", "organization_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "automation_rules"
             referencedColumns: ["id", "organization_id"]
           },

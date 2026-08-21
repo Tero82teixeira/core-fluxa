@@ -94,7 +94,11 @@ CREATE INDEX automation_schedules_organization_idx
 
 ALTER TABLE public.automation_executions
   ADD COLUMN automation_schedule_id uuid REFERENCES public.automation_schedules(id),
-  ADD COLUMN scheduled_for timestamptz;
+  ADD COLUMN scheduled_for timestamptz,
+  ADD CONSTRAINT automation_executions_schedule_shape_check CHECK (
+    (automation_schedule_id IS NULL AND scheduled_for IS NULL)
+    OR (automation_schedule_id IS NOT NULL AND scheduled_for IS NOT NULL)
+  );
 
 CREATE UNIQUE INDEX automation_executions_schedule_cycle_idx
   ON public.automation_executions(automation_schedule_id, scheduled_for)
@@ -142,6 +146,35 @@ $$;
 CREATE TRIGGER validate_automation_schedule_before_write
   BEFORE INSERT OR UPDATE ON public.automation_schedules
   FOR EACH ROW EXECUTE FUNCTION public.validate_automation_schedule();
+
+-- Keep the parent side of the schedule/rule invariant closed as well. Without
+-- this guard, update_automation_rule() could turn a scheduled rule into an
+-- event rule while leaving a now-orphaned schedule behind.
+CREATE OR REPLACE FUNCTION public.guard_scheduled_automation_rule_trigger()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $
+BEGIN
+  IF OLD.trigger_type = 'scheduled'
+     AND NEW.trigger_type IS DISTINCT FROM 'scheduled'
+     AND EXISTS (
+       SELECT 1
+       FROM public.automation_schedules AS schedule
+       WHERE schedule.automation_rule_id = OLD.id
+         AND schedule.organization_id = OLD.organization_id
+     )
+  THEN
+    RAISE EXCEPTION 'SCHEDULED_RULE_HAS_SCHEDULE';
+  END IF;
+
+  RETURN NEW;
+END;
+$;
+
+CREATE TRIGGER guard_scheduled_automation_rule_trigger_before_update
+  BEFORE UPDATE OF trigger_type ON public.automation_rules
+  FOR EACH ROW EXECUTE FUNCTION public.guard_scheduled_automation_rule_trigger();
 
 -- This internal executor deliberately has no organization argument. Tenant scope
 -- comes exclusively from each locked schedule and its composite rule foreign key.
@@ -330,8 +363,10 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.validate_automation_schedule() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.guard_scheduled_automation_rule_trigger() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.process_due_scheduled_automations(timestamptz, integer)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.validate_automation_schedule() TO postgres, service_role;
+GRANT EXECUTE ON FUNCTION public.guard_scheduled_automation_rule_trigger() TO postgres, service_role;
 GRANT EXECUTE ON FUNCTION public.process_due_scheduled_automations(timestamptz, integer)
   TO postgres, service_role;
