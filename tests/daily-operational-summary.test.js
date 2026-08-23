@@ -6,6 +6,10 @@ const migration = readFileSync(
   "supabase/migrations/20260823160000_daily_operational_summary.sql",
   "utf8",
 );
+const polishMigration = readFileSync(
+  "supabase/migrations/20260823190000_polish_daily_operational_summary.sql",
+  "utf8",
+);
 const frontend = readFileSync("src/lib/automations.ts", "utf8");
 const page = readFileSync("src/routes/_authenticated/automacoes.tsx", "utf8");
 const databaseTypes = readFileSync("src/integrations/supabase/types.ts", "utf8");
@@ -57,4 +61,19 @@ test("summary action is isolated from event rules and exposed by the scheduled U
   assert.match(page, /disabled=\{form\.action_type === "send_operational_summary"\}/);
   assert.match(page, /Cada responsável recebe somente/);
   assert.match(page, /preferências de Configurações serão respeitadas/);
+});
+
+test("daily summary renders professional Portuguese labels", () => {
+  assert.match(polishMigration, /summary\.total = 1 THEN 'pendência'/);
+  assert.match(polishMigration, /summary\.tasks = 1 THEN 'tarefa'/);
+  assert.match(polishMigration, /summary\.processes = 1 THEN 'processo'/);
+  assert.match(polishMigration, /summary\.documents = 1 THEN 'documento'/);
+  assert.match(polishMigration, /summary\.communications = 1 THEN 'retorno'/);
+  assert.match(polishMigration, /summary\.financial = 1 THEN 'conta'/);
+  assert.match(polishMigration, /summary\.unassigned = 1/);
+  assert.doesNotMatch(polishMigration, /pendência\(s\)|item\(ns\)/);
+  assert.match(
+    polishMigration,
+    /REVOKE ALL ON FUNCTION public\.create_operational_summary_notifications[\s\S]*FROM PUBLIC, anon, authenticated, service_role/,
+  );
 });
