@@ -6,8 +6,14 @@ Este é o procedimento operacional oficial para mudanças de banco.
 
 - O Lovable Cloud é o backend operacional principal.
 - O project ref operacional é `nobtbymxudlcsyurbopl`.
-- O project ref `znfcyvoldoekrxuxrcnf` pertence a um projeto Supabase externo e
-  separado.
+- O project ref `znfcyvoldoekrxuxrcnf` pertence a um projeto Supabase auxiliar:
+  ele não hospeda o banco operacional, mas preserva a Edge Function legada
+  `send-team-invitation`, configurada para aceitar a origem
+  `https://core-fluxa.lovable.app`.
+- O frontend atual não invoca essa Edge Function. Convites são criados
+  diretamente pela RPC segura `create_invitation` no backend operacional. Na
+  verificação de 2026-08-21, a função auxiliar registrava zero invocações desde
+  o último deploy.
 - Nunca troque, substitua ou confunda esses refs sem uma investigação explícita
   da arquitetura.
 
@@ -40,6 +46,10 @@ Siga exatamente esta ordem:
 ## 4. Proibições
 
 - Não aplicar migration em project ref não confirmado.
+- Não aplicar as migrations do Core Fluxa no projeto auxiliar
+  `znfcyvoldoekrxuxrcnf`.
+- Não remover a Edge Function ou os secrets do projeto auxiliar sem conferir
+  invocações, logs e dependências externas.
 - Não alterar `project_id` apenas para “fazer funcionar”.
 - Não recriar workflows de deploy remoto para o Lovable Cloud sem reabrir a
   arquitetura.
