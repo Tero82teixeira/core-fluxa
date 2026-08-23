@@ -47,4 +47,5 @@ não interrompem as demais agendas.
 
 Condições sobre registros antigos e os casos de negócio (processo parado,
 documento vencendo, follow-up e resumo diário) não fazem parte desta etapa. A
-interface de criação continua oculta até essas subetapas serem entregues.
+interface permite programações diárias ou por intervalo de dias para criar
+tarefas, notificações internas ou registros de auditoria.

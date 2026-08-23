@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type {
   AutomationAction,
   AutomationCondition,
+  AutomationRuleTrigger,
   AutomationScheduleType,
   AutomationTrigger,
   ScheduledAutomationAction,
@@ -17,7 +18,7 @@ export type AutomationRule = {
   organization_id: string;
   name: string;
   description: string | null;
-  trigger_type: AutomationTrigger;
+  trigger_type: AutomationRuleTrigger;
   conditions: AutomationCondition[];
   action_type: AutomationAction;
   action_config: Record<string, unknown>;
@@ -57,16 +58,15 @@ export type AutomationSchedule = {
   next_execution_at: string;
   is_active: boolean;
 };
-export type AutomationInput = Pick<
-  AutomationRule,
-  | "name"
-  | "description"
-  | "trigger_type"
-  | "conditions"
-  | "action_type"
-  | "action_config"
-  | "is_active"
->;
+export type AutomationInput = {
+  name: string;
+  description: string | null;
+  trigger_type: AutomationTrigger;
+  conditions: AutomationCondition[];
+  action_type: AutomationAction;
+  action_config: Record<string, unknown>;
+  is_active: boolean;
+};
 export type ScheduledAutomationInput = {
   name: string;
   description: string | null;

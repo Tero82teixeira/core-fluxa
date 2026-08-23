@@ -1,6 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Archive, Bot, Copy, History, Loader2, MoreHorizontal, Plus, Search } from "lucide-react";
+import {
+  Archive,
+  Bot,
+  CalendarClock,
+  Copy,
+  History,
+  Loader2,
+  MoreHorizontal,
+  Plus,
+  Search,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,24 +50,34 @@ import {
   defaultCreateTaskConfig,
   normalizeCreateTaskConfig,
   removeStageConditions,
+  scheduledWallTimeParts,
+  scheduledWallTimeToIso,
   stageCondition,
   stageConditionValue,
   TRIGGER_LABELS,
   type AutomationAction,
   type AutomationTrigger,
+  type ScheduledAutomationAction,
 } from "@/lib/automations";
 import { useTeamMembers } from "@/hooks/use-team";
 import { PRIORITY, PROCESS_STAGE, TASK_STATUS, type ProcessStage } from "@/lib/domain";
 import {
   useArchiveAutomationRule,
+  useArchiveScheduledAutomation,
   useAutomationExecutions,
   useAutomationRules,
+  useAutomationSchedules,
   useCreateAutomationRule,
+  useCreateScheduledAutomation,
   useDuplicateAutomationRule,
   useSetAutomationRuleActive,
+  useSetScheduledAutomationActive,
   type AutomationInput,
   type AutomationRule,
+  type AutomationSchedule,
+  type ScheduledAutomationInput,
   useUpdateAutomationRule,
+  useUpdateScheduledAutomation,
 } from "@/hooks/use-automations";
 import { formatDateTime } from "@/lib/format";
 
@@ -79,6 +99,7 @@ const empty: AutomationInput = {
   action_type: "create_task",
   action_config: defaultCreateTaskConfig("task.created"),
 };
+type EventAutomationRule = AutomationRule & { trigger_type: AutomationTrigger };
 
 const configText = (config: Record<string, unknown>, key: string) =>
   typeof config[key] === "string" ? config[key] : "";
@@ -89,14 +110,22 @@ function Page() {
   const allowed = canManageAutomations(role);
   const rules = useAutomationRules(organizationId);
   const executions = useAutomationExecutions(organizationId);
+  const schedules = useAutomationSchedules(organizationId);
   const setActive = useSetAutomationRuleActive(organizationId);
+  const setScheduledActive = useSetScheduledAutomationActive(organizationId);
   const duplicate = useDuplicateAutomationRule(organizationId);
   const archive = useArchiveAutomationRule(organizationId);
+  const archiveScheduled = useArchiveScheduledAutomation(organizationId);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [trigger, setTrigger] = useState("all");
-  const [editing, setEditing] = useState<AutomationRule | null | undefined>();
+  const [editing, setEditing] = useState<EventAutomationRule | null | undefined>();
+  const [scheduledEditing, setScheduledEditing] = useState<AutomationRule | null | undefined>();
   const [history, setHistory] = useState<AutomationRule | null>(null);
+  const scheduleByRule = useMemo(
+    () => new Map((schedules.data ?? []).map((schedule) => [schedule.automation_rule_id, schedule])),
+    [schedules.data],
+  );
   const filtered = useMemo(
     () =>
       (rules.data ?? []).filter(
@@ -130,10 +159,16 @@ function Page() {
           </p>
         </div>
         {allowed && (
-          <Button onClick={() => setEditing(null)}>
-            <Plus />
-            Nova automação
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setEditing(null)}>
+              <Plus />
+              Nova por evento
+            </Button>
+            <Button onClick={() => setScheduledEditing(null)}>
+              <CalendarClock />
+              Nova por horário
+            </Button>
+          </div>
         )}
       </header>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -184,6 +219,7 @@ function Page() {
                 {TRIGGER_LABELS[t]}
               </SelectItem>
             ))}
+            <SelectItem value="scheduled">Por horário</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -226,6 +262,14 @@ function Page() {
                     <strong>{TRIGGER_LABELS[r.trigger_type]}</strong> →{" "}
                     {ACTION_LABELS[r.action_type]}
                   </p>
+                  {r.trigger_type === "scheduled" && scheduleByRule.get(r.id) && (
+                    <p className="text-sm text-muted-foreground">
+                      {scheduleByRule.get(r.id)!.schedule_type === "daily"
+                        ? `Todos os dias às ${scheduleByRule.get(r.id)!.run_at?.slice(0, 5)}`
+                        : `A cada ${scheduleByRule.get(r.id)!.interval_days} dia(s)`}
+                      {` · próxima: ${formatDateTime(scheduleByRule.get(r.id)!.next_execution_at)}`}
+                    </p>
+                  )}
                   {r.trigger_type === "process.stage_changed" &&
                     stageConditionValue(r.conditions) && (
                       <p className="text-sm text-muted-foreground">
@@ -270,31 +314,52 @@ function Page() {
                     </DropdownMenuItem>
                     {allowed && (
                       <>
-                        <DropdownMenuItem onClick={() => setEditing(r)}>Editar</DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            r.trigger_type === "scheduled"
+                              ? scheduleByRule.has(r.id)
+                                ? setScheduledEditing(r)
+                                : toast.error("A programação ainda está carregando.")
+                              : setEditing(r as EventAutomationRule)
+                          }
+                        >
+                          Editar
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
                             if (r.is_active && !confirm("Desativar esta automação?")) return;
                             void act(
-                              () => setActive.mutateAsync(r.id, !r.is_active),
+                              () =>
+                                r.trigger_type === "scheduled"
+                                  ? setScheduledActive.mutateAsync(r.id, !r.is_active)
+                                  : setActive.mutateAsync(r.id, !r.is_active),
                               r.is_active ? "Automação desativada" : "Automação ativada",
                             );
                           }}
                         >
                           {r.is_active ? "Desativar" : "Ativar"}
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            void act(() => duplicate.mutateAsync(r.id), "Automação duplicada")
-                          }
-                        >
-                          <Copy />
-                          Duplicar
-                        </DropdownMenuItem>
+                        {r.trigger_type !== "scheduled" && (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              void act(() => duplicate.mutateAsync(r.id), "Automação duplicada")
+                            }
+                          >
+                            <Copy />
+                            Duplicar
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           className="text-destructive"
                           onClick={() =>
                             confirm("Arquivar esta automação? Esta ação não exclui o histórico.") &&
-                            void act(() => archive.mutateAsync(r.id), "Automação arquivada")
+                            void act(
+                              () =>
+                                r.trigger_type === "scheduled"
+                                  ? archiveScheduled.mutateAsync(r.id)
+                                  : archive.mutateAsync(r.id),
+                              "Automação arquivada",
+                            )
                           }
                         >
                           <Archive />
@@ -315,6 +380,13 @@ function Page() {
         organizationId={organizationId}
         onClose={() => setEditing(undefined)}
       />
+      <ScheduledAutomationForm
+        open={scheduledEditing !== undefined}
+        rule={scheduledEditing ?? null}
+        schedule={scheduledEditing ? scheduleByRule.get(scheduledEditing.id) ?? null : null}
+        organizationId={organizationId}
+        onClose={() => setScheduledEditing(undefined)}
+      />
       <HistoryPanel
         rule={history}
         organizationId={organizationId}
@@ -331,7 +403,7 @@ function AutomationForm({
   onClose,
 }: {
   open: boolean;
-  rule: AutomationRule | null;
+  rule: EventAutomationRule | null;
   organizationId: string | null;
   onClose: () => void;
 }) {
@@ -720,6 +792,460 @@ function AutomationForm({
     </Sheet>
   );
 }
+
+const defaultScheduledConfig = (
+  action: ScheduledAutomationAction,
+): Record<string, unknown> => {
+  if (action === "create_task") {
+    return {
+      title: "Nova tarefa programada",
+      description: "",
+      priority: "media",
+      status: "pendente",
+      due_in_days: 0,
+      assignee_mode: "unassigned",
+    };
+  }
+  if (action === "create_notification") {
+    return { title: "", body: "", recipient_id: "" };
+  }
+  return { message: "" };
+};
+
+function scheduledInput(
+  rule: AutomationRule | null,
+  schedule: AutomationSchedule | null,
+): ScheduledAutomationInput {
+  const action = (rule?.action_type ?? "create_task") as ScheduledAutomationAction;
+  const parts = scheduledWallTimeParts(schedule?.next_execution_at, schedule?.timezone);
+  const storedConfig = rule ? { ...rule.action_config } : defaultScheduledConfig(action);
+  const actionConfig =
+    action === "create_task"
+      ? {
+          ...storedConfig,
+          assignee_mode:
+            storedConfig.assignee_mode ??
+            (storedConfig.assignee_id ? "fixed_user" : "unassigned"),
+        }
+      : storedConfig;
+  return {
+    name: rule?.name ?? "",
+    description: rule?.description ?? "",
+    action_type: action,
+    action_config: actionConfig,
+    schedule_type: schedule?.schedule_type ?? "daily",
+    interval_days: schedule?.interval_days ?? null,
+    run_at: schedule?.run_at?.slice(0, 5) ?? parts.time,
+    timezone: schedule?.timezone ?? "America/Sao_Paulo",
+    next_execution_at: schedule?.next_execution_at ?? "",
+    is_active: rule?.is_active ?? true,
+  };
+}
+
+function ScheduledAutomationForm({
+  open,
+  rule,
+  schedule,
+  organizationId,
+  onClose,
+}: {
+  open: boolean;
+  rule: AutomationRule | null;
+  schedule: AutomationSchedule | null;
+  organizationId: string | null;
+  onClose: () => void;
+}) {
+  const initialParts = scheduledWallTimeParts(schedule?.next_execution_at, schedule?.timezone);
+  const [form, setForm] = useState<ScheduledAutomationInput>(() =>
+    scheduledInput(rule, schedule),
+  );
+  const [startDate, setStartDate] = useState(initialParts.date);
+  const [startTime, setStartTime] = useState(initialParts.time);
+  const create = useCreateScheduledAutomation(organizationId);
+  const update = useUpdateScheduledAutomation(organizationId);
+  const members = useTeamMembers(organizationId);
+
+  useEffect(() => {
+    const parts = scheduledWallTimeParts(schedule?.next_execution_at, schedule?.timezone);
+    setForm(scheduledInput(rule, schedule));
+    setStartDate(parts.date);
+    setStartTime(parts.time);
+  }, [open, rule, schedule]);
+
+  const setConfig = (key: string, value: unknown) =>
+    setForm((current) => ({
+      ...current,
+      action_config: { ...current.action_config, [key]: value },
+    }));
+
+  const setAssigneeMode = (mode: string) =>
+    setForm((current) => {
+      const config: Record<string, unknown> = {
+        ...current.action_config,
+        assignee_mode: mode,
+      };
+      if (mode !== "fixed_user") delete config.assignee_id;
+      return { ...current, action_config: config };
+    });
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    const nextExecution = scheduledWallTimeToIso(
+      startDate,
+      startTime,
+      form.timezone,
+    );
+    if (!nextExecution) {
+      toast.error("Escolha uma primeira execução futura.");
+      return;
+    }
+    if (
+      form.action_type === "create_task" &&
+      form.action_config.assignee_mode === "fixed_user" &&
+      !form.action_config.assignee_id
+    ) {
+      toast.error("Selecione o responsável da tarefa.");
+      return;
+    }
+    if (form.action_type === "create_notification" && !form.action_config.recipient_id) {
+      toast.error("Selecione quem receberá a notificação.");
+      return;
+    }
+    const payload: ScheduledAutomationInput = {
+      ...form,
+      interval_days: form.schedule_type === "interval_days" ? form.interval_days || 1 : null,
+      run_at: form.schedule_type === "daily" ? startTime : null,
+      next_execution_at: nextExecution,
+    };
+    try {
+      if (rule) await update.mutateAsync(rule.id, payload);
+      else await create.mutateAsync(payload);
+      toast.success(rule ? "Automação programada atualizada" : "Automação programada criada");
+      onClose();
+    } catch {
+      toast.error("Revise os campos da programação e tente novamente.");
+    }
+  };
+
+  const pending = create.isPending || update.isPending;
+  return (
+    <Sheet open={open} onOpenChange={(value) => !value && onClose()}>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+        <SheetHeader>
+          <SheetTitle>
+            {rule ? "Editar automação por horário" : "Nova automação por horário"}
+          </SheetTitle>
+          <SheetDescription>
+            Programe uma tarefa, notificação ou registro interno com segurança.
+          </SheetDescription>
+        </SheetHeader>
+        <form className="mt-6 space-y-5" onSubmit={submit}>
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+            Depois da ativação operacional, os horários serão verificados a cada 15 minutos.
+          </div>
+          <div>
+            <Label htmlFor="scheduled-name">Nome</Label>
+            <Input
+              id="scheduled-name"
+              required
+              maxLength={120}
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="scheduled-description">Descrição</Label>
+            <Textarea
+              id="scheduled-description"
+              maxLength={500}
+              value={form.description ?? ""}
+              onChange={(event) => setForm({ ...form, description: event.target.value })}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="scheduled-active">Ativa</Label>
+            <Switch
+              id="scheduled-active"
+              checked={form.is_active}
+              onCheckedChange={(value) => setForm({ ...form, is_active: value })}
+            />
+          </div>
+          <div>
+            <Label>Repetição</Label>
+            <Select
+              value={form.schedule_type}
+              onValueChange={(value) =>
+                setForm({
+                  ...form,
+                  schedule_type: value as ScheduledAutomationInput["schedule_type"],
+                  interval_days: value === "interval_days" ? form.interval_days || 1 : null,
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Todos os dias</SelectItem>
+                <SelectItem value="interval_days">A cada alguns dias</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {form.schedule_type === "interval_days" && (
+            <div>
+              <Label htmlFor="scheduled-interval">Repetir a cada</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="scheduled-interval"
+                  type="number"
+                  required
+                  min={1}
+                  max={3650}
+                  value={form.interval_days ?? 1}
+                  onChange={(event) =>
+                    setForm({ ...form, interval_days: Number(event.target.value) })
+                  }
+                />
+                <span className="text-sm text-muted-foreground">dia(s)</span>
+              </div>
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="scheduled-date">Primeira execução</Label>
+              <Input
+                id="scheduled-date"
+                type="date"
+                required
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="scheduled-time">Horário</Label>
+              <Input
+                id="scheduled-time"
+                type="time"
+                required
+                value={startTime}
+                onChange={(event) => setStartTime(event.target.value)}
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Fuso horário</Label>
+            <Select
+              value={form.timezone}
+              onValueChange={(value) => setForm({ ...form, timezone: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="America/Sao_Paulo">Brasília</SelectItem>
+                <SelectItem value="America/Manaus">Manaus</SelectItem>
+                <SelectItem value="America/Rio_Branco">Rio Branco</SelectItem>
+                <SelectItem value="UTC">UTC</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Ação</Label>
+            <Select
+              value={form.action_type}
+              onValueChange={(value) => {
+                const action = value as ScheduledAutomationAction;
+                setForm({
+                  ...form,
+                  action_type: action,
+                  action_config: defaultScheduledConfig(action),
+                });
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(["create_task", "create_notification", "add_audit_log"] as const).map(
+                  (action) => (
+                    <SelectItem key={action} value={action}>
+                      {ACTION_LABELS[action]}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          {form.action_type === "create_task" && (
+            <div className="space-y-4 rounded-lg border p-4">
+              <div>
+                <Label htmlFor="scheduled-task-title">Título da tarefa</Label>
+                <Input
+                  id="scheduled-task-title"
+                  required
+                  maxLength={160}
+                  value={configText(form.action_config, "title")}
+                  onChange={(event) => setConfig("title", event.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="scheduled-task-description">Descrição</Label>
+                <Textarea
+                  id="scheduled-task-description"
+                  maxLength={2000}
+                  value={configText(form.action_config, "description")}
+                  onChange={(event) => setConfig("description", event.target.value)}
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Prioridade</Label>
+                  <Select
+                    value={configText(form.action_config, "priority") || "media"}
+                    onValueChange={(value) => setConfig("priority", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(["baixa", "media", "alta", "critica"] as const).map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {PRIORITY[value].label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Status inicial</Label>
+                  <Select
+                    value={configText(form.action_config, "status") || "pendente"}
+                    onValueChange={(value) => setConfig("status", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(["pendente", "em_andamento", "aguardando"] as const).map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {TASK_STATUS[value].label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="scheduled-task-due">Prazo em dias</Label>
+                <Input
+                  id="scheduled-task-due"
+                  type="number"
+                  required
+                  min={0}
+                  max={365}
+                  value={configNumber(form.action_config, "due_in_days")}
+                  onChange={(event) => setConfig("due_in_days", Number(event.target.value))}
+                />
+              </div>
+              <div>
+                <Label>Responsável</Label>
+                <Select
+                  value={configText(form.action_config, "assignee_mode") || "unassigned"}
+                  onValueChange={setAssigneeMode}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Sem responsável</SelectItem>
+                    <SelectItem value="rule_creator">Criador da automação</SelectItem>
+                    <SelectItem value="fixed_user">Usuário específico</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {form.action_config.assignee_mode === "fixed_user" && (
+                <div>
+                  <Label>Usuário específico</Label>
+                  <Select
+                    value={configText(form.action_config, "assignee_id")}
+                    onValueChange={(value) => setConfig("assignee_id", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um membro ativo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {members.data?.filter((member) => member.is_active).map((member) => (
+                        <SelectItem key={member.user_id} value={member.user_id}>
+                          {member.full_name || member.email || "Usuário"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
+          {form.action_type === "create_notification" && (
+            <div className="space-y-4 rounded-lg border p-4">
+              <div>
+                <Label htmlFor="scheduled-notification-title">Título da notificação</Label>
+                <Input
+                  id="scheduled-notification-title"
+                  required
+                  value={configText(form.action_config, "title")}
+                  onChange={(event) => setConfig("title", event.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="scheduled-notification-body">Mensagem</Label>
+                <Textarea
+                  id="scheduled-notification-body"
+                  value={configText(form.action_config, "body")}
+                  onChange={(event) => setConfig("body", event.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Destinatário</Label>
+                <Select
+                  value={configText(form.action_config, "recipient_id")}
+                  onValueChange={(value) => setConfig("recipient_id", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um membro ativo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members.data?.filter((member) => member.is_active).map((member) => (
+                      <SelectItem key={member.user_id} value={member.user_id}>
+                        {member.full_name || member.email || "Usuário"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          {form.action_type === "add_audit_log" && (
+            <div>
+              <Label htmlFor="scheduled-audit-message">Mensagem do registro</Label>
+              <Input
+                id="scheduled-audit-message"
+                required
+                maxLength={500}
+                value={configText(form.action_config, "message")}
+                onChange={(event) => setConfig("message", event.target.value)}
+              />
+            </div>
+          )}
+          <Button className="w-full" disabled={pending}>
+            {pending && <Loader2 className="animate-spin" />}
+            Salvar automação por horário
+          </Button>
+        </form>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function HistoryPanel({
   rule,
   organizationId,
