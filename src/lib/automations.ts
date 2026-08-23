@@ -23,6 +23,7 @@ export const SCHEDULED_AUTOMATION_ACTIONS = [
   "create_task",
   "create_notification",
   "add_audit_log",
+  "send_operational_summary",
 ] as const;
 export type ScheduledAutomationAction = (typeof SCHEDULED_AUTOMATION_ACTIONS)[number];
 
@@ -47,6 +48,7 @@ export const CONDITION_OPERATORS = [
 
 export type AutomationTrigger = (typeof AUTOMATION_TRIGGERS)[number];
 export type AutomationAction = (typeof AUTOMATION_ACTIONS)[number];
+export type AutomationRuleAction = AutomationAction | ScheduledAutomationAction;
 export type ConditionOperator = (typeof CONDITION_OPERATORS)[number];
 export type AutomationCondition = { field: string; operator: ConditionOperator; value?: string };
 export type AssigneeMode = "process_owner" | "fixed_user" | "rule_creator" | "unassigned";
@@ -144,7 +146,7 @@ export const TRIGGER_LABELS: Record<AutomationRuleTrigger, string> = {
   scheduled: "Por horário",
 };
 
-export const ACTION_LABELS: Record<AutomationAction, string> = {
+export const ACTION_LABELS: Record<AutomationRuleAction, string> = {
   create_task: "Criar tarefa",
   create_checklist_item: "Criar item de checklist",
   update_task_priority: "Atualizar prioridade",
@@ -152,6 +154,7 @@ export const ACTION_LABELS: Record<AutomationAction, string> = {
   add_task_history: "Registrar histórico",
   create_notification: "Criar notificação interna",
   add_audit_log: "Registrar auditoria",
+  send_operational_summary: "Enviar resumo diário de pendências",
 };
 
 export function canManageAutomations(role: string | null | undefined) {
