@@ -7,9 +7,8 @@ timezone, estado e os instantes da última e da próxima execução.
 
 ## Disparo operacional
 
-O repositório **não instala cron, GitHub Action, Edge Function nem deploy
-externo**. O Lovable Cloud deverá configurar futuramente um disparador confiável
-que, com papel `postgres` ou `service_role`, execute periodicamente:
+O job `core-fluxa-process-due-scheduled-automations` executa a cada 15 minutos,
+como papel `postgres`, no próprio banco operacional:
 
 ```sql
 select public.process_due_scheduled_automations();
@@ -17,7 +16,13 @@ select public.process_due_scheduled_automations();
 
 A função não recebe `organization_id`: ela seleciona regras vencidas no banco e
 obtém o tenant pela relação composta entre agenda e regra. Ela não está exposta
-a `PUBLIC`, `anon` ou `authenticated`.
+a `PUBLIC`, `anon` ou `authenticated`. A migration remove qualquer job anterior
+com o mesmo nome antes de recriá-lo, de modo que reaplicações não acumulam jobs.
+
+O estado, a última execução e o histórico ficam disponíveis em **Cloud → Jobs**
+no Lovable. O intervalo de 15 minutos limita o uso do Cloud a no máximo 96
+chamadas curtas por dia, com atraso operacional máximo de 15 minutos. O job pode
+ser desabilitado nessa tela se houver aumento inesperado de uso ou falhas.
 
 ## Gerenciamento autenticado
 
@@ -41,6 +46,5 @@ concorrentes não repetem o mesmo ciclo. Falhas são registradas individualmente
 não interrompem as demais agendas.
 
 Condições sobre registros antigos e os casos de negócio (processo parado,
-documento vencendo, follow-up e resumo diário) não fazem parte desta etapa. Até
-um scheduler operacional ser configurado e essas subetapas serem entregues, o
-frontend não oferece criação de automações temporais.
+documento vencendo, follow-up e resumo diário) não fazem parte desta etapa. A
+interface de criação continua oculta até essas subetapas serem entregues.
