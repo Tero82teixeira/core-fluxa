@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { AutomationAction, AutomationCondition, AutomationTrigger } from "@/lib/automations";
-import type { AutomationScheduleType } from "@/lib/automations";
+import type {
+  AutomationAction,
+  AutomationCondition,
+  AutomationScheduleType,
+  AutomationTrigger,
+  ScheduledAutomationAction,
+} from "@/lib/automations";
 
 const db = supabase as unknown as {
   from: (name: string) => any;
@@ -62,6 +67,18 @@ export type AutomationInput = Pick<
   | "action_config"
   | "is_active"
 >;
+export type ScheduledAutomationInput = {
+  name: string;
+  description: string | null;
+  action_type: ScheduledAutomationAction;
+  action_config: Record<string, unknown>;
+  schedule_type: AutomationScheduleType;
+  interval_days: number | null;
+  run_at: string | null;
+  timezone: string;
+  next_execution_at: string;
+  is_active: boolean;
+};
 
 export function useAutomationRules(organizationId: string | null) {
   return useQuery({
@@ -99,6 +116,21 @@ export function useAutomationExecutions(organizationId: string | null, ruleId?: 
     },
   });
 }
+export function useAutomationSchedules(organizationId: string | null) {
+  return useQuery({
+    queryKey: ["automation-schedules", organizationId],
+    enabled: Boolean(organizationId),
+    queryFn: async () => {
+      const { data, error } = await db
+        .from("automation_schedules")
+        .select("*")
+        .eq("organization_id", organizationId)
+        .order("next_execution_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as AutomationSchedule[];
+    },
+  });
+}
 function useRpcMutation(rpc: string, organizationId: string | null) {
   const qc = useQueryClient();
   return useMutation({
@@ -110,6 +142,7 @@ function useRpcMutation(rpc: string, organizationId: string | null) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["automation-rules", organizationId] });
       void qc.invalidateQueries({ queryKey: ["automation-executions", organizationId] });
+      void qc.invalidateQueries({ queryKey: ["automation-schedules", organizationId] });
     },
   });
 }
@@ -141,5 +174,57 @@ export function useDuplicateAutomationRule(org: string | null) {
 }
 export function useArchiveAutomationRule(org: string | null) {
   const m = useRpcMutation("archive_automation_rule", org);
+  return { ...m, mutateAsync: (id: string) => m.mutateAsync({ _rule_id: id }) };
+}
+export function useCreateScheduledAutomation(org: string | null) {
+  const m = useRpcMutation("create_scheduled_automation", org);
+  return {
+    ...m,
+    mutateAsync: (input: ScheduledAutomationInput) =>
+      m.mutateAsync({
+        _organization_id: org,
+        _name: input.name,
+        _description: input.description,
+        _action_type: input.action_type,
+        _action_config: input.action_config,
+        _schedule_type: input.schedule_type,
+        _interval_days: input.interval_days,
+        _run_at: input.run_at,
+        _timezone: input.timezone,
+        _next_execution_at: input.next_execution_at,
+        _is_active: input.is_active,
+      }),
+  };
+}
+export function useUpdateScheduledAutomation(org: string | null) {
+  const m = useRpcMutation("update_scheduled_automation", org);
+  return {
+    ...m,
+    mutateAsync: (id: string, input: ScheduledAutomationInput) =>
+      m.mutateAsync({
+        _rule_id: id,
+        _name: input.name,
+        _description: input.description,
+        _action_type: input.action_type,
+        _action_config: input.action_config,
+        _schedule_type: input.schedule_type,
+        _interval_days: input.interval_days,
+        _run_at: input.run_at,
+        _timezone: input.timezone,
+        _next_execution_at: input.next_execution_at,
+        _is_active: input.is_active,
+      }),
+  };
+}
+export function useSetScheduledAutomationActive(org: string | null) {
+  const m = useRpcMutation("set_scheduled_automation_active", org);
+  return {
+    ...m,
+    mutateAsync: (id: string, active: boolean) =>
+      m.mutateAsync({ _rule_id: id, _is_active: active }),
+  };
+}
+export function useArchiveScheduledAutomation(org: string | null) {
+  const m = useRpcMutation("archive_scheduled_automation", org);
   return { ...m, mutateAsync: (id: string) => m.mutateAsync({ _rule_id: id }) };
 }

@@ -19,6 +19,20 @@ A função não recebe `organization_id`: ela seleciona regras vencidas no banco
 obtém o tenant pela relação composta entre agenda e regra. Ela não está exposta
 a `PUBLIC`, `anon` ou `authenticated`.
 
+## Gerenciamento autenticado
+
+Criação e alteração de uma regra temporal sempre passam pelos RPCs dedicados
+`create_scheduled_automation` e `update_scheduled_automation`. As operações
+gravam regra e agenda na mesma transação, derivam o tenant da regra nas
+alterações e validam permissão administrativa, formato, timezone e primeira
+execução futura. Ativação e arquivamento também têm RPCs dedicados para manter
+os dois registros sincronizados.
+
+Os RPCs genéricos de automação rejeitam `trigger_type = 'scheduled'`. Isso evita
+regras sem agenda e impede que uma operação parcial quebre a relação entre as
+tabelas. O frontend dispõe dos contratos e hooks desses RPCs, mas a interface de
+criação permanece oculta até existir um disparador operacional confiável.
+
 ## Concorrência e idempotência
 
 Cada lote usa `FOR UPDATE SKIP LOCKED`. Além disso, cada par agenda/ciclo possui
