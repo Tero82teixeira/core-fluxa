@@ -13,10 +13,11 @@ export const AUTOMATION_TRIGGERS = [
   "monitoring.responsible_changed",
 ] as const;
 
-// Reserved for the database scheduler foundation. Intentionally excluded from
-// AUTOMATION_TRIGGERS so the current UI cannot offer it before operations are ready.
+// Scheduled rules use dedicated management RPCs. Keep them out of AUTOMATION_TRIGGERS so
+// event-based forms cannot submit them through the generic rule RPCs.
 export const SCHEDULED_AUTOMATION_TRIGGER = "scheduled" as const;
 export type ScheduledAutomationTrigger = typeof SCHEDULED_AUTOMATION_TRIGGER;
+export type AutomationRuleTrigger = AutomationTrigger | ScheduledAutomationTrigger;
 export type AutomationScheduleType = "interval_days" | "daily";
 export const SCHEDULED_AUTOMATION_ACTIONS = [
   "create_task",
@@ -120,25 +121,28 @@ export function automationDueDays(value: unknown) {
   return Number.isInteger(parsed) && parsed >= 0 && parsed <= 365 ? parsed : 0;
 }
 
-export const TRIGGER_LABELS: Record<AutomationTrigger, string> = Object.fromEntries(
-  AUTOMATION_TRIGGERS.map((value) => [
-    value,
-    value
-      .replace("task", "Tarefa")
-      .replace("process", "Processo")
-      .replace("monitoring", "Monitoramento")
-      .replace("created", "criado")
-      .replace("status_changed", "status alterado")
-      .replace("assignee_changed", "responsável alterado")
-      .replace("due_date_changed", "prazo alterado")
-      .replace("completed", "concluída")
-      .replace("stage_changed", "etapa alterada")
-      .replace("owner_changed", "proprietário alterado")
-      .replace("expiration_changed", "vencimento alterado")
-      .replace("responsible_changed", "responsável alterado")
-      .replace(".", " — "),
-  ]),
-) as Record<AutomationTrigger, string>;
+export const TRIGGER_LABELS: Record<AutomationRuleTrigger, string> = {
+  ...(Object.fromEntries(
+    AUTOMATION_TRIGGERS.map((value) => [
+      value,
+      value
+        .replace("task", "Tarefa")
+        .replace("process", "Processo")
+        .replace("monitoring", "Monitoramento")
+        .replace("created", "criado")
+        .replace("status_changed", "status alterado")
+        .replace("assignee_changed", "responsável alterado")
+        .replace("due_date_changed", "prazo alterado")
+        .replace("completed", "concluída")
+        .replace("stage_changed", "etapa alterada")
+        .replace("owner_changed", "proprietário alterado")
+        .replace("expiration_changed", "vencimento alterado")
+        .replace("responsible_changed", "responsável alterado")
+        .replace(".", " — "),
+    ]),
+  ) as Record<AutomationTrigger, string>),
+  scheduled: "Por horário",
+};
 
 export const ACTION_LABELS: Record<AutomationAction, string> = {
   create_task: "Criar tarefa",
@@ -152,4 +156,77 @@ export const ACTION_LABELS: Record<AutomationAction, string> = {
 
 export function canManageAutomations(role: string | null | undefined) {
   return role === "proprietario" || role === "administrador" || role === "superadmin";
+}
+
+const schedulePartsFormatter = (timezone: string) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+
+const dateTimeParts = (value: Date, timezone: string) =>
+  Object.fromEntries(
+    schedulePartsFormatter(timezone)
+      .formatToParts(value)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+
+export function scheduledWallTimeToIso(
+  date: string,
+  time: string,
+  timezone: string,
+  now = new Date(),
+) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return null;
+  try {
+    schedulePartsFormatter(timezone).format(now);
+  } catch {
+    return null;
+  }
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = time.split(":").map(Number);
+  const wallTimeAsUtc = Date.UTC(year, month - 1, day, hour, minute);
+  let candidate = new Date(wallTimeAsUtc);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const parts = dateTimeParts(candidate, timezone);
+    const representedAsUtc = Date.UTC(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour),
+      Number(parts.minute),
+      Number(parts.second),
+    );
+    candidate = new Date(candidate.getTime() + wallTimeAsUtc - representedAsUtc);
+  }
+  const resultParts = dateTimeParts(candidate, timezone);
+  const matchesWallTime =
+    resultParts.year === String(year).padStart(4, "0") &&
+    resultParts.month === String(month).padStart(2, "0") &&
+    resultParts.day === String(day).padStart(2, "0") &&
+    resultParts.hour === String(hour).padStart(2, "0") &&
+    resultParts.minute === String(minute).padStart(2, "0");
+  return matchesWallTime && candidate > now ? candidate.toISOString() : null;
+}
+
+export function scheduledWallTimeParts(
+  value?: string | null,
+  timezone = "America/Sao_Paulo",
+) {
+  const date = value ? new Date(value) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const safeDate = Number.isNaN(date.getTime())
+    ? new Date(Date.now() + 24 * 60 * 60 * 1000)
+    : date;
+  const parts = dateTimeParts(safeDate, timezone);
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${parts.hour}:${parts.minute}`,
+  };
 }
