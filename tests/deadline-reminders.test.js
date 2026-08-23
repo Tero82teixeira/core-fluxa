@@ -6,6 +6,10 @@ const migration = readFileSync(
   "supabase/migrations/20260823220000_deadline_reminders.sql",
   "utf8",
 );
+const civilDateFix = readFileSync(
+  "supabase/migrations/20260823233000_fix_task_deadline_civil_date.sql",
+  "utf8",
+);
 const settings = readFileSync("src/lib/organization-settings.ts", "utf8");
 const settingsPage = readFileSync(
   "src/routes/_authenticated/configuracoes.tsx",
@@ -37,7 +41,22 @@ test("deadline dates use the organization timezone with a safe fallback", () => 
   assert.match(migration, /FROM pg_catalog\.pg_timezone_names AS zone/);
   assert.match(migration, /ELSE 'America\/Sao_Paulo'/);
   assert.match(migration, /now\(\) AT TIME ZONE config\.timezone_name/);
-  assert.match(migration, /task\.due_at AT TIME ZONE config\.timezone_name/);
+  assert.match(
+    civilDateFix,
+    /\(task\.due_at AT TIME ZONE 'UTC'\)::date AS due_on/,
+  );
+  assert.match(
+    civilDateFix,
+    /\(task\.due_at AT TIME ZONE 'UTC'\)::date[\s\S]*BETWEEN config\.local_today \+ 1[\s\S]*config\.local_today \+ 30/,
+  );
+  assert.doesNotMatch(
+    civilDateFix,
+    /task\.due_at AT TIME ZONE config\.timezone_name/,
+  );
+  assert.match(
+    readFileSync("supabase/tests/database/024_deadline_reminders.sql", "utf8"),
+    /SET LOCAL TIME ZONE 'America\/Sao_Paulo'[\s\S]*\(current_date \+ 1\)::timestamp AT TIME ZONE 'UTC'/,
+  );
 });
 
 test("recipients remain active, tenant-safe, and finance-authorized", () => {
@@ -83,4 +102,16 @@ test("deadline preference is visible and represented in generated types", () => 
   assert.match(settings, /deadline_reminders: true/);
   assert.match(settingsPage, /"deadline_reminders", "Lembretes antecipados de prazo"/);
   assert.match(databaseTypes, /create_deadline_reminder_notifications:/);
+});
+
+test("civil-date fix preserves the private helper and the single clock", () => {
+  assert.match(
+    civilDateFix,
+    /REVOKE ALL ON FUNCTION public\.create_deadline_reminder_notifications\(\)[\s\S]*FROM PUBLIC, anon, authenticated, service_role/,
+  );
+  assert.match(
+    civilDateFix,
+    /GRANT EXECUTE ON FUNCTION public\.create_deadline_reminder_notifications\(\)[\s\S]*TO postgres/,
+  );
+  assert.doesNotMatch(civilDateFix, /cron\.schedule|cron\.unschedule/);
 });

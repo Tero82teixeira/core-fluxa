@@ -1,6 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = public, extensions;
+SET LOCAL TIME ZONE 'America/Sao_Paulo';
 SELECT no_plan();
 
 SELECT has_function(
@@ -40,7 +41,7 @@ INSERT INTO public.organization_members(organization_id, user_id, role, is_activ
   ('29280000-0000-0000-0000-000000000002', '19280000-0000-0000-0000-000000000004', 'administrador', true);
 
 INSERT INTO public.organization_settings(organization_id, timezone) VALUES
-  ('29280000-0000-0000-0000-000000000001', 'UTC'),
+  ('29280000-0000-0000-0000-000000000001', 'America/Sao_Paulo'),
   ('29280000-0000-0000-0000-000000000002', 'UTC');
 UPDATE public.organization_settings
 SET notification_preferences = jsonb_set(
@@ -66,7 +67,7 @@ INSERT INTO public.tasks(
 ) VALUES
   ('59280000-0000-0000-0000-000000000001', '29280000-0000-0000-0000-000000000001', 'Task in 30 days', 'pendente', 'media', (current_date + 30)::timestamptz + interval '12 hours', '19280000-0000-0000-0000-000000000002', '19280000-0000-0000-0000-000000000001'),
   ('59280000-0000-0000-0000-000000000002', '29280000-0000-0000-0000-000000000001', 'Task in 15 days unassigned', 'pendente', 'media', (current_date + 15)::timestamptz + interval '12 hours', NULL, '19280000-0000-0000-0000-000000000001'),
-  ('59280000-0000-0000-0000-000000000003', '29280000-0000-0000-0000-000000000001', 'Task in 1 day inactive assignee', 'pendente', 'media', (current_date + 1)::timestamptz + interval '12 hours', '19280000-0000-0000-0000-000000000003', '19280000-0000-0000-0000-000000000001'),
+  ('59280000-0000-0000-0000-000000000003', '29280000-0000-0000-0000-000000000001', 'Task in 1 day inactive assignee', 'pendente', 'media', (current_date + 1)::timestamp AT TIME ZONE 'UTC', '19280000-0000-0000-0000-000000000003', '19280000-0000-0000-0000-000000000001'),
   ('59280000-0000-0000-0000-000000000004', '29280000-0000-0000-0000-000000000001', 'Completed task in 7 days', 'concluida', 'media', (current_date + 7)::timestamptz + interval '12 hours', '19280000-0000-0000-0000-000000000002', '19280000-0000-0000-0000-000000000001'),
   ('59280000-0000-0000-0000-000000000005', '29280000-0000-0000-0000-000000000002', 'Disabled tenant task', 'pendente', 'media', (current_date + 30)::timestamptz + interval '12 hours', '19280000-0000-0000-0000-000000000004', '19280000-0000-0000-0000-000000000004');
 
