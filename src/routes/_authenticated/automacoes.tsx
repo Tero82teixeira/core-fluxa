@@ -100,7 +100,10 @@ const empty: AutomationInput = {
   action_type: "create_task",
   action_config: defaultCreateTaskConfig("task.created"),
 };
-type EventAutomationRule = AutomationRule & { trigger_type: AutomationTrigger };
+type EventAutomationRule = Omit<AutomationRule, "trigger_type" | "action_type"> & {
+  trigger_type: AutomationTrigger;
+  action_type: AutomationAction;
+};
 
 const configText = (config: Record<string, unknown>, key: string) =>
   typeof config[key] === "string" ? config[key] : "";
