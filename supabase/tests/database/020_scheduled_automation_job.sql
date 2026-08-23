@@ -31,7 +31,7 @@ SELECT ok(
 SELECT is(
   (SELECT database FROM cron.job
    WHERE jobname = 'core-fluxa-process-due-scheduled-automations'),
-  current_database(),
+  current_database()::text,
   'job targets the current operational database'
 );
 SELECT is(
