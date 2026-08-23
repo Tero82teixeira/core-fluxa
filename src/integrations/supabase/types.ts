@@ -3188,6 +3188,22 @@ export type Database = {
         }
         Returns: string
       }
+      create_scheduled_automation: {
+        Args: {
+          _action_config: Json
+          _action_type: string
+          _description: string
+          _interval_days: number
+          _is_active?: boolean
+          _name: string
+          _next_execution_at: string
+          _organization_id: string
+          _run_at: string
+          _schedule_type: string
+          _timezone: string
+        }
+        Returns: string
+      }
       create_communication_thread: {
         Args: {
           _assigned_to?: string
@@ -3374,6 +3390,14 @@ export type Database = {
         Args: { _is_active: boolean; _rule_id: string }
         Returns: undefined
       }
+      archive_scheduled_automation: {
+        Args: { _rule_id: string }
+        Returns: undefined
+      }
+      set_scheduled_automation_active: {
+        Args: { _is_active: boolean; _rule_id: string }
+        Returns: undefined
+      }
       set_financial_account_active: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
@@ -3406,6 +3430,22 @@ export type Database = {
           is_active: boolean
           name: string
           trigger_type: string
+        }
+        Returns: undefined
+      }
+      update_scheduled_automation: {
+        Args: {
+          _action_config: Json
+          _action_type: string
+          _description: string
+          _interval_days: number
+          _is_active: boolean
+          _name: string
+          _next_execution_at: string
+          _rule_id: string
+          _run_at: string
+          _schedule_type: string
+          _timezone: string
         }
         Returns: undefined
       }
