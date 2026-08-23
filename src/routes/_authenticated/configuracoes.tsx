@@ -556,6 +556,7 @@ function SettingsPage() {
               ["expiring_documents", "Documentos vencendo"],
               ["critical_monitoring", "Alertas críticos"],
               ["unassigned_monitoring", "Pendências sem responsável"],
+              ["deadline_reminders", "Lembretes antecipados de prazo"],
             ].map(([key, label]) => (
               <Toggle
                 key={key}

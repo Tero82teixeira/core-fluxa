@@ -71,6 +71,19 @@ O mesmo item não é repetido a cada ciclo. Uma nova notificação só é permit
 quando há evidência de um novo episódio, como a remoção explícita do responsável
 ou a alteração do prazo operacional que identifica a pendência.
 
+## Lembretes antecipados de prazo
+
+Tarefas, processos, documentos e contas em aberto geram notificações internas
+quando faltam 30, 15, 7 ou 1 dia para o prazo. O cálculo usa a data civil no fuso
+horário configurado pela organização. Itens concluídos, cancelados ou arquivados
+não geram lembretes.
+
+O responsável ativo recebe o aviso. Sem um destinatário válido, proprietários e
+administradores ativos recebem o lembrete; dados financeiros só são enviados a
+papéis autorizados a visualizá-los. A chave combina item, vencimento e degrau do
+prazo, impedindo repetição no mesmo dia e permitindo uma nova sequência quando a
+data for realmente alterada. A categoria pode ser desativada em Configurações.
+
 A interface permite programações diárias ou por intervalo de dias para criar
 tarefas, notificações internas, registros de auditoria ou resumos das pendências
 já identificadas pela Central de Monitoramento. O resumo respeita as preferências
