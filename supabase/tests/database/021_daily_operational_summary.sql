@@ -163,16 +163,24 @@ SELECT is(
 SELECT is(
   (SELECT count(*) FROM public.notifications
    WHERE user_id = '19240000-0000-0000-0000-000000000002'
-     AND title = 'Resumo diário: 1 pendência(s)'),
+     AND title = 'Resumo diário: 1 pendência'),
   1::bigint,
   'responsible member receives only their active assigned alert'
 );
 SELECT ok(
-  (SELECT body LIKE '%1 item(ns) ainda sem responsável.%'
+  (SELECT body LIKE '%1 item ainda sem responsável.%'
    FROM public.notifications
    WHERE user_id = '19240000-0000-0000-0000-000000000001'
      AND dedupe_key LIKE 'operational-summary:%'),
   'administrator receives the unassigned-alert fallback'
+);
+SELECT is(
+  (SELECT count(*) FROM public.notifications
+   WHERE organization_id = '29240000-0000-0000-0000-000000000001'
+     AND dedupe_key LIKE 'operational-summary:%'
+     AND (title LIKE '%(s)%' OR body LIKE '%(s)%')),
+  0::bigint,
+  'summary notifications use proper Portuguese singular and plural forms'
 );
 SELECT is(
   (SELECT count(*) FROM public.notifications
