@@ -793,7 +793,9 @@ function AutomationForm({
   );
 }
 
-const defaultScheduledConfig = (action: ScheduledAutomationAction) => {
+const defaultScheduledConfig = (
+  action: ScheduledAutomationAction,
+): Record<string, unknown> => {
   if (action === "create_task") {
     return {
       title: "Nova tarefa programada",
