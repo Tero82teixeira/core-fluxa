@@ -48,4 +48,7 @@ não interrompem as demais agendas.
 Condições sobre registros antigos e os casos de negócio (processo parado,
 documento vencendo, follow-up e resumo diário) não fazem parte desta etapa. A
 interface permite programações diárias ou por intervalo de dias para criar
-tarefas, notificações internas ou registros de auditoria.
+tarefas, notificações internas, registros de auditoria ou resumos das pendências
+já identificadas pela Central de Monitoramento. O resumo respeita as preferências
+da organização, agrupa itens por responsável e encaminha itens sem responsável
+a proprietários e administradores ativos.
