@@ -3227,6 +3227,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_critical_monitoring_notifications: {
+        Args: never
+        Returns: number
+      }
       create_financial_account: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
@@ -3389,6 +3393,10 @@ export type Database = {
       reverse_financial_payment: {
         Args: { _notes: string; _organization_id: string; _payment_id: string }
         Returns: string
+      }
+      run_temporal_automation_cycle: {
+        Args: never
+        Returns: Json
       }
       seed_default_document_types: {
         Args: { _org: string }
