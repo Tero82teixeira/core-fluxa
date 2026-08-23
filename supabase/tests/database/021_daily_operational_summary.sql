@@ -9,10 +9,19 @@ SELECT has_function(
   'private operational summary helper exists'
 );
 SELECT ok(
-  NOT has_function_privilege(
-    'PUBLIC',
-    'public.create_operational_summary_notifications(uuid,uuid,timestamptz)',
-    'EXECUTE'
+  NOT EXISTS (
+    SELECT 1
+    FROM pg_catalog.pg_proc AS procedure
+    JOIN pg_catalog.pg_namespace AS namespace
+      ON namespace.oid = procedure.pronamespace
+    CROSS JOIN LATERAL aclexplode(
+      coalesce(procedure.proacl, acldefault('f', procedure.proowner))
+    ) AS privilege
+    WHERE namespace.nspname = 'public'
+      AND procedure.proname = 'create_operational_summary_notifications'
+      AND pg_get_function_identity_arguments(procedure.oid) = 'uuid, uuid, timestamp with time zone'
+      AND privilege.grantee = 0
+      AND privilege.privilege_type = 'EXECUTE'
   ) AND NOT has_function_privilege(
     'anon',
     'public.create_operational_summary_notifications(uuid,uuid,timestamptz)',
