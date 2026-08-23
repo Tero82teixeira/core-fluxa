@@ -8,6 +8,7 @@ const migration = readFileSync(
 );
 const frontend = readFileSync("src/lib/automations.ts", "utf8");
 const page = readFileSync("src/routes/_authenticated/automacoes.tsx", "utf8");
+const databaseTypes = readFileSync("src/integrations/supabase/types.ts", "utf8");
 
 test("daily summary reuses monitoring with tenant-derived recipients", () => {
   const helper = migration.match(
@@ -39,6 +40,7 @@ test("daily summary helper is private, idempotent, and scheduler-only", () => {
   assert.match(migration, /'operational-summary:' \|\| _automation_schedule_id/);
   assert.doesNotMatch(migration, /pg_cron|cron\.schedule|https?:\/\//i);
   assert.doesNotMatch(migration, /service_role_key|supabase_service/i);
+  assert.match(databaseTypes, /create_operational_summary_notifications:/);
 });
 
 test("summary action is isolated from event rules and exposed by the scheduled UI", () => {
