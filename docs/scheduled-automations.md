@@ -11,13 +11,14 @@ O job `core-fluxa-process-due-scheduled-automations` executa a cada 15 minutos,
 como papel `postgres`, no próprio banco operacional:
 
 ```sql
-select public.process_due_scheduled_automations();
+select public.run_temporal_automation_cycle();
 ```
 
-A função não recebe `organization_id`: ela seleciona regras vencidas no banco e
-obtém o tenant pela relação composta entre agenda e regra. Ela não está exposta
-a `PUBLIC`, `anon` ou `authenticated`. A migration remove qualquer job anterior
-com o mesmo nome antes de recriá-lo, de modo que reaplicações não acumulam jobs.
+O ciclo não recebe `organization_id`: primeiro processa as regras vencidas e
+depois procura alertas operacionais críticos. O tenant sempre é obtido das
+próprias linhas do banco. As funções não estão expostas a `PUBLIC`, `anon`,
+`authenticated` ou `service_role`. A migration remove qualquer job anterior com
+o mesmo nome antes de recriá-lo, de modo que reaplicações não acumulam jobs.
 
 O estado, a última execução e o histórico ficam disponíveis em **Cloud → Jobs**
 no Lovable. O intervalo de 15 minutos limita o uso do Cloud a no máximo 96
@@ -36,7 +37,7 @@ os dois registros sincronizados.
 Os RPCs genéricos de automação rejeitam `trigger_type = 'scheduled'`. Isso evita
 regras sem agenda e impede que uma operação parcial quebre a relação entre as
 tabelas. O frontend dispõe dos contratos e hooks desses RPCs, mas a interface de
-criação permanece oculta até existir um disparador operacional confiável.
+criação por horário usa somente os RPCs dedicados.
 
 ## Concorrência e idempotência
 
@@ -45,9 +46,20 @@ Cada lote usa `FOR UPDATE SKIP LOCKED`. Além disso, cada par agenda/ciclo possu
 concorrentes não repetem o mesmo ciclo. Falhas são registradas individualmente e
 não interrompem as demais agendas.
 
-Condições sobre registros antigos e os casos de negócio (processo parado,
-documento vencendo, follow-up e resumo diário) não fazem parte desta etapa. A
-interface permite programações diárias ou por intervalo de dias para criar
+## Alertas críticos imediatos
+
+A cada ciclo, pendências com prioridade efetiva `critica` geram uma notificação
+interna para o responsável ativo. Quando não há responsável, proprietários e
+administradores ativos recebem o aviso. Alertas resolvidos ou ignorados, fontes
+ocultas nas configurações e organizações com **Alertas críticos** desativado são
+ignorados.
+
+A chave de deduplicação permite apenas um aviso por destinatário e episódio. Uma
+reexecução do relógio não repete o alerta; se a pendência for resolvida e depois
+reaberta, o novo episódio pode avisar novamente. Uma falha nessa varredura é
+isolada e não desfaz tarefas ou resumos já processados pelo mesmo ciclo.
+
+A interface permite programações diárias ou por intervalo de dias para criar
 tarefas, notificações internas, registros de auditoria ou resumos das pendências
 já identificadas pela Central de Monitoramento. O resumo respeita as preferências
 da organização, agrupa itens por responsável e encaminha itens sem responsável

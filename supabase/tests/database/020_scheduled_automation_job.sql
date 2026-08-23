@@ -20,8 +20,8 @@ SELECT is(
 SELECT is(
   (SELECT command FROM cron.job
    WHERE jobname = 'core-fluxa-process-due-scheduled-automations'),
-  'SELECT public.process_due_scheduled_automations();',
-  'job invokes only the tenant-derived internal executor'
+  'SELECT public.run_temporal_automation_cycle();',
+  'job invokes only the private tenant-derived temporal cycle'
 );
 SELECT ok(
   (SELECT active FROM cron.job
