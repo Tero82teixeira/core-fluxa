@@ -44,6 +44,7 @@ import {
   ACTION_LABELS,
   ASSIGNEE_MODE_LABELS,
   AUTOMATION_TRIGGERS,
+  SCHEDULED_AUTOMATION_ACTIONS,
   actionsForTrigger,
   assigneeModesForTrigger,
   canManageAutomations,
@@ -99,7 +100,10 @@ const empty: AutomationInput = {
   action_type: "create_task",
   action_config: defaultCreateTaskConfig("task.created"),
 };
-type EventAutomationRule = AutomationRule & { trigger_type: AutomationTrigger };
+type EventAutomationRule = Omit<AutomationRule, "trigger_type" | "action_type"> & {
+  trigger_type: AutomationTrigger;
+  action_type: AutomationAction;
+};
 
 const configText = (config: Record<string, unknown>, key: string) =>
   typeof config[key] === "string" ? config[key] : "";
@@ -809,6 +813,7 @@ const defaultScheduledConfig = (
   if (action === "create_notification") {
     return { title: "", body: "", recipient_id: "" };
   }
+  if (action === "send_operational_summary") return {};
   return { message: "" };
 };
 
@@ -936,7 +941,7 @@ function ScheduledAutomationForm({
             {rule ? "Editar automação por horário" : "Nova automação por horário"}
           </SheetTitle>
           <SheetDescription>
-            Programe uma tarefa, notificação ou registro interno com segurança.
+            Programe uma tarefa, notificação, registro interno ou resumo diário com segurança.
           </SheetDescription>
         </SheetHeader>
         <form className="mt-6 space-y-5" onSubmit={submit}>
@@ -974,6 +979,7 @@ function ScheduledAutomationForm({
             <Label>Repetição</Label>
             <Select
               value={form.schedule_type}
+              disabled={form.action_type === "send_operational_summary"}
               onValueChange={(value) =>
                 setForm({
                   ...form,
@@ -1059,6 +1065,10 @@ function ScheduledAutomationForm({
                   ...form,
                   action_type: action,
                   action_config: defaultScheduledConfig(action),
+                  schedule_type:
+                    action === "send_operational_summary" ? "daily" : form.schedule_type,
+                  interval_days:
+                    action === "send_operational_summary" ? null : form.interval_days,
                 });
               }}
             >
@@ -1066,13 +1076,11 @@ function ScheduledAutomationForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(["create_task", "create_notification", "add_audit_log"] as const).map(
-                  (action) => (
-                    <SelectItem key={action} value={action}>
-                      {ACTION_LABELS[action]}
-                    </SelectItem>
-                  ),
-                )}
+                {SCHEDULED_AUTOMATION_ACTIONS.map((action) => (
+                  <SelectItem key={action} value={action}>
+                    {ACTION_LABELS[action]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -1234,6 +1242,14 @@ function ScheduledAutomationForm({
                 value={configText(form.action_config, "message")}
                 onChange={(event) => setConfig("message", event.target.value)}
               />
+            </div>
+          )}
+          {form.action_type === "send_operational_summary" && (
+            <div className="rounded-lg border p-4 text-sm text-muted-foreground">
+              O sistema reunirá tarefas atrasadas, processos parados, documentos vencendo,
+              retornos, contas vencidas e alertas críticos. Cada responsável recebe somente
+              o próprio resumo; itens sem responsável vão para proprietários e
+              administradores. As preferências de Configurações serão respeitadas.
             </div>
           )}
           <Button className="w-full" disabled={pending}>

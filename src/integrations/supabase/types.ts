@@ -3188,6 +3188,14 @@ export type Database = {
         }
         Returns: string
       }
+      create_operational_summary_notifications: {
+        Args: {
+          _automation_schedule_id: string
+          _organization_id: string
+          _scheduled_for: string
+        }
+        Returns: number
+      }
       create_scheduled_automation: {
         Args: {
           _action_config: Json

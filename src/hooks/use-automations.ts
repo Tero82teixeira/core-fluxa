@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type {
   AutomationAction,
   AutomationCondition,
+  AutomationRuleAction,
   AutomationRuleTrigger,
   AutomationScheduleType,
   AutomationTrigger,
@@ -20,7 +21,7 @@ export type AutomationRule = {
   description: string | null;
   trigger_type: AutomationRuleTrigger;
   conditions: AutomationCondition[];
-  action_type: AutomationAction;
+  action_type: AutomationRuleAction;
   action_config: Record<string, unknown>;
   is_active: boolean;
   created_by: string;
@@ -40,7 +41,10 @@ export type AutomationExecution = {
   entity_id: string | null;
   status: "running" | "success" | "failed" | "skipped";
   error_message: string | null;
-  output_payload: { action?: AutomationAction } | null;
+  output_payload: {
+    action?: AutomationRuleAction;
+    notifications_created?: number;
+  } | null;
   started_at: string;
   finished_at: string | null;
   created_at: string;
