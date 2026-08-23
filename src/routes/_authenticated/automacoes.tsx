@@ -880,7 +880,10 @@ function ScheduledAutomationForm({
 
   const setAssigneeMode = (mode: string) =>
     setForm((current) => {
-      const config = { ...current.action_config, assignee_mode: mode };
+      const config: Record<string, unknown> = {
+        ...current.action_config,
+        assignee_mode: mode,
+      };
       if (mode !== "fixed_user") delete config.assignee_id;
       return { ...current, action_config: config };
     });
