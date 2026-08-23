@@ -37,6 +37,7 @@ test("automation page offers a dedicated and complete scheduled flow", () => {
   assert.match(page, /create_task/);
   assert.match(page, /create_notification/);
   assert.match(page, /add_audit_log/);
+  assert.match(page, /send_operational_summary/);
   assert.match(page, /Selecione o responsável da tarefa/);
   assert.match(page, /Selecione quem receberá a notificação/);
 });
