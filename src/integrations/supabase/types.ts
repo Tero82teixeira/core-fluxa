@@ -3196,6 +3196,10 @@ export type Database = {
         }
         Returns: number
       }
+      create_unassigned_monitoring_notifications: {
+        Args: never
+        Returns: number
+      }
       create_scheduled_automation: {
         Args: {
           _action_config: Json

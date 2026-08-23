@@ -555,6 +555,7 @@ function SettingsPage() {
               ["overdue_accounts", "Contas vencidas"],
               ["expiring_documents", "Documentos vencendo"],
               ["critical_monitoring", "Alertas críticos"],
+              ["unassigned_monitoring", "Pendências sem responsável"],
             ].map(([key, label]) => (
               <Toggle
                 key={key}

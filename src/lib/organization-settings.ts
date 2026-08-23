@@ -34,6 +34,7 @@ export const ORGANIZATION_SETTINGS_DEFAULTS = {
     overdue_accounts: true,
     expiring_documents: true,
     critical_monitoring: true,
+    unassigned_monitoring: true,
   },
 };
 
