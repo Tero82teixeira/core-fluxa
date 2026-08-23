@@ -76,6 +76,14 @@ SET is_active = false
 WHERE organization_id = '29280000-0000-0000-0000-000000000001'
   AND user_id = '19280000-0000-0000-0000-000000000003';
 
+-- Document writes are protected by the production authorization trigger.
+-- Simulate the active administrator that uploads this test fixture.
+SELECT set_config(
+  'request.jwt.claim.sub',
+  '19280000-0000-0000-0000-000000000001',
+  true
+);
+
 INSERT INTO public.documents(
   id, organization_id, title, expiration_date, file_path,
   original_file_name, stored_file_name, file_extension, mime_type,
