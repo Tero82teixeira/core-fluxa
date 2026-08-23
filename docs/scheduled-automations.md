@@ -59,6 +59,18 @@ reexecução do relógio não repete o alerta; se a pendência for resolvida e d
 reaberta, o novo episódio pode avisar novamente. Uma falha nessa varredura é
 isolada e não desfaz tarefas ou resumos já processados pelo mesmo ciclo.
 
+## Pendências sem responsável
+
+Alertas operacionais sem responsável ativo geram uma notificação interna para
+proprietários e administradores ativos. O sistema não atribui uma pessoa por
+conta própria: o aviso direciona o administrador ao Monitoramento para uma
+decisão humana. A preferência **Pendências sem responsável** permite desativar
+essa categoria nas Configurações.
+
+O mesmo item não é repetido a cada ciclo. Uma nova notificação só é permitida
+quando há evidência de um novo episódio, como a remoção explícita do responsável
+ou a alteração do prazo operacional que identifica a pendência.
+
 A interface permite programações diárias ou por intervalo de dias para criar
 tarefas, notificações internas, registros de auditoria ou resumos das pendências
 já identificadas pela Central de Monitoramento. O resumo respeita as preferências
