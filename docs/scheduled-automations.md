@@ -210,3 +210,18 @@ tarefas, notificações internas, registros de auditoria ou resumos das pendênc
 já identificadas pela Central de Monitoramento. O resumo respeita as preferências
 da organização, agrupa itens por responsável e encaminha itens sem responsável
 a proprietários e administradores ativos.
+
+## Resumo financeiro semanal
+
+Toda segunda-feira, depois das 08:00 no fuso horário da organização, o relógio
+cria uma notificação interna consolidada para proprietários, administradores e
+gestores ativos. O resumo apresenta valores em aberto a receber e a pagar,
+quantidade e valor das contas vencidas, recebimentos e pagamentos da semana
+anterior, compromissos dos próximos sete dias e o saldo atual das contas ativas.
+
+Organizações arquivadas ou com a exibição financeira do Monitoramento desativada
+não recebem o resumo. A chave de deduplicação combina a semana civil e o
+destinatário, então os ciclos de 15 minutos não repetem a notificação. A função
+respeita o fuso configurado, usa **America/Sao_Paulo** como fallback e não
+movimenta saldo, não baixa lançamentos, não cria pagamentos, tarefas, e-mails ou
+mensagens externas. O mesmo relógio privado permanece único.
