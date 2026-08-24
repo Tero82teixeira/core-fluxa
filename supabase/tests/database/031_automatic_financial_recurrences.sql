@@ -53,7 +53,7 @@ INSERT INTO public.organizations(id, legal_name, archived_at) VALUES
   ),
   (
     '29500000-0000-0000-0000-000000000003',
-    'Invalid Timezone Tenant', NULL
+    'Missing Timezone Tenant', NULL
   );
 
 INSERT INTO public.organization_members(
@@ -70,15 +70,10 @@ INSERT INTO public.organization_members(
     'proprietario', true
   );
 
-INSERT INTO public.organization_settings(organization_id, timezone) VALUES
-  (
-    '29500000-0000-0000-0000-000000000001',
-    'Pacific/Kiritimati'
-  ),
-  (
-    '29500000-0000-0000-0000-000000000003',
-    'Invalid/Timezone'
-  );
+INSERT INTO public.organization_settings(organization_id, timezone) VALUES (
+  '29500000-0000-0000-0000-000000000001',
+  'Pacific/Kiritimati'
+);
 
 INSERT INTO public.financial_accounts(
   id, organization_id, name, type, initial_balance, current_balance,
@@ -160,7 +155,7 @@ INSERT INTO public.financial_recurrences(
   (
     'a9500000-0000-0000-0000-000000000008',
     '29500000-0000-0000-0000-000000000003',
-    'Fallback timezone recurrence', 'income', 40, NULL, 'weekly', 1,
+    'Missing timezone fallback recurrence', 'income', 40, NULL, 'weekly', 1,
     (now() AT TIME ZONE 'America/Sao_Paulo')::date,
     NULL,
     (now() AT TIME ZONE 'America/Sao_Paulo')::date,
@@ -250,7 +245,7 @@ SELECT is(
     WHERE recurrence_id = 'a9500000-0000-0000-0000-000000000008'
   ),
   1::bigint,
-  'an invalid organization timezone uses the Sao Paulo fallback'
+  'a missing organization timezone uses the Sao Paulo fallback'
 );
 SELECT is(
   (
