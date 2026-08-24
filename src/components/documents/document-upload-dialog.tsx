@@ -229,7 +229,17 @@ export function DocumentUploadDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="doc-number">Número / identificação</Label>
+              <Label htmlFor="doc-internal-code">Código interno</Label>
+              <Input
+                id="doc-internal-code"
+                value="Gerado automaticamente"
+                readOnly
+                className="bg-muted text-muted-foreground"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="doc-number">Número oficial / identificação (opcional)</Label>
               <Input
                 id="doc-number"
                 maxLength={80}
