@@ -163,6 +163,27 @@ repetições a cada ciclo. A automação apenas notifica: não muda o status do
 documento, não cria tarefa e não envia mensagens externas. O relógio privado de
 15 minutos permanece único.
 
+## Avisos de contas vencidas
+
+Os lembretes antecipados já avisam contas a receber e a pagar quando faltam 30,
+15, 7 ou 1 dia. Depois do vencimento, contas ainda abertas e com saldo recebem
+um aviso específico: de 1 a 6 dias, o responsável financeiro autorizado é
+avisado; de 7 a 29 dias, responsável, proprietários e administradores recebem o
+escalonamento; com 30 dias ou mais, a gestão recebe o alerta prolongado. Valores
+pagos parcialmente exibem somente o saldo ainda sem baixa.
+
+Contas pagas, canceladas, arquivadas, sem saldo, resolvidas ou ignoradas no
+Monitoramento não geram avisos. A preferência **Contas vencidas** e a exibição
+de alertas financeiros podem desativar a categoria. Quando um alerta crítico já
+cobre a conta, esta varredura não cria uma notificação concorrente; com alertas
+críticos desativados, o aviso financeiro específico continua disponível.
+
+A chave de deduplicação combina lançamento, vencimento, nível e destinatário.
+Alterar legitimamente o vencimento inicia um novo episódio, sem repetição a cada
+ciclo. A automação não baixa valores, não altera o status financeiro, não cria
+tarefas e não envia mensagens externas. Ela reutiliza o único relógio privado de
+15 minutos.
+
 A interface permite programações diárias ou por intervalo de dias para criar
 tarefas, notificações internas, registros de auditoria ou resumos das pendências
 já identificadas pela Central de Monitoramento. O resumo respeita as preferências

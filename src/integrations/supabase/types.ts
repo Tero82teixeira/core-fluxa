@@ -3272,6 +3272,10 @@ export type Database = {
         Args: never
         Returns: number
       }
+      create_overdue_financial_notifications: {
+        Args: never
+        Returns: number
+      }
       create_overdue_task_escalation_notifications: {
         Args: never
         Returns: number
