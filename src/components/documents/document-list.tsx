@@ -128,6 +128,14 @@ export function DocumentCard({
               <span className="text-xs text-muted-foreground">v{document.current_version}</span>
             )}
           </div>
+          <p className="text-xs font-medium">
+            {document.internal_code}
+            {document.document_number && (
+              <span className="font-normal text-muted-foreground">
+                {` · Número oficial: ${document.document_number}`}
+              </span>
+            )}
+          </p>
           <p className="truncate text-xs text-muted-foreground">
             {document.document_types?.name ?? "Sem tipo"} · {document.original_file_name} ·{" "}
             {formatFileSize(document.file_size)}
