@@ -72,7 +72,7 @@ INSERT INTO public.organization_members(
 
 INSERT INTO public.organization_settings(organization_id, timezone) VALUES (
   '29500000-0000-0000-0000-000000000001',
-  'Pacific/Kiritimati'
+  'America/Manaus'
 );
 
 INSERT INTO public.financial_accounts(
@@ -95,36 +95,36 @@ INSERT INTO public.financial_recurrences(
     '29500000-0000-0000-0000-000000000001',
     'Weekly active recurrence', 'income', 100,
     '39500000-0000-0000-0000-000000000001', 'weekly', 1,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date - 14,
+    (now() AT TIME ZONE 'America/Manaus')::date - 14,
     NULL,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date - 14,
+    (now() AT TIME ZONE 'America/Manaus')::date - 14,
     'active', '19500000-0000-0000-0000-000000000001', NULL
   ),
   (
     'a9500000-0000-0000-0000-000000000002',
     '29500000-0000-0000-0000-000000000001',
     'Paused recurrence', 'expense', 10, NULL, 'weekly', 1,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
+    (now() AT TIME ZONE 'America/Manaus')::date,
     NULL,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
+    (now() AT TIME ZONE 'America/Manaus')::date,
     'paused', '19500000-0000-0000-0000-000000000001', NULL
   ),
   (
     'a9500000-0000-0000-0000-000000000003',
     '29500000-0000-0000-0000-000000000001',
     'Future recurrence', 'income', 10, NULL, 'monthly', 1,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date + 1,
+    (now() AT TIME ZONE 'America/Manaus')::date + 1,
     NULL,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date + 1,
+    (now() AT TIME ZONE 'America/Manaus')::date + 1,
     'active', '19500000-0000-0000-0000-000000000001', NULL
   ),
   (
     'a9500000-0000-0000-0000-000000000004',
     '29500000-0000-0000-0000-000000000001',
     'Archived recurrence', 'income', 10, NULL, 'monthly', 1,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
+    (now() AT TIME ZONE 'America/Manaus')::date,
     NULL,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
+    (now() AT TIME ZONE 'America/Manaus')::date,
     'active', '19500000-0000-0000-0000-000000000001', now()
   ),
   (
@@ -138,18 +138,18 @@ INSERT INTO public.financial_recurrences(
     'a9500000-0000-0000-0000-000000000006',
     '29500000-0000-0000-0000-000000000001',
     'Ends today recurrence', 'expense', 20, NULL, 'monthly', 1,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
+    (now() AT TIME ZONE 'America/Manaus')::date,
+    (now() AT TIME ZONE 'America/Manaus')::date,
+    (now() AT TIME ZONE 'America/Manaus')::date,
     'active', '19500000-0000-0000-0000-000000000001', NULL
   ),
   (
     'a9500000-0000-0000-0000-000000000007',
     '29500000-0000-0000-0000-000000000001',
     'Already generated recurrence', 'income', 30, NULL, 'weekly', 1,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
+    (now() AT TIME ZONE 'America/Manaus')::date,
     NULL,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
+    (now() AT TIME ZONE 'America/Manaus')::date,
     'active', '19500000-0000-0000-0000-000000000001', NULL
   ),
   (
@@ -165,9 +165,9 @@ INSERT INTO public.financial_recurrences(
     'a9500000-0000-0000-0000-000000000009',
     '29500000-0000-0000-0000-000000000001',
     'Bounded backlog recurrence', 'income', 1, NULL, 'weekly', 1,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date - (120 * 7),
+    (now() AT TIME ZONE 'America/Manaus')::date - (120 * 7),
     NULL,
-    (now() AT TIME ZONE 'Pacific/Kiritimati')::date - (120 * 7),
+    (now() AT TIME ZONE 'America/Manaus')::date - (120 * 7),
     'active', '19500000-0000-0000-0000-000000000001', NULL
   );
 
@@ -178,10 +178,10 @@ INSERT INTO public.financial_transactions(
   'b9500000-0000-0000-0000-000000000001',
   '29500000-0000-0000-0000-000000000001',
   'income', 'Already generated recurrence', 30, 'pending',
-  (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
-  (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
+  (now() AT TIME ZONE 'America/Manaus')::date,
+  (now() AT TIME ZONE 'America/Manaus')::date,
   'a9500000-0000-0000-0000-000000000007',
-  (now() AT TIME ZONE 'Pacific/Kiritimati')::date,
+  (now() AT TIME ZONE 'America/Manaus')::date,
   '19500000-0000-0000-0000-000000000001'
 );
 
@@ -235,7 +235,7 @@ SELECT is(
     FROM public.financial_recurrences
     WHERE id = 'a9500000-0000-0000-0000-000000000007'
   ),
-  (now() AT TIME ZONE 'Pacific/Kiritimati')::date + 7,
+  (now() AT TIME ZONE 'America/Manaus')::date + 7,
   'an existing occurrence still advances the recurrence safely'
 );
 SELECT is(
