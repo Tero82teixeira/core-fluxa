@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 import {
   belongsToOrganization,
@@ -14,7 +15,9 @@ import {
   fileExtension,
   formatFileSize,
   isStorageKeyAlreadyExists,
+  selectDocumentStatusFilter,
   suggestExpiration,
+  toggleArchivedDocumentsFilter,
   uploadWithFreshStoragePath,
   validateFile,
 } from "../src/lib/documents.ts";
@@ -25,6 +28,11 @@ import {
   TASK_STATUS,
 } from "../src/lib/domain.ts";
 import { digits, isValidCNPJ, isValidCPF } from "../src/lib/format.ts";
+
+const documentsRoute = readFileSync(
+  new URL("../src/routes/_authenticated/documentos.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("autenticação", () => {
   test("aceita identificador autenticado", () =>
@@ -67,6 +75,33 @@ describe("documentos", () => {
   test("formata tamanho", () => assert.equal(formatFileSize(2048), "2 KB"));
   test("calcula validade", () => assert.equal(suggestExpiration("2026-01-01", 30), "2026-01-31"));
   test("identifica aprovação", () => assert.equal(DOCUMENT_STATUS.aprovado.tone, "success"));
+  test("inclui arquivados automaticamente ao filtrar pela situação arquivada", () =>
+    assert.deepEqual(selectDocumentStatusFilter("arquivado", false), {
+      status: "arquivado",
+      includeArchived: true,
+    }));
+  test("remove a situação arquivada quando os arquivados são ocultados", () =>
+    assert.deepEqual(toggleArchivedDocumentsFilter("arquivado", true), {
+      status: "todos",
+      includeArchived: false,
+    }));
+  test("preserva os demais filtros ao alternar a inclusão de arquivados", () => {
+    assert.deepEqual(toggleArchivedDocumentsFilter("aprovado", false), {
+      status: "aprovado",
+      includeArchived: true,
+    });
+    assert.deepEqual(toggleArchivedDocumentsFilter("aprovado", true), {
+      status: "aprovado",
+      includeArchived: false,
+    });
+  });
+  test("a tela sincroniza a situação com o botão de arquivados", () => {
+    assert.match(
+      documentsRoute,
+      /selectDocumentStatusFilter\([\s\S]*value as DocumentStatusFilter,[\s\S]*includeArchived/,
+    );
+    assert.match(documentsRoute, /toggleArchivedDocumentsFilter\(status, includeArchived\)/);
+  });
   test("reconhece colisão KeyAlreadyExists do Storage", () =>
     assert.equal(
       isStorageKeyAlreadyExists({
