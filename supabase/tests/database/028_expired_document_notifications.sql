@@ -64,6 +64,14 @@ SET notification_preferences = jsonb_set(
 )
 WHERE organization_id = '29320000-0000-0000-0000-000000000002';
 
+-- Document write guards intentionally require an authenticated active member,
+-- even when fixtures run inside a postgres-owned pgTAP transaction.
+SELECT set_config(
+  'request.jwt.claim.sub',
+  '19320000-0000-0000-0000-000000000001',
+  true
+);
+
 INSERT INTO public.documents(
   id, organization_id, title, expiration_date, status, file_path,
   original_file_name, stored_file_name, file_extension, mime_type, file_size
