@@ -3239,6 +3239,10 @@ export type Database = {
         Args: never
         Returns: number
       }
+      create_expired_document_notifications: {
+        Args: never
+        Returns: number
+      }
       create_overdue_task_escalation_notifications: {
         Args: never
         Returns: number

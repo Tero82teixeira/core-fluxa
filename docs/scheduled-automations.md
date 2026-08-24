@@ -142,6 +142,27 @@ reprogramação real inicia um novo episódio. A automação não cria tarefas, 
 muda o status da comunicação e não envia WhatsApp ou e-mail. Ela reutiliza o
 relógio privado de 15 minutos.
 
+## Avisos de documentos vencidos
+
+Os lembretes antecipados já avisam documentos que vencerão em 30, 15, 7 e 1
+dia. Depois do vencimento, esta categoria complementa o fluxo em três níveis:
+entre 1 e 6 dias, o responsável ativo definido no Monitoramento é avisado; sem
+responsável, proprietários e administradores recebem o aviso. Entre 7 e 29
+dias, responsável e gestão recebem o escalonamento. Com 30 dias ou mais, um
+novo nível informa que a pendência continua sem regularização.
+
+Documentos arquivados, fontes ocultas, acompanhamentos resolvidos ou ignorados
+e organizações com **Documentos vencendo** desativado são ignorados. Quando um
+alerta crítico já cobre o documento, esta categoria não cria uma notificação
+concorrente; se os alertas críticos estiverem desativados, o aviso específico
+continua disponível para não deixar uma lacuna operacional.
+
+A chave de deduplicação combina documento, data de validade, nível do aviso e
+destinatário. Alterar legitimamente a validade inicia um novo episódio, sem
+repetições a cada ciclo. A automação apenas notifica: não muda o status do
+documento, não cria tarefa e não envia mensagens externas. O relógio privado de
+15 minutos permanece único.
+
 A interface permite programações diárias ou por intervalo de dias para criar
 tarefas, notificações internas, registros de auditoria ou resumos das pendências
 já identificadas pela Central de Monitoramento. O resumo respeita as preferências
