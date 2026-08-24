@@ -184,6 +184,27 @@ ciclo. A automação não baixa valores, não altera o status financeiro, não c
 tarefas e não envia mensagens externas. Ela reutiliza o único relógio privado de
 15 minutos.
 
+## Geração automática de lançamentos recorrentes
+
+Recorrências financeiras ativas e já configuradas pelo usuário geram seus
+lançamentos automaticamente quando a data de próxima execução chega. A geração
+respeita o fuso horário da organização, ignora empresas arquivadas e não processa
+recorrências pausadas, finalizadas, arquivadas ou futuras. O botão manual
+**Gerar pendentes agora** permanece disponível como contingência administrativa.
+
+Cada lançamento recebe a recorrência e a data de origem. A restrição única já
+existente nesses dois campos e o bloqueio concorrente com `SKIP LOCKED` impedem
+duplicidades mesmo se o relógio e o botão manual forem usados ao mesmo tempo. O
+processamento recupera datas pendentes em lotes limitados a 120 ocorrências por
+recorrência e ciclo, evitando uma execução sem limite após longos períodos de
+inatividade. O próximo ciclo continua de onde o anterior parou.
+
+O lançamento nasce pendente e não movimenta saldo, não registra pagamento e não
+envia comunicação externa. A execução automática grava auditoria como
+**Automação**, preserva o criador original no lançamento e reutiliza o único
+relógio privado de 15 minutos. A função interna não pode ser executada por
+`PUBLIC`, `anon`, `authenticated` ou `service_role`; somente `postgres` a chama.
+
 A interface permite programações diárias ou por intervalo de dias para criar
 tarefas, notificações internas, registros de auditoria ou resumos das pendências
 já identificadas pela Central de Monitoramento. O resumo respeita as preferências
