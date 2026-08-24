@@ -84,11 +84,47 @@ INSERT INTO public.documents(
   ('49320000-0000-0000-0000-000000000006', '29320000-0000-0000-0000-000000000001', 'Resolved document', current_date - 1, 'aprovado', 'test/expired-06.pdf', 'expired-06.pdf', 'expired-06.pdf', 'pdf', 'application/pdf', 100),
   ('49320000-0000-0000-0000-000000000007', '29320000-0000-0000-0000-000000000001', 'Archived document', current_date - 8, 'aprovado', 'test/expired-07.pdf', 'expired-07.pdf', 'expired-07.pdf', 'pdf', 'application/pdf', 100),
   ('49320000-0000-0000-0000-000000000008', '29320000-0000-0000-0000-000000000001', 'Archived status document', current_date - 8, 'arquivado', 'test/expired-08.pdf', 'expired-08.pdf', 'expired-08.pdf', 'pdf', 'application/pdf', 100),
-  ('49320000-0000-0000-0000-000000000009', '29320000-0000-0000-0000-000000000002', 'Preference disabled document', current_date - 1, 'aprovado', 'test/expired-09.pdf', 'expired-09.pdf', 'expired-09.pdf', 'pdf', 'application/pdf', 100),
-  ('49320000-0000-0000-0000-000000000010', '29320000-0000-0000-0000-000000000003', 'Hidden document', current_date - 1, 'aprovado', 'test/expired-10.pdf', 'expired-10.pdf', 'expired-10.pdf', 'pdf', 'application/pdf', 100),
   ('49320000-0000-0000-0000-000000000011', '29320000-0000-0000-0000-000000000001', 'Expires today', current_date, 'aprovado', 'test/expired-11.pdf', 'expired-11.pdf', 'expired-11.pdf', 'pdf', 'application/pdf', 100),
   ('49320000-0000-0000-0000-000000000012', '29320000-0000-0000-0000-000000000001', 'No expiration', NULL, 'aprovado', 'test/expired-12.pdf', 'expired-12.pdf', 'expired-12.pdf', 'pdf', 'application/pdf', 100),
   ('49320000-0000-0000-0000-000000000013', '29320000-0000-0000-0000-000000000001', 'Ignored document', current_date - 1, 'aprovado', 'test/expired-13.pdf', 'expired-13.pdf', 'expired-13.pdf', 'pdf', 'application/pdf', 100);
+
+SELECT set_config(
+  'request.jwt.claim.sub',
+  '19320000-0000-0000-0000-000000000004',
+  true
+);
+INSERT INTO public.documents(
+  id, organization_id, title, expiration_date, status, file_path,
+  original_file_name, stored_file_name, file_extension, mime_type, file_size
+) VALUES (
+  '49320000-0000-0000-0000-000000000009',
+  '29320000-0000-0000-0000-000000000002',
+  'Preference disabled document', current_date - 1, 'aprovado',
+  'test/expired-09.pdf', 'expired-09.pdf', 'expired-09.pdf', 'pdf',
+  'application/pdf', 100
+);
+
+SELECT set_config(
+  'request.jwt.claim.sub',
+  '19320000-0000-0000-0000-000000000005',
+  true
+);
+INSERT INTO public.documents(
+  id, organization_id, title, expiration_date, status, file_path,
+  original_file_name, stored_file_name, file_extension, mime_type, file_size
+) VALUES (
+  '49320000-0000-0000-0000-000000000010',
+  '29320000-0000-0000-0000-000000000003',
+  'Hidden document', current_date - 1, 'aprovado',
+  'test/expired-10.pdf', 'expired-10.pdf', 'expired-10.pdf', 'pdf',
+  'application/pdf', 100
+);
+
+SELECT set_config(
+  'request.jwt.claim.sub',
+  '19320000-0000-0000-0000-000000000001',
+  true
+);
 
 UPDATE public.documents
 SET archived_at = now()
