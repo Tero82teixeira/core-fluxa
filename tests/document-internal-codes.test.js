@@ -27,7 +27,7 @@ test("codes are tenant-scoped, year-scoped and assigned atomically", () => {
   assert.match(migration, /PRIMARY KEY \(organization_id, code_year\)/);
   assert.match(migration, /ON CONFLICT \(organization_id, code_year\) DO UPDATE/);
   assert.match(migration, /last_value = public\.document_code_counters\.last_value \+ 1/);
-  assert.match(migration, /'DOC-' \|\| code_year::text/);
+  assert.match(migration, /'DOC-' \|\| generated_code_year::text/);
   assert.match(migration, /lpad\(next_value::text, 6, '0'\)/);
   assert.match(migration, /CREATE UNIQUE INDEX IF NOT EXISTS documents_organization_internal_code_key/);
 });
