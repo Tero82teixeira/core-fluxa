@@ -15,7 +15,13 @@ import { useWorkspace } from "@/lib/workspace";
 import { usePermissions } from "@/lib/permissions";
 import { useClients } from "@/hooks/use-operations";
 import { useDocumentTypes, useDocumentsPage, useDocumentsSummary, type DocumentFilters } from "@/hooks/use-documents";
-import { DOCUMENT_STATUS, type DocumentStatus } from "@/lib/documents";
+import {
+  DOCUMENT_STATUS,
+  selectDocumentStatusFilter,
+  toggleArchivedDocumentsFilter,
+  type DocumentStatus,
+  type DocumentStatusFilter,
+} from "@/lib/documents";
 import { formatNumber } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/documentos")({
@@ -60,7 +66,7 @@ function Page() {
   const [search, setSearch] = useState("");
   const [clientId, setClientId] = useState(ALL);
   const [typeId, setTypeId] = useState(ALL);
-  const [status, setStatus] = useState(ALL);
+  const [status, setStatus] = useState<DocumentStatusFilter>(ALL);
   const [expiring, setExpiring] = useState(ALL);
   const [includeArchived, setIncludeArchived] = useState(false);
   const [page, setPage] = useState(1);
@@ -153,7 +159,18 @@ function Page() {
             </SelectContent>
           </Select>
 
-          <Select value={status} onValueChange={resetPage(setStatus)}>
+          <Select
+            value={status}
+            onValueChange={(value) => {
+              const next = selectDocumentStatusFilter(
+                value as DocumentStatusFilter,
+                includeArchived,
+              );
+              setStatus(next.status);
+              setIncludeArchived(next.includeArchived);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="h-10" aria-label="Filtrar por situação">
               <SelectValue placeholder="Situação" />
             </SelectTrigger>
@@ -180,7 +197,9 @@ function Page() {
           <Button
             variant={includeArchived ? "default" : "outline"}
             onClick={() => {
-              setIncludeArchived((current) => !current);
+              const next = toggleArchivedDocumentsFilter(status, includeArchived);
+              setStatus(next.status);
+              setIncludeArchived(next.includeArchived);
               setPage(1);
             }}
           >
