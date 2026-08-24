@@ -98,6 +98,29 @@ deduplicação combina tarefa, data do prazo, degrau e destinatário, garantindo
 quando o prazo for alterado. A categoria respeita a preferência já existente
 **Tarefas atrasadas** e reutiliza o mesmo relógio privado de 15 minutos.
 
+## Avisos de processos sem movimentação
+
+Processos abertos com responsável ativo geram um aviso interno ao atingir o
+período sem movimentação configurado pela organização, que é de 14 dias por
+padrão. Se o processo continuar parado por mais sete dias, o responsável,
+proprietários e administradores ativos recebem o escalonamento. Uma atribuição
+ativa feita no Monitoramento tem preferência sobre o responsável cadastrado no
+processo.
+
+Processos finalizados, cancelados, arquivados, resolvidos ou ignorados no
+Monitoramento não geram avisos. Itens sem responsável continuam no fluxo
+específico de **Pendências sem responsável**. Quando um alerta crítico já está
+ativo, esta categoria não cria outro aviso; se a preferência de alertas críticos
+estiver desativada, o aviso de inatividade continua disponível para evitar uma
+lacuna de acompanhamento.
+
+A chave de deduplicação combina processo, instante da última movimentação,
+configuração de prazo, nível do aviso e destinatário. Assim, cada pessoa recebe
+um único aviso por etapa do episódio, enquanto uma movimentação real permite um
+novo ciclo futuro. A automação apenas notifica: não cria tarefas, não muda a
+etapa do processo e não envia WhatsApp ou e-mail. Ela respeita a preferência
+**Processos sem movimentação** e reutiliza o relógio privado de 15 minutos.
+
 A interface permite programações diárias ou por intervalo de dias para criar
 tarefas, notificações internas, registros de auditoria ou resumos das pendências
 já identificadas pela Central de Monitoramento. O resumo respeita as preferências
