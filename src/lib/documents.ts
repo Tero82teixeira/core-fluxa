@@ -11,6 +11,36 @@ export type DocumentStatus =
   | "vencido"
   | "arquivado";
 
+export type DocumentStatusFilter = DocumentStatus | "todos";
+
+export type DocumentArchiveFilterState = {
+  status: DocumentStatusFilter;
+  includeArchived: boolean;
+};
+
+/** Mantém o filtro de situação coerente ao selecionar documentos arquivados. */
+export function selectDocumentStatusFilter(
+  status: DocumentStatusFilter,
+  includeArchived: boolean,
+): DocumentArchiveFilterState {
+  return {
+    status,
+    includeArchived: status === "arquivado" ? true : includeArchived,
+  };
+}
+
+/** Ao ocultar arquivados, remove também um filtro que só poderia retornar arquivados. */
+export function toggleArchivedDocumentsFilter(
+  status: DocumentStatusFilter,
+  includeArchived: boolean,
+): DocumentArchiveFilterState {
+  const nextIncludeArchived = !includeArchived;
+  return {
+    status: !nextIncludeArchived && status === "arquivado" ? "todos" : status,
+    includeArchived: nextIncludeArchived,
+  };
+}
+
 export type DocumentCategory =
   | "identificacao"
   | "certidao"
