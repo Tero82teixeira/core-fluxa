@@ -3416,6 +3416,10 @@ export type Database = {
         Args: { _as_of?: string; _batch_size?: number }
         Returns: number
       }
+      process_due_financial_recurrences: {
+        Args: never
+        Returns: number
+      }
       record_audit_event: {
         Args: {
           _action: string
