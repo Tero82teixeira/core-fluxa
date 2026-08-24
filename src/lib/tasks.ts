@@ -11,6 +11,15 @@ export type TaskSummary = {
 export const isTaskOpen = (status: TaskStatus) => TASK_OPEN_STATUSES.includes(status);
 export const isTaskArchived = (task: TaskSummary) => Boolean(task.archived_at) || task.status === "arquivada";
 
+/** Mantém o atalho de arquivadas coerente com o filtro de status da tela. */
+export function nextTaskArchiveView(showArchived: boolean) {
+  const archived = !showArchived;
+  return {
+    archived,
+    status: archived ? "all" as const : "open" as const,
+  };
+}
+
 export type TaskStatusUpdate = {
   status: TaskStatus;
   completed_at: string | null;
