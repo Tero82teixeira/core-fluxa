@@ -672,6 +672,32 @@ export type Database = {
           },
         ]
       }
+      document_code_counters: {
+        Row: {
+          code_year: number
+          last_value: number
+          organization_id: string
+        }
+        Insert: {
+          code_year: number
+          last_value?: number
+          organization_id: string
+        }
+        Update: {
+          code_year?: number
+          last_value?: number
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_code_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_types: {
         Row: {
           active: boolean
@@ -803,6 +829,7 @@ export type Database = {
           file_path: string
           file_size: number
           id: string
+          internal_code: string
           issue_date: string | null
           issuer: string | null
           mime_type: string
@@ -835,6 +862,7 @@ export type Database = {
           file_path: string
           file_size: number
           id?: string
+          internal_code?: string
           issue_date?: string | null
           issuer?: string | null
           mime_type: string
@@ -867,6 +895,7 @@ export type Database = {
           file_path?: string
           file_size?: number
           id?: string
+          internal_code?: string
           issue_date?: string | null
           issuer?: string | null
           mime_type?: string
