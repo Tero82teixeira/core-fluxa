@@ -121,6 +121,27 @@ novo ciclo futuro. A automação apenas notifica: não cria tarefas, não muda a
 etapa do processo e não envia WhatsApp ou e-mail. Ela respeita a preferência
 **Processos sem movimentação** e reutiliza o relógio privado de 15 minutos.
 
+## Escalonamento de retornos de comunicação
+
+Comunicações abertas com retorno agendado e responsável ativo geram um aviso
+interno no primeiro dia civil de atraso. No terceiro dia, o responsável,
+proprietários e administradores ativos recebem o escalonamento. Uma atribuição
+ativa feita no Monitoramento tem preferência sobre o responsável cadastrado na
+comunicação.
+
+Comunicações resolvidas ou arquivadas, itens resolvidos ou ignorados no
+Monitoramento, fontes de comunicação ocultas e organizações com **Retornos
+vencidos** desativado não geram esses avisos. Itens sem responsável continuam
+no fluxo específico de **Pendências sem responsável**. Quando um alerta crítico
+já está ativo, esta categoria não cria outro aviso; com alertas críticos
+desativados, o aviso de retorno atrasado continua disponível.
+
+A chave de deduplicação combina comunicação, data e horário do retorno, nível do
+aviso e destinatário. Repetições do relógio não duplicam o aviso, enquanto uma
+reprogramação real inicia um novo episódio. A automação não cria tarefas, não
+muda o status da comunicação e não envia WhatsApp ou e-mail. Ela reutiliza o
+relógio privado de 15 minutos.
+
 A interface permite programações diárias ou por intervalo de dias para criar
 tarefas, notificações internas, registros de auditoria ou resumos das pendências
 já identificadas pela Central de Monitoramento. O resumo respeita as preferências

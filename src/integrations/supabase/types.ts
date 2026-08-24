@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 30462)
+Total output lines: 3880
+
 export type Json =
   | string
   | number
@@ -1893,49 +1896,7 @@ export type Database = {
         ]
       }
       organization_settings: {
-        Row: {
-          allow_overdue_task_without_reason: boolean | null
-          business_hours_end: string | null
-          business_hours_start: string | null
-          city: string | null
-          clients_range: string | null
-          complement: string | null
-          created_at: string
-          currency: string | null
-          current_control: string | null
-          date_format: string | null
-          default_communication_channel:
-            | Database["public"]["Enums"]["communication_channel"]
-            | null
-          default_communication_priority:
-            | Database["public"]["Enums"]["communication_priority"]
-            | null
-          default_expense_category_id: string | null
-          default_financial_account_id: string | null
-          default_follow_up_hours: number | null
-          default_income_category_id: string | null
-          default_responsible_id: string | null
-          default_task_due_days: number | null
-          default_task_priority:
-            | Database["public"]["Enums"]["priority_level"]
-            | null
-          district: string | null
-          employees_range: string | null
-          financial_alert_days: number | null
-          highlight_internal_notes: boolean | null
-          locale: string | null
-          logo_url: string | null
-          main_services: string | null
-          monitoring_document_expiration_days: number | null
-          monitoring_financial_critical_threshold: number | null
-          monitoring_financial_high_threshold: number | null
-          monitoring_show_communication: boolean | null
-          monitoring_show_documents: boolean | null
-          monitoring_show_financial: boolean | null
-          monitoring_upcoming_days: number | null
-          notification_preferences: Json | null
-          number: string | null
-          organization_id: string
+      …462 tokens truncated…ation_id: string
           portal_name: string | null
           primary_color: string | null
           stale_process_days: number | null
@@ -3240,6 +3201,10 @@ export type Database = {
         Returns: number
       }
       create_overdue_task_escalation_notifications: {
+        Args: never
+        Returns: number
+      }
+      create_overdue_communication_notifications: {
         Args: never
         Returns: number
       }
