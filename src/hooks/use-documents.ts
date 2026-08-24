@@ -122,6 +122,7 @@ export type DocumentRow = {
   document_type_id: string | null;
   title: string;
   description: string | null;
+  internal_code: string;
   document_number: string | null;
   issuer: string | null;
   issue_date: string | null;
@@ -146,7 +147,7 @@ export type DocumentRow = {
 };
 
 const DOCUMENT_SELECT =
-  "id, organization_id, client_id, process_id, checklist_item_id, document_type_id, title, description, document_number, issuer, issue_date, expiration_date, status, file_path, original_file_name, mime_type, file_size, current_version, uploaded_by_name, reviewed_by_name, reviewed_at, rejection_reason, notes, created_at, updated_at, archived_at, clients(id, name), processes(id, code, title), document_types(id, name, category)";
+  "id, organization_id, client_id, process_id, checklist_item_id, document_type_id, title, description, internal_code, document_number, issuer, issue_date, expiration_date, status, file_path, original_file_name, mime_type, file_size, current_version, uploaded_by_name, reviewed_by_name, reviewed_at, rejection_reason, notes, created_at, updated_at, archived_at, clients(id, name), processes(id, code, title), document_types(id, name, category)";
 
 export type DocumentFilters = {
   search?: string;
@@ -190,7 +191,7 @@ export function useDocumentsPage(organizationId: string | null, filters: Documen
       if (term) {
         const safe = term.replace(/[%,()]/g, " ");
         query = query.or(
-          `title.ilike.%${safe}%,original_file_name.ilike.%${safe}%,document_number.ilike.%${safe}%,issuer.ilike.%${safe}%`,
+          `title.ilike.%${safe}%,original_file_name.ilike.%${safe}%,internal_code.ilike.%${safe}%,document_number.ilike.%${safe}%,issuer.ilike.%${safe}%`,
         );
       }
 
