@@ -101,19 +101,19 @@ INSERT INTO public.documents(
   ('49330000-0000-0000-0000-000000000001', '29330000-0000-0000-0000-000000000001', 'First coded document', 'FORGED-CODE', 'test/code-a1.pdf', 'code-a1.pdf', 'code-a1.pdf', 'pdf', 'application/pdf', 100),
   ('49330000-0000-0000-0000-000000000002', '29330000-0000-0000-0000-000000000001', 'Second coded document', DEFAULT, 'test/code-a2.pdf', 'code-a2.pdf', 'code-a2.pdf', 'pdf', 'application/pdf', 100);
 
-SELECT like(
+SELECT is(
   (SELECT internal_code FROM public.documents
    WHERE id = '49330000-0000-0000-0000-000000000001'),
   'DOC-' || extract(year FROM current_date)::integer::text || '-000001',
   'the first tenant code uses the current civil year and starts at one'
 );
-SELECT like(
+SELECT is(
   (SELECT internal_code FROM public.documents
    WHERE id = '49330000-0000-0000-0000-000000000002'),
   'DOC-' || extract(year FROM current_date)::integer::text || '-000002',
   'the same tenant receives the next atomic sequence value'
 );
-SELECT unlike(
+SELECT isnt(
   (SELECT internal_code FROM public.documents
    WHERE id = '49330000-0000-0000-0000-000000000001'),
   'FORGED-CODE',
@@ -136,7 +136,7 @@ INSERT INTO public.documents(
   'code-b1.pdf', 'pdf', 'application/pdf', 100
 );
 
-SELECT like(
+SELECT is(
   (SELECT internal_code FROM public.documents
    WHERE id = '49330000-0000-0000-0000-000000000003'),
   'DOC-' || extract(year FROM current_date)::integer::text || '-000001',
