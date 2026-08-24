@@ -84,6 +84,20 @@ papéis autorizados a visualizá-los. A chave combina item, vencimento e degrau 
 prazo, impedindo repetição no mesmo dia e permitindo uma nova sequência quando a
 data for realmente alterada. A categoria pode ser desativada em Configurações.
 
+## Escalonamento de tarefas atrasadas
+
+Tarefas abertas com responsável ativo geram avisos internos em três degraus: no
+primeiro dia de atraso, o responsável é avisado; no terceiro dia, responsável,
+proprietários e administradores são avisados; no sétimo dia, o aviso é enviado
+somente a proprietários e administradores. Tarefas sem responsável continuam no
+fluxo específico de **Pendências sem responsável**, evitando sobreposição.
+
+Tarefas concluídas, canceladas, arquivadas ou excluídas são ignoradas. A chave de
+deduplicação combina tarefa, data do prazo, degrau e destinatário, garantindo um
+único aviso por pessoa em cada etapa e permitindo uma nova sequência apenas
+quando o prazo for alterado. A categoria respeita a preferência já existente
+**Tarefas atrasadas** e reutiliza o mesmo relógio privado de 15 minutos.
+
 A interface permite programações diárias ou por intervalo de dias para criar
 tarefas, notificações internas, registros de auditoria ou resumos das pendências
 já identificadas pela Central de Monitoramento. O resumo respeita as preferências

@@ -3239,6 +3239,10 @@ export type Database = {
         Args: never
         Returns: number
       }
+      create_overdue_task_escalation_notifications: {
+        Args: never
+        Returns: number
+      }
       create_financial_account: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
