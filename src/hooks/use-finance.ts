@@ -27,11 +27,18 @@ export function useFinance(organizationId: string | null) {
       if (!organizationId) throw new Error("Selecione uma organização ativa.");
       const query = (table: string, select = "*") =>
         db.from(table).select(select).eq("organization_id", organizationId).limit(2000);
+      const queryUnarchived = (table: string, select = "*") =>
+        db
+          .from(table)
+          .select(select)
+          .eq("organization_id", organizationId)
+          .is("archived_at", null)
+          .limit(2000);
       const results = await Promise.all([
         query("financial_transactions"),
         query("financial_categories"),
         query("financial_accounts"),
-        query("financial_recurrences"),
+        queryUnarchived("financial_recurrences"),
         query("financial_transaction_payments"),
         query("financial_account_movements"),
         query("clients_secure", "id,name"),
