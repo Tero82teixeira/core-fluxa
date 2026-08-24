@@ -886,14 +886,20 @@ function Recurrences({ data, editable, action }: any) {
   return (
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-        <CardTitle>Lançamentos recorrentes</CardTitle>
+        <div>
+          <CardTitle>Lançamentos recorrentes</CardTitle>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Recorrências ativas são geradas automaticamente pelo relógio a cada 15
+            minutos.
+          </p>
+        </div>
         <div className="flex gap-2">
           {editable && (
             <>
               <RecurrenceDialog data={data} action={action} />
               <Button variant="outline" onClick={generate}>
                 <RefreshCw />
-                Gerar lançamentos pendentes
+                Gerar pendentes agora
               </Button>
             </>
           )}
