@@ -3243,6 +3243,10 @@ export type Database = {
         Args: never
         Returns: number
       }
+      create_stale_process_notifications: {
+        Args: never
+        Returns: number
+      }
       create_financial_account: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
