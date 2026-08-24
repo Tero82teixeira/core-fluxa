@@ -151,6 +151,14 @@ describe("pagamentos financeiros", () => {
 });
 
 describe("recorrências financeiras", () => {
+  test("não carrega nem exibe recorrências arquivadas", () => {
+    assert.match(hook, /queryUnarchived\("financial_recurrences"\)/);
+    assert.match(hook, /\.is\("archived_at", null\)/);
+    assert.match(
+      route,
+      /data\.recurrences\.filter\(\(recurrence: any\) => !recurrence\.archived_at\)/,
+    );
+  });
   test("cria, edita, pausa, reativa e gera somente via RPC", () =>
     [
       "create_financial_recurrence",

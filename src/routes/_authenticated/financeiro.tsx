@@ -876,6 +876,7 @@ function PaymentHistory({ transaction, payments, accounts, payment, canReverse }
 }
 
 function Recurrences({ data, editable, action }: any) {
+  const recurrences = data.recurrences.filter((recurrence: any) => !recurrence.archived_at);
   const generate = async () => {
     await action.mutateAsync({
       rpc: "generate_recurrence_transactions",
@@ -906,11 +907,11 @@ function Recurrences({ data, editable, action }: any) {
         </div>
       </CardHeader>
       <CardContent>
-        {!data.recurrences.length ? (
+        {!recurrences.length ? (
           <p>Nenhuma recorrência cadastrada.</p>
         ) : (
           <div className="space-y-2">
-            {data.recurrences.map((r: any) => (
+            {recurrences.map((r: any) => (
               <div
                 key={r.id}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3"
