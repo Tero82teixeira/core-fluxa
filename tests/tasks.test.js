@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { readFileSync } from "node:fs";
-import { buildTaskStatusUpdate, filterTasks, groupTasksByStatus, isTaskArchived, isTaskOpen, isTaskOverdue, taskDateKey, taskIndicators } from "../src/lib/tasks.ts";
+import { buildTaskStatusUpdate, filterTasks, groupTasksByStatus, isTaskArchived, isTaskOpen, isTaskOverdue, nextTaskArchiveView, taskDateKey, taskIndicators } from "../src/lib/tasks.ts";
 
 const task = (overrides = {}) => ({ status: "pendente", priority: "media", due_at: "2026-08-01T12:00:00Z", archived_at: null, assignee_name: "Ana", ...overrides });
 const migration = readFileSync(new URL("../supabase/migrations/20260802190000_complete_tasks_module.sql", import.meta.url), "utf8");
+const tasksRoute = readFileSync(new URL("../src/routes/_authenticated/tarefas.tsx", import.meta.url), "utf8");
 
 describe("módulo de tarefas", () => {
   test("pendente está aberta", () => assert.equal(isTaskOpen("pendente"), true));
@@ -25,6 +26,16 @@ describe("módulo de tarefas", () => {
   test("filtra prioridade", () => assert.equal(filterTasks([task(), task({ priority: "alta" })], { priority: "alta" })[0].priority, "alta"));
   test("filtra responsável", () => assert.equal(filterTasks([task(), task({ assignee_name: "Bia" })], { assignee: "Bia" }).length, 1));
   test("filtra arquivadas", () => assert.equal(filterTasks([task(), task({ archived_at: "2026-08-01" })], { archived: true }).length, 1));
+  test("atalho de arquivadas remove o conflito com Em aberto", () => assert.deepEqual(nextTaskArchiveView(false), { archived: true, status: "all" }));
+  test("saída de arquivadas restaura Em aberto", () => assert.deepEqual(nextTaskArchiveView(true), { archived: false, status: "open" }));
+  test("atalho exibe tarefa com status arquivada", () => {
+    const filters = nextTaskArchiveView(false);
+    assert.equal(filterTasks([task({ status: "arquivada", archived_at: "2026-08-01" })], filters).length, 1);
+  });
+  test("botão Arquivadas aplica a transição aos dois filtros", () => {
+    assert.match(tasksRoute, /const toggleArchived = \(\) => \{ const next = nextTaskArchiveView\(showArchived\); setShowArchived\(next\.archived\); setStatus\(next\.status\); \};/);
+    assert.match(tasksRoute, /onClick=\{toggleArchived\}/);
+  });
   test("calcula indicadores", () => assert.deepEqual(taskIndicators([task(), task({ status: "concluida" }), task({ status: "arquivada" })], new Date("2026-08-02")), { open: 1, overdue: 1, completed: 1, archived: 1 }));
   test("agrupa colunas do quadro", () => assert.equal(groupTasksByStatus([task(), task({ status: "aguardando" })]).aguardando.length, 1));
   test("inclui em andamento no payload de atualização", () => assert.equal(buildTaskStatusUpdate("em_andamento", "user-1").status, "em_andamento"));
