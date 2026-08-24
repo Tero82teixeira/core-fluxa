@@ -128,7 +128,7 @@ SET search_path = public
 AS $$
 DECLARE
   organization_timezone text;
-  code_year smallint;
+  generated_code_year smallint;
   next_value bigint;
 BEGIN
   IF TG_OP = 'UPDATE' THEN
@@ -157,21 +157,21 @@ BEGIN
     RAISE EXCEPTION 'DOCUMENT_ORGANIZATION_NOT_FOUND';
   END IF;
 
-  code_year := extract(
+  generated_code_year := extract(
     year FROM now() AT TIME ZONE organization_timezone
   )::smallint;
 
   INSERT INTO public.document_code_counters(
     organization_id, code_year, last_value
   )
-  VALUES (NEW.organization_id, code_year, 1)
+  VALUES (NEW.organization_id, generated_code_year, 1)
   ON CONFLICT (organization_id, code_year) DO UPDATE
   SET last_value = public.document_code_counters.last_value + 1
   RETURNING last_value INTO next_value;
 
   -- Always replace client input so callers cannot choose or impersonate a code.
   NEW.internal_code :=
-    'DOC-' || code_year::text || '-' || lpad(next_value::text, 6, '0');
+    'DOC-' || generated_code_year::text || '-' || lpad(next_value::text, 6, '0');
   RETURN NEW;
 END;
 $$;
