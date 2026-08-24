@@ -3243,6 +3243,10 @@ export type Database = {
         Args: never
         Returns: number
       }
+      create_overdue_communication_notifications: {
+        Args: never
+        Returns: number
+      }
       create_stale_process_notifications: {
         Args: never
         Returns: number
