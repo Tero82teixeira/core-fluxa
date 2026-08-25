@@ -210,7 +210,10 @@ SELECT is(
 UPDATE public.tasks
 SET status = 'concluida', completed_at = now()
 WHERE organization_id = '59910000-0000-0000-0000-000000000001'
-  AND id <> '69910000-0000-0000-0000-000000000001';
+  AND id NOT IN (
+    '69910000-0000-0000-0000-000000000001',
+    '69910000-0000-0000-0000-000000000006'
+  );
 
 UPDATE public.tasks
 SET
