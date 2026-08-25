@@ -245,3 +245,24 @@ A automação não corrige cadastros automaticamente, não cria tarefas e não e
 mensagens externas. A chave de deduplicação combina a semana civil e o
 destinatário. O mesmo relógio privado de 15 minutos permanece único, com
 **America/Sao_Paulo** como fallback para fusos ausentes ou inválidos.
+
+## Clientes sem contato recente
+
+Clientes ativos geram uma notificação interna, depois das 08:00 no fuso da
+organização, ao completar 30 dias civis sem contato registrado. O responsável
+ativo pelo cliente recebe o aviso. Quando não há responsável ativo,
+proprietários e administradores ativos recebem a notificação. Clientes e
+organizações arquivados são ignorados.
+
+A data de última interação é atualizada automaticamente apenas quando uma
+interação da Comunicação é marcada como **Contato realizado**. Alterações
+meramente cadastrais, notas internas e registros sem contato confirmado não
+renovam essa data. Interações antigas registradas posteriormente também não
+reduzem uma data de contato mais recente.
+
+A chave de deduplicação combina cliente, instante da última interação, prazo e
+destinatário. Assim, o mesmo período sem contato gera um único aviso por pessoa;
+um contato confirmado inicia um novo episódio futuro. A varredura não cria
+tarefas, não muda o status do cliente e não envia mensagens externas. Cada ciclo
+cria no máximo 200 notificações pendentes e reutiliza o único relógio privado de
+15 minutos, com **America/Sao_Paulo** como fallback de fuso.
