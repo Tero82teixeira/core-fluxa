@@ -243,7 +243,7 @@ SELECT is(
     FROM public.tasks
     WHERE id = '69910000-0000-0000-0000-000000000001'
   ),
-  '2026-08-30 00:00:00+00'::timestamptz,
+  (now() + interval '30 days')::timestamptz,
   'the scan never changes the task deadline'
 );
 SELECT is(
