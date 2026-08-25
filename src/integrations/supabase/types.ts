@@ -3220,6 +3220,19 @@ export type Database = {
         }
         Returns: string
       }
+      create_daily_operational_close_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
+      create_operational_close_for_organization: {
+        Args: {
+          _as_of: string
+          _dedupe_prefix: string
+          _organization_id: string
+          _title_prefix: string
+        }
+        Returns: number
+      }
       create_operational_summary_notifications: {
         Args: {
           _automation_schedule_id: string

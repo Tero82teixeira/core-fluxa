@@ -567,6 +567,7 @@ function SettingsPage() {
               ["deadline_reminders", "Lembretes antecipados de prazo"],
               ["client_birthdays", "Aniversários de clientes"],
               ["stale_leads", "Leads sem acompanhamento"],
+              ["daily_operational_close", "Fechamento operacional diário"],
             ].map(([key, label]) => (
               <Toggle
                 key={key}
