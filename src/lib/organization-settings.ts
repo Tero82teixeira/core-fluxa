@@ -13,6 +13,7 @@ export const ORGANIZATION_SETTINGS_DEFAULTS = {
   business_hours_end: "18:00",
   default_task_due_days: 7,
   default_task_priority: "media" as TaskPriority,
+  stale_task_days: 5,
   stale_process_days: 14,
   allow_overdue_task_without_reason: false,
   default_communication_channel: "interno" as CommunicationChannel,
@@ -29,6 +30,7 @@ export const ORGANIZATION_SETTINGS_DEFAULTS = {
   monitoring_show_documents: true,
   notification_preferences: {
     overdue_tasks: true,
+    stale_tasks: true,
     stale_processes: true,
     overdue_communications: true,
     overdue_accounts: true,
@@ -224,6 +226,7 @@ export function validateOrganizationSettings(value: Partial<OrganizationSettings
     errors.push("O horário final deve ser posterior ao inicial.");
   for (const key of [
     "default_task_due_days",
+    "stale_task_days",
     "stale_process_days",
     "financial_alert_days",
     "monitoring_upcoming_days",
