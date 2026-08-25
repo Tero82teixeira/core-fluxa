@@ -37,6 +37,7 @@ export const ORGANIZATION_SETTINGS_DEFAULTS = {
     unassigned_monitoring: true,
     deadline_reminders: true,
     client_birthdays: true,
+    stale_leads: true,
   },
 };
 

@@ -3296,6 +3296,10 @@ export type Database = {
         Args: { _as_of?: string }
         Returns: number
       }
+      create_stale_lead_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       create_weekly_financial_summary_notifications: {
         Args: { _as_of?: string }
         Returns: number
