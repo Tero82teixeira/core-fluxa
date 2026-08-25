@@ -225,3 +225,23 @@ destinatário, então os ciclos de 15 minutos não repetem a notificação. A fu
 respeita o fuso configurado, usa **America/Sao_Paulo** como fallback e não
 movimenta saldo, não baixa lançamentos, não cria pagamentos, tarefas, e-mails ou
 mensagens externas. O mesmo relógio privado permanece único.
+
+## Qualidade dos dados
+
+Toda terça-feira, depois das 08:00 no fuso horário da organização, uma
+verificação privada procura somente inconsistências estruturais comprováveis:
+organização ativa sem proprietário ativo; metadados de conclusão de tarefas
+incompatíveis com o status; responsáveis inativos ainda vinculados a tarefas,
+clientes, processos, comunicações ou lançamentos; cliente divergente entre um
+registro e seu processo; e contadores de documentos de processo inválidos.
+
+A verificação não repete alertas de prazo, vencimento ou itens sem responsável,
+que já possuem automações próprias. Quando encontra inconsistências, cria uma
+única notificação semanal para proprietários, administradores e gestores ativos,
+com os totais separados por módulo. Organizações arquivadas e registros
+arquivados são ignorados. Se não houver problema, nenhuma notificação é criada.
+
+A automação não corrige cadastros automaticamente, não cria tarefas e não envia
+mensagens externas. A chave de deduplicação combina a semana civil e o
+destinatário. O mesmo relógio privado de 15 minutos permanece único, com
+**America/Sao_Paulo** como fallback para fusos ausentes ou inválidos.

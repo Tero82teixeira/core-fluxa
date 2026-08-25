@@ -3292,6 +3292,10 @@ export type Database = {
         Args: { _as_of?: string }
         Returns: number
       }
+      create_weekly_data_quality_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       create_financial_account: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
