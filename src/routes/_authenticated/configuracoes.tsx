@@ -558,6 +558,7 @@ function SettingsPage() {
               ["unassigned_monitoring", "Pendências sem responsável"],
               ["deadline_reminders", "Lembretes antecipados de prazo"],
               ["client_birthdays", "Aniversários de clientes"],
+              ["stale_leads", "Leads sem acompanhamento"],
             ].map(([key, label]) => (
               <Toggle
                 key={key}
