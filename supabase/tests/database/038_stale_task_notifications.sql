@@ -208,11 +208,20 @@ SELECT is(
 );
 
 UPDATE public.tasks
-SET updated_at = '2026-08-21 12:00:00+00'
+SET status = 'concluida', completed_at = now()
+WHERE organization_id = '59910000-0000-0000-0000-000000000001'
+  AND id <> '69910000-0000-0000-0000-000000000001';
+
+UPDATE public.tasks
+SET
+  due_at = now() + interval '30 days',
+  updated_at = now()
 WHERE id = '69910000-0000-0000-0000-000000000001';
 
 SELECT is(
-  public.create_stale_task_notifications('2026-08-26 12:00:00+00'),
+  public.create_stale_task_notifications(
+    date_trunc('day', now()) + interval '6 days 15 hours'
+  ),
   1,
   'a real task update starts a new deduplicated inactivity episode'
 );
