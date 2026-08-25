@@ -126,6 +126,10 @@ BEGIN
     FROM public.tasks AS task
     JOIN configured_organizations AS config
       ON config.organization_id = task.organization_id
+    JOIN public.organization_members AS active_assignee
+      ON active_assignee.organization_id = task.organization_id
+     AND active_assignee.user_id = task.assignee_id
+     AND active_assignee.is_active
     LEFT JOIN LATERAL (
       SELECT max(entry.created_at) AS last_history_at
       FROM public.task_history AS entry
