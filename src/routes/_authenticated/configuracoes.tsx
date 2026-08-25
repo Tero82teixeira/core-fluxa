@@ -405,6 +405,13 @@ function SettingsPage() {
               }
             />
             <Field
+              label="Tarefa sem movimentação (dias)"
+              type="number"
+              value={d.stale_task_days}
+              disabled={!canEdit}
+              onChange={(v) => set("stale_task_days", Number(v))}
+            />
+            <Field
               label="Processo sem movimentação (dias)"
               type="number"
               value={d.stale_process_days}
@@ -550,6 +557,7 @@ function SettingsPage() {
           <Section title="Notificações internas">
             {[
               ["overdue_tasks", "Tarefas atrasadas"],
+              ["stale_tasks", "Tarefas sem movimentação"],
               ["stale_processes", "Processos sem movimentação"],
               ["overdue_communications", "Retornos vencidos"],
               ["overdue_accounts", "Contas vencidas"],
