@@ -147,7 +147,7 @@ export function useUpdateClient(organizationId: string | null) {
     mutationFn: async ({ id, values }: { id: string; values: Partial<ClientPayload> }) => {
       const { error } = await db()
         .from("clients")
-        .update({ ...values, updated_by: actor.userId, last_interaction_at: new Date().toISOString() })
+        .update({ ...values, updated_by: actor.userId })
         .eq("id", id)
         .eq("organization_id", organizationId);
       if (error) throw error;
