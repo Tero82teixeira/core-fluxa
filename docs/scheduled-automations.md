@@ -286,3 +286,24 @@ repetições durante os ciclos de 15 minutos e permitindo novos avisos no ano
 seguinte. A automação não cria tarefas, não altera o cadastro e não envia e-mail
 ou WhatsApp. Cada ciclo cria no máximo 200 notificações pendentes e reutiliza o
 relógio privado único, com **America/Sao_Paulo** como fallback de fuso.
+
+## Leads sem acompanhamento
+
+Leads não arquivados geram um aviso interno ao completar três dias civis sem
+contato confirmado. O responsável interno ativo recebe o primeiro aviso. Ao
+completar sete dias, o alerta é escalado para o responsável e para
+superadministradores, proprietários e administradores ativos. Quando não existe
+responsável ativo, a gestão recebe o aviso desde o primeiro estágio.
+
+A referência é o último contato confirmado ou, quando ele ainda não existe, a
+data de criação do lead. Apenas uma interação marcada como **Contato realizado**
+reinicia a contagem. Clientes com outros status não participam dessa varredura,
+evitando sobreposição com o aviso de clientes ativos sem contato recente.
+
+A chave de deduplicação combina lead, referência do contato, estágio e
+destinatário. Assim, cada episódio cria no máximo um aviso de três dias e um de
+sete dias por pessoa. A opção **Leads sem acompanhamento**, em **Configurações >
+Notificações**, permite desativar a categoria. A automação não cria tarefas, não
+muda o status do lead e não envia mensagens externas. Cada ciclo cria no máximo
+200 notificações e reutiliza o relógio privado único de 15 minutos, depois das
+08:00 no fuso da organização.
