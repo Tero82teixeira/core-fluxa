@@ -3,7 +3,7 @@ RETURNS TABLE(
   profile_id uuid,
   organization_id uuid,
   membership_id uuid,
-  role app_role,
+  role public.app_role,
   is_active boolean,
   membership_status text,
   onboarding_completed_at timestamp with time zone,
@@ -119,7 +119,7 @@ BEGIN
       UPDATE public.organization_members m
          SET is_active = true,
              role = CASE
-               WHEN v_org.created_by = v_caller THEN 'proprietario'::app_role
+               WHEN v_org.created_by = v_caller THEN 'proprietario'::public.app_role
                ELSE m.role
              END
        WHERE m.id = v_membership.id
