@@ -140,26 +140,26 @@ BEGIN
             process.updated_at AT TIME ZONE timezone_name
           )::date = local_today
       ) AS completed_processes,
-      count(alert.*)::integer AS pending,
-      count(alert.*) FILTER (
+      count(alert.alert_kind)::integer AS pending,
+      count(alert.alert_kind) FILTER (
         WHERE alert.alert_kind IN (
           'tarefa_atrasada', 'retorno_atrasado',
           'financeiro_vencido', 'documento_vencido'
         )
       )::integer AS overdue,
-      count(alert.*) FILTER (
+      count(alert.alert_kind) FILTER (
         WHERE alert.source_type = 'tarefa'
       )::integer AS pending_tasks,
-      count(alert.*) FILTER (
+      count(alert.alert_kind) FILTER (
         WHERE alert.source_type = 'processo'
       )::integer AS pending_processes,
-      count(alert.*) FILTER (
+      count(alert.alert_kind) FILTER (
         WHERE alert.source_type = 'documento'
       )::integer AS pending_documents,
-      count(alert.*) FILTER (
+      count(alert.alert_kind) FILTER (
         WHERE alert.source_type = 'comunicacao'
       )::integer AS pending_communications,
-      count(alert.*) FILTER (
+      count(alert.alert_kind) FILTER (
         WHERE alert.source_type = 'financeiro'
       )::integer AS pending_financial,
       0::integer AS unassigned,
@@ -190,29 +190,29 @@ BEGIN
             process.updated_at AT TIME ZONE timezone_name
           )::date = local_today
       ) AS completed_processes,
-      count(alert.*)::integer AS pending,
-      count(alert.*) FILTER (
+      count(alert.alert_kind)::integer AS pending,
+      count(alert.alert_kind) FILTER (
         WHERE alert.alert_kind IN (
           'tarefa_atrasada', 'retorno_atrasado',
           'financeiro_vencido', 'documento_vencido'
         )
       )::integer AS overdue,
-      count(alert.*) FILTER (
+      count(alert.alert_kind) FILTER (
         WHERE alert.source_type = 'tarefa'
       )::integer AS pending_tasks,
-      count(alert.*) FILTER (
+      count(alert.alert_kind) FILTER (
         WHERE alert.source_type = 'processo'
       )::integer AS pending_processes,
-      count(alert.*) FILTER (
+      count(alert.alert_kind) FILTER (
         WHERE alert.source_type = 'documento'
       )::integer AS pending_documents,
-      count(alert.*) FILTER (
+      count(alert.alert_kind) FILTER (
         WHERE alert.source_type = 'comunicacao'
       )::integer AS pending_communications,
-      count(alert.*) FILTER (
+      count(alert.alert_kind) FILTER (
         WHERE alert.source_type = 'financeiro'
       )::integer AS pending_financial,
-      count(alert.*) FILTER (
+      count(alert.alert_kind) FILTER (
         WHERE alert.recipient_id IS NULL
       )::integer AS unassigned,
       (
