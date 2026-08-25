@@ -266,3 +266,23 @@ um contato confirmado inicia um novo episódio futuro. A varredura não cria
 tarefas, não muda o status do cliente e não envia mensagens externas. Cada ciclo
 cria no máximo 200 notificações pendentes e reutiliza o único relógio privado de
 15 minutos, com **America/Sao_Paulo** como fallback de fuso.
+
+## Aniversários de clientes
+
+Clientes pessoa física, ativos, não arquivados e com data de nascimento recebem
+dois lembretes internos: sete dias antes do aniversário e no próprio dia. A
+verificação começa depois das 08:00 no fuso horário da organização. Em anos não
+bissextos, aniversários cadastrados em 29 de fevereiro são considerados em 28 de
+fevereiro.
+
+O responsável interno ativo pelo cliente recebe o aviso. Quando não existe um
+responsável ativo, superadministradores, proprietários e administradores ativos
+recebem a notificação.
+A opção **Aniversários de clientes**, em **Configurações > Notificações**, permite
+desativar essa categoria para toda a organização.
+
+A chave de deduplicação combina cliente, ano, etapa e destinatário, impedindo
+repetições durante os ciclos de 15 minutos e permitindo novos avisos no ano
+seguinte. A automação não cria tarefas, não altera o cadastro e não envia e-mail
+ou WhatsApp. Cada ciclo cria no máximo 200 notificações pendentes e reutiliza o
+relógio privado único, com **America/Sao_Paulo** como fallback de fuso.

@@ -36,6 +36,7 @@ export const ORGANIZATION_SETTINGS_DEFAULTS = {
     critical_monitoring: true,
     unassigned_monitoring: true,
     deadline_reminders: true,
+    client_birthdays: true,
   },
 };
 
