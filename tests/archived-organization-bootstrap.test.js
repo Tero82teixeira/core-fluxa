@@ -34,3 +34,9 @@ test("bootstrap preserves the reviewed execution grants", () => {
     /GRANT EXECUTE ON FUNCTION public\.bootstrap_organization\(\) TO authenticated;/,
   );
 });
+
+test("bootstrap qualifies app_role for restricted SQL Editor search paths", () => {
+  assert.match(migration, /role public\.app_role/);
+  assert.match(migration, /'proprietario'::public\.app_role/);
+  assert.doesNotMatch(migration, /(?<!public\.)app_role/);
+});
