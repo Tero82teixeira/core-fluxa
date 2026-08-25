@@ -329,3 +329,24 @@ Notificações**, permite desativar a categoria. A automação não altera statu
 prazo, prioridade ou responsável, cria no máximo 200 notificações por ciclo e
 reutiliza o único relógio privado de 15 minutos depois das 08:00 no fuso da
 organização.
+
+## Fechamento operacional diário
+
+O relógio privado também cria um fechamento no fim do expediente configurado
+pela organização. A notificação reúne:
+
+- tarefas concluídas e processos finalizados no dia;
+- pendências operacionais separadas por categoria;
+- itens vencidos e itens sem responsável;
+- falhas registradas nas regras automáticas.
+
+Membros operacionais recebem apenas os próprios números. Proprietários e
+administradores recebem a visão consolidada da organização. Organizações que já
+possuem a ação agendada `send_operational_summary` continuam usando o horário
+escolhido e não recebem o fechamento automático duplicado.
+
+A preferência `daily_operational_close` pode desativar apenas o fechamento
+automático. O horário vem de `business_hours_end`, com padrão `18:00`, e a
+execução reutiliza `run_temporal_automation_cycle()`; nenhum cron adicional é
+criado. O limite é de 100 organizações verificadas por ciclo, com deduplicação
+por data local e destinatário.
