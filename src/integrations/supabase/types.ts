@@ -3288,6 +3288,10 @@ export type Database = {
         Args: never
         Returns: number
       }
+      create_stale_client_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       create_weekly_financial_summary_notifications: {
         Args: { _as_of?: string }
         Returns: number
