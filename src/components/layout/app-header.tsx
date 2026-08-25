@@ -47,6 +47,7 @@ import {
 } from "@/hooks/use-notifications";
 import { initials, relativeTime } from "@/lib/format";
 import { NAV_ITEMS } from "@/lib/navigation";
+import { isSafeNotificationUrl } from "@/lib/notifications";
 import { GlobalSearch } from "@/components/global-search";
 
 export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
@@ -64,6 +65,11 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const unreadQuery = useUnreadNotificationCount(organizationId);
   const markNotification = useMarkNotificationRead(organizationId);
   const unread = unreadQuery.data ?? 0;
+
+  const openNotification = async (id: string, url: string | null) => {
+    await markNotification.mutateAsync({ _notification: id });
+    if (isSafeNotificationUrl(url)) await navigate({ to: url });
+  };
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -193,7 +199,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
                     type="button"
                     key={item.id}
                     className={`block w-full px-4 py-3 text-left ${!item.read_at ? "bg-brand/5" : ""}`}
-                    onClick={() => markNotification.mutate({ _notification: item.id })}
+                    onClick={() => void openNotification(item.id, item.action_url)}
                   >
                     <p className="text-sm font-medium">{item.title}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{item.body}</p>
