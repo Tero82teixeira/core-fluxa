@@ -50,6 +50,9 @@ BEGIN
 
   timezone_name := coalesce(timezone_name, 'America/Sao_Paulo');
   preferences := coalesce(preferences, '{}'::jsonb);
+  show_financial := coalesce(show_financial, true);
+  show_communication := coalesce(show_communication, true);
+  show_documents := coalesce(show_documents, true);
   local_today := (_as_of AT TIME ZONE timezone_name)::date;
 
   WITH eligible_alerts AS MATERIALIZED (
