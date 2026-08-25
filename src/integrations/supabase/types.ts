@@ -3292,6 +3292,10 @@ export type Database = {
         Args: { _as_of?: string }
         Returns: number
       }
+      create_client_birthday_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       create_weekly_financial_summary_notifications: {
         Args: { _as_of?: string }
         Returns: number
