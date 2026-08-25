@@ -218,6 +218,17 @@ SELECT ok(
   'operator receives only the personal overdue count'
 );
 
+SELECT ok(
+  (
+    SELECT body LIKE
+      'Concluídas: 1 tarefa; 0 processos. Pendências: 1 tarefa,%'
+    FROM public.notifications
+    WHERE user_id = '19280000-0000-0000-0000-000000000002'
+      AND dedupe_key LIKE 'operational-close:%'
+  ),
+  'notification body uses correct Portuguese singular and plural forms'
+);
+
 SELECT is(
   (
     SELECT title
