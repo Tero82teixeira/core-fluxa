@@ -1967,6 +1967,7 @@ export type Database = {
           organization_id: string
           portal_name: string | null
           primary_color: string | null
+          stale_task_days: number | null
           stale_process_days: number | null
           state: string | null
           street: string | null
@@ -2022,6 +2023,7 @@ export type Database = {
           organization_id: string
           portal_name?: string | null
           primary_color?: string | null
+          stale_task_days?: number | null
           stale_process_days?: number | null
           state?: string | null
           street?: string | null
@@ -2077,6 +2079,7 @@ export type Database = {
           organization_id?: string
           portal_name?: string | null
           primary_color?: string | null
+          stale_task_days?: number | null
           stale_process_days?: number | null
           state?: string | null
           street?: string | null
@@ -3282,6 +3285,10 @@ export type Database = {
       }
       create_overdue_communication_notifications: {
         Args: never
+        Returns: number
+      }
+      create_stale_task_notifications: {
+        Args: { _as_of?: string }
         Returns: number
       }
       create_stale_process_notifications: {

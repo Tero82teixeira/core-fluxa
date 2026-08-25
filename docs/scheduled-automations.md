@@ -307,3 +307,25 @@ Notificações**, permite desativar a categoria. A automação não cria tarefas
 muda o status do lead e não envia mensagens externas. Cada ciclo cria no máximo
 200 notificações e reutiliza o relógio privado único de 15 minutos, depois das
 08:00 no fuso da organização.
+
+
+## Tarefas sem movimentação
+
+Tarefas abertas, atribuídas e ainda não vencidas geram um aviso interno quando
+permanecem sem atualização pelo período configurado em **Configurações >
+Operação**. O padrão é cinco dias. No primeiro estágio, somente o responsável
+ativo recebe o aviso. Ao completar o dobro do período, dez dias no padrão, o
+aviso é escalado para o responsável e para superadministradores, proprietários
+e administradores ativos.
+
+A última movimentação considera a edição da tarefa, entradas do histórico e
+comentários ativos. Uma nova movimentação inicia outro episódio deduplicado.
+Tarefas concluídas, canceladas, arquivadas, excluídas, sem responsável ativo ou
+já vencidas são ignoradas. As vencidas permanecem exclusivamente no
+escalonamento de atrasos de 1, 3 e 7 dias, evitando notificações duplicadas.
+
+A preferência **Tarefas sem movimentação**, em **Configurações >
+Notificações**, permite desativar a categoria. A automação não altera status,
+prazo, prioridade ou responsável, cria no máximo 200 notificações por ciclo e
+reutiliza o único relógio privado de 15 minutos depois das 08:00 no fuso da
+organização.
