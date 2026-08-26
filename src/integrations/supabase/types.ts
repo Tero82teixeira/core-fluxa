@@ -3339,6 +3339,10 @@ export type Database = {
         Args: { _as_of?: string }
         Returns: number
       }
+      create_weekly_productivity_report_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       create_weekly_data_quality_notifications: {
         Args: { _as_of?: string }
         Returns: number

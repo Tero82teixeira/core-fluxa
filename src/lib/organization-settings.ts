@@ -41,6 +41,7 @@ export const ORGANIZATION_SETTINGS_DEFAULTS = {
     client_birthdays: true,
     stale_leads: true,
     daily_operational_close: true,
+    weekly_productivity_report: true,
   },
 };
 

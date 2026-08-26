@@ -308,7 +308,6 @@ muda o status do lead e não envia mensagens externas. Cada ciclo cria no máxim
 200 notificações e reutiliza o relógio privado único de 15 minutos, depois das
 08:00 no fuso da organização.
 
-
 ## Tarefas sem movimentação
 
 Tarefas abertas, atribuídas e ainda não vencidas geram um aviso interno quando
@@ -373,3 +372,16 @@ sem responsável. O recurso é opcional, preserva os modos de responsável já
 existentes e não redistribui tarefas já existentes nem tarefas criadas
 manualmente.
 
+## Relatório semanal de produtividade
+
+Toda segunda-feira, depois das 08:00 no fuso da organização, proprietários,
+administradores, gestores e superadministradores ativos recebem uma visão
+consolidada da semana anterior. O relatório informa tarefas concluídas, tarefas
+abertas, atrasos atuais, falhas das automações na semana e a divisão das
+pendências por responsável, incluindo itens sem responsável.
+
+A notificação abre **Relatórios**, não modifica nenhuma tarefa e é deduplicada
+por semana e destinatário. A preferência **Relatório semanal de produtividade**,
+em **Configurações > Notificações**, permite desativar somente esse relatório.
+O processamento reutiliza `run_temporal_automation_cycle()` e não cria outro
+relógio.

@@ -103,6 +103,10 @@ test("notification_preferences undefined usa defaults", () => {
     normalizeOrganizationSettings({}).notification_preferences,
     ORGANIZATION_SETTINGS_DEFAULTS.notification_preferences,
   );
+  assert.equal(
+    ORGANIZATION_SETTINGS_DEFAULTS.notification_preferences.weekly_productivity_report,
+    true,
+  );
 });
 
 test("payload parcial é normalizado", () => {
@@ -160,4 +164,11 @@ test("página mantém os dados de um payload completo", () => {
   assert.equal(result.recent_audit[0].id, "audit-1");
   assert.equal(result.notification_preferences.overdue_tasks, false);
   assert.equal(result.notification_preferences.expiring_documents, true);
+  assert.equal(result.notification_preferences.weekly_productivity_report, true);
+});
+
+test("configurações exibem o relatório semanal de produtividade", () => {
+  const route = readFileSync("src/routes/_authenticated/configuracoes.tsx", "utf8");
+  assert.match(route, /weekly_productivity_report/);
+  assert.match(route, /Relatório semanal de produtividade/);
 });

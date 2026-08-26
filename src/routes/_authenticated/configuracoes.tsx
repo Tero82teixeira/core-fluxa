@@ -568,6 +568,7 @@ function SettingsPage() {
               ["client_birthdays", "Aniversários de clientes"],
               ["stale_leads", "Leads sem acompanhamento"],
               ["daily_operational_close", "Fechamento operacional diário"],
+              ["weekly_productivity_report", "Relatório semanal de produtividade"],
             ].map(([key, label]) => (
               <Toggle
                 key={key}
