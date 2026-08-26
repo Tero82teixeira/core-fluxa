@@ -51,7 +51,12 @@ export type AutomationAction = (typeof AUTOMATION_ACTIONS)[number];
 export type AutomationRuleAction = AutomationAction | ScheduledAutomationAction;
 export type ConditionOperator = (typeof CONDITION_OPERATORS)[number];
 export type AutomationCondition = { field: string; operator: ConditionOperator; value?: string };
-export type AssigneeMode = "process_owner" | "fixed_user" | "rule_creator" | "unassigned";
+export type AssigneeMode =
+  | "process_owner"
+  | "fixed_user"
+  | "rule_creator"
+  | "unassigned"
+  | "least_loaded";
 
 export const PROCESS_AUTOMATION_TRIGGERS: readonly AutomationTrigger[] = [
   "process.created",
@@ -64,6 +69,7 @@ export const ASSIGNEE_MODE_LABELS: Record<AssigneeMode, string> = {
   fixed_user: "Usuário específico",
   rule_creator: "Criador da automação",
   unassigned: "Sem responsável",
+  least_loaded: "Menor carga por setor e função",
 };
 
 export function stageCondition(value: string): AutomationCondition[] {
