@@ -31,6 +31,7 @@ import {
   useSetMemberActive,
   useTeamMembers,
   useTransferResponsibilities,
+  useUpdateMemberTaskDistribution,
   type TeamMember,
 } from "@/hooks/use-team";
 
@@ -56,6 +57,12 @@ function TeamPage() {
   const changeRole = useChangeMemberRole(organizationId);
   const setActive = useSetMemberActive(organizationId);
   const transferResponsibilities = useTransferResponsibilities(organizationId);
+  const updateDistribution = useUpdateMemberTaskDistribution(organizationId);
+  const [distributionMember, setDistributionMember] = useState<TeamMember | null>(null);
+  const [distributionSector, setDistributionSector] = useState("");
+  const [distributionFunction, setDistributionFunction] = useState("");
+  const [distributionCapacity, setDistributionCapacity] = useState(20);
+  const [distributionEnabled, setDistributionEnabled] = useState(false);
   const [transferFrom, setTransferFrom] = useState<TeamMember | null>(null);
   const [transferToUserId, setTransferToUserId] = useState("");
   const [query, setQuery] = useState("");
@@ -74,7 +81,7 @@ function TeamPage() {
         const term = query.toLocaleLowerCase("pt-BR");
         return (
           (!term ||
-            `${member.full_name} ${member.email}`.toLocaleLowerCase("pt-BR").includes(term)) &&
+            `${member.full_name} ${member.email} ${member.distribution_sector} ${member.distribution_function}`.toLocaleLowerCase("pt-BR").includes(term)) &&
           (roleFilter === "all" || member.role === roleFilter) &&
           (status === "all" || (status === "active") === member.is_active)
         );
@@ -92,6 +99,38 @@ function TeamPage() {
     ["Visualizadores", rows.filter((m) => m.role === "visualizador").length],
   ] as const;
   const transferTargets = transferFrom ? eligibleTransferTargets(rows, transferFrom.user_id) : [];
+
+  function openDistribution(member: TeamMember) {
+    setDistributionMember(member);
+    setDistributionSector(member.distribution_sector ?? "");
+    setDistributionFunction(member.distribution_function ?? "");
+    setDistributionCapacity(member.automatic_task_capacity);
+    setDistributionEnabled(member.receives_automatic_tasks);
+  }
+
+  async function saveDistribution() {
+    if (!distributionMember) return;
+    if (
+      distributionEnabled &&
+      (!distributionSector.trim() || !distributionFunction.trim())
+    ) {
+      toast.error("Informe o setor e a função operacional.");
+      return;
+    }
+    try {
+      await updateDistribution.mutateAsync({
+        memberId: distributionMember.id,
+        sector: distributionSector.trim(),
+        operationalFunction: distributionFunction.trim(),
+        capacity: distributionCapacity,
+        enabled: distributionEnabled,
+      });
+      toast.success("Distribuição automática atualizada.");
+      setDistributionMember(null);
+    } catch {
+      toast.error("Não foi possível atualizar a distribuição automática.");
+    }
+  }
 
   function closeTransferDialog() {
     if (transferResponsibilities.isPending) return;
@@ -248,7 +287,7 @@ function TeamPage() {
       <div className="space-y-3">
         {filtered.map((member) => (
           <Card key={member.id}>
-            <CardContent className="grid gap-4 p-4 md:grid-cols-[minmax(180px,1.5fr)_repeat(4,1fr)_auto] md:items-center">
+            <CardContent className="grid gap-4 p-4 md:grid-cols-[minmax(180px,1.5fr)_repeat(5,1fr)_auto] md:items-center">
               <div>
                 <p className="font-medium">{member.full_name || "Sem nome"}</p>
                 <p className="text-sm text-muted-foreground">
@@ -276,6 +315,24 @@ function TeamPage() {
                 <p className="text-xs text-muted-foreground">Monitoramentos</p>
                 <p className="text-sm">{member.monitoringItems}</p>
               </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Distribuição automática</p>
+                <p className="text-sm">
+                  {member.receives_automatic_tasks
+                    ? `${member.distribution_sector} · ${member.distribution_function}`
+                    : "Desativada"}
+                </p>
+                {member.receives_automatic_tasks && (
+                  <p className="text-xs text-muted-foreground">
+                    {member.openTasks}/{member.automatic_task_capacity} tarefas
+                  </p>
+                )}
+              </div>
+              {permissions.canManageTeam && (
+                <Button size="sm" variant="secondary" onClick={() => openDistribution(member)}>
+                  Configurar distribuição
+                </Button>
+              )}
               {permissions.canManageTeam && member.user_id !== user?.id && (
                 <div className="flex flex-wrap gap-2">
                   <select
@@ -342,6 +399,83 @@ function TeamPage() {
           </Card>
         ))}
       </div>
+      <Dialog
+        open={Boolean(distributionMember)}
+        onOpenChange={(open) => {
+          if (!open && !updateDistribution.isPending) setDistributionMember(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Distribuição automática de tarefas</DialogTitle>
+            <DialogDescription>
+              Defina setor, função operacional e o limite de tarefas abertas. Somente regras
+              configuradas com esses mesmos critérios poderão selecionar este membro.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="distribution-sector">Setor</Label>
+              <Input
+                id="distribution-sector"
+                maxLength={80}
+                value={distributionSector}
+                onChange={(event) => setDistributionSector(event.target.value)}
+                placeholder="Ex.: Jurídico"
+              />
+            </div>
+            <div>
+              <Label htmlFor="distribution-function">Função operacional</Label>
+              <Input
+                id="distribution-function"
+                maxLength={80}
+                value={distributionFunction}
+                onChange={(event) => setDistributionFunction(event.target.value)}
+                placeholder="Ex.: Analista"
+              />
+            </div>
+            <div>
+              <Label htmlFor="distribution-capacity">Capacidade de tarefas abertas</Label>
+              <Input
+                id="distribution-capacity"
+                type="number"
+                min={1}
+                max={500}
+                value={distributionCapacity}
+                onChange={(event) => setDistributionCapacity(Number(event.target.value))}
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={distributionEnabled}
+                onChange={(event) => setDistributionEnabled(event.target.checked)}
+              />
+              Receber tarefas distribuídas automaticamente
+            </label>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDistributionMember(null)}
+              disabled={updateDistribution.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={saveDistribution}
+              disabled={
+                updateDistribution.isPending ||
+                !Number.isInteger(distributionCapacity) ||
+                distributionCapacity < 1 ||
+                distributionCapacity > 500
+              }
+            >
+              Salvar configuração
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={Boolean(transferFrom)}
         onOpenChange={(open) => {
