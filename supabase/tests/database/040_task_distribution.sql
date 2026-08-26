@@ -4,11 +4,26 @@ CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 SET LOCAL search_path = pg_catalog, public, extensions, pg_temp;
 SELECT no_plan();
 
-SELECT has_column('public', 'organization_members', 'distribution_sector');
-SELECT has_column('public', 'organization_members', 'distribution_function');
-SELECT has_column('public', 'organization_members', 'automatic_task_capacity');
-SELECT has_column('public', 'organization_members', 'receives_automatic_tasks');
-SELECT has_column('public', 'organization_members', 'last_automatic_task_at');
+SELECT has_column(
+  'public', 'organization_members', 'distribution_sector',
+  'distribution_sector is available on team members'
+);
+SELECT has_column(
+  'public', 'organization_members', 'distribution_function',
+  'distribution_function is available on team members'
+);
+SELECT has_column(
+  'public', 'organization_members', 'automatic_task_capacity',
+  'automatic_task_capacity is available on team members'
+);
+SELECT has_column(
+  'public', 'organization_members', 'receives_automatic_tasks',
+  'receives_automatic_tasks is available on team members'
+);
+SELECT has_column(
+  'public', 'organization_members', 'last_automatic_task_at',
+  'last_automatic_task_at is available on team members'
+);
 SELECT has_function(
   'public', 'update_member_task_distribution',
   ARRAY['uuid', 'text', 'text', 'integer', 'boolean']
