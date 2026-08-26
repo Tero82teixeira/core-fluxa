@@ -452,7 +452,10 @@ function AutomationForm({
     setForm({ ...form, action_config: { ...form.action_config, [key]: value } });
   const setTaskAssigneeMode = (mode: string) =>
     setForm((current) => {
-      const config = { ...current.action_config, assignee_mode: mode };
+      const config: Record<string, unknown> = {
+        ...current.action_config,
+        assignee_mode: mode,
+      };
       if (mode !== "fixed_user") delete config.assignee_id;
       if (mode !== "least_loaded") {
         delete config.distribution_sector;
