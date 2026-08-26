@@ -3467,6 +3467,14 @@ export type Database = {
         }
         Returns: number
       }
+      select_task_distribution_assignee: {
+        Args: {
+          _function: string
+          _organization_id: string
+          _sector: string
+        }
+        Returns: string
+      }
       update_member_task_distribution: {
         Args: {
           _capacity: number
