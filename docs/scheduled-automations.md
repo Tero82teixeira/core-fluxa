@@ -350,3 +350,26 @@ automático. O horário vem de `business_hours_end`, com padrão `18:00`, e a
 execução reutiliza `run_temporal_automation_cycle()`; nenhum cron adicional é
 criado. O limite é de 100 organizações verificadas por ciclo, com deduplicação
 por data local e destinatário.
+
+## Distribuição automática de tarefas
+
+Tarefas novas criadas por regras automáticas podem usar o modo **Menor carga por
+setor e função**. Antes de ativar a regra, um proprietário ou administrador
+configura cada membro elegível em **Equipe > Configurar distribuição**, informando
+setor, função operacional, capacidade máxima de tarefas abertas e se a pessoa
+aceita distribuição automática.
+
+A seleção considera somente membros ativos da mesma organização, exclui
+visualizadores e exige correspondência sem diferença entre maiúsculas e
+minúsculas para setor e função. A carga é a quantidade de tarefas pendentes, em
+andamento ou aguardando, dividida pela capacidade configurada. Em empate, o
+sistema prioriza quem recebeu uma tarefa automática há mais tempo e usa um
+desempate estável.
+
+Quando todos os membros correspondentes estão sem capacidade disponível, a
+tarefa não é criada e a execução aparece como falha
+`NO_ELIGIBLE_ASSIGNEE` no histórico da automação. Isso evita tarefas silenciosamente
+sem responsável. O recurso é opcional, preserva os modos de responsável já
+existentes e não redistribui tarefas já existentes nem tarefas criadas
+manualmente.
+

@@ -15,6 +15,11 @@ export type TeamMember = {
   created_at: string;
   full_name: string | null;
   email: string | null;
+  distribution_sector: string | null;
+  distribution_function: string | null;
+  automatic_task_capacity: number;
+  receives_automatic_tasks: boolean;
+  last_automatic_task_at: string | null;
   openTasks: number;
   lateTasks: number;
   openProcesses: number;
@@ -29,7 +34,7 @@ export function useTeamMembers(organizationId: string | null) {
     queryFn: async (): Promise<TeamMember[]> => {
       const { data, error } = await db()
         .from("organization_members")
-        .select("id, user_id, role, is_active, created_at")
+        .select("id, user_id, role, is_active, created_at, distribution_sector, distribution_function, automatic_task_capacity, receives_automatic_tasks, last_automatic_task_at")
         .eq("organization_id", organizationId)
         .order("created_at");
       if (error) throw error;
@@ -183,6 +188,35 @@ export function useChangeMemberRole(organizationId: string | null) {
         entityId: memberId,
         metadata: { role },
       });
+    },
+    onSuccess: () => invalidateTeam(queryClient, organizationId),
+  });
+}
+
+export function useUpdateMemberTaskDistribution(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      memberId,
+      sector,
+      operationalFunction,
+      capacity,
+      enabled,
+    }: {
+      memberId: string;
+      sector: string;
+      operationalFunction: string;
+      capacity: number;
+      enabled: boolean;
+    }) => {
+      const { error } = await db().rpc("update_member_task_distribution", {
+        _member: memberId,
+        _sector: sector,
+        _function: operationalFunction,
+        _capacity: capacity,
+        _receives_automatic_tasks: enabled,
+      });
+      if (error) throw error;
     },
     onSuccess: () => invalidateTeam(queryClient, organizationId),
   });

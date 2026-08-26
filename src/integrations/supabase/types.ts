@@ -1885,28 +1885,43 @@ export type Database = {
       }
       organization_members: {
         Row: {
+          automatic_task_capacity: number
           created_at: string
+          distribution_function: string | null
+          distribution_sector: string | null
           id: string
           is_active: boolean
+          last_automatic_task_at: string | null
           organization_id: string
+          receives_automatic_tasks: boolean
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          automatic_task_capacity?: number
           created_at?: string
+          distribution_function?: string | null
+          distribution_sector?: string | null
           id?: string
           is_active?: boolean
+          last_automatic_task_at?: string | null
           organization_id: string
+          receives_automatic_tasks?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          automatic_task_capacity?: number
           created_at?: string
+          distribution_function?: string | null
+          distribution_sector?: string | null
           id?: string
           is_active?: boolean
+          last_automatic_task_at?: string | null
           organization_id?: string
+          receives_automatic_tasks?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id?: string
@@ -3451,6 +3466,24 @@ export type Database = {
           _source_automation_rule_id?: string
         }
         Returns: number
+      }
+      select_task_distribution_assignee: {
+        Args: {
+          _function: string
+          _organization_id: string
+          _sector: string
+        }
+        Returns: string
+      }
+      update_member_task_distribution: {
+        Args: {
+          _capacity: number
+          _function: string
+          _member: string
+          _receives_automatic_tasks: boolean
+          _sector: string
+        }
+        Returns: undefined
       }
       process_due_scheduled_automations: {
         Args: { _as_of?: string; _batch_size?: number }

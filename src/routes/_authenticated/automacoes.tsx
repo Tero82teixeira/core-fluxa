@@ -450,8 +450,30 @@ function AutomationForm({
   }, [rule, open]);
   const setConfig = (key: string, value: unknown) =>
     setForm({ ...form, action_config: { ...form.action_config, [key]: value } });
+  const setTaskAssigneeMode = (mode: string) =>
+    setForm((current) => {
+      const config: Record<string, unknown> = {
+        ...current.action_config,
+        assignee_mode: mode,
+      };
+      if (mode !== "fixed_user") delete config.assignee_id;
+      if (mode !== "least_loaded") {
+        delete config.distribution_sector;
+        delete config.distribution_function;
+      }
+      return { ...current, action_config: config };
+    });
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (
+      form.action_type === "create_task" &&
+      form.action_config.assignee_mode === "least_loaded" &&
+      (!configText(form.action_config, "distribution_sector").trim() ||
+        !configText(form.action_config, "distribution_function").trim())
+    ) {
+      toast.error("Informe o setor e a função para distribuir pela menor carga.");
+      return;
+    }
     try {
       if (rule) {
         await update.mutateAsync(rule.id, form);
@@ -675,7 +697,7 @@ function AutomationForm({
                     configText(form.action_config, "assignee_mode") ||
                     (form.action_config.assignee_id ? "fixed_user" : "unassigned")
                   }
-                  onValueChange={(v) => setConfig("assignee_mode", v)}
+                  onValueChange={setTaskAssigneeMode}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -710,6 +732,36 @@ function AutomationForm({
                         ))}
                     </SelectContent>
                   </Select>
+                </div>
+              )}
+              {form.action_config.assignee_mode === "least_loaded" && (
+                <div className="space-y-4 rounded-md bg-muted/40 p-3">
+                  <p className="text-xs text-muted-foreground">
+                    O sistema escolherá o membro ativo com menor carga proporcional e capacidade
+                    disponível. Cadastre os mesmos valores na página Equipe.
+                  </p>
+                  <div>
+                    <Label htmlFor="task-distribution-sector">Setor</Label>
+                    <Input
+                      id="task-distribution-sector"
+                      required
+                      maxLength={80}
+                      value={configText(form.action_config, "distribution_sector")}
+                      onChange={(event) => setConfig("distribution_sector", event.target.value)}
+                      placeholder="Ex.: Jurídico"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="task-distribution-function">Função operacional</Label>
+                    <Input
+                      id="task-distribution-function"
+                      required
+                      maxLength={80}
+                      value={configText(form.action_config, "distribution_function")}
+                      onChange={(event) => setConfig("distribution_function", event.target.value)}
+                      placeholder="Ex.: Analista"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -890,6 +942,10 @@ function ScheduledAutomationForm({
         assignee_mode: mode,
       };
       if (mode !== "fixed_user") delete config.assignee_id;
+      if (mode !== "least_loaded") {
+        delete config.distribution_sector;
+        delete config.distribution_function;
+      }
       return { ...current, action_config: config };
     });
 
@@ -910,6 +966,15 @@ function ScheduledAutomationForm({
       !form.action_config.assignee_id
     ) {
       toast.error("Selecione o responsável da tarefa.");
+      return;
+    }
+    if (
+      form.action_type === "create_task" &&
+      form.action_config.assignee_mode === "least_loaded" &&
+      (!configText(form.action_config, "distribution_sector").trim() ||
+        !configText(form.action_config, "distribution_function").trim())
+    ) {
+      toast.error("Informe o setor e a função para distribuir pela menor carga.");
       return;
     }
     if (form.action_type === "create_notification" && !form.action_config.recipient_id) {
@@ -1168,6 +1233,7 @@ function ScheduledAutomationForm({
                     <SelectItem value="unassigned">Sem responsável</SelectItem>
                     <SelectItem value="rule_creator">Criador da automação</SelectItem>
                     <SelectItem value="fixed_user">Usuário específico</SelectItem>
+                    <SelectItem value="least_loaded">Menor carga por setor e função</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1189,6 +1255,36 @@ function ScheduledAutomationForm({
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              )}
+              {form.action_config.assignee_mode === "least_loaded" && (
+                <div className="space-y-4 rounded-md bg-muted/40 p-3">
+                  <p className="text-xs text-muted-foreground">
+                    O sistema escolherá o membro ativo com menor carga proporcional e capacidade
+                    disponível. Cadastre os mesmos valores na página Equipe.
+                  </p>
+                  <div>
+                    <Label htmlFor="scheduled-distribution-sector">Setor</Label>
+                    <Input
+                      id="scheduled-distribution-sector"
+                      required
+                      maxLength={80}
+                      value={configText(form.action_config, "distribution_sector")}
+                      onChange={(event) => setConfig("distribution_sector", event.target.value)}
+                      placeholder="Ex.: Jurídico"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="scheduled-distribution-function">Função operacional</Label>
+                    <Input
+                      id="scheduled-distribution-function"
+                      required
+                      maxLength={80}
+                      value={configText(form.action_config, "distribution_function")}
+                      onChange={(event) => setConfig("distribution_function", event.target.value)}
+                      placeholder="Ex.: Analista"
+                    />
+                  </div>
                 </div>
               )}
             </div>
