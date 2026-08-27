@@ -2118,8 +2118,8 @@ export type Database = {
       organization_subscriptions: {
         Row: {
           created_at: string
-          current_period_ends_at: string | null
-          notes: string | null
+          current_period_ends_at: string
+          notes: string
           organization_id: string
           plan_code: string
           status: string
@@ -3534,12 +3534,12 @@ export type Database = {
           organization_created_at: string
           organization_id: string
           organization_name: string
-          owner_email: string | null
-          owner_name: string | null
+          owner_email: string
+          owner_name: string
           plan_code: string
           subscription_status: string
-          trial_ends_at: string | null
-          trial_started_at: string | null
+          trial_ends_at: string
+          trial_started_at: string
         }[]
       }
       manage_platform_organization: {
