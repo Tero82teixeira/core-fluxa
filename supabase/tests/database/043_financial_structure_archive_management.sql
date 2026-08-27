@@ -167,8 +167,6 @@ SELECT ok(
   (
     SELECT archived_at IS NULL
       AND NOT is_active
-      AND initial_balance = 125
-      AND current_balance = 175
     FROM public.financial_categories
     WHERE id = '39520000-0000-0000-0000-000000000001'
   ),
@@ -176,7 +174,10 @@ SELECT ok(
 );
 SELECT ok(
   (
-    SELECT archived_at IS NULL AND NOT is_active
+    SELECT archived_at IS NULL
+      AND NOT is_active
+      AND initial_balance = 125
+      AND current_balance = 175
     FROM public.financial_accounts
     WHERE id = '49520000-0000-0000-0000-000000000001'
   ),
