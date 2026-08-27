@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
+  Archive,
+  Ban,
   Download,
   History,
   Pencil,
@@ -25,6 +27,17 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { AccountsManager, CategoriesManager } from "@/components/finance/financial-structures";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -577,14 +590,21 @@ function TransactionActions({
   const paidTotal = transactionPayments
     .filter((item: any) => !item.reversed_at)
     .reduce((total: number, item: any) => total + Number(item.amount), 0);
+  const open = !["paid", "cancelled"].includes(transaction.status);
+  const runLifecycleAction = async (rpc: string, successMessage: string) => {
+    try {
+      await action.mutateAsync({ rpc, payload: { id: transaction.id } });
+      toast.success(successMessage);
+    } catch (error) {
+      toast.error(describeError(error));
+    }
+  };
   return (
     <div
       className={`flex ${stacked ? "flex-col items-stretch" : "flex-wrap items-center"} justify-end gap-1 ${className}`}
     >
-      {editable &&
-        !["paid", "cancelled"].includes(transaction.status) &&
-        !transaction.archived_at && (
-          <>
+      {editable && open && !transaction.archived_at && (
+        <>
             <TransactionDialog
               data={data}
               transaction={transaction}
@@ -603,7 +623,80 @@ function TransactionActions({
               payments={transactionPayments}
               payment={payment}
             />
-          </>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={action.isPending || paidTotal > 0}
+                  title={paidTotal > 0 ? "Estorne os pagamentos antes de cancelar." : undefined}
+                >
+                  <Ban />
+                  Cancelar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancelar este lançamento?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    “{transaction.description}” permanecerá no histórico e poderá ser arquivado
+                    depois. Esta ação não registra nenhum pagamento.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    disabled={action.isPending}
+                    onClick={() =>
+                      runLifecycleAction(
+                        "cancel_financial_transaction",
+                        "Lançamento cancelado.",
+                      )
+                    }
+                  >
+                    Confirmar cancelamento
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+        </>
+      )}
+      {editable &&
+        ["paid", "cancelled"].includes(transaction.status) &&
+        !transaction.archived_at && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="destructive" disabled={action.isPending}>
+                <Archive />
+                Arquivar
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Arquivar este lançamento?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  “{transaction.description}” será removido das visões ativas. O histórico
+                  financeiro e a auditoria serão preservados.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={action.isPending}
+                  onClick={() =>
+                    runLifecycleAction(
+                      "archive_financial_transaction",
+                      "Lançamento arquivado.",
+                    )
+                  }
+                >
+                  Confirmar arquivamento
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       <PaymentHistory
         transaction={transaction}

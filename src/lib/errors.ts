@@ -85,6 +85,10 @@ export function describeError(error: unknown, context: Ctx = "salvar"): string {
     return "O valor do lançamento não pode ser menor que o total já pago.";
   if (message.includes("transaction_not_editable"))
     return "Somente lançamentos pendentes, atrasados ou parcialmente pagos podem ser editados.";
+  if (message.includes("reverse_payments_first"))
+    return "Estorne os pagamentos confirmados antes de cancelar o lançamento.";
+  if (message.includes("transaction_not_archivable"))
+    return "Somente lançamentos pagos ou cancelados podem ser arquivados.";
   if (message.includes("description_required")) return "Informe a descrição do lançamento.";
   if (message.includes("invalid_amount")) return "Informe um valor financeiro maior que zero.";
   if (message.includes("due_date_required")) return "Informe a data de vencimento.";
