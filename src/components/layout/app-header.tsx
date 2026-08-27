@@ -53,7 +53,14 @@ import { GlobalSearch } from "@/components/global-search";
 export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { displayName, memberships, membership, switchWorkspace, organizationId } = useWorkspace();
+  const {
+    displayName,
+    memberships,
+    membership,
+    switchWorkspace,
+    organizationId,
+    commercialAccess,
+  } = useWorkspace();
   const [searchOpen, setSearchOpen] = useState(false);
 
   const current = NAV_ITEMS.find(
@@ -105,6 +112,11 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
                 <span className="hidden shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:inline-flex">
                   Demonstração
                 </span>
+              )}
+              {commercialAccess.reason === "trial" && (
+                <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">
+                  Teste: {commercialAccess.daysRemaining} {commercialAccess.daysRemaining === 1 ? "dia" : "dias"}
+                </Badge>
               )}
             </div>
             {isDetail && current && (

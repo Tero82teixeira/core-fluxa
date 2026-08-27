@@ -62,6 +62,16 @@ export function describeError(error: unknown, context: Ctx = "salvar"): string {
     return "Este registro já existe.";
   }
   if (code === "23503") return "Registro relacionado não encontrado. Atualize a página e tente novamente.";
+  if (message.includes("platform_admin_required"))
+    return "Somente a administração do Core Fluxa pode executar esta ação.";
+  if (message.includes("invalid_trial_extension"))
+    return "A extensão do teste deve ser de 1 a 90 dias.";
+  if (message.includes("invalid_commercial_action"))
+    return "A ação comercial selecionada não é válida.";
+  if (message.includes("organization_subscription_not_found"))
+    return "A situação comercial desta empresa não foi encontrada.";
+  if (message.includes("cannot_suspend_current_admin_organization"))
+    return "Você não pode suspender a empresa que está usando para administrar a plataforma.";
   if (code === "42501" || code === "PGRST301" || message.includes("row-level security") || message.includes("permission denied"))
     return "Você não tem permissão para executar esta ação.";
   if (code === "PGRST116" || message.includes("not found")) return "Registro não encontrado ou já removido.";

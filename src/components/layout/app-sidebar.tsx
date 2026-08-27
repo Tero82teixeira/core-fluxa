@@ -24,6 +24,7 @@ import { useWorkspace } from "@/lib/workspace";
 import { ROLE } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useIsPlatformAdmin } from "@/hooks/use-commercial";
 
 export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
@@ -31,6 +32,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggleTheme } = useTheme();
   const { displayName, role, membership, loading, onboardingCompleted } = useWorkspace();
+  const platformAdmin = useIsPlatformAdmin();
 
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false);
@@ -62,7 +64,9 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
 
       <SidebarContent className="gap-1 px-2">
         {NAV_GROUPS.map((group) => {
-          const items = NAV_ITEMS.filter((item) => item.group === group.key);
+          const items = NAV_ITEMS.filter(
+            (item) => item.group === group.key && (!item.platformOnly || platformAdmin.data),
+          );
           if (items.length === 0) return null;
           return (
             <SidebarGroup key={group.key} className="py-1.5">

@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useRolePermissions, type Membership } from "@/hooks/use-session";
 import type { AppRole, PermissionKey } from "@/lib/domain";
+import { resolveCommercialAccess, type CommercialAccess, type CommercialProfile } from "@/lib/commercial";
 import { resolveSessionMembership } from "@/lib/access-control";
 import { readWorkspacePreference, writeWorkspacePreference } from "@/lib/workspace-preference";
 
@@ -46,6 +47,8 @@ type WorkspaceContextValue = {
   role: AppRole | null;
   onboardingCompleted: boolean;
   onboardingStep: number;
+  commercialProfile: CommercialProfile;
+  commercialAccess: CommercialAccess;
   bootstrapError: string | null;
   can: (permission: PermissionKey) => boolean;
   switchWorkspace: (organizationId: string) => void;
@@ -69,6 +72,13 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
       },
     );
   });
+}
+
+function isCommercialSchemaPending(error: { code?: string; message?: string } | null) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return error?.code === "PGRST205"
+    || error?.code === "42P01"
+    || message.includes("organization_subscriptions") && message.includes("schema cache");
 }
 
 /** Mensagem específica — nunca genérica — para cada falha real do acesso. */
@@ -111,6 +121,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile>(null);
   const [list, setList] = useState<Membership[]>([]);
+  const [commercialProfiles, setCommercialProfiles] = useState<Record<string, CommercialProfile>>({});
+  const [commercialClock, setCommercialClock] = useState(() => Date.now());
   const [selection, setSelection] = useState<{ userId: string; organizationId: string | null }>(
     () => ({
       userId: userId ?? "",
@@ -162,7 +174,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!active) throw new Error("BOOTSTRAP_MEMBERSHIP_NOT_FOUND");
     if (!active.organizations) throw new Error("BOOTSTRAP_ORGANIZATION_NOT_FOUND");
 
-    return { profile: nextProfile, list: nextList };
+    const organizationIds = [...new Set(nextList.map((item) => item.organization_id))];
+    const nextCommercialProfiles: Record<string, CommercialProfile> = {};
+    if (organizationIds.length) {
+      const commercialResult = await supabase
+        .from("organization_subscriptions")
+        .select(
+          "organization_id, status, plan_code, trial_started_at, trial_ends_at, current_period_ends_at",
+        )
+        .in("organization_id", organizationIds);
+      if (commercialResult.error && !isCommercialSchemaPending(commercialResult.error))
+        throw commercialResult.error;
+      for (const row of commercialResult.data ?? []) {
+        nextCommercialProfiles[row.organization_id] = row as CommercialProfile;
+      }
+    }
+
+    return { profile: nextProfile, list: nextList, commercialProfiles: nextCommercialProfiles };
   }, []);
 
   /** Carregamento completo: bootstrap (uma vez) + consultas + validação. */
@@ -204,6 +232,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
           setProfile(next.profile);
           setList(next.list);
+          setCommercialProfiles(next.commercialProfiles);
           setStatus("ready");
           console.info("[Workspace] ready");
         } catch (caught) {
@@ -237,6 +266,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setError(null);
       setProfile(null);
       setList([]);
+      setCommercialProfiles({});
       return;
     }
     setProfile(null);
@@ -251,6 +281,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const next = await withTimeout(fetchWorkspace(userId), WORKSPACE_TIMEOUT_MS);
       setProfile(next.profile);
       setList(next.list);
+      setCommercialProfiles(next.commercialProfiles);
       setStatus("ready");
     } catch (caught) {
       console.error("[Workspace] falha ao atualizar", {
@@ -272,9 +303,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const membership = resolveSessionMembership(list, userId, selectedOrganizationId);
   const permissions = useRolePermissions(membership?.role);
 
+  useEffect(() => {
+    if (!Object.values(commercialProfiles).some((item) => item?.status === "trial")) return;
+    const timer = window.setInterval(() => setCommercialClock(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, [commercialProfiles]);
+
   const value = useMemo<WorkspaceContextValue>(() => {
     const granted = new Set(permissions.data ?? []);
     const ready = status === "ready" && Boolean(membership?.organizations);
+    const commercialProfile = membership
+      ? commercialProfiles[membership.organization_id] ?? null
+      : null;
 
     return {
       status,
@@ -289,6 +329,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       role: membership?.role ?? null,
       onboardingCompleted: Boolean(membership?.organizations?.onboarding_completed_at),
       onboardingStep: membership?.organizations?.onboarding_step ?? 0,
+      commercialProfile,
+      commercialAccess: resolveCommercialAccess(commercialProfile, new Date(commercialClock)),
       bootstrapError:
         status === "error" ? (error ?? "Não foi possível configurar seu acesso.") : null,
       can: (permission) => granted.has(permission),
@@ -313,6 +355,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     profile,
     list,
     membership,
+    commercialProfiles,
+    commercialClock,
     refreshWorkspace,
     retryWorkspace,
   ]);
