@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   Archive,
+  ArchiveRestore,
   Ban,
   Download,
   History,
@@ -146,13 +147,14 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
     [account, setAccount] = useState("all"),
     [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
+    [showArchived, setShowArchived] = useState(false),
     [page, setPage] = useState(0);
   const editable = canManageFinance(role);
   const rows = useMemo(
     () =>
       data.transactions.filter(
         (x: any) =>
-          !x.archived_at &&
+          Boolean(x.archived_at) === showArchived &&
           (type === "all" || x.type === type) &&
           matchesDisplayedFinancialStatus(x.status, x.due_date, status) &&
           (category === "all" || x.category_id === category) &&
@@ -161,7 +163,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
           (!to || x.due_date <= to) &&
           JSON.stringify(x).toLowerCase().includes(search.toLowerCase()),
       ),
-    [data, type, status, category, account, from, to, search],
+    [data, type, status, category, account, from, to, search, showArchived],
   );
   const paid = (id: string) =>
     data.payments
@@ -319,6 +321,9 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
                 setFrom,
                 to,
                 setTo,
+                showArchived,
+                setShowArchived,
+                setPage,
                 data,
               }}
             />
@@ -332,6 +337,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
               payment={payment}
               action={action}
               role={role}
+              showArchived={showArchived}
             />
           </TabsContent>
         ))}
@@ -396,6 +402,21 @@ function Filters(p: any) {
           Até
           <Input type="date" value={p.to} onChange={(e) => p.setTo(e.target.value)} />
         </Label>
+        <div className="flex items-end">
+          <Button
+            className="w-full"
+            type="button"
+            variant={p.showArchived ? "secondary" : "outline"}
+            onClick={() => {
+              p.setShowArchived(!p.showArchived);
+              p.setStatus("all");
+              p.setPage(0);
+            }}
+          >
+            <ArchiveRestore />
+            {p.showArchived ? "Ver ativos" : "Arquivados"}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -419,7 +440,18 @@ function Select({ label, value, set, options }: any) {
     </Label>
   );
 }
-function Transactions({ rows, data, paid, editable, page, setPage, payment, action, role }: any) {
+function Transactions({
+  rows,
+  data,
+  paid,
+  editable,
+  page,
+  setPage,
+  payment,
+  action,
+  role,
+  showArchived,
+}: any) {
   const shown = rows.slice(page * 10, page * 10 + 10);
   const categoryName = (transaction: any) =>
     data.categories.find((category: any) => category.id === transaction.category_id)?.name;
@@ -429,7 +461,11 @@ function Transactions({ rows, data, paid, editable, page, setPage, payment, acti
     <Card>
       <CardContent className="px-3 pt-4 sm:px-6 sm:pt-6">
         {!shown.length ? (
-          <p className="py-10 text-center text-muted-foreground">Nenhum lançamento encontrado.</p>
+          <p className="py-10 text-center text-muted-foreground">
+            {showArchived
+              ? "Nenhum lançamento arquivado encontrado."
+              : "Nenhum lançamento encontrado."}
+          </p>
         ) : (
           <>
             <div className="space-y-3 lg:hidden">
@@ -698,6 +734,39 @@ function TransactionActions({
             </AlertDialogContent>
           </AlertDialog>
         )}
+      {editable && transaction.archived_at && (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="outline" disabled={action.isPending}>
+              <ArchiveRestore />
+              Restaurar
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Restaurar este lançamento?</AlertDialogTitle>
+              <AlertDialogDescription>
+                “{transaction.description}” voltará às visões ativas com o mesmo status, valores e
+                histórico financeiro.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Voltar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={action.isPending}
+                onClick={() =>
+                  runLifecycleAction(
+                    "restore_financial_transaction",
+                    "Lançamento restaurado.",
+                  )
+                }
+              >
+                Confirmar restauração
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
       <PaymentHistory
         transaction={transaction}
         payments={transactionPayments}

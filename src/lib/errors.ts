@@ -89,6 +89,8 @@ export function describeError(error: unknown, context: Ctx = "salvar"): string {
     return "Estorne os pagamentos confirmados antes de cancelar o lançamento.";
   if (message.includes("transaction_not_archivable"))
     return "Somente lançamentos pagos ou cancelados podem ser arquivados.";
+  if (message.includes("transaction_not_restorable"))
+    return "Somente lançamentos pagos ou cancelados que estejam arquivados podem ser restaurados.";
   if (message.includes("description_required")) return "Informe a descrição do lançamento.";
   if (message.includes("invalid_amount")) return "Informe um valor financeiro maior que zero.";
   if (message.includes("due_date_required")) return "Informe a data de vencimento.";
