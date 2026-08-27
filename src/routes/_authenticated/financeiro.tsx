@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   Download,
   History,
+  Pencil,
   Plus,
   Printer,
   RefreshCw,
@@ -36,6 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFinance, useFinancialAction, useFinancialPayment } from "@/hooks/use-finance";
 import {
@@ -57,6 +59,7 @@ import {
 } from "@/lib/finance";
 import { StatusBadge } from "@/components/shared/status-badge";
 import type { Tone } from "@/lib/domain";
+import { describeError } from "@/lib/errors";
 import { useWorkspace } from "@/lib/workspace";
 
 export const Route = createFileRoute("/_authenticated/financeiro")({
@@ -314,6 +317,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
               page={page}
               setPage={setPage}
               payment={payment}
+              action={action}
               role={role}
             />
           </TabsContent>
@@ -402,7 +406,7 @@ function Select({ label, value, set, options }: any) {
     </Label>
   );
 }
-function Transactions({ rows, data, paid, editable, page, setPage, payment, role }: any) {
+function Transactions({ rows, data, paid, editable, page, setPage, payment, action, role }: any) {
   const shown = rows.slice(page * 10, page * 10 + 10);
   const categoryName = (transaction: any) =>
     data.categories.find((category: any) => category.id === transaction.category_id)?.name;
@@ -460,6 +464,7 @@ function Transactions({ rows, data, paid, editable, page, setPage, payment, role
                       data={data}
                       editable={editable}
                       payment={payment}
+                      action={action}
                       role={role}
                       className="mt-3 border-t pt-3"
                     />
@@ -525,6 +530,7 @@ function Transactions({ rows, data, paid, editable, page, setPage, payment, role
                             data={data}
                             editable={editable}
                             payment={payment}
+                            action={action}
                             role={role}
                             stacked
                           />
@@ -560,6 +566,7 @@ function TransactionActions({
   data,
   editable,
   payment,
+  action,
   role,
   className = "",
   stacked = false,
@@ -567,6 +574,9 @@ function TransactionActions({
   const transactionPayments = data.payments.filter(
     (item: any) => item.transaction_id === transaction.id,
   );
+  const paidTotal = transactionPayments
+    .filter((item: any) => !item.reversed_at)
+    .reduce((total: number, item: any) => total + Number(item.amount), 0);
   return (
     <div
       className={`flex ${stacked ? "flex-col items-stretch" : "flex-wrap items-center"} justify-end gap-1 ${className}`}
@@ -574,12 +584,26 @@ function TransactionActions({
       {editable &&
         !["paid", "cancelled"].includes(transaction.status) &&
         !transaction.archived_at && (
-          <PayDialog
-            transaction={transaction}
-            accounts={data.accounts}
-            payments={transactionPayments}
-            payment={payment}
-          />
+          <>
+            <TransactionDialog
+              data={data}
+              transaction={transaction}
+              paidTotal={paidTotal}
+              onSave={async (payload: Record<string, unknown>) => {
+                await action.mutateAsync({
+                  rpc: "update_financial_transaction",
+                  payload: { id: transaction.id, ...payload },
+                });
+                toast.success("Lançamento atualizado.");
+              }}
+            />
+            <PayDialog
+              transaction={transaction}
+              accounts={data.accounts}
+              payments={transactionPayments}
+              payment={payment}
+            />
+          </>
         )}
       <PaymentHistory
         transaction={transaction}
@@ -591,30 +615,64 @@ function TransactionActions({
     </div>
   );
 }
-function TransactionDialog({ data, onSave }: any) {
+function transactionForm(transaction?: any) {
+  return {
+    description: transaction?.description ?? "",
+    type: transaction?.type ?? "income",
+    amount: transaction ? String(transaction.amount) : "",
+    due_date: transaction?.due_date ?? new Date().toISOString().slice(0, 10),
+    category_id: transaction?.category_id ?? "",
+    account_id: transaction?.account_id ?? "",
+    notes: transaction?.notes ?? "",
+  };
+}
+
+function TransactionDialog({ data, onSave, transaction, paidTotal = 0 }: any) {
+  const editing = Boolean(transaction);
   const [open, setOpen] = useState(false),
     [saving, setSaving] = useState(false),
-    [form, setForm] = useState({
-      description: "",
-      type: "income",
-      amount: "",
-      due_date: new Date().toISOString().slice(0, 10),
-      category_id: "",
-      account_id: "",
-    });
-  const categories = availableFinancialCategories(data.categories, form.type as FinancialType),
-    accounts = availableFinancialAccounts(data.accounts);
+    [form, setForm] = useState(() => transactionForm(transaction));
+  const availableCategories = availableFinancialCategories(
+      data.categories,
+      form.type as FinancialType,
+    ),
+    currentCategory = data.categories.find((item: any) => item.id === form.category_id),
+    categories =
+      currentCategory && !availableCategories.some((item: any) => item.id === currentCategory.id)
+        ? [...availableCategories, currentCategory]
+        : availableCategories,
+    availableAccounts = availableFinancialAccounts(data.accounts),
+    currentAccount = data.accounts.find((item: any) => item.id === form.account_id),
+    accounts =
+      currentAccount && !availableAccounts.some((item: any) => item.id === currentAccount.id)
+        ? [...availableAccounts, currentAccount]
+        : availableAccounts,
+    amount = Number(form.amount),
+    invalidAmount = amount <= 0 || (editing && amount < paidTotal);
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (nextOpen) setForm(transactionForm(transaction));
+      }}
+    >
       <DialogTrigger asChild>
-        <Button>
-          <Plus />
-          Novo lançamento
-        </Button>
+        {editing ? (
+          <Button size="sm" variant="outline">
+            <Pencil />
+            Editar
+          </Button>
+        ) : (
+          <Button>
+            <Plus />
+            Novo lançamento
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Novo lançamento</DialogTitle>
+          <DialogTitle>{editing ? "Editar lançamento" : "Novo lançamento"}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3">
           <Label>
@@ -624,24 +682,36 @@ function TransactionDialog({ data, onSave }: any) {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </Label>
-          <Select
-            label="Tipo"
-            value={form.type}
-            set={(v: string) => setForm({ ...form, type: v, category_id: "" })}
-            options={[
-              ["income", "Receita"],
-              ["expense", "Despesa"],
-            ]}
-          />
+          {editing ? (
+            <Label>
+              Tipo
+              <Input value={form.type === "income" ? "Receita" : "Despesa"} disabled />
+            </Label>
+          ) : (
+            <Select
+              label="Tipo"
+              value={form.type}
+              set={(v: string) => setForm({ ...form, type: v, category_id: "" })}
+              options={[
+                ["income", "Receita"],
+                ["expense", "Despesa"],
+              ]}
+            />
+          )}
           <Label>
             Valor
             <Input
               type="number"
-              min="0.01"
+              min={editing ? Math.max(0.01, paidTotal) : 0.01}
               step="0.01"
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
             />
+            {editing && paidTotal > 0 && (
+              <span className="mt-1 block text-xs text-muted-foreground">
+                O valor não pode ser menor que o total já pago de {brl(paidTotal)}.
+              </span>
+            )}
           </Label>
           <Label>
             Vencimento
@@ -663,10 +733,18 @@ function TransactionDialog({ data, onSave }: any) {
             set={(v: string) => setForm({ ...form, account_id: v === "all" ? "" : v })}
             options={accounts.map((x: any) => [x.id, x.name])}
           />
+          <Label>
+            Observações
+            <Textarea
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              rows={3}
+            />
+          </Label>
         </div>
         <DialogFooter>
           <Button
-            disabled={saving || !form.description.trim() || Number(form.amount) <= 0}
+            disabled={saving || !form.description.trim() || !form.due_date || invalidAmount}
             onClick={async () => {
               setSaving(true);
               try {
@@ -678,9 +756,7 @@ function TransactionDialog({ data, onSave }: any) {
                 });
                 setOpen(false);
               } catch (error) {
-                toast.error(
-                  error instanceof Error ? error.message : "Não foi possível criar o lançamento.",
-                );
+                toast.error(describeError(error));
               } finally {
                 setSaving(false);
               }

@@ -19,9 +19,9 @@ describe("módulo de relatórios", () => {
   test("calcula agrupamentos", () => assert.deepEqual(groupCount([{s:"a"},{s:"a"},{s:"b"}], x=>x.s), {a:2,b:1}));
   test("identifica tarefa atrasada", () => assert.equal(isOverdue("2026-08-01", "pendente", new Date("2026-08-02")), true));
   test("não atrasa tarefa concluída", () => assert.equal(isOverdue("2026-08-01", "concluida", new Date("2026-08-02")), false));
-  test("identifica monitoramento vencido", () => assert.equal(monitoringBuckets("2026-08-01", new Date("2026-08-02")).expired, true));
-  test("identifica vencimento em 7 dias", () => assert.equal(monitoringBuckets("2026-08-07", new Date("2026-08-02")).in7, true));
-  test("identifica vencimento em 30 dias", () => assert.equal(monitoringBuckets("2026-08-25", new Date("2026-08-02")).in30, true));
+  test("identifica monitoramento vencido", () => assert.equal(monitoringBuckets("2026-08-01", new Date("2026-08-02T12:00:00")).expired, true));
+  test("identifica vencimento em 7 dias", () => assert.equal(monitoringBuckets("2026-08-07", new Date("2026-08-02T12:00:00")).in7, true));
+  test("identifica vencimento em 30 dias", () => assert.equal(monitoringBuckets("2026-08-25", new Date("2026-08-02T12:00:00")).in30, true));
   test("novo, em análise e acompanhado contam como ativos", () => ["novo", "em_analise", "acompanhado"].forEach(monitoring_status => assert.equal(isActiveMonitoring(alert({ monitoring_status })), true)));
   test("resolvido e ignorado não contam como ativos", () => ["resolvido", "ignorado"].forEach(monitoring_status => assert.equal(isActiveMonitoring(alert({ monitoring_status })), false)));
   test("métricas usam relevant_at para vencidos e próximos 30 dias", () => assert.deepEqual(monitoringReportMetrics([alert({ relevant_at:"2026-08-01" }), alert({ relevant_at:"2026-08-25" })], new Date("2026-08-17")), { active:2, overdue:1, in30:1 }));

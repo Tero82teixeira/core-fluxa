@@ -81,6 +81,13 @@ export function describeError(error: unknown, context: Ctx = "salvar"): string {
     return "O responsável escolhido não é um membro ativo desta empresa.";
   if (message.includes("task_due_before_start"))
     return "O prazo final não pode ser anterior à data inicial.";
+  if (message.includes("amount_below_paid_total"))
+    return "O valor do lançamento não pode ser menor que o total já pago.";
+  if (message.includes("transaction_not_editable"))
+    return "Somente lançamentos pendentes, atrasados ou parcialmente pagos podem ser editados.";
+  if (message.includes("description_required")) return "Informe a descrição do lançamento.";
+  if (message.includes("invalid_amount")) return "Informe um valor financeiro maior que zero.";
+  if (message.includes("due_date_required")) return "Informe a data de vencimento.";
   if (message.includes("not_allowed")) return "Você não possui permissão para esta ação.";
   if (message.includes("invite_not_found")) return "Convite não encontrado.";
   if (message.includes("invite_expired")) return "Este convite expirou. Peça um novo convite.";
