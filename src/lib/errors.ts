@@ -91,6 +91,10 @@ export function describeError(error: unknown, context: Ctx = "salvar"): string {
     return "Somente lançamentos pagos ou cancelados podem ser arquivados.";
   if (message.includes("transaction_not_restorable"))
     return "Somente lançamentos pagos ou cancelados que estejam arquivados podem ser restaurados.";
+  if (message.includes("category_not_restorable"))
+    return "Somente categorias arquivadas podem ser restauradas.";
+  if (message.includes("account_not_restorable"))
+    return "Somente contas arquivadas podem ser restauradas.";
   if (message.includes("description_required")) return "Informe a descrição do lançamento.";
   if (message.includes("invalid_amount")) return "Informe um valor financeiro maior que zero.";
   if (message.includes("due_date_required")) return "Informe a data de vencimento.";

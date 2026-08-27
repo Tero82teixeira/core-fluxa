@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive, Loader2, Pencil, Plus, Power } from "lucide-react";
+import { Archive, ArchiveRestore, Loader2, Pencil, Plus, Power } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { describeError } from "@/lib/errors";
 import { brl, type FinancialAccount, type FinancialCategory } from "@/lib/finance";
 
 type Action = {
@@ -47,8 +48,16 @@ const accountTypes = [
 const categoryLabel = Object.fromEntries(categoryTypes);
 const accountLabel = Object.fromEntries(accountTypes);
 const structureRpcs = {
-  category: { active: "set_financial_category_active", archive: "archive_financial_category" },
-  account: { active: "set_financial_account_active", archive: "archive_financial_account" },
+  category: {
+    active: "set_financial_category_active",
+    archive: "archive_financial_category",
+    restore: "restore_financial_category",
+  },
+  account: {
+    active: "set_financial_account_active",
+    archive: "archive_financial_account",
+    restore: "restore_financial_account",
+  },
 } as const;
 
 async function run(action: Action, rpc: string, payload: Record<string, unknown>, success: string) {
@@ -57,7 +66,7 @@ async function run(action: Action, rpc: string, payload: Record<string, unknown>
     toast.success(success);
     return true;
   } catch (error) {
-    toast.error(error instanceof Error ? error.message : "Não foi possível concluir a ação.");
+    toast.error(describeError(error));
     return false;
   }
 }
@@ -71,16 +80,31 @@ export function CategoriesManager({
   editable: boolean;
   action: Action;
 }) {
-  const visible = rows.filter((row) => !row.archived_at);
+  const [showArchived, setShowArchived] = useState(false);
+  const visible = rows.filter((row) => Boolean(row.archived_at) === showArchived);
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-3">
         <CardTitle>Categorias</CardTitle>
-        {editable && <CategoryDialog action={action} />}
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            type="button"
+            variant={showArchived ? "secondary" : "outline"}
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            <ArchiveRestore />
+            {showArchived ? "Ver ativas" : "Arquivadas"}
+          </Button>
+          {!showArchived && editable && <CategoryDialog action={action} />}
+        </div>
       </CardHeader>
       <CardContent>
         {!visible.length ? (
-          <p className="py-6 text-center text-muted-foreground">Nenhuma categoria cadastrada.</p>
+          <p className="py-6 text-center text-muted-foreground">
+            {showArchived
+              ? "Nenhuma categoria arquivada."
+              : "Nenhuma categoria cadastrada."}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-sm">
@@ -129,16 +153,29 @@ export function AccountsManager({
   editable: boolean;
   action: Action;
 }) {
-  const visible = rows.filter((row) => !row.archived_at);
+  const [showArchived, setShowArchived] = useState(false);
+  const visible = rows.filter((row) => Boolean(row.archived_at) === showArchived);
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-3">
         <CardTitle>Contas</CardTitle>
-        {editable && <AccountDialog action={action} />}
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            type="button"
+            variant={showArchived ? "secondary" : "outline"}
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            <ArchiveRestore />
+            {showArchived ? "Ver ativas" : "Arquivadas"}
+          </Button>
+          {!showArchived && editable && <AccountDialog action={action} />}
+        </div>
       </CardHeader>
       <CardContent>
         {!visible.length ? (
-          <p className="py-6 text-center text-muted-foreground">Nenhuma conta cadastrada.</p>
+          <p className="py-6 text-center text-muted-foreground">
+            {showArchived ? "Nenhuma conta arquivada." : "Nenhuma conta cadastrada."}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
@@ -400,6 +437,39 @@ function StructureActions({
       { id: row.id, confirmed: true },
       `${noun === "conta" ? "Conta" : "Categoria"} arquivada.`,
     );
+  const restore = () =>
+    run(
+      action,
+      rpcs.restore,
+      { id: row.id },
+      `${noun === "conta" ? "Conta" : "Categoria"} restaurada como inativa.`,
+    );
+  if (row.archived_at) {
+    return (
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button size="sm" variant="outline" disabled={action.isPending}>
+            <ArchiveRestore />
+            Restaurar
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restaurar {noun}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              “{row.name}” voltará à lista como inativa. Os vínculos e{" "}
+              {noun === "conta" ? "saldos" : "lançamentos"} anteriores serão preservados.
+              Ative depois somente se quiser usá-la em novos lançamentos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={restore}>Confirmar restauração</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
   return (
     <div className="flex flex-wrap gap-2">
       {kind === "category" ? (
