@@ -3532,6 +3532,10 @@ export type Database = {
         Args: { _notes: string; _organization_id: string; _payment_id: string }
         Returns: string
       }
+      restore_financial_transaction: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
       run_temporal_automation_cycle: {
         Args: never
         Returns: Json
