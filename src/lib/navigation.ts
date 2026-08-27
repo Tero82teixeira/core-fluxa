@@ -10,6 +10,7 @@ import {
   MessagesSquare,
   PieChart,
   Settings,
+  ShieldCheck,
   Sparkles,
   Users,
   Wallet,
@@ -26,6 +27,7 @@ export type NavItem = {
   description: string;
   ready: boolean;
   group: NavGroupKey;
+  platformOnly?: boolean;
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -43,6 +45,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/configuracoes", label: "Configurações", icon: Settings, description: "Workspace e preferências", ready: true, group: "sistema" },
   { to: "/ajuda", label: "Ajuda e suporte", icon: LifeBuoy, description: "Documentação e atendimento", ready: true, group: "sistema" },
   { to: "/novidades", label: "Novidades", icon: Sparkles, description: "Entregas e melhorias", ready: true, group: "sistema" },
+  { to: "/administracao", label: "Administração", icon: ShieldCheck, description: "Empresas e testes comerciais", ready: true, group: "sistema", platformOnly: true },
 ];
 
 export const NAV_GROUPS: { key: NavGroupKey; label: string }[] = [

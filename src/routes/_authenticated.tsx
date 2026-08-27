@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
+import { CommercialAccessBlocked } from "@/components/commercial/commercial-access";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 import { useAuth } from "@/lib/auth";
 
@@ -77,7 +78,7 @@ function WorkspaceContent() {
 }
 
 function AuthenticatedLayout() {
-  const { status: authStatus, signOut } = useAuth();
+  const { status: authStatus, signOut, signingOut } = useAuth();
   const navigate = useNavigate();
   const handleSignOut = () => void signOut();
 
@@ -98,17 +99,39 @@ function AuthenticatedLayout() {
   return (
     <WorkspaceProvider>
       <OnboardingGate />
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
-          <AppSidebar onSignOut={handleSignOut} />
-          <SidebarInset className="min-w-0">
-            <AppHeader onSignOut={handleSignOut} />
-            <main className="min-w-0 flex-1">
-              <WorkspaceContent />
-            </main>
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
+      <CommercialWorkspace onSignOut={handleSignOut} signingOut={signingOut} />
     </WorkspaceProvider>
+  );
+}
+
+function CommercialWorkspace({
+  onSignOut,
+  signingOut,
+}: {
+  onSignOut: () => void;
+  signingOut: boolean;
+}) {
+  const { status, onboardingCompleted, commercialAccess } = useWorkspace();
+  if (status === "ready" && onboardingCompleted && !commercialAccess.allowed) {
+    return (
+      <CommercialAccessBlocked
+        access={commercialAccess}
+        onSignOut={onSignOut}
+        signingOut={signingOut}
+      />
+    );
+  }
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <AppSidebar onSignOut={onSignOut} />
+        <SidebarInset className="min-w-0">
+          <AppHeader onSignOut={onSignOut} />
+          <main className="min-w-0 flex-1">
+            <WorkspaceContent />
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }

@@ -2115,6 +2115,60 @@ export type Database = {
           },
         ]
       }
+      organization_subscriptions: {
+        Row: {
+          created_at: string
+          current_period_ends_at: string | null
+          notes: string | null
+          organization_id: string
+          plan_code: string
+          status: string
+          trial_ends_at: string | null
+          trial_started_at: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_period_ends_at?: string | null
+          notes?: string | null
+          organization_id: string
+          plan_code?: string
+          status?: string
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_period_ends_at?: string | null
+          notes?: string | null
+          organization_id?: string
+          plan_code?: string
+          status?: string
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_subscriptions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           archived_at: string | null
@@ -2195,6 +2249,39 @@ export type Database = {
           module?: string
         }
         Relationships: []
+      }
+      platform_admins: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_admins_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_admins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       process_checklist_items: {
         Row: {
@@ -3076,6 +3163,7 @@ export type Database = {
       }
     }
     Functions: {
+      assert_platform_admin: { Args: never; Returns: undefined }
       accept_invitation: {
         Args: { _token: string }
         Returns: {
@@ -3435,6 +3523,33 @@ export type Database = {
         }[]
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
+      list_platform_organizations: {
+        Args: never
+        Returns: {
+          client_count: number
+          current_period_ends_at: string
+          member_count: number
+          notes: string
+          organization_created_at: string
+          organization_id: string
+          organization_name: string
+          owner_email: string
+          owner_name: string
+          plan_code: string
+          subscription_status: string
+          trial_ends_at: string
+          trial_started_at: string
+        }[]
+      }
+      manage_platform_organization: {
+        Args: {
+          _action: string
+          _days?: number
+          _organization_id: string
+        }
+        Returns: string
+      }
       mark_all_notifications_read: {
         Args: { _organization: string }
         Returns: number
