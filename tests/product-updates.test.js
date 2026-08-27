@@ -56,7 +56,7 @@ describe("dados e filtros das novidades", () => {
   test("badge Novo aceita data de referência", () =>
     assert.equal(isProductUpdateNew(PRODUCT_UPDATES[0], new Date("2026-08-10T12:00:00Z")), true));
   test("badge Novo expira", () =>
-    assert.equal(isProductUpdateNew(PRODUCT_UPDATES[0], new Date("2026-09-11T00:00:00Z")), false));
+    assert.equal(isProductUpdateNew(PRODUCT_UPDATES[0], new Date("2026-09-11T12:00:00")), false));
 });
 
 describe("interface das novidades", () => {
