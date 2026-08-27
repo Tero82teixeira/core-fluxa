@@ -2118,8 +2118,8 @@ export type Database = {
       organization_subscriptions: {
         Row: {
           created_at: string
-          current_period_ends_at: string
-          notes: string
+          current_period_ends_at: string | null
+          notes: string | null
           organization_id: string
           plan_code: string
           status: string
@@ -3528,9 +3528,9 @@ export type Database = {
         Args: never
         Returns: {
           client_count: number
-          current_period_ends_at: string | null
+          current_period_ends_at: string
           member_count: number
-          notes: string | null
+          notes: string
           organization_created_at: string
           organization_id: string
           organization_name: string
