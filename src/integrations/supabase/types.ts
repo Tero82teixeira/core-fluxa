@@ -3231,10 +3231,10 @@ export type Database = {
       }
       update_organization_onboarding: {
         Args: {
-          _company?: Json | null
+          _company?: Json
           _complete?: boolean
           _organization_id: string
-          _settings?: Json | null
+          _settings?: Json
           _step: number
         }
         Returns: Json
