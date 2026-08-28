@@ -7,12 +7,31 @@ export type CommercialOrganization = {
 };
 
 const DAY_MS = 86_400_000;
+const CLOCK_SKEW_TOLERANCE_MS = 5 * 60_000;
 
 export function trialDaysRemaining(trialEndsAt: string | null, now = new Date()): number | null {
   if (!trialEndsAt) return null;
   const end = new Date(trialEndsAt).getTime();
   if (!Number.isFinite(end)) return 0;
-  return Math.max(0, Math.ceil((end - now.getTime()) / DAY_MS));
+  const remainingMs = end - now.getTime();
+  if (remainingMs <= 0) return 0;
+
+  const roundedUpDays = Math.ceil(remainingMs / DAY_MS);
+  const overflowMs = remainingMs % DAY_MS;
+
+  // O prazo nasce no relógio do banco. Se o dispositivo estiver poucos
+  // minutos atrasado, 14 dias podem parecer 14 dias + alguns segundos e o
+  // arredondamento exibiria 15. A tolerância só remove esse excesso sobre um
+  // dia inteiro; prazos menores que um dia continuam mostrando 1 até vencer.
+  if (
+    roundedUpDays > 1 &&
+    overflowMs > 0 &&
+    overflowMs <= CLOCK_SKEW_TOLERANCE_MS
+  ) {
+    return roundedUpDays - 1;
+  }
+
+  return roundedUpDays;
 }
 
 export function effectiveCommercialStatus(

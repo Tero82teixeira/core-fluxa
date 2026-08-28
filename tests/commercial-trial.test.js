@@ -14,6 +14,11 @@ test("calcula dias de teste arredondando qualquer fração para cima", () => {
   assert.equal(trialDaysRemaining("2026-09-11T12:00:00.000Z", now), 14);
 });
 
+test("tolera pequeno atraso do relógio do dispositivo sem exibir um dia extra", () => {
+  assert.equal(trialDaysRemaining("2026-09-11T12:00:01.000Z", now), 14);
+  assert.equal(trialDaysRemaining("2026-08-28T12:01:00.000Z", now), 1);
+});
+
 test("deriva vencimento sem alterar o status persistido", () => {
   assert.equal(
     effectiveCommercialStatus({ commercial_status: "trial", trial_ends_at: "2026-08-28T12:00:00.000Z" }, now),
