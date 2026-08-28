@@ -4,6 +4,7 @@ import type { Session, User } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole, PermissionKey } from "@/lib/domain";
+import type { CommercialStatus } from "@/lib/commercial-trial";
 
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null);
@@ -40,6 +41,9 @@ export type Membership = {
     onboarding_completed: boolean;
     onboarding_completed_at: string | null;
     onboarding_step: number;
+    commercial_status: CommercialStatus;
+    trial_started_at: string | null;
+    trial_ends_at: string | null;
     organization_settings: {
       zip_code: string | null;
       street: string | null;
@@ -63,7 +67,7 @@ export function useMemberships(user: User | null) {
       const { data, error } = await supabase
         .from("organization_members")
         .select(
-          "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, document, phone, whatsapp, onboarding_completed, onboarding_completed_at, onboarding_step, organization_settings(zip_code, street, number, district, city, state, main_services, clients_range, employees_range))",
+          "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, document, phone, whatsapp, onboarding_completed, onboarding_completed_at, onboarding_step, commercial_status, trial_started_at, trial_ends_at, organization_settings(zip_code, street, number, district, city, state, main_services, clients_range, employees_range))",
         )
         .eq("user_id", user?.id ?? "")
         .eq("is_active", true)

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
+import { CommercialAccessBlocked } from "@/components/commercial-access-blocked";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 import { useAuth } from "@/lib/auth";
 
@@ -21,16 +22,19 @@ export const Route = createFileRoute("/_authenticated")({
 
 /** Leva o usuário sem empresa (ou com onboarding pendente) para a configuração. */
 function OnboardingGate() {
-  const { status, onboardingCompleted } = useWorkspace();
+  const { status, onboardingCompleted, commercialAccess, platformAdmin } = useWorkspace();
   const location = useLocation();
   const navigate = useNavigate();
   const onOnboarding = location.pathname.startsWith("/onboarding");
+  const onPlatformAdministration = location.pathname.startsWith("/administracao-plataforma");
 
   useEffect(() => {
     if (status !== "ready") return;
+    if (!commercialAccess) return;
+    if (platformAdmin && onPlatformAdministration) return;
     if (!onboardingCompleted && !onOnboarding) navigate({ to: "/onboarding", replace: true });
     if (onboardingCompleted && onOnboarding) navigate({ to: "/central", replace: true });
-  }, [status, onboardingCompleted, onOnboarding, navigate]);
+  }, [status, onboardingCompleted, commercialAccess, platformAdmin, onOnboarding, onPlatformAdministration, navigate]);
 
   return null;
 }
@@ -70,10 +74,31 @@ function WorkspaceRecovery() {
   );
 }
 
-function WorkspaceContent() {
-  const { status } = useWorkspace();
+function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
+  const { status, commercialAccess, platformAdmin } = useWorkspace();
+  const pathname = useLocation({ select: (location) => location.pathname });
   if (status === "error") return <WorkspaceRecovery />;
-  return <Outlet />;
+  if (
+    status === "ready" &&
+    !commercialAccess &&
+    !(platformAdmin && pathname.startsWith("/administracao-plataforma"))
+  ) {
+    return <CommercialAccessBlocked onSignOut={onSignOut} />;
+  }
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <AppSidebar onSignOut={onSignOut} />
+        <SidebarInset className="min-w-0">
+          <AppHeader onSignOut={onSignOut} />
+          <main className="min-w-0 flex-1">
+            <Outlet />
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
+  );
 }
 
 function AuthenticatedLayout() {
@@ -98,17 +123,7 @@ function AuthenticatedLayout() {
   return (
     <WorkspaceProvider>
       <OnboardingGate />
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-background">
-          <AppSidebar onSignOut={handleSignOut} />
-          <SidebarInset className="min-w-0">
-            <AppHeader onSignOut={handleSignOut} />
-            <main className="min-w-0 flex-1">
-              <WorkspaceContent />
-            </main>
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
+      <WorkspaceContent onSignOut={handleSignOut} />
     </WorkspaceProvider>
   );
 }
