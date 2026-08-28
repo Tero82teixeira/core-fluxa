@@ -131,48 +131,47 @@ function Onboarding() {
     return Object.keys(next).length === 0;
   };
 
+  const updateOnboarding = async ({
+    step,
+    company: companyPayload = null,
+    settings = null,
+    complete = false,
+  }: {
+    step: number;
+    company?: Record<string, string | null> | null;
+    settings?: Record<string, string | null> | null;
+    complete?: boolean;
+  }) => {
+    const id = ensureOrganization();
+    const { data, error: updateError } = await supabase.rpc("update_organization_onboarding", {
+      _organization_id: id,
+      _step: step,
+      _company: companyPayload,
+      _settings: settings,
+      _complete: complete,
+    });
+    if (updateError) throw updateError;
+    if (!data) throw new Error("O progresso atualizado não foi retornado.");
+    return data;
+  };
+
   const saveCompany = async () => {
     if (!company.trade_name.trim()) {
       setError("Informe o nome fantasia da empresa.");
       return false;
     }
     if (!validateCompany()) return false;
-    const id = await ensureOrganization();
-    if (!id) throw new Error("A organização vinculada não foi encontrada.");
     const payload = {
       trade_name: company.trade_name.trim(),
       legal_name: company.legal_name.trim() || company.trade_name.trim(),
       document: company.document.trim() || null,
-      document_digits: digits(company.document) || null,
       phone: digits(company.phone) || null,
       whatsapp: digits(company.whatsapp) || null,
-      onboarding_step: 1,
     };
 
-    const { data: updated, error: updateError } = await supabase
-      .from("organizations")
-      .update(payload)
-      .eq("id", id)
-      .select("id, trade_name, legal_name, document, phone, whatsapp, onboarding_step")
-      .single();
-    if (updateError) throw updateError;
-    if (!updated?.id) throw new Error("A empresa atualizada não foi retornada.");
-
-    const { error: portalError } = await supabase
-      .from("organization_settings")
-      .upsert({ organization_id: id, portal_name: payload.trade_name }, { onConflict: "organization_id" });
-    if (portalError) throw portalError;
+    await updateOnboarding({ step: 1, company: payload });
 
     await refreshWorkspace();
-    return true;
-  };
-
-  const saveSettings = async (values: Record<string, string | null>) => {
-    const id = await ensureOrganization();
-    const { error: settingsError } = await supabase
-      .from("organization_settings")
-      .upsert({ organization_id: id, ...values } as never, { onConflict: "organization_id" });
-    if (settingsError) throw settingsError;
     return true;
   };
 
@@ -185,39 +184,30 @@ function Onboarding() {
         if (!(await saveCompany())) return;
       }
       if (step === 1) {
-        await saveSettings({
-          zip_code: place.zip_code.trim() || null,
-          street: place.street.trim() || null,
-          number: place.number.trim() || null,
-          district: place.district.trim() || null,
-          city: place.city.trim() || null,
-          state: place.state.trim().toUpperCase() || null,
+        await updateOnboarding({
+          step: 2,
+          settings: {
+            zip_code: place.zip_code.trim() || null,
+            street: place.street.trim() || null,
+            number: place.number.trim() || null,
+            district: place.district.trim() || null,
+            city: place.city.trim() || null,
+            state: place.state.trim().toUpperCase() || null,
+          },
         });
-        const { error: stepError } = await supabase
-          .from("organizations")
-          .update({ onboarding_step: 2 })
-          .eq("id", await ensureOrganization());
-        if (stepError) throw stepError;
       }
       if (step === 2) {
-        await saveSettings({
-          main_services: operation.main_services.trim() || null,
-          clients_range: operation.clients_range.trim() || null,
-          employees_range: operation.employees_range.trim() || null,
+        await updateOnboarding({
+          step: 3,
+          settings: {
+            main_services: operation.main_services.trim() || null,
+            clients_range: operation.clients_range.trim() || null,
+            employees_range: operation.employees_range.trim() || null,
+          },
         });
-        const { error: stepError } = await supabase
-          .from("organizations")
-          .update({ onboarding_step: 3 })
-          .eq("id", await ensureOrganization());
-        if (stepError) throw stepError;
       }
       if (step === 3) {
-        const id = await ensureOrganization();
-        const { error: finishError } = await supabase
-          .from("organizations")
-          .update({ onboarding_completed: true, onboarding_completed_at: new Date().toISOString(), onboarding_step: 3 })
-          .eq("id", id);
-        if (finishError) throw finishError;
+        await updateOnboarding({ step: 3, complete: true });
         await refreshWorkspace();
         toast.success("Empresa configurada. Bem-vindo à Central de Comando.");
         navigate({ to: "/central" });
