@@ -3229,6 +3229,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_organization_onboarding: {
+        Args: {
+          _company?: Json | null
+          _complete?: boolean
+          _organization_id: string
+          _settings?: Json | null
+          _step: number
+        }
+        Returns: Json
+      }
       cancel_financial_transaction: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
