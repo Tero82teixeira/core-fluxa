@@ -16,12 +16,18 @@ import { useRolePermissions, type Membership } from "@/hooks/use-session";
 import type { AppRole, PermissionKey } from "@/lib/domain";
 import { resolveSessionMembership } from "@/lib/access-control";
 import { readWorkspacePreference, writeWorkspacePreference } from "@/lib/workspace-preference";
+import {
+  effectiveCommercialStatus,
+  hasCommercialAccess,
+  trialDaysRemaining,
+  type EffectiveCommercialStatus,
+} from "@/lib/commercial-trial";
 
 const INVITATION_STORAGE_KEY = "fluxa-pending-invitation";
 const WORKSPACE_TIMEOUT_MS = 12_000;
 
 const MEMBERSHIP_SELECT =
-  "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, document, phone, whatsapp, onboarding_completed, onboarding_completed_at, onboarding_step, organization_settings(zip_code, street, number, district, city, state, main_services, clients_range, employees_range))";
+  "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, document, phone, whatsapp, onboarding_completed, onboarding_completed_at, onboarding_step, commercial_status, trial_started_at, trial_ends_at, organization_settings(zip_code, street, number, district, city, state, main_services, clients_range, employees_range))";
 
 export type WorkspaceStatus = "idle" | "loading" | "bootstrapping" | "ready" | "error";
 
@@ -46,6 +52,11 @@ type WorkspaceContextValue = {
   role: AppRole | null;
   onboardingCompleted: boolean;
   onboardingStep: number;
+  commercialStatus: EffectiveCommercialStatus | null;
+  trialEndsAt: string | null;
+  trialDaysRemaining: number | null;
+  commercialAccess: boolean;
+  platformAdmin: boolean;
   bootstrapError: string | null;
   can: (permission: PermissionKey) => boolean;
   switchWorkspace: (organizationId: string) => void;
@@ -111,6 +122,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile>(null);
   const [list, setList] = useState<Membership[]>([]);
+  const [platformAdmin, setPlatformAdmin] = useState(false);
   const [selection, setSelection] = useState<{ userId: string; organizationId: string | null }>(
     () => ({
       userId: userId ?? "",
@@ -138,7 +150,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const fetchWorkspace = useCallback(async (currentUserId: string) => {
-    const [profileResult, membershipsResult] = await Promise.all([
+    const [profileResult, membershipsResult, platformAdminResult] = await Promise.all([
       supabase
         .from("profiles")
         .select("id, full_name, email, avatar_url")
@@ -150,9 +162,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         .eq("user_id", currentUserId)
         .eq("is_active", true)
         .order("created_at", { ascending: true }),
+      supabase.rpc("is_platform_admin"),
     ]);
     if (profileResult.error) throw profileResult.error;
     if (membershipsResult.error) throw membershipsResult.error;
+    if (platformAdminResult.error) throw platformAdminResult.error;
 
     const nextProfile = profileResult.data as Profile;
     const nextList = (membershipsResult.data ?? []) as unknown as Membership[];
@@ -162,7 +176,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!active) throw new Error("BOOTSTRAP_MEMBERSHIP_NOT_FOUND");
     if (!active.organizations) throw new Error("BOOTSTRAP_ORGANIZATION_NOT_FOUND");
 
-    return { profile: nextProfile, list: nextList };
+    return { profile: nextProfile, list: nextList, platformAdmin: Boolean(platformAdminResult.data) };
   }, []);
 
   /** Carregamento completo: bootstrap (uma vez) + consultas + validação. */
@@ -204,6 +218,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
           setProfile(next.profile);
           setList(next.list);
+          setPlatformAdmin(next.platformAdmin);
           setStatus("ready");
           console.info("[Workspace] ready");
         } catch (caught) {
@@ -237,6 +252,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setError(null);
       setProfile(null);
       setList([]);
+      setPlatformAdmin(false);
       return;
     }
     setProfile(null);
@@ -251,6 +267,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const next = await withTimeout(fetchWorkspace(userId), WORKSPACE_TIMEOUT_MS);
       setProfile(next.profile);
       setList(next.list);
+      setPlatformAdmin(next.platformAdmin);
       setStatus("ready");
     } catch (caught) {
       console.error("[Workspace] falha ao atualizar", {
@@ -275,6 +292,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const value = useMemo<WorkspaceContextValue>(() => {
     const granted = new Set(permissions.data ?? []);
     const ready = status === "ready" && Boolean(membership?.organizations);
+    const commercialOrganization = membership?.organizations ?? null;
+    const commercialStatus = commercialOrganization
+      ? effectiveCommercialStatus(commercialOrganization)
+      : null;
 
     return {
       status,
@@ -289,6 +310,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       role: membership?.role ?? null,
       onboardingCompleted: Boolean(membership?.organizations?.onboarding_completed_at),
       onboardingStep: membership?.organizations?.onboarding_step ?? 0,
+      commercialStatus,
+      trialEndsAt: commercialOrganization?.trial_ends_at ?? null,
+      trialDaysRemaining:
+        commercialOrganization?.commercial_status === "trial"
+          ? trialDaysRemaining(commercialOrganization.trial_ends_at)
+          : null,
+      commercialAccess: commercialOrganization ? hasCommercialAccess(commercialOrganization) : false,
+      platformAdmin,
       bootstrapError:
         status === "error" ? (error ?? "Não foi possível configurar seu acesso.") : null,
       can: (permission) => granted.has(permission),
@@ -313,6 +342,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     profile,
     list,
     membership,
+    platformAdmin,
     refreshWorkspace,
     retryWorkspace,
   ]);

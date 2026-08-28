@@ -2118,6 +2118,7 @@ export type Database = {
       organizations: {
         Row: {
           archived_at: string | null
+          commercial_status: string
           created_at: string
           created_by: string | null
           document: string | null
@@ -2132,12 +2133,15 @@ export type Database = {
           sample_data_at: string | null
           slug: string | null
           trade_name: string | null
+          trial_ends_at: string | null
+          trial_started_at: string | null
           updated_at: string
           website: string | null
           whatsapp: string | null
         }
         Insert: {
           archived_at?: string | null
+          commercial_status?: string
           created_at?: string
           created_by?: string | null
           document?: string | null
@@ -2152,12 +2156,15 @@ export type Database = {
           sample_data_at?: string | null
           slug?: string | null
           trade_name?: string | null
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
           updated_at?: string
           website?: string | null
           whatsapp?: string | null
         }
         Update: {
           archived_at?: string | null
+          commercial_status?: string
           created_at?: string
           created_by?: string | null
           document?: string | null
@@ -2172,9 +2179,29 @@ export type Database = {
           sample_data_at?: string | null
           slug?: string | null
           trade_name?: string | null
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
           updated_at?: string
           website?: string | null
           whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      platform_admins: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -3170,6 +3197,37 @@ export type Database = {
           profile_id: string
           role: Database["public"]["Enums"]["app_role"]
         }[]
+      }
+      has_org_membership: { Args: { _org: string }; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
+      organization_has_commercial_access: {
+        Args: { _org: string }
+        Returns: boolean
+      }
+      platform_organizations: {
+        Args: never
+        Returns: {
+          commercial_status: string
+          created_at: string
+          days_remaining: number
+          effective_status: string
+          legal_name: string
+          onboarding_completed: boolean
+          organization_id: string
+          owner_email: string
+          owner_name: string
+          trade_name: string
+          trial_ends_at: string
+          trial_started_at: string
+        }[]
+      }
+      update_organization_commercial_status: {
+        Args: {
+          _action: string
+          _days?: number
+          _organization_id: string
+        }
+        Returns: undefined
       }
       cancel_financial_transaction: {
         Args: { _organization_id: string; _payload: Json }

@@ -53,7 +53,16 @@ import { GlobalSearch } from "@/components/global-search";
 export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { displayName, memberships, membership, switchWorkspace, organizationId } = useWorkspace();
+  const {
+    displayName,
+    memberships,
+    membership,
+    switchWorkspace,
+    organizationId,
+    commercialStatus,
+    trialDaysRemaining,
+    platformAdmin,
+  } = useWorkspace();
   const [searchOpen, setSearchOpen] = useState(false);
 
   const current = NAV_ITEMS.find(
@@ -126,6 +135,11 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
+          {commercialStatus === "trial" && trialDaysRemaining !== null && (
+            <Badge variant="outline" className="hidden whitespace-nowrap sm:inline-flex">
+              Teste: {trialDaysRemaining} {trialDaysRemaining === 1 ? "dia restante" : "dias restantes"}
+            </Badge>
+          )}
           <Button
             variant="outline"
             onClick={() => setSearchOpen(true)}
@@ -279,6 +293,11 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
               <DropdownMenuItem onSelect={() => navigate({ to: "/ajuda" })}>
                 Ajuda e suporte
               </DropdownMenuItem>
+              {platformAdmin && (
+                <DropdownMenuItem onSelect={() => navigate({ to: "/administracao-plataforma" })}>
+                  Administração da plataforma
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={onSignOut}>Sair da conta</DropdownMenuItem>
             </DropdownMenuContent>
