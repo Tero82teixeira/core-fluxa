@@ -23,7 +23,7 @@ SELECT ok(has_table_privilege('authenticated', relation, privilege),
   'authenticated keeps ' || privilege || ' on ' || relation)
 FROM (VALUES
   ('public.profiles', 'SELECT'), ('public.profiles', 'INSERT'), ('public.profiles', 'UPDATE'),
-  ('public.organizations', 'SELECT'), ('public.organizations', 'UPDATE'),
+  ('public.organizations', 'SELECT'),
   ('public.organization_members', 'SELECT'),
   ('public.permissions', 'SELECT'), ('public.role_permissions', 'SELECT'),
   ('public.process_stages', 'SELECT'), ('public.process_stages', 'INSERT'), ('public.process_stages', 'UPDATE'), ('public.process_stages', 'DELETE'),
@@ -43,6 +43,7 @@ FROM (VALUES
   ('public.permissions', 'INSERT'), ('public.permissions', 'UPDATE'), ('public.permissions', 'DELETE'),
   ('public.role_permissions', 'INSERT'), ('public.role_permissions', 'UPDATE'), ('public.role_permissions', 'DELETE'),
   ('public.audit_logs', 'INSERT'), ('public.audit_logs', 'UPDATE'), ('public.audit_logs', 'DELETE'),
+  ('public.organizations', 'UPDATE'),
   ('public.financial_transactions', 'INSERT'), ('public.financial_transactions', 'UPDATE'), ('public.financial_transactions', 'DELETE'),
   ('public.communication_threads', 'INSERT'), ('public.communication_threads', 'UPDATE'), ('public.communication_threads', 'DELETE')
 ) denied(relation, privilege);
