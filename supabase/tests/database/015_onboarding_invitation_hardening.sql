@@ -22,7 +22,7 @@ SELECT ok(NOT has_table_privilege('anon', 'public.organization_invitations', pri
 FROM unnest(ARRAY['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','TRIGGER','REFERENCES']) privilege;
 
 SELECT ok(has_table_privilege('authenticated', 'public.organizations', 'SELECT'), 'organizations SELECT remains');
-SELECT ok(has_table_privilege('authenticated', 'public.organizations', 'UPDATE'), 'organizations UPDATE remains');
+SELECT ok(NOT has_table_privilege('authenticated', 'public.organizations', 'UPDATE'), 'organizations UPDATE is mediated by reviewed RPCs');
 SELECT ok(has_table_privilege('authenticated', 'public.organization_members', 'SELECT'), 'members SELECT remains');
 SELECT ok(has_table_privilege('authenticated', 'public.organization_invitations', 'SELECT'), 'invitations SELECT remains');
 SELECT ok(has_table_privilege('authenticated', 'public.profiles', 'SELECT'), 'profiles SELECT remains');
