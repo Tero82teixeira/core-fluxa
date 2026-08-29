@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   Eye,
@@ -24,7 +24,13 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 
+type AuthMode = "login" | "signup";
+type AuthSearch = { mode?: AuthMode };
+
 export const Route = createFileRoute("/entrar")({
+  validateSearch: (search: Record<string, unknown>): AuthSearch => ({
+    mode: search.mode === "signup" ? "signup" : undefined,
+  }),
   head: () => ({
 
     meta: [
@@ -62,8 +68,9 @@ const SIGNUP_SUCCESS_SUBTITLE = "Estamos levando você para a configuração da 
 
 function AuthPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const { status: authStatus, signIn, signUp, resendConfirmation } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<AuthMode>(search.mode ?? "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -78,6 +85,10 @@ function AuthPage() {
   useEffect(() => {
     if (authStatus === "authenticated") navigate({ to: "/central", replace: true });
   }, [authStatus, navigate]);
+
+  useEffect(() => {
+    setMode(search.mode ?? "login");
+  }, [search.mode]);
 
   useEffect(() => {
     try {
@@ -192,12 +203,15 @@ function AuthPage() {
           }}
         />
 
-        <div className="relative flex items-center gap-3">
+        <Link
+          to="/"
+          className="relative flex w-fit items-center gap-3 rounded-lg focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:outline-none"
+        >
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-foreground/12 ring-1 ring-primary-foreground/25">
             <Activity className="h-5 w-5" strokeWidth={2.2} />
           </span>
           <span className="font-display text-2xl font-semibold tracking-tight">FLUXA</span>
-        </div>
+        </Link>
 
         <div className="relative mt-8 lg:mt-0">
           <h1 className="font-display text-3xl font-semibold text-balance-tight sm:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
@@ -254,7 +268,7 @@ function AuthPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               {mode === "login"
                 ? "Entre para acessar sua central de operações."
-                : "Crie sua conta e comece a organizar sua operação."}
+                : "Crie sua conta e experimente todos os recursos por 14 dias."}
             </p>
 
             {errors.form && (
