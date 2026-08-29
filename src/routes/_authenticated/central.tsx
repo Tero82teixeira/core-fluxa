@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   BellRing,
   CalendarClock,
+  CheckCircle2,
   CheckSquare,
   FileClock,
   FileStack,
@@ -391,20 +392,27 @@ function Central() {
                 <span className={cn("absolute inset-x-0 top-0 h-1", visualTone[tone].accent)} aria-hidden />
                 <CardContent className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5">
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    <p className="min-h-8 text-xs leading-4 font-medium tracking-wide text-muted-foreground uppercase">
                       {label}
                     </p>
                     <strong
                       className={cn(
                         "mt-1 block text-3xl leading-none font-semibold tabular-nums",
-                        value === 0 ? visualTone[tone].value : levelValue[level],
+                        value === 0
+                          ? "text-emerald-700 dark:text-emerald-300"
+                          : levelValue[level],
                       )}
                     >
                       {value}
                     </strong>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                      {value === 0 ? "Tudo em dia" : "Requer acompanhamento"}
-                    </p>
+                    {value === 0 ? (
+                      <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                        <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
+                        Tudo em dia
+                      </p>
+                    ) : (
+                      <p className="mt-1.5 text-xs text-muted-foreground">Requer acompanhamento</p>
+                    )}
                   </div>
                   <span
                     className={cn(
