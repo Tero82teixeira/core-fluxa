@@ -25,6 +25,23 @@ import { ROLE } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+const NAV_ICON_TONE: Record<string, string> = {
+  "/central": "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
+  "/clientes": "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300",
+  "/processos": "bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300",
+  "/documentos": "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300",
+  "/monitoramento": "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300",
+  "/tarefas": "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",
+  "/comunicacao": "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300",
+  "/financeiro": "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300",
+  "/relatorios": "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/60 dark:text-fuchsia-300",
+  "/equipe": "bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300",
+  "/automacoes": "bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300",
+  "/configuracoes": "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  "/ajuda": "bg-lime-100 text-lime-700 dark:bg-lime-950/60 dark:text-lime-300",
+  "/novidades": "bg-pink-100 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300",
+};
+
 export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
@@ -78,13 +95,25 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
                   {items.map((item) => {
                     const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
                     const locked = !onboardingCompleted;
+                    const navIcon = collapsed ? (
+                      <item.icon className="size-4.5 shrink-0 text-sidebar-primary" aria-hidden />
+                    ) : (
+                      <span
+                        className={cn(
+                          "grid size-7 shrink-0 place-items-center rounded-lg transition-transform group-hover/menu-button:scale-105",
+                          NAV_ICON_TONE[item.to],
+                        )}
+                      >
+                        <item.icon className="size-4" aria-hidden />
+                      </span>
+                    );
                     return (
                       <SidebarMenuItem key={item.to}>
                         <SidebarMenuButton
                           asChild={!locked}
                           isActive={active}
                           tooltip={item.label}
-                          className="h-10 text-sm data-[active=true]:font-semibold"
+                          className="group/menu-button h-10 text-sm data-[active=true]:bg-sidebar-primary/10 data-[active=true]:font-semibold data-[active=true]:text-sidebar-primary"
                         >
                           {locked ? (
                             <span
@@ -94,12 +123,12 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
                                 )
                               }
                             >
-                              <item.icon className="size-4.5 shrink-0" aria-hidden />
+                              {navIcon}
                               <span className="truncate">{item.label}</span>
                             </span>
                           ) : (
                             <Link to={item.to} onClick={closeOnMobile} className="gap-3">
-                              <item.icon className="size-4.5 shrink-0" aria-hidden />
+                              {navIcon}
                               <span className="truncate">{item.label}</span>
                               {!item.ready && !collapsed && (
                                 <span className="ml-auto rounded-full border border-sidebar-border px-1.5 py-0.5 text-[0.65rem] leading-none text-muted-foreground">
