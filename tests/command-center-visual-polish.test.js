@@ -12,6 +12,16 @@ test("Central de Comando usa identidade visual profissional", () => {
   assert.match(central, /group-hover:-translate-y-0\.5/);
 });
 
+test("títulos dos indicadores ficam completos e estados zerados são positivos", () => {
+  for (const label of ["Retornos atrasados", "Documentos vencendo", "Próximos vencimentos"]) {
+    assert.ok(central.includes(`"${label}"`), label);
+  }
+  assert.match(central, /min-h-8 text-xs leading-4/);
+  assert.doesNotMatch(central, /<p className="truncate text-xs font-medium tracking-wide/);
+  assert.match(central, /text-emerald-700 dark:text-emerald-300/);
+  assert.match(central, /CheckCircle2/);
+});
+
 test("indicadores e blocos possuem cores e ícones por categoria", () => {
   for (const tone of ["blue", "amber", "rose", "orange", "cyan", "violet", "emerald", "indigo"]) {
     assert.match(central, new RegExp(`${tone}: \\{`));
