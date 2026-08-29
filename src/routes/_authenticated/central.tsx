@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
+  BellRing,
   CalendarClock,
   CheckSquare,
   FileClock,
   FileStack,
+  LayoutDashboard,
   MessageCircle,
   Plus,
   RefreshCw,
+  Sparkles,
   Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -45,9 +48,10 @@ const closed = ["finalizado", "arquivado", "cancelado"];
 const today = () => new Date().toISOString().slice(0, 10);
 
 type Level = "critico" | "atencao" | "normal";
+type VisualTone = "blue" | "amber" | "rose" | "orange" | "cyan" | "violet" | "emerald" | "indigo";
 const levelCard: Record<Level, string> = {
-  critico: "border-destructive/40 bg-destructive/[0.04]",
-  atencao: "border-warning/40 bg-warning/[0.05]",
+  critico: "ring-1 ring-destructive/15",
+  atencao: "ring-1 ring-warning/15",
   normal: "",
 };
 const levelValue: Record<Level, string> = {
@@ -59,6 +63,67 @@ const levelIcon: Record<Level, string> = {
   critico: "bg-destructive/10 text-destructive",
   atencao: "bg-warning/10 text-warning",
   normal: "bg-muted text-muted-foreground",
+};
+const visualTone: Record<
+  VisualTone,
+  { card: string; accent: string; icon: string; value: string; header: string }
+> = {
+  blue: {
+    card: "border-blue-200/70 bg-gradient-to-br from-blue-50/90 via-card to-card dark:border-blue-900/60 dark:from-blue-950/30",
+    accent: "bg-blue-500",
+    icon: "bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300",
+    value: "text-blue-700 dark:text-blue-300",
+    header: "bg-blue-50/80 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300",
+  },
+  amber: {
+    card: "border-amber-200/70 bg-gradient-to-br from-amber-50/90 via-card to-card dark:border-amber-900/60 dark:from-amber-950/30",
+    accent: "bg-amber-500",
+    icon: "bg-amber-100 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300",
+    value: "text-amber-700 dark:text-amber-300",
+    header: "bg-amber-50/80 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300",
+  },
+  rose: {
+    card: "border-rose-200/70 bg-gradient-to-br from-rose-50/90 via-card to-card dark:border-rose-900/60 dark:from-rose-950/30",
+    accent: "bg-rose-500",
+    icon: "bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300",
+    value: "text-rose-700 dark:text-rose-300",
+    header: "bg-rose-50/80 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300",
+  },
+  orange: {
+    card: "border-orange-200/70 bg-gradient-to-br from-orange-50/90 via-card to-card dark:border-orange-900/60 dark:from-orange-950/30",
+    accent: "bg-orange-500",
+    icon: "bg-orange-100 text-orange-700 dark:bg-orange-950/70 dark:text-orange-300",
+    value: "text-orange-700 dark:text-orange-300",
+    header: "bg-orange-50/80 text-orange-700 dark:bg-orange-950/30 dark:text-orange-300",
+  },
+  cyan: {
+    card: "border-cyan-200/70 bg-gradient-to-br from-cyan-50/90 via-card to-card dark:border-cyan-900/60 dark:from-cyan-950/30",
+    accent: "bg-cyan-500",
+    icon: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/70 dark:text-cyan-300",
+    value: "text-cyan-700 dark:text-cyan-300",
+    header: "bg-cyan-50/80 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300",
+  },
+  violet: {
+    card: "border-violet-200/70 bg-gradient-to-br from-violet-50/90 via-card to-card dark:border-violet-900/60 dark:from-violet-950/30",
+    accent: "bg-violet-500",
+    icon: "bg-violet-100 text-violet-700 dark:bg-violet-950/70 dark:text-violet-300",
+    value: "text-violet-700 dark:text-violet-300",
+    header: "bg-violet-50/80 text-violet-700 dark:bg-violet-950/30 dark:text-violet-300",
+  },
+  emerald: {
+    card: "border-emerald-200/70 bg-gradient-to-br from-emerald-50/90 via-card to-card dark:border-emerald-900/60 dark:from-emerald-950/30",
+    accent: "bg-emerald-500",
+    icon: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300",
+    value: "text-emerald-700 dark:text-emerald-300",
+    header: "bg-emerald-50/80 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300",
+  },
+  indigo: {
+    card: "border-indigo-200/70 bg-gradient-to-br from-indigo-50/90 via-card to-card dark:border-indigo-900/60 dark:from-indigo-950/30",
+    accent: "bg-indigo-500",
+    icon: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300",
+    value: "text-indigo-700 dark:text-indigo-300",
+    header: "bg-indigo-50/80 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300",
+  },
 };
 const priorityTone: Record<string, Tone> = {
   critica: "danger",
@@ -83,6 +148,8 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 function Block({
   title,
+  icon: Icon,
+  tone = "blue",
   href,
   action,
   loading,
@@ -91,6 +158,8 @@ function Block({
   children,
 }: {
   title: string;
+  icon: LucideIcon;
+  tone?: VisualTone;
   href: string;
   action: string;
   loading?: boolean;
@@ -99,9 +168,14 @@ function Block({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="min-w-0">
-      <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b pb-3">
-        <CardTitle className="truncate text-base">{title}</CardTitle>
+    <Card className="min-w-0 overflow-hidden border-border/70 shadow-sm">
+      <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b bg-muted/15 pb-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", visualTone[tone].header)}>
+            <Icon className="size-4.5" aria-hidden />
+          </span>
+          <CardTitle className="truncate text-base">{title}</CardTitle>
+        </div>
         <Button variant="ghost" size="sm" className="shrink-0" asChild>
           <Link to={href}>{action}</Link>
         </Button>
@@ -182,17 +256,18 @@ function Central() {
   );
   const org =
     membership?.organizations?.trade_name || membership?.organizations?.legal_name || "Organização";
-  const metrics: Array<[string, number, string, LucideIcon, Level]> = [
-    ["Tarefas atrasadas", taskStats.overdue, "/tarefas", AlertTriangle, "critico"],
+  const metrics: Array<[string, number, string, LucideIcon, Level, VisualTone]> = [
+    ["Tarefas atrasadas", taskStats.overdue, "/tarefas", AlertTriangle, "critico", "rose"],
     [
       "Tarefas para hoje",
       openTasks.filter((t) => t.due_at?.slice(0, 10) === today()).length,
       "/tarefas",
       CheckSquare,
       "atencao",
+      "amber",
     ],
-    ["Retornos atrasados", cs.overdue, "/comunicacao", MessageCircle, "atencao"],
-    ["Documentos vencendo", documents.data?.expiring ?? 0, "/documentos", FileClock, "atencao"],
+    ["Retornos atrasados", cs.overdue, "/comunicacao", MessageCircle, "atencao", "cyan"],
+    ["Documentos vencendo", documents.data?.expiring ?? 0, "/documentos", FileClock, "atencao", "indigo"],
   ];
   if (canProcesses)
     metrics.splice(
@@ -204,6 +279,7 @@ function Central() {
         "/processos",
         FileStack,
         "critico",
+        "violet",
       ],
       [
         "Alertas críticos",
@@ -211,6 +287,7 @@ function Central() {
         "/monitoramento",
         AlertTriangle,
         "critico",
+        "orange",
       ],
     );
   if (canFinance)
@@ -221,6 +298,7 @@ function Central() {
         "/financeiro",
         Wallet,
         "critico",
+        "rose",
       ],
       [
         "Próximos vencimentos",
@@ -228,6 +306,7 @@ function Central() {
         "/financeiro",
         CalendarClock,
         "normal",
+        "emerald",
       ],
     );
   const queries = [tasks, processes, monitoring, finance, communication, documents, activity];
@@ -245,9 +324,21 @@ function Central() {
   );
   return (
     <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
-      <header className="grid gap-4 border-b pb-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-        <div className="min-w-0">
-          <h1 className="page-title">Central de Comando</h1>
+      <header className="relative grid overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.10] via-card to-sky-500/[0.07] p-5 shadow-sm sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="pointer-events-none absolute -top-16 -right-12 size-48 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+        <div className="relative min-w-0">
+          <div className="flex items-center gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+              <LayoutDashboard className="size-5" aria-hidden />
+            </span>
+            <div>
+              <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-[0.12em] text-primary uppercase">
+                <Sparkles className="size-3.5" aria-hidden />
+                Visão operacional
+              </div>
+              <h1 className="page-title">Central de Comando</h1>
+            </div>
+          </div>
           <p className="page-subtitle mt-1">
             Visão geral da operação da organização: prazos, alertas e pendências em um só lugar.
           </p>
@@ -257,7 +348,7 @@ function Central() {
             <span className="text-muted-foreground">{formatDate(new Date().toISOString())}</span>
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+        <div className="relative mt-4 flex flex-wrap items-center gap-3 lg:mt-0 lg:justify-end">
           <p className="text-xs text-muted-foreground">
             Dados atualizados{" "}
             {updated
@@ -281,21 +372,23 @@ function Central() {
         aria-label="Indicadores principais"
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
       >
-        {metrics.map(([label, value, href, Icon, base]) => {
+        {metrics.map(([label, value, href, Icon, base, tone]) => {
           const level: Level = value === 0 ? "normal" : base;
           return (
             <Link
               key={label}
               to={href}
               aria-label={`${label}: ${value}. Abrir módulo`}
-              className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <Card
                 className={cn(
-                  "h-full transition-colors hover:border-primary",
+                  "relative h-full overflow-hidden shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg",
+                  visualTone[tone].card,
                   levelCard[level],
                 )}
               >
+                <span className={cn("absolute inset-x-0 top-0 h-1", visualTone[tone].accent)} aria-hidden />
                 <CardContent className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5">
                   <div className="min-w-0">
                     <p className="truncate text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -304,19 +397,19 @@ function Central() {
                     <strong
                       className={cn(
                         "mt-1 block text-3xl leading-none font-semibold tabular-nums",
-                        value === 0 ? "text-muted-foreground" : levelValue[level],
+                        value === 0 ? visualTone[tone].value : levelValue[level],
                       )}
                     >
                       {value}
                     </strong>
                     <p className="mt-1.5 text-xs text-muted-foreground">
-                      {value === 0 ? "Nada pendente" : "Requer acompanhamento"}
+                      {value === 0 ? "Tudo em dia" : "Requer acompanhamento"}
                     </p>
                   </div>
                   <span
                     className={cn(
                       "grid size-10 shrink-0 place-items-center rounded-lg",
-                      levelIcon[level],
+                      value === 0 ? visualTone[tone].icon : levelIcon[level],
                     )}
                   >
                     <Icon className="size-5" aria-hidden />
@@ -330,6 +423,8 @@ function Central() {
       {canProcesses && (
         <Block
           title="Precisa de atenção"
+          icon={AlertTriangle}
+          tone="rose"
           href="/monitoramento"
           action="Ver alertas"
           loading={monitoring.isLoading}
@@ -374,6 +469,8 @@ function Central() {
         {canProcesses && (
           <Block
             title="Alertas do Monitoramento"
+            icon={BellRing}
+            tone="orange"
             href="/monitoramento"
             action="Ver todos os alertas"
             loading={monitoring.isLoading}
@@ -402,6 +499,8 @@ function Central() {
         )}
         <Block
           title="Tarefas"
+          icon={CheckSquare}
+          tone="blue"
           href="/tarefas"
           action="Ver todas as tarefas"
           loading={tasks.isLoading}
@@ -437,6 +536,8 @@ function Central() {
         {canProcesses && (
           <Block
             title="Processos"
+            icon={FileStack}
+            tone="violet"
             href="/processos"
             action="Ver processos"
             loading={processes.isLoading}
@@ -473,6 +574,8 @@ function Central() {
         {canFinance && (
           <Block
             title="Financeiro"
+            icon={Wallet}
+            tone="emerald"
             href="/financeiro"
             action="Ver financeiro"
             loading={finance.isLoading}
@@ -515,6 +618,8 @@ function Central() {
         )}
         <Block
           title="Retornos e comunicação"
+          icon={MessageCircle}
+          tone="cyan"
           href="/comunicacao"
           action="Ver comunicação"
           loading={communication.isLoading}
@@ -547,6 +652,8 @@ function Central() {
         </Block>
         <Block
           title="Documentos"
+          icon={FileClock}
+          tone="indigo"
           href="/documentos"
           action="Ver documentos"
           loading={documents.isLoading}
@@ -563,6 +670,8 @@ function Central() {
         {canProcesses && (
           <Block
             title="Atividade recente"
+            icon={RefreshCw}
+            tone="blue"
             href="/processos"
             action="Ver processos"
             loading={activity.isLoading}
