@@ -13,6 +13,8 @@ import {
   ListChecks,
   Users,
   Loader2,
+  MailCheck,
+  Building2,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -32,12 +34,14 @@ export const Route = createFileRoute("/entrar")({
     mode: search.mode === "signup" ? "signup" : undefined,
   }),
   head: () => ({
-
     meta: [
       { title: "Entrar — FLUXA" },
       { name: "description", content: "Acesse a central inteligente de processos da sua empresa." },
       { property: "og:title", content: "Entrar — FLUXA" },
-      { property: "og:description", content: "Acesse a central inteligente de processos da sua empresa." },
+      {
+        property: "og:description",
+        content: "Acesse a central inteligente de processos da sua empresa.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -77,7 +81,12 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; form?: string }>({});
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    form?: string;
+  }>({});
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [validated, setValidated] = useState(false);
 
@@ -103,7 +112,8 @@ function AuthPage() {
     const next: typeof errors = {};
     if (mode === "signup" && !name.trim()) next.name = "Informe seu nome completo.";
     if (!email.trim()) next.email = "Informe seu e-mail.";
-    else if (!EMAIL_RE.test(email.trim())) next.email = "Digite um e-mail válido, como nome@empresa.com.br.";
+    else if (!EMAIL_RE.test(email.trim()))
+      next.email = "Digite um e-mail válido, como nome@empresa.com.br.";
     if (!password) next.password = "Informe sua senha.";
     else if (password.length < 6) next.password = "A senha deve ter pelo menos 6 caracteres.";
     setErrors(next);
@@ -188,7 +198,6 @@ function AuthPage() {
     }
   };
 
-
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
       {/* Área institucional */}
@@ -218,7 +227,8 @@ function AuthPage() {
             Sua operação inteira em um único fluxo.
           </h1>
           <p className="mt-4 max-w-lg text-base leading-relaxed text-primary-foreground/80">
-            Organize clientes, documentos, prazos e equipe com mais velocidade, clareza e menos trabalho manual.
+            Organize clientes, documentos, prazos e equipe com mais velocidade, clareza e menos
+            trabalho manual.
           </p>
 
           <ul className="mt-7 space-y-3">
@@ -280,150 +290,189 @@ function AuthPage() {
               </div>
             )}
 
-            <form onSubmit={submit} noValidate className="mt-6 space-y-4">
-              {mode === "signup" && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="name">Nome completo</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      setValidated(false);
-                      setErrors((prev) => ({ ...prev, name: undefined }));
-                    }}
-                    maxLength={120}
-                    autoComplete="name"
-                    aria-invalid={Boolean(errors.name)}
-                    className="h-11 transition-shadow duration-200 focus-visible:ring-2"
-                  />
-                  {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+            {mode === "signup" && !needsConfirmation && (
+              <div className="mt-5 flex gap-3 rounded-lg border border-brand/20 bg-brand/5 px-3 py-3 text-sm">
+                <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
+                <div>
+                  <p className="font-medium text-foreground">
+                    Este cadastro cria uma nova empresa.
+                  </p>
+                  <p className="mt-0.5 text-muted-foreground">
+                    Se você foi convidado para uma equipe, use o link enviado pelo administrador.
+                  </p>
                 </div>
-              )}
-
-              <div className="space-y-1.5">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  inputMode="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setValidated(false);
-                    setErrors((prev) => ({ ...prev, email: undefined }));
-                  }}
-                  maxLength={255}
-                  autoComplete="email"
-                  aria-invalid={Boolean(errors.email)}
-                  className="h-11 transition-shadow duration-200 focus-visible:ring-2"
-                />
-                {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="password">Senha</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setValidated(false);
-                      setErrors((prev) => ({ ...prev, password: undefined }));
-                    }}
-                    autoComplete={mode === "login" ? "current-password" : "new-password"}
-                    aria-invalid={Boolean(errors.password)}
-                    className="h-11 pr-11 transition-shadow duration-200 focus-visible:ring-2"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                    className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-              </div>
-
-              {validated && mode === "signup" && (
-                <div
-                  role="status"
-                  className="rounded-lg border border-success/30 bg-success/10 px-3 py-2.5 text-sm text-foreground"
-                >
-                  <p className="font-medium">{SIGNUP_SUCCESS_TITLE}</p>
-                  <p className="mt-0.5 text-muted-foreground">{SIGNUP_SUCCESS_SUBTITLE}</p>
-                </div>
-              )}
-
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-                  <Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
-                  Lembrar meu acesso
-                </label>
-                <button
-                  type="button"
-                  onClick={forgotPassword}
-                  className="text-sm font-medium text-brand transition-colors hover:text-primary"
-                >
-                  Esqueci minha senha
-                </button>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={loading}
-                aria-busy={loading}
-                className="h-11 w-full bg-brand text-brand-foreground text-base font-semibold transition-transform duration-200 hover:bg-brand/90 active:scale-[0.99] disabled:opacity-70"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {mode === "login" ? "Entrando…" : "Criando conta…"}
-                  </>
-                ) : mode === "login" ? (
-                  "Entrar"
-                ) : (
-                  "Criar conta e empresa"
-                )}
-              </Button>
-            </form>
-
-            {needsConfirmation && (
-              <div role="status" className="mt-4 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm">
-                <p className="font-medium text-foreground">Confirme seu e-mail para ativar a conta.</p>
-                <button
-                  type="button"
-                  onClick={resend}
-                  className="mt-1 text-sm font-medium text-brand transition-colors hover:text-primary"
-                >
-                  Reenviar e-mail de confirmação
-                </button>
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={() => {
-                setMode(mode === "login" ? "signup" : "login");
-                setErrors({});
-                setNeedsConfirmation(false);
-                setValidated(false);
-              }}
-              className="mt-5 w-full text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {mode === "login" ? (
-                <>
-                  Ainda não possui uma conta? <span className="font-medium text-brand">Criar empresa</span>
-                </>
-              ) : (
-                "Já tenho conta"
-              )}
-            </button>
+            {needsConfirmation ? (
+              <div role="status" className="mt-6 space-y-5 text-center">
+                <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-success/10 text-success">
+                  <MailCheck className="h-6 w-6" aria-hidden />
+                </span>
+                <div>
+                  <p className="font-display text-xl font-semibold text-foreground">
+                    Confirme seu e-mail
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    Enviamos um link para{" "}
+                    <strong className="font-medium text-foreground">{email.trim()}</strong>. A
+                    empresa e os 14 dias de teste serão liberados somente depois da confirmação.
+                  </p>
+                </div>
+                <Button type="button" variant="outline" className="w-full" onClick={resend}>
+                  Reenviar e-mail de confirmação
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNeedsConfirmation(false);
+                    setMode("login");
+                  }}
+                  className="text-sm font-medium text-brand transition-colors hover:text-primary"
+                >
+                  Voltar para o login
+                </button>
+              </div>
+            ) : (
+              <>
+                <form onSubmit={submit} noValidate className="mt-6 space-y-4">
+                  {mode === "signup" && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="name">Nome completo</Label>
+                      <Input
+                        id="name"
+                        value={name}
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          setValidated(false);
+                          setErrors((prev) => ({ ...prev, name: undefined }));
+                        }}
+                        maxLength={120}
+                        autoComplete="name"
+                        aria-invalid={Boolean(errors.name)}
+                        className="h-11 transition-shadow duration-200 focus-visible:ring-2"
+                      />
+                      {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+                    </div>
+                  )}
 
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email">E-mail</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      inputMode="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setValidated(false);
+                        setErrors((prev) => ({ ...prev, email: undefined }));
+                      }}
+                      maxLength={255}
+                      autoComplete="email"
+                      aria-invalid={Boolean(errors.email)}
+                      className="h-11 transition-shadow duration-200 focus-visible:ring-2"
+                    />
+                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="password">Senha</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setValidated(false);
+                          setErrors((prev) => ({ ...prev, password: undefined }));
+                        }}
+                        autoComplete={mode === "login" ? "current-password" : "new-password"}
+                        aria-invalid={Boolean(errors.password)}
+                        className="h-11 pr-11 transition-shadow duration-200 focus-visible:ring-2"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                        className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-sm text-destructive">{errors.password}</p>
+                    )}
+                  </div>
+
+                  {validated && mode === "signup" && (
+                    <div
+                      role="status"
+                      className="rounded-lg border border-success/30 bg-success/10 px-3 py-2.5 text-sm text-foreground"
+                    >
+                      <p className="font-medium">{SIGNUP_SUCCESS_TITLE}</p>
+                      <p className="mt-0.5 text-muted-foreground">{SIGNUP_SUCCESS_SUBTITLE}</p>
+                    </div>
+                  )}
+
+                  {mode === "login" && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                      <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                        <Checkbox
+                          checked={remember}
+                          onCheckedChange={(v) => setRemember(v === true)}
+                        />
+                        Lembrar meu acesso
+                      </label>
+                      <button
+                        type="button"
+                        onClick={forgotPassword}
+                        className="text-sm font-medium text-brand transition-colors hover:text-primary"
+                      >
+                        Esqueci minha senha
+                      </button>
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    aria-busy={loading}
+                    className="h-11 w-full bg-brand text-brand-foreground text-base font-semibold transition-transform duration-200 hover:bg-brand/90 active:scale-[0.99] disabled:opacity-70"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {mode === "login" ? "Entrando…" : "Criando conta…"}
+                      </>
+                    ) : mode === "login" ? (
+                      "Entrar"
+                    ) : (
+                      "Criar conta e empresa"
+                    )}
+                  </Button>
+                </form>
+
+                {mode === "signup" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("login");
+                      setErrors({});
+                      setValidated(false);
+                    }}
+                    className="mt-5 w-full text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Já tenho conta
+                  </button>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       </section>

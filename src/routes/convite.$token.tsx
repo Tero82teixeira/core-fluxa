@@ -16,15 +16,28 @@ const INVITATION_STORAGE_KEY = "fluxa-pending-invitation";
 
 export const Route = createFileRoute("/convite/$token")({ ssr: false, component: InvitationPage });
 
-type Preview = { organization_name: string; email: string; role: AppRole; status: string; expires_at: string };
-type AcceptResult = { organization_id: string; membership_id: string; role: AppRole; organization_name: string };
+type Preview = {
+  organization_name: string;
+  email: string;
+  role: AppRole;
+  status: string;
+  expires_at: string;
+};
+type AcceptResult = {
+  organization_id: string;
+  membership_id: string;
+  role: AppRole;
+  organization_name: string;
+};
 
 function invitationMessage(message: string) {
   if (message.includes("INVITE_EMAIL_MISMATCH")) return "Este convite pertence a outro e-mail.";
   if (message.includes("INVITE_EXPIRED")) return "Este convite expirou.";
-  if (message.includes("INVITE_ALREADY") || message.includes("INVITE_ALREADY_USED")) return "Este convite já foi utilizado.";
+  if (message.includes("INVITE_ALREADY") || message.includes("INVITE_ALREADY_USED"))
+    return "Este convite já foi utilizado.";
   if (message.includes("INVITE_CANCELLED")) return "Este convite foi cancelado.";
-  if (message.includes("NOT_AUTHENTICATED")) return "Entre ou crie uma conta para aceitar o convite.";
+  if (message.includes("NOT_AUTHENTICATED"))
+    return "Entre ou crie uma conta para aceitar o convite.";
   return "Não foi possível concluir o convite. Tente novamente.";
 }
 
@@ -41,8 +54,11 @@ function InvitationPage() {
 
   useEffect(() => {
     window.localStorage.setItem(INVITATION_STORAGE_KEY, "1");
-    Promise.all([supabase.rpc("invitation_preview", { _token: token }), supabase.auth.getSession()]).then(([p, s]) => {
-      setPreview(((p.data as Preview[] | null)?.[0]) ?? null);
+    Promise.all([
+      supabase.rpc("invitation_preview", { _token: token }),
+      supabase.auth.getSession(),
+    ]).then(([p, s]) => {
+      setPreview((p.data as Preview[] | null)?.[0] ?? null);
       setSession(Boolean(s.data.session));
       setLoading(false);
     });
@@ -55,8 +71,16 @@ function InvitationPage() {
       if (!preview) throw new Error("INVITE_NOT_FOUND");
       const current = await supabase.auth.getUser();
       if (!current.data.user) {
-        if (password.length < 6 || password !== confirm) throw new Error("Confira a senha (mínimo de 6 caracteres).");
-        const signed = await supabase.auth.signUp({ email: preview.email.trim(), password, options: { data: { full_name: name.trim() } } });
+        if (password.length < 6 || password !== confirm)
+          throw new Error("Confira a senha (mínimo de 6 caracteres).");
+        const signed = await supabase.auth.signUp({
+          email: preview.email.trim(),
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/convite/${token}`,
+            data: { full_name: name.trim() },
+          },
+        });
         if (signed.error) throw signed.error;
         if (!signed.data.session) {
           toast.info("Confirme seu e-mail e retorne a este convite.");
@@ -65,7 +89,7 @@ function InvitationPage() {
       }
       const result = await supabase.rpc("accept_invitation", { _token: token });
       if (result.error) throw result.error;
-      const accepted = ((result.data as AcceptResult[] | null)?.[0]) ?? null;
+      const accepted = (result.data as AcceptResult[] | null)?.[0] ?? null;
       if (!accepted?.organization_id) throw new Error("INVITE_ACCEPT_EMPTY_RESULT");
       const acceptedBy = (await supabase.auth.getUser()).data.user;
       if (!acceptedBy) throw new Error("NOT_AUTHENTICATED");
@@ -82,15 +106,106 @@ function InvitationPage() {
       toast.success(`Convite aceito. Você entrou na empresa como ${ROLE[accepted.role].label}.`);
       await navigate({ to: "/central", replace: true });
     } catch (e) {
-      const raw = e instanceof Error ? e.message : String((e as { message?: string })?.message ?? "");
+      const raw =
+        e instanceof Error ? e.message : String((e as { message?: string })?.message ?? "");
       toast.error(raw.startsWith("Confira") ? raw : invitationMessage(raw));
     } finally {
       setLoading(false);
     }
   }
 
-  if (loading && !preview) return <div className="grid min-h-dvh place-items-center"><Loader2 className="animate-spin" /></div>;
-  const invalid = !preview || preview.status !== "pending" || new Date(preview.expires_at) < new Date();
-  const invalidMessage = preview?.status === "expired" || (preview && new Date(preview.expires_at) < new Date()) ? "Este convite expirou." : preview?.status === "accepted" ? "Este convite já foi utilizado." : preview?.status === "cancelled" ? "Este convite foi cancelado." : "Não foi possível concluir o convite. Tente novamente.";
-  return <main className="grid min-h-dvh place-items-center bg-muted/30 p-4"><Card className="w-full max-w-md"><CardContent className="space-y-5 p-6"><div className="flex items-center gap-2 text-brand"><Building2 /><span className="font-display font-semibold">FLUXA</span></div>{invalid ? <><h1 className="page-title">Convite indisponível</h1><p className="text-sm text-muted-foreground">{invalidMessage}</p><Button asChild variant="outline"><Link to="/entrar">Ir para o login</Link></Button></> : <><div><h1 className="page-title">Entre para {preview.organization_name}</h1><p className="page-subtitle">Convite para {preview.email} como {ROLE[preview.role].label}.</p></div>{!session && <><div><Label htmlFor="name">Nome</Label><Input id="name" required value={name} onChange={(e) => setName(e.target.value)} /></div><div><Label htmlFor="password">Senha</Label><Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></div><div><Label htmlFor="confirm">Confirmar senha</Label><Input id="confirm" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} /></div></>}<Button className="w-full" disabled={loading || (!session && !name.trim())} onClick={accept}>{loading && <Loader2 className="animate-spin" />}{session ? "Aceitar convite" : "Criar conta e aceitar"}</Button>{!session && <p className="text-center text-sm text-muted-foreground">Já tem conta? <Link to="/entrar" className="text-brand underline">Entre e volte pelo link</Link>.</p>}</>}</CardContent></Card></main>;
+  if (loading && !preview)
+    return (
+      <div className="grid min-h-dvh place-items-center">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
+  const invalid =
+    !preview || preview.status !== "pending" || new Date(preview.expires_at) < new Date();
+  const invalidMessage =
+    preview?.status === "expired" || (preview && new Date(preview.expires_at) < new Date())
+      ? "Este convite expirou."
+      : preview?.status === "accepted"
+        ? "Este convite já foi utilizado."
+        : preview?.status === "cancelled"
+          ? "Este convite foi cancelado."
+          : "Não foi possível concluir o convite. Tente novamente.";
+  return (
+    <main className="grid min-h-dvh place-items-center bg-muted/30 p-4">
+      <Card className="w-full max-w-md">
+        <CardContent className="space-y-5 p-6">
+          <div className="flex items-center gap-2 text-brand">
+            <Building2 />
+            <span className="font-display font-semibold">FLUXA</span>
+          </div>
+          {invalid ? (
+            <>
+              <h1 className="page-title">Convite indisponível</h1>
+              <p className="text-sm text-muted-foreground">{invalidMessage}</p>
+              <Button asChild variant="outline">
+                <Link to="/entrar">Ir para o login</Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <div>
+                <h1 className="page-title">Entre para {preview.organization_name}</h1>
+                <p className="page-subtitle">
+                  Convite para {preview.email} como {ROLE[preview.role].label}.
+                </p>
+              </div>
+              {!session && (
+                <>
+                  <div>
+                    <Label htmlFor="name">Nome</Label>
+                    <Input
+                      id="name"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Senha</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="confirm">Confirmar senha</Label>
+                    <Input
+                      id="confirm"
+                      type="password"
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+              <Button
+                className="w-full"
+                disabled={loading || (!session && !name.trim())}
+                onClick={accept}
+              >
+                {loading && <Loader2 className="animate-spin" />}
+                {session ? "Aceitar convite" : "Criar conta e aceitar"}
+              </Button>
+              {!session && (
+                <p className="text-center text-sm text-muted-foreground">
+                  Já tem conta?{" "}
+                  <Link to="/entrar" className="text-brand underline">
+                    Entre e volte pelo link
+                  </Link>
+                  .
+                </p>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </main>
+  );
 }
