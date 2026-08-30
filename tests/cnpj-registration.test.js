@@ -44,3 +44,13 @@ test("situação cadastral é informativa e não bloqueia o formulário", () => 
   assert.doesNotMatch(onboarding, /status.*throw|throw.*status/);
   assert.doesNotMatch(clientForm, /status.*throw|throw.*status/);
 });
+
+test("troca de pessoa física e jurídica limpa dados e erros específicos", () => {
+  assert.match(clientForm, /if \(values\.person_type === type\) return/);
+  assert.match(clientForm, /setErrors\(\{\}\)/);
+  for (const field of ["name", "trade_name", "document", "birth_date", "legal_rep_name"]) {
+    assert.match(clientForm, new RegExp(`${field}: ""`), field);
+  }
+  assert.doesNotMatch(clientForm, /phone: ""/);
+  assert.doesNotMatch(clientForm, /whatsapp: ""/);
+});

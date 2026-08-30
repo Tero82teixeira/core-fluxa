@@ -92,8 +92,17 @@ export function ClientForm({
               type="button"
               variant={values.person_type === type ? "default" : "outline"}
               onClick={() => {
+                if (values.person_type === type) return;
                 cnpjLookup.reset();
-                set({ person_type: type, document: "" });
+                setErrors({});
+                set({
+                  person_type: type,
+                  name: "",
+                  trade_name: "",
+                  document: "",
+                  birth_date: "",
+                  legal_rep_name: "",
+                });
               }}
             >
               {type === "pf" ? "Pessoa física" : "Pessoa jurídica"}
