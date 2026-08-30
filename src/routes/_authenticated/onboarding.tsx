@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/lib/workspace";
 import { describeError } from "@/lib/errors";
-import { digits } from "@/lib/format";
+import { digits, isValidCNPJ, isValidCPF, maskDocument, maskPhone } from "@/lib/format";
+import { useCnpjLookup } from "@/hooks/use-cnpj-lookup";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,7 @@ function Onboarding() {
   const [orgId, setOrgId] = useState<string | null>(organizationId);
   const [step, setStep] = useState(onboardingStep);
   const [saving, setSaving] = useState(false);
+  const cnpjLookup = useCnpjLookup();
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ document?: string; phone?: string; whatsapp?: string }>({});
   const hydratedOrganization = useRef<string | null>(null);
@@ -123,12 +125,28 @@ function Onboarding() {
     const documentLength = digits(company.document).length;
     const phoneLength = digits(company.phone).length;
     const whatsappLength = digits(company.whatsapp).length;
-    if (company.document && documentLength !== 11 && documentLength !== 14)
+    if (
+      company.document &&
+      !(
+        (documentLength === 11 && isValidCPF(company.document)) ||
+        (documentLength === 14 && isValidCNPJ(company.document))
+      )
+    )
       next.document = "Informe um CPF ou CNPJ válido.";
     if (company.phone && (phoneLength < 10 || phoneLength > 11)) next.phone = "Informe o telefone com DDD.";
     if (company.whatsapp && (whatsappLength < 10 || whatsappLength > 11)) next.whatsapp = "Informe o WhatsApp com DDD.";
     setFieldErrors(next);
     return Object.keys(next).length === 0;
+  };
+
+  const fillCompanyFromCnpj = async (value: string) => {
+    const found = await cnpjLookup.search(value);
+    if (!found) return;
+    setCompany((current) =>
+      digits(current.document) === found.cnpj
+        ? { ...current, legal_name: found.legalName, trade_name: found.tradeName }
+        : current,
+    );
   };
 
   const updateOnboarding = async ({
@@ -292,21 +310,25 @@ function Onboarding() {
                 <Input value={company.legal_name} maxLength={160} onChange={(e) => setCompany({ ...company, legal_name: e.target.value })} />
               </Field>
               <Field label="CPF ou CNPJ">
-                <Input value={company.document} maxLength={20} aria-invalid={Boolean(fieldErrors.document)} onChange={(e) => {
-                  setCompany({ ...company, document: e.target.value });
+                <Input value={maskDocument(company.document)} inputMode="numeric" maxLength={18} aria-invalid={Boolean(fieldErrors.document)} onChange={(e) => {
+                  const document = e.target.value;
+                  setCompany({ ...company, document });
                   setFieldErrors((current) => ({ ...current, document: undefined }));
+                  if (digits(document).length === 14 && isValidCNPJ(document)) void fillCompanyFromCnpj(document);
                 }} />
                 {fieldErrors.document && <p className="text-sm text-destructive">{fieldErrors.document}</p>}
+                {cnpjLookup.loading && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="size-3.5 animate-spin" />Consultando CNPJ…</p>}
+                {!cnpjLookup.loading && cnpjLookup.message && <p className="text-xs text-muted-foreground">{cnpjLookup.message}</p>}
               </Field>
               <Field label="Telefone">
-                <Input value={company.phone} maxLength={20} aria-invalid={Boolean(fieldErrors.phone)} onChange={(e) => {
+                <Input value={maskPhone(company.phone)} inputMode="numeric" maxLength={15} aria-invalid={Boolean(fieldErrors.phone)} onChange={(e) => {
                   setCompany({ ...company, phone: e.target.value });
                   setFieldErrors((current) => ({ ...current, phone: undefined }));
                 }} />
                 {fieldErrors.phone && <p className="text-sm text-destructive">{fieldErrors.phone}</p>}
               </Field>
               <Field label="WhatsApp">
-                <Input value={company.whatsapp} maxLength={20} aria-invalid={Boolean(fieldErrors.whatsapp)} onChange={(e) => {
+                <Input value={maskPhone(company.whatsapp)} inputMode="numeric" maxLength={15} aria-invalid={Boolean(fieldErrors.whatsapp)} onChange={(e) => {
                   setCompany({ ...company, whatsapp: e.target.value });
                   setFieldErrors((current) => ({ ...current, whatsapp: undefined }));
                 }} />
@@ -361,8 +383,8 @@ function Onboarding() {
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
               <Summary label="Empresa" value={company.trade_name} />
               <Summary label="Razão social" value={company.legal_name || company.trade_name} />
-              <Summary label="Documento" value={company.document} />
-              <Summary label="Telefone" value={company.phone} />
+              <Summary label="Documento" value={maskDocument(company.document)} />
+              <Summary label="Telefone" value={maskPhone(company.phone)} />
               <Summary label="Cidade / UF" value={[place.city, place.state].filter(Boolean).join(" / ")} />
               <Summary label="Serviços" value={operation.main_services} />
             </dl>

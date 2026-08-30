@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { CLIENT_STATUS } from "@/lib/domain";
-import { maskCEP, maskCNPJ, maskCPF, maskPhone } from "@/lib/format";
+import { digits, isValidCNPJ, maskCEP, maskCNPJ, maskCPF, maskPhone } from "@/lib/format";
+import { useCnpjLookup } from "@/hooks/use-cnpj-lookup";
 import {
   UF_LIST,
   validateClientForm,
@@ -55,10 +56,21 @@ export function ClientForm({
 }) {
   const [values, setValues] = useState<ClientFormValues>(initial);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const cnpjLookup = useCnpjLookup();
   const isPJ = values.person_type === "pj";
   const shown: FieldErrors = { ...errors, ...externalErrors };
 
   const set = (patch: Partial<ClientFormValues>) => setValues((current) => ({ ...current, ...patch }));
+
+  const fillCompanyFromCnpj = async (value: string) => {
+    const found = await cnpjLookup.search(value);
+    if (!found) return;
+    setValues((current) =>
+      current.person_type === "pj" && digits(current.document) === found.cnpj
+        ? { ...current, name: found.legalName, trade_name: found.tradeName }
+        : current,
+    );
+  };
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -79,7 +91,10 @@ export function ClientForm({
               key={type}
               type="button"
               variant={values.person_type === type ? "default" : "outline"}
-              onClick={() => set({ person_type: type, document: "" })}
+              onClick={() => {
+                cnpjLookup.reset();
+                set({ person_type: type, document: "" });
+              }}
             >
               {type === "pf" ? "Pessoa física" : "Pessoa jurídica"}
             </Button>
@@ -113,8 +128,15 @@ export function ClientForm({
             id="document"
             inputMode="numeric"
             value={isPJ ? maskCNPJ(values.document) : maskCPF(values.document)}
-            onChange={(event) => set({ document: event.target.value })}
+            onChange={(event) => {
+              const document = event.target.value;
+              set({ document });
+              setErrors((current) => ({ ...current, document: undefined }));
+              if (isPJ && digits(document).length === 14 && isValidCNPJ(document)) void fillCompanyFromCnpj(document);
+            }}
           />
+          {isPJ && cnpjLookup.loading && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="size-3.5 animate-spin" />Consultando CNPJ…</p>}
+          {isPJ && !cnpjLookup.loading && cnpjLookup.message && <p className="text-xs text-muted-foreground">{cnpjLookup.message}</p>}
         </Field>
 
         {isPJ ? (
