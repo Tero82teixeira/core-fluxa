@@ -60,8 +60,8 @@ export type Database = {
       }
       automation_executions: {
         Row: {
-          automation_schedule_id: string | null
           automation_rule_id: string
+          automation_schedule_id: string | null
           created_at: string
           dedupe_key: string
           entity_id: string | null
@@ -81,8 +81,8 @@ export type Database = {
           status: string
         }
         Insert: {
-          automation_schedule_id?: string | null
           automation_rule_id: string
+          automation_schedule_id?: string | null
           created_at?: string
           dedupe_key: string
           entity_id?: string | null
@@ -102,8 +102,8 @@ export type Database = {
           status: string
         }
         Update: {
-          automation_schedule_id?: string | null
           automation_rule_id?: string
+          automation_schedule_id?: string | null
           created_at?: string
           dedupe_key?: string
           entity_id?: string | null
@@ -124,17 +124,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "automation_executions_automation_schedule_id_fkey"
-            columns: ["automation_schedule_id"]
-            isOneToOne: false
-            referencedRelation: "automation_schedules"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "automation_executions_automation_rule_id_fkey"
             columns: ["automation_rule_id"]
             isOneToOne: false
             referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_executions_automation_schedule_id_fkey"
+            columns: ["automation_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_schedules"
             referencedColumns: ["id"]
           },
           {
@@ -150,69 +150,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "automation_rules"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      automation_schedules: {
-        Row: {
-          automation_rule_id: string
-          created_at: string
-          id: string
-          interval_days: number | null
-          is_active: boolean
-          last_executed_at: string | null
-          last_scheduled_for: string | null
-          next_execution_at: string
-          organization_id: string
-          run_at: string | null
-          schedule_type: string
-          timezone: string
-          updated_at: string
-        }
-        Insert: {
-          automation_rule_id: string
-          created_at?: string
-          id?: string
-          interval_days?: number | null
-          is_active?: boolean
-          last_executed_at?: string | null
-          last_scheduled_for?: string | null
-          next_execution_at: string
-          organization_id: string
-          run_at?: string | null
-          schedule_type: string
-          timezone?: string
-          updated_at?: string
-        }
-        Update: {
-          automation_rule_id?: string
-          created_at?: string
-          id?: string
-          interval_days?: number | null
-          is_active?: boolean
-          last_executed_at?: string | null
-          last_scheduled_for?: string | null
-          next_execution_at?: string
-          organization_id?: string
-          run_at?: string | null
-          schedule_type?: string
-          timezone?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "automation_schedules_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "automation_schedules_rule_organization_fkey"
-            columns: ["automation_rule_id", "organization_id"]
-            isOneToOne: false
-            referencedRelation: "automation_rules"
-            referencedColumns: ["id", "organization_id"]
           },
         ]
       }
@@ -281,6 +218,69 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_schedules: {
+        Row: {
+          automation_rule_id: string
+          created_at: string
+          id: string
+          interval_days: number | null
+          is_active: boolean
+          last_executed_at: string | null
+          last_scheduled_for: string | null
+          next_execution_at: string
+          organization_id: string
+          run_at: string | null
+          schedule_type: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          automation_rule_id: string
+          created_at?: string
+          id?: string
+          interval_days?: number | null
+          is_active?: boolean
+          last_executed_at?: string | null
+          last_scheduled_for?: string | null
+          next_execution_at: string
+          organization_id: string
+          run_at?: string | null
+          schedule_type: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          automation_rule_id?: string
+          created_at?: string
+          id?: string
+          interval_days?: number | null
+          is_active?: boolean
+          last_executed_at?: string | null
+          last_scheduled_for?: string | null
+          next_execution_at?: string
+          organization_id?: string
+          run_at?: string | null
+          schedule_type?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_schedules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_schedules_rule_organization_fkey"
+            columns: ["automation_rule_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id", "organization_id"]
           },
         ]
       }
@@ -1460,6 +1460,74 @@ export type Database = {
           },
         ]
       }
+      kiwify_webhook_events: {
+        Row: {
+          event_key: string
+          event_type: string
+          organization_id: string | null
+          processed_at: string | null
+          processing_error: string | null
+          provider_order_id: string | null
+          provider_subscription_id: string | null
+          received_at: string
+        }
+        Insert: {
+          event_key: string
+          event_type: string
+          organization_id?: string | null
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_order_id?: string | null
+          provider_subscription_id?: string | null
+          received_at?: string
+        }
+        Update: {
+          event_key?: string
+          event_type?: string
+          organization_id?: string | null
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_order_id?: string | null
+          provider_subscription_id?: string | null
+          received_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kiwify_webhook_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_acceptances: {
+        Row: {
+          acceptance_source: string
+          accepted_at: string
+          document_type: string
+          document_version: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          acceptance_source: string
+          accepted_at?: string
+          document_type: string
+          document_version: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          acceptance_source?: string
+          accepted_at?: string
+          document_type?: string
+          document_version?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       monitoring_history: {
         Row: {
           changed_by: string | null
@@ -1949,9 +2017,11 @@ export type Database = {
           current_control: string | null
           date_format: string | null
           default_communication_channel:
-            Database["public"]["Enums"]["communication_channel"] | null
+            | Database["public"]["Enums"]["communication_channel"]
+            | null
           default_communication_priority:
-            Database["public"]["Enums"]["communication_priority"] | null
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           default_expense_category_id: string | null
           default_financial_account_id: string | null
           default_follow_up_hours: number | null
@@ -1959,7 +2029,8 @@ export type Database = {
           default_responsible_id: string | null
           default_task_due_days: number | null
           default_task_priority:
-            Database["public"]["Enums"]["priority_level"] | null
+            | Database["public"]["Enums"]["priority_level"]
+            | null
           district: string | null
           employees_range: string | null
           financial_alert_days: number | null
@@ -1979,8 +2050,8 @@ export type Database = {
           organization_id: string
           portal_name: string | null
           primary_color: string | null
-          stale_task_days: number | null
           stale_process_days: number | null
+          stale_task_days: number | null
           state: string | null
           street: string | null
           theme_preference: string
@@ -2002,9 +2073,11 @@ export type Database = {
           current_control?: string | null
           date_format?: string | null
           default_communication_channel?:
-            Database["public"]["Enums"]["communication_channel"] | null
+            | Database["public"]["Enums"]["communication_channel"]
+            | null
           default_communication_priority?:
-            Database["public"]["Enums"]["communication_priority"] | null
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           default_expense_category_id?: string | null
           default_financial_account_id?: string | null
           default_follow_up_hours?: number | null
@@ -2012,7 +2085,8 @@ export type Database = {
           default_responsible_id?: string | null
           default_task_due_days?: number | null
           default_task_priority?:
-            Database["public"]["Enums"]["priority_level"] | null
+            | Database["public"]["Enums"]["priority_level"]
+            | null
           district?: string | null
           employees_range?: string | null
           financial_alert_days?: number | null
@@ -2032,8 +2106,8 @@ export type Database = {
           organization_id: string
           portal_name?: string | null
           primary_color?: string | null
-          stale_task_days?: number | null
           stale_process_days?: number | null
+          stale_task_days?: number | null
           state?: string | null
           street?: string | null
           theme_preference?: string
@@ -2055,9 +2129,11 @@ export type Database = {
           current_control?: string | null
           date_format?: string | null
           default_communication_channel?:
-            Database["public"]["Enums"]["communication_channel"] | null
+            | Database["public"]["Enums"]["communication_channel"]
+            | null
           default_communication_priority?:
-            Database["public"]["Enums"]["communication_priority"] | null
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           default_expense_category_id?: string | null
           default_financial_account_id?: string | null
           default_follow_up_hours?: number | null
@@ -2065,7 +2141,8 @@ export type Database = {
           default_responsible_id?: string | null
           default_task_due_days?: number | null
           default_task_priority?:
-            Database["public"]["Enums"]["priority_level"] | null
+            | Database["public"]["Enums"]["priority_level"]
+            | null
           district?: string | null
           employees_range?: string | null
           financial_alert_days?: number | null
@@ -2085,8 +2162,8 @@ export type Database = {
           organization_id?: string
           portal_name?: string | null
           primary_color?: string | null
-          stale_task_days?: number | null
           stale_process_days?: number | null
+          stale_task_days?: number | null
           state?: string | null
           street?: string | null
           theme_preference?: string
@@ -2154,47 +2231,6 @@ export type Database = {
             foreignKeyName: "organization_subscriptions_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      kiwify_webhook_events: {
-        Row: {
-          event_key: string
-          event_type: string
-          organization_id: string | null
-          processed_at: string | null
-          processing_error: string | null
-          provider_order_id: string | null
-          provider_subscription_id: string | null
-          received_at: string
-        }
-        Insert: {
-          event_key: string
-          event_type: string
-          organization_id?: string | null
-          processed_at?: string | null
-          processing_error?: string | null
-          provider_order_id?: string | null
-          provider_subscription_id?: string | null
-          received_at?: string
-        }
-        Update: {
-          event_key?: string
-          event_type?: string
-          organization_id?: string | null
-          processed_at?: string | null
-          processing_error?: string | null
-          provider_order_id?: string | null
-          provider_subscription_id?: string | null
-          received_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "kiwify_webhook_events_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -2272,24 +2308,6 @@ export type Database = {
         }
         Relationships: []
       }
-      platform_admins: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       permissions: {
         Row: {
           key: string
@@ -2305,6 +2323,24 @@ export type Database = {
           key?: string
           label?: string
           module?: string
+        }
+        Relationships: []
+      }
+      platform_admins: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -2575,33 +2611,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      legal_acceptances: {
-        Row: {
-          acceptance_source: string
-          accepted_at: string
-          document_type: string
-          document_version: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          acceptance_source: string
-          accepted_at?: string
-          document_type: string
-          document_version: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          acceptance_source?: string
-          accepted_at?: string
-          document_type?: string
-          document_version?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       profiles: {
         Row: {
@@ -3246,6 +3255,18 @@ export type Database = {
         }
         Returns: string
       }
+      apply_kiwify_subscription_event: {
+        Args: {
+          _event_at?: string
+          _event_key: string
+          _event_type: string
+          _organization: string
+          _provider_order_id?: string
+          _provider_subscription_id?: string
+          _subscription_status: string
+        }
+        Returns: boolean
+      }
       archive_automation_rule: {
         Args: { _rule_id: string }
         Returns: undefined
@@ -3268,6 +3289,10 @@ export type Database = {
       }
       archive_notification: {
         Args: { _notification: string }
+        Returns: undefined
+      }
+      archive_scheduled_automation: {
+        Args: { _rule_id: string }
         Returns: undefined
       }
       archive_support_request: {
@@ -3309,63 +3334,6 @@ export type Database = {
           profile_id: string
           role: Database["public"]["Enums"]["app_role"]
         }[]
-      }
-      has_org_membership: { Args: { _org: string }; Returns: boolean }
-      is_platform_admin: { Args: never; Returns: boolean }
-      organization_has_commercial_access: {
-        Args: { _org: string }
-        Returns: boolean
-      }
-      platform_organizations: {
-        Args: never
-        Returns: {
-          commercial_status: string
-          created_at: string
-          days_remaining: number
-          effective_status: string
-          legal_name: string
-          onboarding_completed: boolean
-          organization_id: string
-          owner_email: string
-          owner_name: string
-          trade_name: string
-          trial_ends_at: string
-          trial_started_at: string
-        }[]
-      }
-      prepare_kiwify_checkout: {
-        Args: { _organization: string }
-        Returns: undefined
-      }
-      apply_kiwify_subscription_event: {
-        Args: {
-          _event_at?: string
-          _event_key: string
-          _event_type: string
-          _organization: string
-          _provider_order_id?: string
-          _provider_subscription_id?: string
-          _subscription_status: string
-        }
-        Returns: boolean
-      }
-      update_organization_commercial_status: {
-        Args: {
-          _action: string
-          _days?: number
-          _organization_id: string
-        }
-        Returns: undefined
-      }
-      update_organization_onboarding: {
-        Args: {
-          _company?: Json
-          _complete?: boolean
-          _organization_id: string
-          _settings?: Json
-          _step: number
-        }
-        Returns: Json
       }
       cancel_financial_transaction: {
         Args: { _organization_id: string; _payload: Json }
@@ -3431,46 +3399,9 @@ export type Database = {
         }
         Returns: string
       }
-      create_daily_operational_close_notifications: {
+      create_client_birthday_notifications: {
         Args: { _as_of?: string }
         Returns: number
-      }
-      create_operational_close_for_organization: {
-        Args: {
-          _as_of: string
-          _dedupe_prefix: string
-          _organization_id: string
-          _title_prefix: string
-        }
-        Returns: number
-      }
-      create_operational_summary_notifications: {
-        Args: {
-          _automation_schedule_id: string
-          _organization_id: string
-          _scheduled_for: string
-        }
-        Returns: number
-      }
-      create_unassigned_monitoring_notifications: {
-        Args: never
-        Returns: number
-      }
-      create_scheduled_automation: {
-        Args: {
-          _action_config: Json
-          _action_type: string
-          _description: string
-          _interval_days: number
-          _is_active?: boolean
-          _name: string
-          _next_execution_at: string
-          _organization_id: string
-          _run_at: string
-          _schedule_type: string
-          _timezone: string
-        }
-        Returns: string
       }
       create_communication_thread: {
         Args: {
@@ -3487,62 +3418,13 @@ export type Database = {
         }
         Returns: string
       }
-      create_critical_monitoring_notifications: {
-        Args: never
-        Returns: number
-      }
-      create_deadline_reminder_notifications: {
-        Args: never
-        Returns: number
-      }
-      create_expired_document_notifications: {
-        Args: never
-        Returns: number
-      }
-      create_overdue_financial_notifications: {
-        Args: never
-        Returns: number
-      }
-      create_overdue_task_escalation_notifications: {
-        Args: never
-        Returns: number
-      }
-      create_overdue_communication_notifications: {
-        Args: never
-        Returns: number
-      }
-      create_stale_task_notifications: {
+      create_critical_monitoring_notifications: { Args: never; Returns: number }
+      create_daily_operational_close_notifications: {
         Args: { _as_of?: string }
         Returns: number
       }
-      create_stale_process_notifications: {
-        Args: never
-        Returns: number
-      }
-      create_stale_client_notifications: {
-        Args: { _as_of?: string }
-        Returns: number
-      }
-      create_client_birthday_notifications: {
-        Args: { _as_of?: string }
-        Returns: number
-      }
-      create_stale_lead_notifications: {
-        Args: { _as_of?: string }
-        Returns: number
-      }
-      create_weekly_financial_summary_notifications: {
-        Args: { _as_of?: string }
-        Returns: number
-      }
-      create_weekly_productivity_report_notifications: {
-        Args: { _as_of?: string }
-        Returns: number
-      }
-      create_weekly_data_quality_notifications: {
-        Args: { _as_of?: string }
-        Returns: number
-      }
+      create_deadline_reminder_notifications: { Args: never; Returns: number }
+      create_expired_document_notifications: { Args: never; Returns: number }
       create_financial_account: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
@@ -3571,6 +3453,61 @@ export type Database = {
           token: string
         }[]
       }
+      create_operational_close_for_organization: {
+        Args: {
+          _as_of: string
+          _dedupe_prefix: string
+          _organization_id: string
+          _title_prefix: string
+        }
+        Returns: number
+      }
+      create_operational_summary_notifications: {
+        Args: {
+          _automation_schedule_id: string
+          _organization_id: string
+          _scheduled_for: string
+        }
+        Returns: number
+      }
+      create_overdue_communication_notifications: {
+        Args: never
+        Returns: number
+      }
+      create_overdue_financial_notifications: { Args: never; Returns: number }
+      create_overdue_task_escalation_notifications: {
+        Args: never
+        Returns: number
+      }
+      create_scheduled_automation: {
+        Args: {
+          _action_config: Json
+          _action_type: string
+          _description: string
+          _interval_days: number
+          _is_active?: boolean
+          _name: string
+          _next_execution_at: string
+          _organization_id: string
+          _run_at: string
+          _schedule_type: string
+          _timezone: string
+        }
+        Returns: string
+      }
+      create_stale_client_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
+      create_stale_lead_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
+      create_stale_process_notifications: { Args: never; Returns: number }
+      create_stale_task_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       create_support_request: {
         Args: {
           _category: string
@@ -3588,6 +3525,22 @@ export type Database = {
         Returns: {
           notification_id: string
         }[]
+      }
+      create_unassigned_monitoring_notifications: {
+        Args: never
+        Returns: number
+      }
+      create_weekly_data_quality_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
+      create_weekly_financial_summary_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
+      create_weekly_productivity_report_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
       }
       duplicate_automation_rule: { Args: { _rule_id: string }; Returns: string }
       duplicate_financial_transaction: {
@@ -3613,6 +3566,7 @@ export type Database = {
         Args: { _organization_id: string }
         Returns: Json
       }
+      has_org_membership: { Args: { _org: string }; Returns: boolean }
       has_org_role: {
         Args: {
           _org: string
@@ -3631,6 +3585,7 @@ export type Database = {
         }[]
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
       mark_all_notifications_read: {
         Args: { _organization: string }
         Returns: number
@@ -3654,6 +3609,31 @@ export type Database = {
         Returns: undefined
       }
       next_process_code: { Args: { _org: string }; Returns: string }
+      organization_has_commercial_access: {
+        Args: { _org: string }
+        Returns: boolean
+      }
+      platform_organizations: {
+        Args: never
+        Returns: {
+          commercial_status: string
+          created_at: string
+          days_remaining: number
+          effective_status: string
+          legal_name: string
+          onboarding_completed: boolean
+          organization_id: string
+          owner_email: string
+          owner_name: string
+          trade_name: string
+          trial_ends_at: string
+          trial_started_at: string
+        }[]
+      }
+      prepare_kiwify_checkout: {
+        Args: { _organization: string }
+        Returns: undefined
+      }
       process_automation_event: {
         Args: {
           _entity_id: string
@@ -3667,30 +3647,9 @@ export type Database = {
         }
         Returns: number
       }
-      select_task_distribution_assignee: {
-        Args: {
-          _function: string
-          _organization_id: string
-          _sector: string
-        }
-        Returns: string
-      }
-      update_member_task_distribution: {
-        Args: {
-          _capacity: number
-          _function: string
-          _member: string
-          _receives_automatic_tasks: boolean
-          _sector: string
-        }
-        Returns: undefined
-      }
+      process_due_financial_recurrences: { Args: never; Returns: number }
       process_due_scheduled_automations: {
         Args: { _as_of?: string; _batch_size?: number }
-        Returns: number
-      }
-      process_due_financial_recurrences: {
-        Args: never
         Returns: number
       }
       record_audit_event: {
@@ -3724,10 +3683,6 @@ export type Database = {
         }
         Returns: string
       }
-      reverse_financial_payment: {
-        Args: { _notes: string; _organization_id: string; _payment_id: string }
-        Returns: string
-      }
       restore_financial_account: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
@@ -3740,23 +3695,20 @@ export type Database = {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
       }
-      run_temporal_automation_cycle: {
-        Args: never
-        Returns: Json
+      reverse_financial_payment: {
+        Args: { _notes: string; _organization_id: string; _payment_id: string }
+        Returns: string
       }
+      run_temporal_automation_cycle: { Args: never; Returns: Json }
       seed_default_document_types: {
         Args: { _org: string }
         Returns: undefined
       }
+      select_task_distribution_assignee: {
+        Args: { _function: string; _organization_id: string; _sector: string }
+        Returns: string
+      }
       set_automation_rule_active: {
-        Args: { _is_active: boolean; _rule_id: string }
-        Returns: undefined
-      }
-      archive_scheduled_automation: {
-        Args: { _rule_id: string }
-        Returns: undefined
-      }
-      set_scheduled_automation_active: {
         Args: { _is_active: boolean; _rule_id: string }
         Returns: undefined
       }
@@ -3770,6 +3722,10 @@ export type Database = {
       }
       set_member_active: {
         Args: { _active: boolean; _member: string }
+        Returns: undefined
+      }
+      set_scheduled_automation_active: {
+        Args: { _is_active: boolean; _rule_id: string }
         Returns: undefined
       }
       storage_path_org: { Args: { _name: string }; Returns: string }
@@ -3792,22 +3748,6 @@ export type Database = {
           is_active: boolean
           name: string
           trigger_type: string
-        }
-        Returns: undefined
-      }
-      update_scheduled_automation: {
-        Args: {
-          _action_config: Json
-          _action_type: string
-          _description: string
-          _interval_days: number
-          _is_active: boolean
-          _name: string
-          _next_execution_at: string
-          _rule_id: string
-          _run_at: string
-          _schedule_type: string
-          _timezone: string
         }
         Returns: undefined
       }
@@ -3842,9 +3782,49 @@ export type Database = {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
       }
+      update_member_task_distribution: {
+        Args: {
+          _capacity: number
+          _function: string
+          _member: string
+          _receives_automatic_tasks: boolean
+          _sector: string
+        }
+        Returns: undefined
+      }
+      update_organization_commercial_status: {
+        Args: { _action: string; _days?: number; _organization_id: string }
+        Returns: undefined
+      }
+      update_organization_onboarding: {
+        Args: {
+          _company?: Json
+          _complete?: boolean
+          _organization_id: string
+          _settings?: Json
+          _step: number
+        }
+        Returns: Json
+      }
       update_organization_settings: {
         Args: { _changes: Json; _organization_id: string }
         Returns: Json
+      }
+      update_scheduled_automation: {
+        Args: {
+          _action_config: Json
+          _action_type: string
+          _description: string
+          _interval_days: number
+          _is_active: boolean
+          _name: string
+          _next_execution_at: string
+          _rule_id: string
+          _run_at: string
+          _schedule_type: string
+          _timezone: string
+        }
+        Returns: undefined
       }
       update_support_request_status: {
         Args: { _request_id: string; _status: string }
@@ -3882,7 +3862,11 @@ export type Database = {
         | "visualizador"
         | "cliente_externo"
       checklist_status:
-        "pendente" | "recebido" | "em_analise" | "aprovado" | "rejeitado"
+        | "pendente"
+        | "recebido"
+        | "em_analise"
+        | "aprovado"
+        | "rejeitado"
       client_status:
         | "lead"
         | "em_cadastro"
@@ -3891,7 +3875,12 @@ export type Database = {
         | "inativo"
         | "arquivado"
       communication_channel:
-        "whatsapp" | "telefone" | "email" | "presencial" | "interno" | "outro"
+        | "whatsapp"
+        | "telefone"
+        | "email"
+        | "presencial"
+        | "interno"
+        | "outro"
       communication_entry_type:
         | "mensagem"
         | "nota_interna"
@@ -3930,7 +3919,11 @@ export type Database = {
         | "vencido"
         | "arquivado"
       financial_status:
-        "nao_aplicavel" | "pendente" | "parcial" | "pago" | "atrasado"
+        | "nao_aplicavel"
+        | "pendente"
+        | "parcial"
+        | "pago"
+        | "atrasado"
       monitoring_status: "ativo" | "em_renovacao" | "renovado" | "arquivado"
       person_type: "pf" | "pj"
       priority_level: "baixa" | "media" | "alta" | "critica"
@@ -3969,12 +3962,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3996,12 +3989,13 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4020,12 +4014,13 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4044,12 +4039,13 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4062,11 +4058,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
