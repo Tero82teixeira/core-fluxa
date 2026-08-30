@@ -2106,6 +2106,100 @@ export type Database = {
           },
         ]
       }
+      organization_subscriptions: {
+        Row: {
+          billing_email: string
+          checkout_started_at: string
+          created_at: string
+          id: string
+          last_event_at: string | null
+          last_event_type: string | null
+          organization_id: string
+          provider: string
+          provider_order_id: string | null
+          provider_subscription_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          billing_email: string
+          checkout_started_at?: string
+          created_at?: string
+          id?: string
+          last_event_at?: string | null
+          last_event_type?: string | null
+          organization_id: string
+          provider?: string
+          provider_order_id?: string | null
+          provider_subscription_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          billing_email?: string
+          checkout_started_at?: string
+          created_at?: string
+          id?: string
+          last_event_at?: string | null
+          last_event_type?: string | null
+          organization_id?: string
+          provider?: string
+          provider_order_id?: string | null
+          provider_subscription_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kiwify_webhook_events: {
+        Row: {
+          event_key: string
+          event_type: string
+          organization_id: string | null
+          processed_at: string | null
+          processing_error: string | null
+          provider_order_id: string | null
+          provider_subscription_id: string | null
+          received_at: string
+        }
+        Insert: {
+          event_key: string
+          event_type: string
+          organization_id?: string | null
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_order_id?: string | null
+          provider_subscription_id?: string | null
+          received_at?: string
+        }
+        Update: {
+          event_key?: string
+          event_type?: string
+          organization_id?: string | null
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_order_id?: string | null
+          provider_subscription_id?: string | null
+          received_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kiwify_webhook_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           archived_at: string | null
@@ -3238,6 +3332,22 @@ export type Database = {
           trial_ends_at: string
           trial_started_at: string
         }[]
+      }
+      prepare_kiwify_checkout: {
+        Args: { _organization: string }
+        Returns: undefined
+      }
+      apply_kiwify_subscription_event: {
+        Args: {
+          _event_at?: string
+          _event_key: string
+          _event_type: string
+          _organization: string
+          _provider_order_id?: string
+          _provider_subscription_id?: string
+          _subscription_status: string
+        }
+        Returns: boolean
       }
       update_organization_commercial_status: {
         Args: {

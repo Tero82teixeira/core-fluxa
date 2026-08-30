@@ -4,10 +4,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useWorkspace } from "@/lib/workspace";
+import { useSubscriptionCheckout } from "@/hooks/use-subscription-checkout";
 
 export function CommercialAccessBlocked({ onSignOut }: { onSignOut: () => void }) {
   const navigate = useNavigate();
   const { commercialStatus, platformAdmin } = useWorkspace();
+  const subscription = useSubscriptionCheckout();
   const expired = commercialStatus === "expired";
   const Icon = expired ? Clock3 : ShieldAlert;
 
@@ -29,8 +31,16 @@ export function CommercialAccessBlocked({ onSignOut }: { onSignOut: () => void }
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-2">
+            {subscription.canSubscribe && (
+              <Button onClick={() => void subscription.openCheckout()} disabled={subscription.loading}>
+                {subscription.loading ? "Abrindo pagamento…" : "Assinar FLUXA"}
+              </Button>
+            )}
             {platformAdmin && (
-              <Button onClick={() => navigate({ to: "/administracao-plataforma" })}>
+              <Button
+                variant={subscription.canSubscribe ? "outline" : "default"}
+                onClick={() => navigate({ to: "/administracao-plataforma" })}
+              >
                 Administração da plataforma
               </Button>
             )}
