@@ -80,11 +80,13 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
+  const [legalAccepted, setLegalAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
     name?: string;
     email?: string;
     password?: string;
+    legal?: string;
     form?: string;
   }>({});
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
@@ -116,6 +118,8 @@ function AuthPage() {
       next.email = "Digite um e-mail válido, como nome@empresa.com.br.";
     if (!password) next.password = "Informe sua senha.";
     else if (password.length < 6) next.password = "A senha deve ter pelo menos 6 caracteres.";
+    if (mode === "signup" && !legalAccepted)
+      next.legal = "Você precisa aceitar os Termos e declarar ciência da Política de Privacidade.";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -410,6 +414,43 @@ function AuthPage() {
                     )}
                   </div>
 
+                  {mode === "signup" && (
+                    <div className="space-y-2 pt-1">
+                      <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-muted-foreground">
+                        <Checkbox
+                          id="legal-acceptance"
+                          className="mt-0.5"
+                          checked={legalAccepted}
+                          onCheckedChange={(value) => {
+                            setLegalAccepted(value === true);
+                            setErrors((previous) => ({ ...previous, legal: undefined }));
+                          }}
+                          aria-invalid={Boolean(errors.legal)}
+                        />
+                        <span>
+                          Li e aceito os{" "}
+                          <Link
+                            to="/termos-de-uso"
+                            target="_blank"
+                            className="font-medium text-primary underline underline-offset-2"
+                          >
+                            Termos de Uso
+                          </Link>{" "}
+                          e declaro ciência da{" "}
+                          <Link
+                            to="/politica-de-privacidade"
+                            target="_blank"
+                            className="font-medium text-primary underline underline-offset-2"
+                          >
+                            Política de Privacidade
+                          </Link>
+                          .
+                        </span>
+                      </label>
+                      {errors.legal && <p className="text-sm text-destructive">{errors.legal}</p>}
+                    </div>
+                  )}
+
                   {validated && mode === "signup" && (
                     <div
                       role="status"
@@ -463,6 +504,7 @@ function AuthPage() {
                     type="button"
                     onClick={() => {
                       setMode("login");
+                      setLegalAccepted(false);
                       setErrors({});
                       setValidated(false);
                     }}

@@ -1949,11 +1949,9 @@ export type Database = {
           current_control: string | null
           date_format: string | null
           default_communication_channel:
-            | Database["public"]["Enums"]["communication_channel"]
-            | null
+            Database["public"]["Enums"]["communication_channel"] | null
           default_communication_priority:
-            | Database["public"]["Enums"]["communication_priority"]
-            | null
+            Database["public"]["Enums"]["communication_priority"] | null
           default_expense_category_id: string | null
           default_financial_account_id: string | null
           default_follow_up_hours: number | null
@@ -1961,8 +1959,7 @@ export type Database = {
           default_responsible_id: string | null
           default_task_due_days: number | null
           default_task_priority:
-            | Database["public"]["Enums"]["priority_level"]
-            | null
+            Database["public"]["Enums"]["priority_level"] | null
           district: string | null
           employees_range: string | null
           financial_alert_days: number | null
@@ -2005,11 +2002,9 @@ export type Database = {
           current_control?: string | null
           date_format?: string | null
           default_communication_channel?:
-            | Database["public"]["Enums"]["communication_channel"]
-            | null
+            Database["public"]["Enums"]["communication_channel"] | null
           default_communication_priority?:
-            | Database["public"]["Enums"]["communication_priority"]
-            | null
+            Database["public"]["Enums"]["communication_priority"] | null
           default_expense_category_id?: string | null
           default_financial_account_id?: string | null
           default_follow_up_hours?: number | null
@@ -2017,8 +2012,7 @@ export type Database = {
           default_responsible_id?: string | null
           default_task_due_days?: number | null
           default_task_priority?:
-            | Database["public"]["Enums"]["priority_level"]
-            | null
+            Database["public"]["Enums"]["priority_level"] | null
           district?: string | null
           employees_range?: string | null
           financial_alert_days?: number | null
@@ -2061,11 +2055,9 @@ export type Database = {
           current_control?: string | null
           date_format?: string | null
           default_communication_channel?:
-            | Database["public"]["Enums"]["communication_channel"]
-            | null
+            Database["public"]["Enums"]["communication_channel"] | null
           default_communication_priority?:
-            | Database["public"]["Enums"]["communication_priority"]
-            | null
+            Database["public"]["Enums"]["communication_priority"] | null
           default_expense_category_id?: string | null
           default_financial_account_id?: string | null
           default_follow_up_hours?: number | null
@@ -2073,8 +2065,7 @@ export type Database = {
           default_responsible_id?: string | null
           default_task_due_days?: number | null
           default_task_priority?:
-            | Database["public"]["Enums"]["priority_level"]
-            | null
+            Database["public"]["Enums"]["priority_level"] | null
           district?: string | null
           employees_range?: string | null
           financial_alert_days?: number | null
@@ -2490,6 +2481,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      legal_acceptances: {
+        Row: {
+          acceptance_source: string
+          accepted_at: string
+          document_type: string
+          document_version: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          acceptance_source: string
+          accepted_at?: string
+          document_type: string
+          document_version: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          acceptance_source?: string
+          accepted_at?: string
+          document_type?: string
+          document_version?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -3754,11 +3772,7 @@ export type Database = {
         | "visualizador"
         | "cliente_externo"
       checklist_status:
-        | "pendente"
-        | "recebido"
-        | "em_analise"
-        | "aprovado"
-        | "rejeitado"
+        "pendente" | "recebido" | "em_analise" | "aprovado" | "rejeitado"
       client_status:
         | "lead"
         | "em_cadastro"
@@ -3767,12 +3781,7 @@ export type Database = {
         | "inativo"
         | "arquivado"
       communication_channel:
-        | "whatsapp"
-        | "telefone"
-        | "email"
-        | "presencial"
-        | "interno"
-        | "outro"
+        "whatsapp" | "telefone" | "email" | "presencial" | "interno" | "outro"
       communication_entry_type:
         | "mensagem"
         | "nota_interna"
@@ -3811,11 +3820,7 @@ export type Database = {
         | "vencido"
         | "arquivado"
       financial_status:
-        | "nao_aplicavel"
-        | "pendente"
-        | "parcial"
-        | "pago"
-        | "atrasado"
+        "nao_aplicavel" | "pendente" | "parcial" | "pago" | "atrasado"
       monitoring_status: "ativo" | "em_renovacao" | "renovado" | "arquivado"
       person_type: "pf" | "pj"
       priority_level: "baixa" | "media" | "alta" | "critica"
@@ -3854,12 +3859,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3881,13 +3886,12 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3906,13 +3910,12 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3931,13 +3934,12 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3950,11 +3952,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

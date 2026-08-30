@@ -27,8 +27,7 @@ export const Route = createFileRoute("/")({
       { title: "FLUXA — Gestão empresarial em um único fluxo" },
       {
         name: "description",
-        content:
-          "Organize clientes, processos, documentos, tarefas, comunicação e financeiro. Experimente a FLUXA por 14 dias.",
+        content: "Organize clientes, processos, documentos, tarefas, comunicação e financeiro. Experimente a FLUXA por 14 dias.",
       },
       { property: "og:title", content: "FLUXA — Sua operação inteira em um único fluxo" },
       {
@@ -105,10 +104,26 @@ const AUDIENCES = [
 ];
 
 const METRICS = [
-  { label: "Tarefas atrasadas", value: "0", color: "border-rose-400 bg-rose-50 dark:bg-rose-950/20" },
-  { label: "Processos críticos", value: "0", color: "border-violet-400 bg-violet-50 dark:bg-violet-950/20" },
-  { label: "Retornos atrasados", value: "0", color: "border-cyan-400 bg-cyan-50 dark:bg-cyan-950/20" },
-  { label: "Próximos vencimentos", value: "4", color: "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20" },
+  {
+    label: "Tarefas atrasadas",
+    value: "0",
+    color: "border-rose-400 bg-rose-50 dark:bg-rose-950/20",
+  },
+  {
+    label: "Processos críticos",
+    value: "0",
+    color: "border-violet-400 bg-violet-50 dark:bg-violet-950/20",
+  },
+  {
+    label: "Retornos atrasados",
+    value: "0",
+    color: "border-cyan-400 bg-cyan-50 dark:bg-cyan-950/20",
+  },
+  {
+    label: "Próximos vencimentos",
+    value: "4",
+    color: "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20",
+  },
 ];
 
 function TrialLink({ children, variant = "default", className }: { children: React.ReactNode; variant?: "default" | "outline"; className?: string }) {
@@ -175,9 +190,7 @@ function ProductPreview() {
             <div className="mt-3 grid grid-cols-2 gap-2">
               {METRICS.map((metric) => (
                 <div key={metric.label} className={`rounded-lg border-t-2 p-2.5 sm:p-3 ${metric.color}`}>
-                  <p className="min-h-6 text-[0.55rem] leading-3 font-medium text-muted-foreground uppercase sm:text-[0.65rem]">
-                    {metric.label}
-                  </p>
+                  <p className="min-h-6 text-[0.55rem] leading-3 font-medium text-muted-foreground uppercase sm:text-[0.65rem]">{metric.label}</p>
                   <p className="mt-1 text-lg font-semibold text-emerald-700 sm:text-xl">{metric.value}</p>
                   <p className="text-[0.55rem] text-muted-foreground">{metric.value === "0" ? "Tudo em dia" : "Acompanhar"}</p>
                 </div>
@@ -211,14 +224,24 @@ function CommercialLanding() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Brand />
           <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex" aria-label="Navegação principal">
-            <a href="#recursos" className="transition-colors hover:text-foreground">Recursos</a>
-            <a href="#como-funciona" className="transition-colors hover:text-foreground">Como funciona</a>
-            <a href="#para-quem" className="transition-colors hover:text-foreground">Para quem</a>
-            <a href="#seguranca" className="transition-colors hover:text-foreground">Segurança</a>
+            <a href="#recursos" className="transition-colors hover:text-foreground">
+              Recursos
+            </a>
+            <a href="#como-funciona" className="transition-colors hover:text-foreground">
+              Como funciona
+            </a>
+            <a href="#para-quem" className="transition-colors hover:text-foreground">
+              Para quem
+            </a>
+            <a href="#seguranca" className="transition-colors hover:text-foreground">
+              Segurança
+            </a>
           </nav>
           <div className="flex items-center gap-2">
             <Button variant="ghost" asChild className="hidden sm:inline-flex">
-              <Link to="/entrar" search={{ mode: "login" }}>Entrar</Link>
+              <Link to="/entrar" search={{ mode: "login" }}>
+                Entrar
+              </Link>
             </Button>
             <TrialLink className="shadow-md shadow-primary/15">Testar grátis</TrialLink>
           </div>
@@ -302,8 +325,12 @@ function CommercialLanding() {
             <div>
               <p className="text-sm font-semibold text-primary">COMECE SEM COMPLICAÇÃO</p>
               <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">Da conta criada à operação organizada</h2>
-              <p className="mt-4 leading-7 text-muted-foreground">A configuração inicial conduz você pelos dados essenciais da empresa. Depois, cada módulo pode ser preenchido no ritmo da sua equipe.</p>
-              <TrialLink className="mt-7 h-11">Criar minha empresa <ArrowRight className="size-4" /></TrialLink>
+              <p className="mt-4 leading-7 text-muted-foreground">
+                A configuração inicial conduz você pelos dados essenciais da empresa. Depois, cada módulo pode ser preenchido no ritmo da sua equipe.
+              </p>
+              <TrialLink className="mt-7 h-11">
+                Criar minha empresa <ArrowRight className="size-4" />
+              </TrialLink>
             </div>
             <ol className="grid gap-4 sm:grid-cols-3">
               {[
@@ -352,7 +379,9 @@ function CommercialLanding() {
               <ShieldCheck className="size-4" aria-hidden /> SEGURANÇA DESDE A BASE
             </div>
             <h2 className="mt-5 font-display text-3xl font-semibold tracking-tight sm:text-4xl">Os dados de cada empresa permanecem no lugar certo</h2>
-            <p className="mt-4 max-w-xl leading-7 text-slate-300">A arquitetura foi construída para separar organizações, controlar permissões e registrar ações importantes sem expor dados entre empresas.</p>
+            <p className="mt-4 max-w-xl leading-7 text-slate-300">
+              A arquitetura foi construída para separar organizações, controlar permissões e registrar ações importantes sem expor dados entre empresas.
+            </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {[
@@ -393,8 +422,18 @@ function CommercialLanding() {
           <Brand />
           <p className="text-sm text-muted-foreground">Gestão empresarial em um único fluxo.</p>
           <div className="flex items-center gap-4 text-sm">
-            <Link to="/entrar" search={{ mode: "login" }} className="text-muted-foreground hover:text-foreground">Entrar</Link>
-            <Link to="/entrar" search={{ mode: "signup" }} className="font-medium text-primary hover:underline">Testar grátis</Link>
+            <Link to="/termos-de-uso" className="text-muted-foreground hover:text-foreground">
+              Termos
+            </Link>
+            <Link to="/politica-de-privacidade" className="text-muted-foreground hover:text-foreground">
+              Privacidade
+            </Link>
+            <Link to="/entrar" search={{ mode: "login" }} className="text-muted-foreground hover:text-foreground">
+              Entrar
+            </Link>
+            <Link to="/entrar" search={{ mode: "signup" }} className="font-medium text-primary hover:underline">
+              Testar grátis
+            </Link>
           </div>
         </div>
       </footer>
