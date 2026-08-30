@@ -49,6 +49,7 @@ import { initials, relativeTime } from "@/lib/format";
 import { NAV_ITEMS } from "@/lib/navigation";
 import { isSafeNotificationUrl } from "@/lib/notifications";
 import { GlobalSearch } from "@/components/global-search";
+import { useSubscriptionCheckout } from "@/hooks/use-subscription-checkout";
 
 export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const navigate = useNavigate();
@@ -64,6 +65,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
     platformAdmin,
   } = useWorkspace();
   const [searchOpen, setSearchOpen] = useState(false);
+  const subscription = useSubscriptionCheckout();
 
   const current = NAV_ITEMS.find(
     (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
@@ -139,6 +141,16 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
             <Badge variant="outline" className="hidden whitespace-nowrap sm:inline-flex">
               Teste: {trialDaysRemaining} {trialDaysRemaining === 1 ? "dia restante" : "dias restantes"}
             </Badge>
+          )}
+          {commercialStatus === "trial" && subscription.canSubscribe && (
+            <Button
+              variant="outline"
+              className="hidden whitespace-nowrap md:inline-flex"
+              disabled={subscription.loading}
+              onClick={() => void subscription.openCheckout()}
+            >
+              {subscription.loading ? "Abrindo…" : "Assinar"}
+            </Button>
           )}
           <Button
             variant="outline"

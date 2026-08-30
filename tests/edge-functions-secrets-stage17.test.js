@@ -12,7 +12,7 @@ const trackedFiles = execFileSync("git", ["ls-files", "-co", "--exclude-standard
   .filter((path) => path && existsSync(new URL(`../${path}`, import.meta.url)));
 
 describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
-  test("não há Edge Functions implementadas ou configuradas", () => {
+  test("somente o webhook comercial aprovado está implementado e configurado", () => {
     const functionsUrl = new URL("../supabase/functions", import.meta.url);
     const functionEntries = existsSync(functionsUrl)
       ? readdirSync(functionsUrl, { recursive: true }).filter((entry) => {
@@ -21,8 +21,11 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
         })
       : [];
 
-    assert.deepEqual(functionEntries, []);
-    assert.doesNotMatch(read("supabase/config.toml"), /^\s*\[functions\.[^\]]+\]/m);
+    assert.deepEqual(functionEntries, ["kiwify-webhook/index.ts"]);
+    const configuredFunctions = [
+      ...read("supabase/config.toml").matchAll(/^\s*\[functions\.([^\]]+)\]/gm),
+    ].map((match) => match[1]);
+    assert.deepEqual(configuredFunctions, ["kiwify-webhook"]);
   });
 
   test("frontend não chama Edge Functions", () => {

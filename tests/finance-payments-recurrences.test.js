@@ -200,10 +200,10 @@ describe("recorrências financeiras", () => {
       /CREATE TRIGGER|CREATE OR REPLACE FUNCTION public\.financial_validate_recurrence_links/,
     );
   });
-  test("não há Edge Function nova nem escrita financeira direta no frontend", () => {
+  test("não há Edge Function financeira nem escrita financeira direta no frontend", () => {
     const functionsUrl = new URL("../supabase/functions", import.meta.url);
     const functions = existsSync(functionsUrl) ? readdirSync(functionsUrl) : [];
-    assert.deepEqual(functions, []);
+    assert.deepEqual(functions, ["kiwify-webhook"]);
     assert.doesNotMatch(
       route + hook,
       /\.from\(["']financial_(?:transaction_payments|account_movements|recurrences)["']\)\.(?:insert|update|upsert|delete)/,
