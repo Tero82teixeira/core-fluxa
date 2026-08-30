@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as TermosDeUsoRouteImport } from './routes/termos-de-uso'
 import { Route as AuthenticatedAdministracaoPlataformaRouteImport } from './routes/_authenticated/administracao-plataforma'
 import { Route as AuthenticatedAjudaRouteImport } from './routes/_authenticated/ajuda'
 import { Route as AuthenticatedAutomacoesRouteImport } from './routes/_authenticated/automacoes'
@@ -53,9 +55,19 @@ const EntrarRoute = EntrarRouteImport.update({
   path: '/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PoliticaDePrivacidadeRoute = PoliticaDePrivacidadeRouteImport.update({
+  id: '/politica-de-privacidade',
+  path: '/politica-de-privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosDeUsoRoute = TermosDeUsoRouteImport.update({
+  id: '/termos-de-uso',
+  path: '/termos-de-uso',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdministracaoPlataformaRoute =
@@ -199,7 +211,9 @@ const AuthenticatedClientesClientIdEditarRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/entrar': typeof EntrarRoute
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
   '/administracao-plataforma': typeof AuthenticatedAdministracaoPlataformaRoute
   '/ajuda': typeof AuthenticatedAjudaRoute
   '/automacoes': typeof AuthenticatedAutomacoesRoute
@@ -229,7 +243,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/entrar': typeof EntrarRoute
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
   '/administracao-plataforma': typeof AuthenticatedAdministracaoPlataformaRoute
   '/ajuda': typeof AuthenticatedAjudaRoute
   '/automacoes': typeof AuthenticatedAutomacoesRoute
@@ -259,7 +275,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/entrar': typeof EntrarRoute
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
   '/_authenticated/administracao-plataforma': typeof AuthenticatedAdministracaoPlataformaRoute
   '/_authenticated/ajuda': typeof AuthenticatedAjudaRoute
   '/_authenticated/automacoes': typeof AuthenticatedAutomacoesRoute
@@ -291,7 +309,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/entrar'
+    | '/politica-de-privacidade'
     | '/redefinir-senha'
+    | '/termos-de-uso'
     | '/administracao-plataforma'
     | '/ajuda'
     | '/automacoes'
@@ -321,7 +341,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/entrar'
+    | '/politica-de-privacidade'
     | '/redefinir-senha'
+    | '/termos-de-uso'
     | '/administracao-plataforma'
     | '/ajuda'
     | '/automacoes'
@@ -350,7 +372,9 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/entrar'
+    | '/politica-de-privacidade'
     | '/redefinir-senha'
+    | '/termos-de-uso'
     | '/_authenticated/administracao-plataforma'
     | '/_authenticated/ajuda'
     | '/_authenticated/automacoes'
@@ -382,7 +406,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   EntrarRoute: typeof EntrarRoute
+  PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  TermosDeUsoRoute: typeof TermosDeUsoRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
 }
 
@@ -409,11 +435,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/politica-de-privacidade': {
+      id: '/politica-de-privacidade'
+      path: '/politica-de-privacidade'
+      fullPath: '/politica-de-privacidade'
+      preLoaderRoute: typeof PoliticaDePrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/redefinir-senha': {
       id: '/redefinir-senha'
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos-de-uso': {
+      id: '/termos-de-uso'
+      path: '/termos-de-uso'
+      fullPath: '/termos-de-uso'
+      preLoaderRoute: typeof TermosDeUsoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/administracao-plataforma': {
@@ -681,7 +721,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   EntrarRoute: EntrarRoute,
+  PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  TermosDeUsoRoute: TermosDeUsoRoute,
   ConviteTokenRoute: ConviteTokenRoute,
 }
 export const routeTree = rootRouteImport

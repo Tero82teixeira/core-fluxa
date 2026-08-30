@@ -1,8 +1,18 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
+import { buildLegalAcceptanceMetadata } from "@/lib/legal";
 
 /**
  * Fonte única de verdade da autenticação.
@@ -68,15 +78,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, []);
 
-  const signUp = useCallback(async ({ email, password, fullName }: { email: string; password: string; fullName: string }) => {
-    const { data, error } = await supabase.auth.signUp({
+  const signUp = useCallback(
+    async ({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/central`, data: { full_name: fullName } },
-    });
-    if (error) throw error;
-    return { needsEmailConfirmation: !data.session };
-  }, []);
+      fullName,
+    }: {
+      email: string;
+      password: string;
+      fullName: string;
+    }) => {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/central`,
+          data: {
+            full_name: fullName,
+            ...buildLegalAcceptanceMetadata("company_signup"),
+          },
+        },
+      });
+      if (error) throw error;
+      return { needsEmailConfirmation: !data.session };
+    },
+    [],
+  );
 
   const resendConfirmation = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resend({

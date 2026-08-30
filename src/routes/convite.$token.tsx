@@ -6,10 +6,12 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE, type AppRole } from "@/lib/domain";
+import { buildLegalAcceptanceMetadata } from "@/lib/legal";
 import { writeWorkspacePreference } from "@/lib/workspace-preference";
 
 const INVITATION_STORAGE_KEY = "fluxa-pending-invitation";
@@ -51,6 +53,7 @@ function InvitationPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [session, setSession] = useState(false);
+  const [legalAccepted, setLegalAccepted] = useState(false);
 
   useEffect(() => {
     window.localStorage.setItem(INVITATION_STORAGE_KEY, "1");
@@ -71,6 +74,7 @@ function InvitationPage() {
       if (!preview) throw new Error("INVITE_NOT_FOUND");
       const current = await supabase.auth.getUser();
       if (!current.data.user) {
+        if (!legalAccepted) throw new Error("Aceite os Termos de Uso e a Política de Privacidade.");
         if (password.length < 6 || password !== confirm)
           throw new Error("Confira a senha (mínimo de 6 caracteres).");
         const signed = await supabase.auth.signUp({
@@ -78,7 +82,10 @@ function InvitationPage() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/convite/${token}`,
-            data: { full_name: name.trim() },
+            data: {
+              full_name: name.trim(),
+              ...buildLegalAcceptanceMetadata("invitation"),
+            },
           },
         });
         if (signed.error) throw signed.error;
@@ -108,7 +115,9 @@ function InvitationPage() {
     } catch (e) {
       const raw =
         e instanceof Error ? e.message : String((e as { message?: string })?.message ?? "");
-      toast.error(raw.startsWith("Confira") ? raw : invitationMessage(raw));
+      toast.error(
+        raw.startsWith("Confira") || raw.startsWith("Aceite") ? raw : invitationMessage(raw),
+      );
     } finally {
       setLoading(false);
     }
@@ -183,11 +192,33 @@ function InvitationPage() {
                       onChange={(e) => setConfirm(e.target.value)}
                     />
                   </div>
+                  <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-muted-foreground">
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={legalAccepted}
+                      onCheckedChange={(value) => setLegalAccepted(value === true)}
+                    />
+                    <span>
+                      Li e aceito os{" "}
+                      <Link to="/termos-de-uso" target="_blank" className="text-brand underline">
+                        Termos de Uso
+                      </Link>{" "}
+                      e declaro ciência da{" "}
+                      <Link
+                        to="/politica-de-privacidade"
+                        target="_blank"
+                        className="text-brand underline"
+                      >
+                        Política de Privacidade
+                      </Link>
+                      .
+                    </span>
+                  </label>
                 </>
               )}
               <Button
                 className="w-full"
-                disabled={loading || (!session && !name.trim())}
+                disabled={loading || (!session && (!name.trim() || !legalAccepted))}
                 onClick={accept}
               >
                 {loading && <Loader2 className="animate-spin" />}
