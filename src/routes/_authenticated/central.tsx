@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { GettingStartedCard } from "@/components/getting-started-card";
 import { cn } from "@/lib/utils";
 import type { Tone } from "@/lib/domain";
 import { useWorkspace } from "@/lib/workspace";
@@ -27,6 +28,7 @@ import { useOperationalMonitoring } from "@/hooks/use-monitoring-center";
 import { useFinance } from "@/hooks/use-finance";
 import { useCommunicationThreads } from "@/hooks/use-communication";
 import { useDocumentsSummary } from "@/hooks/use-documents";
+import { useGettingStarted } from "@/hooks/use-getting-started";
 import { monitoringAttention, financeSummary, communicationSummary } from "@/lib/command-center";
 import { effectivePriority } from "@/lib/monitoring";
 import { taskIndicators } from "@/lib/tasks";
@@ -172,7 +174,12 @@ function Block({
     <Card className="min-w-0 overflow-hidden border-border/70 shadow-sm">
       <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b bg-muted/15 pb-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", visualTone[tone].header)}>
+          <span
+            className={cn(
+              "grid size-9 shrink-0 place-items-center rounded-xl",
+              visualTone[tone].header,
+            )}
+          >
             <Icon className="size-4.5" aria-hidden />
           </span>
           <CardTitle className="truncate text-base">{title}</CardTitle>
@@ -236,7 +243,7 @@ function Row({
 }
 
 function Central() {
-  const { organizationId, membership, can } = useWorkspace();
+  const { organizationId, membership, role, can } = useWorkspace();
   const canProcesses = can("processes.view"),
     canFinance = can("finance.view");
   const tasks = useTasks(organizationId);
@@ -246,6 +253,7 @@ function Central() {
   const communication = useCommunicationThreads(organizationId);
   const documents = useDocumentsSummary(organizationId);
   const activity = useRecentActivity(canProcesses ? organizationId : null);
+  const gettingStarted = useGettingStarted(organizationId, role === "proprietario");
   const taskStats = taskIndicators(tasks.data ?? []);
   const openTasks = (tasks.data ?? []).filter((t) => t.status !== "concluida");
   const processRows = (processes.data ?? []).filter((p) => !closed.includes(p.stage));
@@ -268,7 +276,14 @@ function Central() {
       "amber",
     ],
     ["Retornos atrasados", cs.overdue, "/comunicacao", MessageCircle, "atencao", "cyan"],
-    ["Documentos vencendo", documents.data?.expiring ?? 0, "/documentos", FileClock, "atencao", "indigo"],
+    [
+      "Documentos vencendo",
+      documents.data?.expiring ?? 0,
+      "/documentos",
+      FileClock,
+      "atencao",
+      "indigo",
+    ],
   ];
   if (canProcesses)
     metrics.splice(
@@ -326,7 +341,10 @@ function Central() {
   return (
     <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
       <header className="relative grid overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.10] via-card to-sky-500/[0.07] p-5 shadow-sm sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-        <div className="pointer-events-none absolute -top-16 -right-12 size-48 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+        <div
+          className="pointer-events-none absolute -top-16 -right-12 size-48 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden
+        />
         <div className="relative min-w-0">
           <div className="flex items-center gap-3">
             <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
@@ -353,7 +371,10 @@ function Central() {
           <p className="text-xs text-muted-foreground">
             Dados atualizados{" "}
             {updated
-              ? new Date(updated).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+              ? new Date(updated).toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
               : "ao carregar"}
           </p>
           <Button
@@ -369,6 +390,9 @@ function Central() {
           </Button>
         </div>
       </header>
+      {role === "proprietario" && gettingStarted.data && (
+        <GettingStartedCard progress={gettingStarted.data} />
+      )}
       <section
         aria-label="Indicadores principais"
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
@@ -389,7 +413,10 @@ function Central() {
                   levelCard[level],
                 )}
               >
-                <span className={cn("absolute inset-x-0 top-0 h-1", visualTone[tone].accent)} aria-hidden />
+                <span
+                  className={cn("absolute inset-x-0 top-0 h-1", visualTone[tone].accent)}
+                  aria-hidden
+                />
                 <CardContent className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5">
                   <div className="min-w-0">
                     <p className="min-h-8 text-xs leading-4 font-medium tracking-wide text-muted-foreground uppercase">
@@ -398,9 +425,7 @@ function Central() {
                     <strong
                       className={cn(
                         "mt-1 block text-3xl leading-none font-semibold tabular-nums",
-                        value === 0
-                          ? "text-emerald-700 dark:text-emerald-300"
-                          : levelValue[level],
+                        value === 0 ? "text-emerald-700 dark:text-emerald-300" : levelValue[level],
                       )}
                     >
                       {value}
