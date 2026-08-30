@@ -43,17 +43,11 @@ describe("assinatura mensal via Kiwify", () => {
         ),
         "utf8",
       ),
-      readFile(
-        new URL("../supabase/functions/kiwify-webhook/index.ts", import.meta.url),
-        "utf8",
-      ),
+      readFile(new URL("../supabase/functions/kiwify-webhook/index.ts", import.meta.url), "utf8"),
       readFile(new URL("../src/components/commercial-access-blocked.tsx", import.meta.url), "utf8"),
       readFile(new URL("../src/components/layout/app-header.tsx", import.meta.url), "utf8"),
       readFile(new URL("../supabase/config.toml", import.meta.url), "utf8"),
-      readFile(
-        new URL("../src/integrations/supabase/types.ts", import.meta.url),
-        "utf8",
-      ),
+      readFile(new URL("../src/integrations/supabase/types.ts", import.meta.url), "utf8"),
     ]);
 
     assert.match(migration, /CREATE TABLE public\.organization_subscriptions/);
@@ -65,6 +59,7 @@ describe("assinatura mensal via Kiwify", () => {
     assert.match(webhook, /KIWIFY_PRODUCT_ID/);
     assert.match(webhook, /BILLING_EMAIL_MISMATCH/);
     assert.match(webhook, /TrackingParameters/);
+    assert.match(webhook, /withSupabase\(\{ auth: "none" \}/);
     assert.match(config, /\[functions\.kiwify-webhook\][\s\S]*verify_jwt = false/);
     assert.match(blocked, /Assinar FLUXA/);
     assert.match(header, /commercialStatus === "trial"[\s\S]*Assinar/);
