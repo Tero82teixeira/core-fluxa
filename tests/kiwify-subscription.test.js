@@ -7,8 +7,39 @@ import {
   canManageSubscription,
   KIWIFY_CHECKOUT_URL,
 } from "../src/lib/billing.ts";
+import { extractKiwifyOrder } from "../supabase/functions/kiwify-webhook/payload.ts";
 
 describe("assinatura mensal via Kiwify", () => {
+  test("normaliza o envelope real de produção da Kiwify", () => {
+    const order = extractKiwifyOrder({
+      url: "https://example.invalid/webhook",
+      signature: "assinatura-omitida",
+      order: {
+        order_id: "pedido-123",
+        webhook_event_type: "order_approved",
+        Product: { product_id: "produto-123" },
+        Customer: { email: "cliente@example.com" },
+        TrackingParameters: { s1: "11111111-1111-4111-8111-111111111111" },
+      },
+    });
+
+    assert.equal(order.order_id, "pedido-123");
+    assert.equal(order.webhook_event_type, "order_approved");
+    assert.deepEqual(order.Product, { product_id: "produto-123" });
+    assert.deepEqual(order.TrackingParameters, {
+      s1: "11111111-1111-4111-8111-111111111111",
+    });
+  });
+
+  test("mantém compatibilidade com payload plano dos testes do painel", () => {
+    const payload = {
+      webhook_event_type: "integration_test",
+      Product: { product_id: "produto-123" },
+    };
+
+    assert.equal(extractKiwifyOrder(payload), payload);
+  });
+
   test("usa o checkout público aprovado e identifica a empresa sem expor segredo", () => {
     const url = new URL(
       buildKiwifyCheckoutUrl({
