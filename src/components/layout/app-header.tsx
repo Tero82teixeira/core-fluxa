@@ -7,6 +7,7 @@ import {
   Building,
   CalendarPlus,
   ChevronDown,
+  Clock3,
   CreditCard,
   FilePlus2,
   ListPlus,
@@ -138,18 +139,26 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
 
         <div className="flex shrink-0 items-center gap-1.5">
           {commercialStatus === "trial" && trialDaysRemaining !== null && (
-            <Badge variant="outline" className="hidden whitespace-nowrap sm:inline-flex">
-              Teste: {trialDaysRemaining} {trialDaysRemaining === 1 ? "dia restante" : "dias restantes"}
+            <Badge
+              variant="outline"
+              className="hidden h-9 gap-1.5 whitespace-nowrap border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-2.5 text-amber-950 shadow-sm sm:inline-flex dark:border-amber-800/70 dark:from-amber-950/70 dark:to-orange-950/50 dark:text-amber-100"
+            >
+              <Clock3 className="size-3.5 text-amber-600 dark:text-amber-400" aria-hidden />
+              <span className="font-semibold">Teste grátis</span>
+              <span className="rounded-full bg-amber-500 px-2 py-0.5 font-bold text-white shadow-sm">
+                {trialDaysRemaining} {trialDaysRemaining === 1 ? "dia" : "dias"}
+              </span>
+              <span className="hidden xl:inline">restantes</span>
             </Badge>
           )}
           {commercialStatus === "trial" && subscription.canSubscribe && (
             <Button
-              variant="outline"
-              className="hidden whitespace-nowrap md:inline-flex"
+              className="hidden h-9 gap-2 whitespace-nowrap border-0 bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-white shadow-[0_8px_20px_-8px_rgba(37,99,235,0.85)] transition-all duration-200 hover:-translate-y-0.5 hover:from-blue-700 hover:to-indigo-700 hover:shadow-[0_10px_24px_-8px_rgba(37,99,235,0.95)] md:inline-flex"
               disabled={subscription.loading}
               onClick={() => void subscription.openCheckout()}
             >
-              {subscription.loading ? "Abrindo…" : "Assinar"}
+              <CreditCard className="size-4" aria-hidden />
+              {subscription.loading ? "Abrindo…" : "Assinar agora"}
             </Button>
           )}
           <Button
