@@ -261,36 +261,194 @@ GRANT EXECUTE ON FUNCTION public.suspend_expired_kiwify_subscriptions(
   timestamptz, integer
 ) TO postgres;
 
--- Keep one low-frequency trusted clock. The billing expiry is isolated from
--- the existing operational cycle and cannot stop its execution.
-DO $scheduler$
+-- Keep the single cron command stable. Billing expiry becomes one isolated
+-- stage of the existing temporal cycle, like the other operational scans.
+CREATE OR REPLACE FUNCTION public.run_temporal_automation_cycle()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public, pg_temp
+AS $$
 DECLARE
-  existing_job record;
+  scheduled_count integer;
+  critical_count integer := 0;
+  unassigned_count integer := 0;
+  deadline_count integer := 0;
+  overdue_escalation_count integer := 0;
+  stale_process_count integer := 0;
+  overdue_communication_count integer := 0;
+  expired_document_count integer := 0;
+  overdue_financial_count integer := 0;
+  financial_recurrence_count integer := 0;
+  weekly_financial_summary_count integer := 0;
+  weekly_data_quality_count integer := 0;
+  stale_client_count integer := 0;
+  client_birthday_count integer := 0;
+  stale_lead_count integer := 0;
+  stale_task_count integer := 0;
+  daily_operational_close_count integer := 0;
+  kiwify_expiry_count integer := 0;
 BEGIN
-  IF current_user <> 'postgres' THEN
-    RAISE EXCEPTION 'SCHEDULER_REQUIRES_POSTGRES';
-  END IF;
+  scheduled_count := public.process_due_scheduled_automations();
 
-  IF NOT has_function_privilege(
-    'postgres',
-    'public.suspend_expired_kiwify_subscriptions(timestamp with time zone,integer)',
-    'EXECUTE'
-  ) THEN
-    RAISE EXCEPTION 'KIWIFY_EXPIRY_NOT_EXECUTABLE';
-  END IF;
+  BEGIN
+    kiwify_expiry_count :=
+      public.suspend_expired_kiwify_subscriptions();
+  EXCEPTION WHEN OTHERS THEN
+    kiwify_expiry_count := -1;
+    RAISE WARNING 'KIWIFY_SUBSCRIPTION_EXPIRY_FAILED: %', SQLSTATE;
+  END;
 
-  FOR existing_job IN
-    SELECT job.jobid
-      FROM cron.job AS job
-     WHERE job.jobname = 'core-fluxa-process-due-scheduled-automations'
-  LOOP
-    PERFORM cron.unschedule(existing_job.jobid);
-  END LOOP;
+  BEGIN
+    daily_operational_close_count :=
+      public.create_daily_operational_close_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    daily_operational_close_count := -1;
+    RAISE WARNING 'DAILY_OPERATIONAL_CLOSE_FAILED: %', SQLSTATE;
+  END;
 
-  PERFORM cron.schedule(
-    'core-fluxa-process-due-scheduled-automations',
-    '*/15 * * * *',
-    'SELECT public.run_temporal_automation_cycle(), public.suspend_expired_kiwify_subscriptions();'
+  BEGIN
+    financial_recurrence_count :=
+      public.process_due_financial_recurrences();
+  EXCEPTION WHEN OTHERS THEN
+    financial_recurrence_count := -1;
+    RAISE WARNING 'FINANCIAL_RECURRENCE_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    weekly_financial_summary_count :=
+      public.create_weekly_financial_summary_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    weekly_financial_summary_count := -1;
+    RAISE WARNING 'WEEKLY_FINANCIAL_SUMMARY_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    weekly_data_quality_count :=
+      public.create_weekly_data_quality_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    weekly_data_quality_count := -1;
+    RAISE WARNING 'WEEKLY_DATA_QUALITY_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    stale_client_count := public.create_stale_client_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    stale_client_count := -1;
+    RAISE WARNING 'STALE_CLIENT_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    client_birthday_count :=
+      public.create_client_birthday_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    client_birthday_count := -1;
+    RAISE WARNING 'CLIENT_BIRTHDAY_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    stale_lead_count := public.create_stale_lead_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    stale_lead_count := -1;
+    RAISE WARNING 'STALE_LEAD_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    critical_count := public.create_critical_monitoring_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    critical_count := -1;
+    RAISE WARNING 'CRITICAL_MONITORING_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    unassigned_count := public.create_unassigned_monitoring_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    unassigned_count := -1;
+    RAISE WARNING 'UNASSIGNED_MONITORING_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    deadline_count := public.create_deadline_reminder_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    deadline_count := -1;
+    RAISE WARNING 'DEADLINE_REMINDER_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    overdue_escalation_count :=
+      public.create_overdue_task_escalation_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    overdue_escalation_count := -1;
+    RAISE WARNING 'OVERDUE_TASK_ESCALATION_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    stale_task_count := public.create_stale_task_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    stale_task_count := -1;
+    RAISE WARNING 'STALE_TASK_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    stale_process_count := public.create_stale_process_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    stale_process_count := -1;
+    RAISE WARNING 'STALE_PROCESS_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    overdue_communication_count :=
+      public.create_overdue_communication_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    overdue_communication_count := -1;
+    RAISE WARNING 'OVERDUE_COMMUNICATION_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    expired_document_count :=
+      public.create_expired_document_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    expired_document_count := -1;
+    RAISE WARNING 'EXPIRED_DOCUMENT_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    overdue_financial_count :=
+      public.create_overdue_financial_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    overdue_financial_count := -1;
+    RAISE WARNING 'OVERDUE_FINANCIAL_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  RETURN jsonb_build_object(
+    'scheduled_processed', scheduled_count,
+    'kiwify_subscriptions_suspended', kiwify_expiry_count,
+    'daily_operational_close_notifications_created',
+      daily_operational_close_count,
+    'critical_notifications_created', critical_count,
+    'unassigned_notifications_created', unassigned_count,
+    'deadline_notifications_created', deadline_count,
+    'overdue_task_escalations_created', overdue_escalation_count,
+    'stale_task_notifications_created', stale_task_count,
+    'stale_process_notifications_created', stale_process_count,
+    'overdue_communication_notifications_created',
+      overdue_communication_count,
+    'expired_document_notifications_created', expired_document_count,
+    'overdue_financial_notifications_created', overdue_financial_count,
+    'financial_recurrence_transactions_created',
+      financial_recurrence_count,
+    'weekly_financial_summaries_created',
+      weekly_financial_summary_count,
+    'weekly_data_quality_notifications_created',
+      weekly_data_quality_count,
+    'stale_client_notifications_created', stale_client_count,
+    'client_birthday_notifications_created', client_birthday_count,
+    'stale_lead_notifications_created', stale_lead_count
   );
 END;
-$scheduler$;
+$$;
+
+REVOKE ALL ON FUNCTION public.run_temporal_automation_cycle()
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.run_temporal_automation_cycle()
+  TO postgres;

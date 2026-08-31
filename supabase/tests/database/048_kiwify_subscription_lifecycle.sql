@@ -51,10 +51,18 @@ SELECT ok(
     SELECT 1
       FROM cron.job AS job
      WHERE job.jobname = 'core-fluxa-process-due-scheduled-automations'
-       AND job.command LIKE '%run_temporal_automation_cycle()%'
-       AND job.command LIKE '%suspend_expired_kiwify_subscriptions()%'
+       AND job.command = 'SELECT public.run_temporal_automation_cycle();'
   ),
-  'the temporal job runs operations and subscription expiry'
+  'the established temporal command remains unchanged'
+);
+SELECT ok(
+  pg_get_functiondef(
+    'public.run_temporal_automation_cycle()'::regprocedure
+  ) LIKE '%suspend_expired_kiwify_subscriptions()%'
+  AND pg_get_functiondef(
+    'public.run_temporal_automation_cycle()'::regprocedure
+  ) LIKE '%kiwify_subscriptions_suspended%',
+  'subscription expiry is an isolated stage of the temporal cycle'
 );
 
 SELECT * FROM finish();

@@ -51,11 +51,11 @@ describe("ciclo de vida da assinatura Kiwify", () => {
     assert.match(migration, /status IN \('pending', 'past_due', 'canceled'\)/);
     assert.match(migration, /FOR UPDATE OF subscription SKIP LOCKED/);
     assert.match(migration, /GRANT EXECUTE[\s\S]*TO postgres/);
-    assert.match(migration, /core-fluxa-process-due-scheduled-automations/);
     assert.match(
       migration,
-      /run_temporal_automation_cycle\(\), public\.suspend_expired_kiwify_subscriptions\(\)/,
+      /kiwify_expiry_count :=[\s\S]*public\.suspend_expired_kiwify_subscriptions\(\)/,
     );
+    assert.doesNotMatch(migration, /cron\.schedule/);
     assert.doesNotMatch(migration, /GRANT EXECUTE[\s\S]*TO authenticated/);
   });
 });
