@@ -39,9 +39,11 @@ test("situação vencida ou suspensa bloqueia o workspace", () => {
   assert.match(migration, /CREATE OR REPLACE FUNCTION public\.automation_can_manage/);
 });
 
-test("prazo restante aparece no cabeçalho", () => {
+test("prazo restante e assinatura recebem destaque no cabeçalho", () => {
   assert.match(header, /commercialStatus === "trial"/);
-  assert.match(header, /Teste: \{trialDaysRemaining\}/);
+  assert.match(header, /Teste grátis/);
+  assert.match(header, /\{trialDaysRemaining\}/);
+  assert.match(header, /Assinar agora/);
 });
 
 test("administração da plataforma é isolada e oferece todas as ações comerciais", () => {
