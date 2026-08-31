@@ -17,8 +17,12 @@ import {
 } from "@/components/ui/dialog";
 import { ROLE, TEAM_ROLES, type AppRole } from "@/lib/domain";
 import {
+  TEAM_MEMBER_LIMIT,
+  TEAM_MEMBER_LIMIT_MESSAGE,
+  countUsedTeamSeats,
   eligibleTransferTargets,
   hasOpenResponsibilities,
+  teamInvitationErrorMessage,
   teamMutationErrorMessage,
 } from "@/lib/team-management";
 import { usePermissions } from "@/lib/permissions";
@@ -75,6 +79,8 @@ function TeamPage() {
   const pending = (invitations.data ?? []).filter(
     (item) => item.status === "pending" && new Date(item.expires_at) > new Date(),
   );
+  const usedSeats = countUsedTeamSeats(rows, pending.length);
+  const teamLimitReached = usedSeats >= TEAM_MEMBER_LIMIT;
   const filtered = useMemo(
     () =>
       rows.filter((member) => {
@@ -170,7 +176,7 @@ function TeamPage() {
             : "Convite criado. Configure o serviço de e-mail para envio automático."),
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível criar o convite.");
+      toast.error(teamInvitationErrorMessage(error));
     }
   }
 
@@ -195,6 +201,22 @@ function TeamPage() {
       {permissions.canInviteMembers && (
         <Card>
           <CardContent className="p-5">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-2 rounded-lg border bg-muted/30 p-3">
+              <div>
+                <p className="font-medium">Usuários do plano</p>
+                <p className="text-sm text-muted-foreground">
+                  Usuários ativos e convites pendentes ocupam uma vaga.
+                </p>
+              </div>
+              <p className="text-sm font-semibold">
+                {usedSeats} de {TEAM_MEMBER_LIMIT} vagas usadas
+              </p>
+            </div>
+            {teamLimitReached && (
+              <p className="mb-4 text-sm font-medium text-destructive">
+                {TEAM_MEMBER_LIMIT_MESSAGE}
+              </p>
+            )}
             <form onSubmit={invite} className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
               <div>
                 <Label htmlFor="invite-email">E-mail</Label>
@@ -225,7 +247,15 @@ function TeamPage() {
                   ))}
                 </select>
               </div>
-              <Button className="self-end" disabled={createInvitation.isPending}>
+              <Button
+                className="self-end"
+                disabled={
+                  createInvitation.isPending ||
+                  members.isLoading ||
+                  invitations.isLoading ||
+                  teamLimitReached
+                }
+              >
                 <MailPlus />
                 Convidar
               </Button>
@@ -376,6 +406,10 @@ function TeamPage() {
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={!member.is_active && teamLimitReached}
+                    title={
+                      !member.is_active && teamLimitReached ? TEAM_MEMBER_LIMIT_MESSAGE : undefined
+                    }
                     onClick={async () => {
                       if (!confirm(`${member.is_active ? "Desativar" : "Reativar"} este membro?`))
                         return;
