@@ -2185,12 +2185,14 @@ export type Database = {
       }
       organization_subscriptions: {
         Row: {
+          access_until: string | null
           billing_email: string
           checkout_started_at: string
           created_at: string
           id: string
           last_event_at: string | null
           last_event_type: string | null
+          next_payment_at: string | null
           organization_id: string
           provider: string
           provider_order_id: string | null
@@ -2199,12 +2201,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_until?: string | null
           billing_email: string
           checkout_started_at?: string
           created_at?: string
           id?: string
           last_event_at?: string | null
           last_event_type?: string | null
+          next_payment_at?: string | null
           organization_id: string
           provider?: string
           provider_order_id?: string | null
@@ -2213,12 +2217,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_until?: string | null
           billing_email?: string
           checkout_started_at?: string
           created_at?: string
           id?: string
           last_event_at?: string | null
           last_event_type?: string | null
+          next_payment_at?: string | null
           organization_id?: string
           provider?: string
           provider_order_id?: string | null
@@ -3257,10 +3263,12 @@ export type Database = {
       }
       apply_kiwify_subscription_event: {
         Args: {
+          _access_until?: string
           _event_at?: string
           _event_key: string
           _event_type: string
           _organization: string
+          _next_payment_at?: string
           _provider_order_id?: string
           _provider_subscription_id?: string
           _subscription_status: string
@@ -3730,6 +3738,10 @@ export type Database = {
       }
       storage_path_org: { Args: { _name: string }; Returns: string }
       support_assert_admin: { Args: { _org: string }; Returns: undefined }
+      suspend_expired_kiwify_subscriptions: {
+        Args: { _limit?: number; _now?: string }
+        Returns: number
+      }
       transfer_member_responsibilities: {
         Args: { _from: string; _org: string; _to: string }
         Returns: {

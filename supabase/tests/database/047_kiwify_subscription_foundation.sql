@@ -18,7 +18,11 @@ SELECT has_function(
 );
 SELECT has_function(
   'public', 'apply_kiwify_subscription_event',
-  ARRAY['text', 'uuid', 'text', 'text', 'text', 'text', 'timestamp with time zone'],
+  ARRAY[
+    'text', 'uuid', 'text', 'text', 'text', 'text',
+    'timestamp with time zone', 'timestamp with time zone',
+    'timestamp with time zone'
+  ],
   'service-only Kiwify event function exists'
 );
 
@@ -48,12 +52,12 @@ SELECT ok(
 SELECT ok(
   NOT has_function_privilege(
     'authenticated',
-    'public.apply_kiwify_subscription_event(text,uuid,text,text,text,text,timestamp with time zone)',
+    'public.apply_kiwify_subscription_event(text,uuid,text,text,text,text,timestamp with time zone,timestamp with time zone,timestamp with time zone)',
     'EXECUTE'
   )
   AND has_function_privilege(
     'service_role',
-    'public.apply_kiwify_subscription_event(text,uuid,text,text,text,text,timestamp with time zone)',
+    'public.apply_kiwify_subscription_event(text,uuid,text,text,text,text,timestamp with time zone,timestamp with time zone,timestamp with time zone)',
     'EXECUTE'
   ),
   'only the service role can apply Kiwify events'

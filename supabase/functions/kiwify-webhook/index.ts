@@ -101,6 +101,7 @@ export default {
     const product = asRecord(payload.Product);
     const customer = asRecord(payload.Customer);
     const subscription = asRecord(payload.Subscription);
+    const customerAccess = asRecord(subscription.customer_access);
     const productId = text(product.product_id) ?? text(payload.product_id);
     if (!productId || !secureEquals(productId, expectedProductId)) {
       return reject("PRODUCT_MISMATCH", 403);
@@ -124,6 +125,14 @@ export default {
     const customerEmail = text(customer.email)?.toLowerCase() ?? null;
     const orderId = text(payload.order_id);
     const subscriptionId = text(subscription.id) ?? text(payload.subscription_id);
+    const accessUntil =
+      text(customerAccess.access_until) ??
+      text(subscription.access_until) ??
+      text(payload.access_until);
+    const nextPaymentAt =
+      text(subscription.next_payment) ??
+      text(payload.next_payment) ??
+      text(payload.next_payment_at);
     const updatedAt = text(payload.updated_at) ?? text(subscription.updated_at);
     const parsedDate = updatedAt ? new Date(updatedAt) : new Date();
     const eventAt = Number.isNaN(parsedDate.getTime())
@@ -161,6 +170,8 @@ export default {
       _provider_order_id: orderId,
       _provider_subscription_id: subscriptionId,
       _event_at: eventAt,
+      _access_until: accessUntil,
+      _next_payment_at: nextPaymentAt,
     });
 
     if (error) {
