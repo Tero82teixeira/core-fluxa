@@ -94,6 +94,14 @@ SELECT lives_ok($$SELECT public.set_member_active('35150000-0000-0000-0000-00000
 SELECT is((SELECT is_active FROM public.organization_members WHERE id='35150000-0000-0000-0000-000000000003'), false, 'active RPC persists');
 SELECT lives_ok($$SELECT * FROM public.create_invitation('25150000-0000-0000-0000-000000000001','new15@fluxa.test','administrador')$$, 'owner can invite administrator');
 SELECT throws_ok($$SELECT * FROM public.create_invitation('25150000-0000-0000-0000-000000000002','cross15@fluxa.test','operacional')$$, 'P0001', 'NOT_ALLOWED', 'cross-org invitation creation blocked');
+SELECT lives_ok(
+  $$SELECT public.cancel_invitation(id)
+      FROM public.organization_invitations
+     WHERE organization_id='25150000-0000-0000-0000-000000000001'
+       AND email='new15@fluxa.test'
+       AND status='pending'$$,
+  'owner cancels the permission-test invitation and releases its seat'
+);
 SELECT throws_ok($$SELECT public.cancel_invitation('45150000-0000-0000-0000-000000000006')$$, 'P0001', 'NOT_ALLOWED', 'cross-org cancellation blocked');
 
 SELECT set_config('request.jwt.claim.sub','15150000-0000-0000-0000-000000000002',true);

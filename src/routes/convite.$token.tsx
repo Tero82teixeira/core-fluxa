@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE, type AppRole } from "@/lib/domain";
 import { buildLegalAcceptanceMetadata } from "@/lib/legal";
+import { TEAM_MEMBER_LIMIT_MESSAGE } from "@/lib/team-management";
 import { writeWorkspacePreference } from "@/lib/workspace-preference";
 
 const INVITATION_STORAGE_KEY = "fluxa-pending-invitation";
@@ -33,6 +34,7 @@ type AcceptResult = {
 };
 
 function invitationMessage(message: string) {
+  if (message.includes("ORGANIZATION_MEMBER_LIMIT_REACHED")) return TEAM_MEMBER_LIMIT_MESSAGE;
   if (message.includes("INVITE_EMAIL_MISMATCH")) return "Este convite pertence a outro e-mail.";
   if (message.includes("INVITE_EXPIRED")) return "Este convite expirou.";
   if (message.includes("INVITE_ALREADY") || message.includes("INVITE_ALREADY_USED"))
