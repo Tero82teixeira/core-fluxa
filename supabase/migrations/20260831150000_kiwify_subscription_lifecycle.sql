@@ -287,6 +287,7 @@ DECLARE
   stale_lead_count integer := 0;
   stale_task_count integer := 0;
   daily_operational_close_count integer := 0;
+  weekly_productivity_report_count integer := 0;
   kiwify_expiry_count integer := 0;
 BEGIN
   scheduled_count := public.process_due_scheduled_automations();
@@ -297,6 +298,14 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN
     kiwify_expiry_count := -1;
     RAISE WARNING 'KIWIFY_SUBSCRIPTION_EXPIRY_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    weekly_productivity_report_count :=
+      public.create_weekly_productivity_report_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    weekly_productivity_report_count := -1;
+    RAISE WARNING 'WEEKLY_PRODUCTIVITY_REPORT_FAILED: %', SQLSTATE;
   END;
 
   BEGIN
@@ -423,6 +432,8 @@ BEGIN
   RETURN jsonb_build_object(
     'scheduled_processed', scheduled_count,
     'kiwify_subscriptions_suspended', kiwify_expiry_count,
+    'weekly_productivity_reports_created',
+      weekly_productivity_report_count,
     'daily_operational_close_notifications_created',
       daily_operational_close_count,
     'critical_notifications_created', critical_count,

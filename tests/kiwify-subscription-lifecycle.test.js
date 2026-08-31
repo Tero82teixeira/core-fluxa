@@ -55,6 +55,8 @@ describe("ciclo de vida da assinatura Kiwify", () => {
       migration,
       /kiwify_expiry_count :=[\s\S]*public\.suspend_expired_kiwify_subscriptions\(\)/,
     );
+    assert.match(migration, /create_weekly_productivity_report_notifications\(\)/);
+    assert.match(migration, /weekly_productivity_reports_created/);
     assert.doesNotMatch(migration, /cron\.schedule/);
     assert.doesNotMatch(migration, /GRANT EXECUTE[\s\S]*TO authenticated/);
   });

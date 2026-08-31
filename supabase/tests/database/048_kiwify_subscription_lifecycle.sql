@@ -64,6 +64,15 @@ SELECT ok(
   ) LIKE '%kiwify_subscriptions_suspended%',
   'subscription expiry is an isolated stage of the temporal cycle'
 );
+SELECT ok(
+  pg_get_functiondef(
+    'public.run_temporal_automation_cycle()'::regprocedure
+  ) LIKE '%create_weekly_productivity_report_notifications()%'
+  AND pg_get_functiondef(
+    'public.run_temporal_automation_cycle()'::regprocedure
+  ) LIKE '%weekly_productivity_reports_created%',
+  'the latest pre-existing temporal stage remains present'
+);
 
 SELECT * FROM finish();
 ROLLBACK;
