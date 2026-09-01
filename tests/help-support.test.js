@@ -76,9 +76,10 @@ describe("central de ajuda", () => {
     assert.deepEqual(navigated, [article.relatedRoute]);
     assert.equal(navigated[0], "/tarefas");
   });
-  test("somente a ação explícita do diálogo recebe a navegação", () => {
-    assert.equal(route.match(/\bnavigate\s*\(/g)?.length, 1);
+  test("somente ações explícitas usam navegação", () => {
+    assert.equal(route.match(/\bnavigate\s*\(/g)?.length, 2);
     assert.match(route, /goToHelpArticleModule\(event, selected/);
+    assert.match(route, /navigate\(\{ to: "\/ajuda", search: \{\}, replace: true \}\)/);
     assert.equal(route.match(/openHelpArticle\(event,/g)?.length, 3);
     assert.doesNotMatch(route, /window\.open\s*\(|href\s*=\s*["']https?:\/\/|target="_blank"/i);
     assert.equal(route.match(/type="button"/g)?.length >= 5, true);

@@ -49,7 +49,7 @@ import {
 } from "@/hooks/use-notifications";
 import { initials, relativeTime } from "@/lib/format";
 import { NAV_ITEMS } from "@/lib/navigation";
-import { isSafeNotificationUrl } from "@/lib/notifications";
+import { notificationDestination, type Notification } from "@/lib/notifications";
 import { GlobalSearch } from "@/components/global-search";
 import { useSubscriptionCheckout } from "@/hooks/use-subscription-checkout";
 import { usePlatformSupportOpenCount } from "@/hooks/use-platform-support";
@@ -81,9 +81,10 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const markNotification = useMarkNotificationRead(organizationId);
   const unread = unreadQuery.data ?? 0;
 
-  const openNotification = async (id: string, url: string | null) => {
-    await markNotification.mutateAsync({ _notification: id });
-    if (isSafeNotificationUrl(url)) await navigate({ to: url });
+  const openNotification = async (notification: Notification) => {
+    await markNotification.mutateAsync({ _notification: notification.id });
+    const destination = notificationDestination(notification);
+    if (destination) await navigate({ to: destination });
   };
 
   useEffect(() => {
@@ -237,7 +238,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
                     type="button"
                     key={item.id}
                     className={`block w-full px-4 py-3 text-left ${!item.read_at ? "bg-brand/5" : ""}`}
-                    onClick={() => void openNotification(item.id, item.action_url)}
+                    onClick={() => void openNotification(item)}
                   >
                     <p className="text-sm font-medium">{item.title}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{item.body}</p>

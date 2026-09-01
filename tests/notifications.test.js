@@ -1,22 +1,122 @@
-import test from "node:test"; import assert from "node:assert/strict"; import fs from "node:fs";
-const source=fs.readFileSync("src/lib/notifications.ts","utf8"); const migration=fs.readFileSync("supabase/migrations/20260802193000_notifications_module.sql","utf8"); const header=fs.readFileSync("src/components/layout/app-header.tsx","utf8");
-test("URLs internas são aceitas e externas rejeitadas",()=>{assert.match(source,/\^\\\/\(\?!\\\/\)/);assert.match(source,/includes\(\"\\\\\"\)/)});
-test("RLS limita usuário e organização ativa",()=>{assert.match(migration,/user_id = auth\.uid\(\)/);assert.match(migration,/m\.is_active/)});
-test("RPC não marca notificação alheia",()=>assert.match(migration,/n\.user_id=auth\.uid\(\)/));
-test("arquivamento é lógico, sem DELETE",()=>{assert.match(migration,/SET archived_at/);assert.doesNotMatch(migration,/DELETE FROM public\.notifications/)});
-test("deduplicação usa índice parcial",()=>assert.match(migration,/UNIQUE INDEX[\s\S]*WHERE dedupe_key IS NOT NULL/));
-test("policies não são permissivas",()=>assert.doesNotMatch(migration,/(USING|WITH CHECK) \(true\)/i));
-test("RPCs revogadas de PUBLIC e anon",()=>assert.match(migration,/REVOKE ALL ON FUNCTION[\s\S]*FROM PUBLIC, anon/));
-test("sino limita cinco recentes e exibe contador",()=>{assert.match(header,/useNotifications\(organizationId, 5\)/);assert.match(header,/99\+/)});
-test("consulta ordena mais recente e filtro existe",()=>{const hook=fs.readFileSync("src/hooks/use-notifications.ts","utf8");assert.match(hook,/created_at.*ascending: false/);assert.match(source,/filter === \"unread\"/)});
-test("frontend não contém chave secreta",()=>assert.doesNotMatch(fs.readFileSync("src/integrations/supabase/client.ts","utf8"),/service_role|SUPABASE_SECRET_KEY/));
-test("monitoramento usa responsible_user_id",()=>{assert.match(migration,/recipient_text:=n->>'responsible_user_id'/);assert.doesNotMatch(migration,/responsible_id/)});
-test("mudança de função gera notificação transacional",()=>{const team=fs.readFileSync("supabase/migrations/20260802230000_complete_team_permissions.sql","utf8");assert.match(team,/change_member_role[\s\S]*Função alterada/)});
-test("desativação e reativação geram notificações",()=>{const team=fs.readFileSync("supabase/migrations/20260802230000_complete_team_permissions.sql","utf8");assert.match(team,/set_member_active[\s\S]*Acesso reativado[\s\S]*Acesso desativado/)});
-test("transferência de responsabilidades notifica destino",()=>{const team=fs.readFileSync("supabase/migrations/20260802230000_complete_team_permissions.sql","utf8");assert.match(team,/transfer_member_responsibilities[\s\S]*Responsabilidades transferidas/)});
-test("dedupe permite o mesmo evento para destinatários distintos",()=>assert.match(migration,/UNIQUE INDEX notifications_org_user_dedupe_unique ON public\.notifications\(organization_id, user_id, dedupe_key\)/));
-test("migration pode recriar policy e índice",()=>{assert.match(migration,/DROP POLICY IF EXISTS notifications_select_own/);assert.match(migration,/DROP INDEX IF EXISTS public\.notifications_org_dedupe_unique/);assert.match(migration,/DROP INDEX IF EXISTS public\.notifications_org_user_dedupe_unique/)});
-test("UUID só é convertido após validação",()=>assert.match(migration,/recipient_text !~\*[\s\S]*RETURN NEW[\s\S]*recipient:=recipient_text::uuid/));
-test("documentos sem destinatário designado não recebem trigger",()=>{assert.match(migration,/DROP TRIGGER IF EXISTS notify_domain_change ON public\.documents/);assert.doesNotMatch(migration,/ARRAY\['tasks','processes','documents'/)});
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import { notificationDestination } from "../src/lib/notifications.ts";
+const source = fs.readFileSync("src/lib/notifications.ts", "utf8");
+const migration = fs.readFileSync(
+  "supabase/migrations/20260802193000_notifications_module.sql",
+  "utf8",
+);
+const header = fs.readFileSync("src/components/layout/app-header.tsx", "utf8");
+test("URLs internas são aceitas e externas rejeitadas", () => {
+  assert.match(source, /\^\\\/\(\?!\\\/\)/);
+  assert.match(source, /includes\(\"\\\\\"\)/);
+});
+test("RLS limita usuário e organização ativa", () => {
+  assert.match(migration, /user_id = auth\.uid\(\)/);
+  assert.match(migration, /m\.is_active/);
+});
+test("RPC não marca notificação alheia", () => assert.match(migration, /n\.user_id=auth\.uid\(\)/));
+test("arquivamento é lógico, sem DELETE", () => {
+  assert.match(migration, /SET archived_at/);
+  assert.doesNotMatch(migration, /DELETE FROM public\.notifications/);
+});
+test("deduplicação usa índice parcial", () =>
+  assert.match(migration, /UNIQUE INDEX[\s\S]*WHERE dedupe_key IS NOT NULL/));
+test("policies não são permissivas", () =>
+  assert.doesNotMatch(migration, /(USING|WITH CHECK) \(true\)/i));
+test("RPCs revogadas de PUBLIC e anon", () =>
+  assert.match(migration, /REVOKE ALL ON FUNCTION[\s\S]*FROM PUBLIC, anon/));
+test("sino limita cinco recentes e exibe contador", () => {
+  assert.match(header, /useNotifications\(organizationId, 5\)/);
+  assert.match(header, /99\+/);
+});
+test("consulta ordena mais recente e filtro existe", () => {
+  const hook = fs.readFileSync("src/hooks/use-notifications.ts", "utf8");
+  assert.match(hook, /created_at.*ascending: false/);
+  assert.match(source, /filter === \"unread\"/);
+});
+test("frontend não contém chave secreta", () =>
+  assert.doesNotMatch(
+    fs.readFileSync("src/integrations/supabase/client.ts", "utf8"),
+    /service_role|SUPABASE_SECRET_KEY/,
+  ));
+test("monitoramento usa responsible_user_id", () => {
+  assert.match(migration, /recipient_text:=n->>'responsible_user_id'/);
+  assert.doesNotMatch(migration, /responsible_id/);
+});
+test("mudança de função gera notificação transacional", () => {
+  const team = fs.readFileSync(
+    "supabase/migrations/20260802230000_complete_team_permissions.sql",
+    "utf8",
+  );
+  assert.match(team, /change_member_role[\s\S]*Função alterada/);
+});
+test("desativação e reativação geram notificações", () => {
+  const team = fs.readFileSync(
+    "supabase/migrations/20260802230000_complete_team_permissions.sql",
+    "utf8",
+  );
+  assert.match(team, /set_member_active[\s\S]*Acesso reativado[\s\S]*Acesso desativado/);
+});
+test("transferência de responsabilidades notifica destino", () => {
+  const team = fs.readFileSync(
+    "supabase/migrations/20260802230000_complete_team_permissions.sql",
+    "utf8",
+  );
+  assert.match(team, /transfer_member_responsibilities[\s\S]*Responsabilidades transferidas/);
+});
+test("dedupe permite o mesmo evento para destinatários distintos", () =>
+  assert.match(
+    migration,
+    /UNIQUE INDEX notifications_org_user_dedupe_unique ON public\.notifications\(organization_id, user_id, dedupe_key\)/,
+  ));
+test("migration pode recriar policy e índice", () => {
+  assert.match(migration, /DROP POLICY IF EXISTS notifications_select_own/);
+  assert.match(migration, /DROP INDEX IF EXISTS public\.notifications_org_dedupe_unique/);
+  assert.match(migration, /DROP INDEX IF EXISTS public\.notifications_org_user_dedupe_unique/);
+});
+test("UUID só é convertido após validação", () =>
+  assert.match(
+    migration,
+    /recipient_text !~\*[\s\S]*RETURN NEW[\s\S]*recipient:=recipient_text::uuid/,
+  ));
+test("documentos sem destinatário designado não recebem trigger", () => {
+  assert.match(migration, /DROP TRIGGER IF EXISTS notify_domain_change ON public\.documents/);
+  assert.doesNotMatch(migration, /ARRAY\['tasks','processes','documents'/);
+});
 
-test("clique no sino marca como lida e abre a URL interna segura",()=>{assert.match(header,/const openNotification = async \(id: string, url: string \| null\)[\s\S]*markNotification\.mutateAsync\([\s\S]*isSafeNotificationUrl\(url\)[\s\S]*navigate\(\{ to: url \}\)/);assert.match(header,/onClick=\{\(\) => void openNotification\(item\.id, item\.action_url\)\}/);assert.doesNotMatch(header,/onClick=\{\(\) => markNotification\.mutate\(\{ _notification: item\.id \}\)\}/)});
+test("clique no sino marca como lida e abre o destino seguro", () => {
+  assert.match(
+    header,
+    /const openNotification = async \(notification: Notification\)[\s\S]*markNotification\.mutateAsync\([\s\S]*notificationDestination\(notification\)[\s\S]*navigate\(\{ to: destination \}\)/,
+  );
+  assert.match(header, /onClick=\{\(\) => void openNotification\(item\)\}/);
+  assert.doesNotMatch(
+    header,
+    /onClick=\{\(\) => markNotification\.mutate\(\{ _notification: item\.id \}\)\}/,
+  );
+});
+test("resposta do suporte abre diretamente o chamado indicado", () => {
+  const requestId = "a3943e84-6001-4d19-b486-671e8fd5485d";
+  assert.equal(
+    notificationDestination({
+      action_url: "/ajuda",
+      entity_type: "support_request",
+      entity_id: requestId,
+    }),
+    `/ajuda?chamado=${requestId}`,
+  );
+  assert.equal(
+    notificationDestination({ action_url: "/tarefas", entity_type: "task", entity_id: requestId }),
+    "/tarefas",
+  );
+  assert.equal(
+    notificationDestination({
+      action_url: "https://example.com",
+      entity_type: "task",
+      entity_id: requestId,
+    }),
+    null,
+  );
+});
