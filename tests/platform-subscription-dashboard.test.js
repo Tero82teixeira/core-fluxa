@@ -19,6 +19,7 @@ describe("painel comercial de assinaturas", () => {
         { organization_id: "active", status: "active" },
         { organization_id: "late", status: "past_due" },
         { organization_id: "suspended", status: "canceled" },
+        { organization_id: "archived", status: "active" },
       ],
     );
 

@@ -91,6 +91,8 @@ export function describeError(error: unknown, context: Ctx = "salvar"): string {
     return "Somente lançamentos pagos ou cancelados podem ser arquivados.";
   if (message.includes("transaction_not_restorable"))
     return "Somente lançamentos pagos ou cancelados que estejam arquivados podem ser restaurados.";
+  if (message.includes("subscription_access_still_active"))
+    return "Cancele a renovação e aguarde o fim do acesso já pago antes de arquivar esta empresa.";
   if (message.includes("category_not_restorable"))
     return "Somente categorias arquivadas podem ser restauradas.";
   if (message.includes("account_not_restorable"))

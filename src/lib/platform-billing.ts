@@ -12,6 +12,11 @@ export type PlatformBillingSubscription = {
   status: string;
 };
 
+export type ArchivableSubscription = {
+  status: string;
+  access_until?: string | null;
+};
+
 const ATTENTION_SUBSCRIPTION_STATUSES = new Set(["past_due", "canceled", "refunded", "chargeback"]);
 
 export function matchesPlatformSubscriptionFilter(
@@ -34,10 +39,16 @@ export function platformBillingMetrics(
   organizations: PlatformBillingOrganization[],
   subscriptions: PlatformBillingSubscription[],
 ) {
-  const subscriptionsByOrganization = new Map(
-    subscriptions.map((subscription) => [subscription.organization_id, subscription]),
+  const organizationIds = new Set(
+    organizations.map((organization) => organization.organization_id),
   );
-  const activeSubscriptions = subscriptions.filter(
+  const relevantSubscriptions = subscriptions.filter((subscription) =>
+    organizationIds.has(subscription.organization_id),
+  );
+  const subscriptionsByOrganization = new Map(
+    relevantSubscriptions.map((subscription) => [subscription.organization_id, subscription]),
+  );
+  const activeSubscriptions = relevantSubscriptions.filter(
     (subscription) => subscription.status === "active",
   ).length;
   const attentionOrganizations = organizations.filter((organization) => {
@@ -54,4 +65,14 @@ export function platformBillingMetrics(
     attentionOrganizations,
     monthlyRecurringRevenue: activeSubscriptions * FLUXA_MONTHLY_PRICE,
   };
+}
+
+export function canArchivePlatformOrganization(
+  subscription: ArchivableSubscription | null | undefined,
+  now = new Date(),
+): boolean {
+  if (!subscription) return true;
+  if (subscription.status === "active" || subscription.status === "past_due") return false;
+  if (subscription.status !== "canceled" || !subscription.access_until) return true;
+  return new Date(subscription.access_until).getTime() <= now.getTime();
 }
