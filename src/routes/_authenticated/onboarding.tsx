@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
 import { Building2, CheckCircle2, Loader2, MapPin, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,7 +37,6 @@ const STEPS = [
 
 function Onboarding() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const {
     user,
     status,
@@ -50,17 +48,12 @@ function Onboarding() {
     refreshWorkspace,
   } = useWorkspace();
 
-  const [orgId, setOrgId] = useState<string | null>(organizationId);
   const [step, setStep] = useState(onboardingStep);
   const [saving, setSaving] = useState(false);
   const cnpjLookup = useCnpjLookup();
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ document?: string; phone?: string; whatsapp?: string }>({});
   const hydratedOrganization = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (organizationId) setOrgId(organizationId);
-  }, [organizationId]);
 
   useEffect(() => setStep(onboardingStep), [onboardingStep]);
 
@@ -268,7 +261,8 @@ function Onboarding() {
       <header className="space-y-1">
         <h1 className="page-title">Configuração da empresa</h1>
         <p className="page-subtitle">
-          Quatro etapas rápidas. Você pode salvar e concluir depois — nada se perde.
+          Conclua estas quatro etapas rápidas para liberar os módulos. Depois, você poderá alterar
+          os dados em Configurações.
         </p>
       </header>
 
@@ -276,7 +270,7 @@ function Onboarding() {
         <Progress value={((step + 1) / STEPS.length) * 100} className="h-1.5" />
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {STEPS.map((item, index) => (
-            <span key={item.title} className={index === step ? "font-semibold text-brand" : ""}>
+            <span key={item.title} aria-current={index === step ? "step" : undefined} className={index === step ? "font-semibold text-brand" : ""}>
               {index + 1}. {item.title}
             </span>
           ))}
@@ -303,8 +297,9 @@ function Onboarding() {
 
           {step === 0 && (
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Nome fantasia" className="sm:col-span-2">
+              <Field label="Nome fantasia *" className="sm:col-span-2">
                 <Input value={company.trade_name} maxLength={120} onChange={(e) => setCompany({ ...company, trade_name: e.target.value })} />
+                <p className="text-xs text-muted-foreground">Campo obrigatório.</p>
               </Field>
               <Field label="Razão social (opcional)" className="sm:col-span-2">
                 <Input value={company.legal_name} maxLength={160} onChange={(e) => setCompany({ ...company, legal_name: e.target.value })} />
@@ -380,38 +375,36 @@ function Onboarding() {
           )}
 
           {step === 3 && (
-            <dl className="grid gap-3 text-sm sm:grid-cols-2">
-              <Summary label="Empresa" value={company.trade_name} />
-              <Summary label="Razão social" value={company.legal_name || company.trade_name} />
-              <Summary label="Documento" value={maskDocument(company.document)} />
-              <Summary label="Telefone" value={maskPhone(company.phone)} />
-              <Summary label="Cidade / UF" value={[place.city, place.state].filter(Boolean).join(" / ")} />
-              <Summary label="Serviços" value={operation.main_services} />
-            </dl>
+            <div className="space-y-4">
+              <p className="text-sm leading-6 text-muted-foreground">
+                Revise as informações. Ao concluir, você entrará na Central de Comando e poderá
+                começar a cadastrar clientes, processos e tarefas.
+              </p>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <Summary label="Empresa" value={company.trade_name} />
+                <Summary label="Razão social" value={company.legal_name || company.trade_name} />
+                <Summary label="Documento" value={maskDocument(company.document)} />
+                <Summary label="Telefone" value={maskPhone(company.phone)} />
+                <Summary label="Cidade / UF" value={[place.city, place.state].filter(Boolean).join(" / ")} />
+                <Summary label="Serviços" value={operation.main_services} />
+              </dl>
+            </div>
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <Button variant="ghost" disabled={step === 0 || saving} onClick={() => setStep((s) => Math.max(0, s - 1))}>
               Voltar
             </Button>
-            <div className="flex items-center gap-2">
-              {orgId && step < 3 && (
-                <Button variant="outline" disabled={saving} onClick={() => navigate({ to: "/central" })}>
-                  Concluir depois
-                </Button>
-              )}
-              <Button onClick={advance} disabled={saving || !ready} aria-busy={saving}>
-                {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
-                {saving ? "Salvando…" : step === 3 ? "Entrar na Central de Comando" : "Salvar e continuar"}
-              </Button>
-            </div>
+            <Button onClick={advance} disabled={saving || !ready} aria-busy={saving}>
+              {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
+              {saving ? "Salvando…" : step === 3 ? "Concluir configuração e entrar" : "Salvar e continuar"}
+            </Button>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
 function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={`space-y-1.5 ${className ?? ""}`}>
