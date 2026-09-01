@@ -10,6 +10,7 @@ export function useNotifications(organizationId: string | null, limit = 20) {
   return useQuery({
     enabled: Boolean(organizationId),
     queryKey: [...key(organizationId), limit],
+    refetchInterval: 60_000,
     queryFn: async (): Promise<Notification[]> => {
       const { data, error } = await db()
         .from("notifications")
@@ -30,6 +31,7 @@ export function useUnreadNotificationCount(organizationId: string | null) {
   return useQuery({
     enabled: Boolean(organizationId),
     queryKey: [...key(organizationId), "unread-count"],
+    refetchInterval: 60_000,
     queryFn: async () => {
       const { count, error } = await db()
         .from("notifications")

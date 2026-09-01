@@ -3760,6 +3760,17 @@ export type Database = {
         }
         Returns: string
       }
+      record_kiwify_webhook_failure: {
+        Args: {
+          _diagnostic_code: string
+          _event_key: string
+          _event_type: string
+          _organization?: string
+          _provider_order_id?: string
+          _provider_subscription_id?: string
+        }
+        Returns: undefined
+      }
       record_process_movement: {
         Args: {
           _description: string
@@ -3800,6 +3811,10 @@ export type Database = {
       reverse_financial_payment: {
         Args: { _notes: string; _organization_id: string; _payment_id: string }
         Returns: string
+      }
+      resolve_kiwify_webhook_failure: {
+        Args: { _event_key: string }
+        Returns: undefined
       }
       run_temporal_automation_cycle: { Args: never; Returns: Json }
       seed_default_document_types: {

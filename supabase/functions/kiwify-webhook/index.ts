@@ -77,6 +77,39 @@ async function sha256(value: string): Promise<string> {
     .join("");
 }
 
+type WebhookClient = ReturnType<typeof createClient>;
+
+type FailureReference = {
+  eventKey: string;
+  eventType: string;
+  organizationId: string | null;
+  orderId: string | null;
+  subscriptionId: string | null;
+};
+
+async function recordFailure(
+  supabase: WebhookClient,
+  reference: FailureReference,
+  diagnosticCode: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("record_kiwify_webhook_failure", {
+    _event_key: reference.eventKey,
+    _event_type: reference.eventType,
+    _diagnostic_code: diagnosticCode,
+    _organization: validUuid(reference.organizationId) ? reference.organizationId : null,
+    _provider_order_id: reference.orderId,
+    _provider_subscription_id: reference.subscriptionId,
+  });
+  if (error) console.error("Falha ao registrar alerta Kiwify", error.message);
+}
+
+async function resolveFailure(supabase: WebhookClient, eventKey: string): Promise<void> {
+  const { error } = await supabase.rpc("resolve_kiwify_webhook_failure", {
+    _event_key: eventKey,
+  });
+  if (error) console.error("Falha ao concluir alerta Kiwify", error.message);
+}
+
 export default {
   fetch: withSupabase({ auth: "none" }, async (request: Request) => {
     if (request.method !== "POST") return reject("METHOD_NOT_ALLOWED", 405);
@@ -117,11 +150,6 @@ export default {
     const subscriptionStatus = eventStatus(eventType);
     if (!subscriptionStatus) return json({ ok: true, ignored: eventType });
 
-    const organizationId = trackingOrganization(payload);
-    if (!validUuid(organizationId)) {
-      return reject("ORGANIZATION_TRACKING_REQUIRED", 422);
-    }
-
     const customerEmail = text(customer.email)?.toLowerCase() ?? null;
     const orderId = text(payload.order_id);
     const subscriptionId = text(subscription.id) ?? text(payload.subscription_id);
@@ -141,6 +169,7 @@ export default {
     const eventKey =
       text(payload.event_id) ??
       `${orderId ?? subscriptionId ?? "event"}:${eventType}:${await sha256(rawBody)}`;
+    const organizationId = trackingOrganization(payload);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -149,6 +178,19 @@ export default {
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    const failureReference: FailureReference = {
+      eventKey,
+      eventType,
+      organizationId,
+      orderId,
+      subscriptionId,
+    };
+
+    if (!validUuid(organizationId)) {
+      await recordFailure(supabase, failureReference, "ORGANIZATION_TRACKING_REQUIRED");
+      return reject("ORGANIZATION_TRACKING_REQUIRED", 422);
+    }
+
     const { data: prepared, error: preparedError } = await supabase
       .from("organization_subscriptions")
       .select("organization_id, billing_email")
@@ -156,9 +198,16 @@ export default {
       .eq("provider", "kiwify")
       .maybeSingle();
 
-    if (preparedError) return reject("PREPARED_CHECK_FAILED", 500);
-    if (!prepared) return reject("CHECKOUT_NOT_PREPARED", 422);
+    if (preparedError) {
+      await recordFailure(supabase, failureReference, "PREPARED_CHECK_FAILED");
+      return reject("PREPARED_CHECK_FAILED", 500);
+    }
+    if (!prepared) {
+      await recordFailure(supabase, failureReference, "CHECKOUT_NOT_PREPARED");
+      return reject("CHECKOUT_NOT_PREPARED", 422);
+    }
     if (!customerEmail || customerEmail !== prepared.billing_email) {
+      await recordFailure(supabase, failureReference, "BILLING_EMAIL_MISMATCH");
       return reject("BILLING_EMAIL_MISMATCH", 422);
     }
 
@@ -176,9 +225,11 @@ export default {
 
     if (error) {
       console.error("Falha ao aplicar evento Kiwify", error.message);
+      await recordFailure(supabase, failureReference, "EVENT_PROCESSING_FAILED");
       return reject("EVENT_PROCESSING_FAILED", 500);
     }
 
+    await resolveFailure(supabase, eventKey);
     return json({ ok: true, applied: Boolean(applied) });
   }),
 };
