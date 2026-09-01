@@ -12,7 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useWorkspace } from "@/lib/workspace";
-import { filterNotifications, isSafeNotificationUrl } from "@/lib/notifications";
+import {
+  filterNotifications,
+  notificationDestination,
+  type Notification,
+} from "@/lib/notifications";
 import {
   useCreateTestNotification,
   useMarkAllNotificationsRead,
@@ -45,9 +49,10 @@ function NotificationsPage() {
   const createTest = useCreateTestNotification(organizationId);
   const canCreateTest = role === "proprietario" || role === "administrador";
   const rows = filterNotifications(query.data ?? [], filter);
-  const open = async (id: string, url: string | null) => {
-    await mark.mutateAsync({ _notification: id });
-    if (isSafeNotificationUrl(url)) await navigate({ to: url });
+  const open = async (notification: Notification) => {
+    await mark.mutateAsync({ _notification: notification.id });
+    const destination = notificationDestination(notification);
+    if (destination) await navigate({ to: destination });
   };
   const createTestNotification = () =>
     createTest.mutate(undefined, {
@@ -119,10 +124,7 @@ function NotificationsPage() {
           {rows.map((item) => (
             <Card key={item.id} className={!item.read_at ? "border-brand/40 bg-brand/5" : ""}>
               <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-                <button
-                  className="min-w-0 flex-1 text-left"
-                  onClick={() => void open(item.id, item.action_url)}
-                >
+                <button className="min-w-0 flex-1 text-left" onClick={() => void open(item)}>
                   <span className="flex items-center gap-2 font-medium">
                     {!item.read_at && <span className="size-2 rounded-full bg-brand" />}
                     {item.title}

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BookOpen, ChevronRight, LifeBuoy, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -38,7 +38,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+type HelpSearch = { chamado?: string };
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export const Route = createFileRoute("/_authenticated/ajuda")({
+  validateSearch: (search: Record<string, unknown>): HelpSearch => ({
+    chamado:
+      typeof search.chamado === "string" && UUID_PATTERN.test(search.chamado)
+        ? search.chamado
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Ajuda e Suporte — FLUXA" },
@@ -420,12 +430,27 @@ function SupportArea({
   admin: boolean;
   openForm: () => void;
 }) {
+  const { chamado: requestedRequestId } = Route.useSearch();
+  const navigate = useNavigate();
   const requests = useSupportRequests(organizationId);
   const update = useUpdateSupportStatus(organizationId);
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [category, setCategory] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null);
+
+  useEffect(() => {
+    if (!requestedRequestId || requests.isLoading) return;
+
+    const requested = (requests.data ?? []).find(
+      (request) => request.id === requestedRequestId && (admin || request.created_by === userId),
+    );
+    if (requested) setSelectedRequest(requested);
+    else toast.error("Esse atendimento não está disponível nesta empresa.");
+
+    void navigate({ to: "/ajuda", search: {}, replace: true });
+  }, [admin, navigate, requestedRequestId, requests.data, requests.isLoading, userId]);
+
   const visible = (requests.data ?? []).filter(
     (r) =>
       (admin || r.created_by === userId) &&

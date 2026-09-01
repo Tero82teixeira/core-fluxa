@@ -65,6 +65,13 @@ describe("central de suporte da plataforma", () => {
     assert.match(migration, /SUPPORT_REQUEST_ACCESS_DENIED/);
   });
 
+  test("link da notificação abre automaticamente o atendimento correto", () => {
+    assert.match(customerRoute, /validateSearch:[\s\S]*search\.chamado/);
+    assert.match(customerRoute, /request\.id === requestedRequestId/);
+    assert.match(customerRoute, /setSelectedRequest\(requested\)/);
+    assert.match(customerRoute, /navigate\(\{ to: "\/ajuda", search: \{\}, replace: true \}\)/);
+  });
+
   test("resposta da plataforma notifica o solicitante sem registrar a mensagem na auditoria", () => {
     assert.match(migration, /Nova resposta do suporte FLUXA/);
     assert.match(migration, /'support-reply:' \|\| response_id::text/);
