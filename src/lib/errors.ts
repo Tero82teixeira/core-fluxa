@@ -93,6 +93,12 @@ export function describeError(error: unknown, context: Ctx = "salvar"): string {
     return "Somente lançamentos pagos ou cancelados que estejam arquivados podem ser restaurados.";
   if (message.includes("subscription_access_still_active"))
     return "Cancele a renovação e aguarde o fim do acesso já pago antes de arquivar esta empresa.";
+  if (message.includes("subscription_already_active"))
+    return "A assinatura desta empresa já está ativa.";
+  if (message.includes("checkout_paid_access_still_active"))
+    return "A empresa ainda possui acesso pago. Aguarde o término do período atual antes de assinar novamente.";
+  if (message.includes("checkout_already_in_progress"))
+    return "Outro responsável já iniciou este pagamento. Aguarde alguns minutos ou utilize o mesmo e-mail.";
   if (message.includes("category_not_restorable"))
     return "Somente categorias arquivadas podem ser restauradas.";
   if (message.includes("account_not_restorable"))
