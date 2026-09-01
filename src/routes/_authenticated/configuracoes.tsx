@@ -48,6 +48,7 @@ const tabs = [
   ["seguranca", "Segurança"],
 ] as const;
 const sensitiveRoles = new Set(["superadmin", "proprietario", "administrador"]);
+const LOCKED_REGIONAL_KEYS = ["timezone", "locale", "date_format", "currency"] as const;
 
 type Draft = Partial<OrganizationSettings>;
 function Field({
@@ -56,12 +57,14 @@ function Field({
   onChange,
   type = "text",
   disabled = false,
+  readOnly = false,
 }: {
   label: string;
   value: string | number | null | undefined;
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
   type?: string;
   disabled?: boolean;
+  readOnly?: boolean;
 }) {
   const id = `setting-${label.toLowerCase().replace(/\W/g, "-")}`;
   return (
@@ -72,7 +75,10 @@ function Field({
         type={type}
         value={value ?? ""}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
+        readOnly={readOnly}
+        aria-readonly={readOnly || undefined}
+        onChange={(e) => onChange?.(e.target.value)}
+        className={readOnly ? "cursor-default bg-muted/40 text-foreground" : undefined}
       />
     </div>
   );
@@ -172,6 +178,7 @@ function SettingsPage() {
         updated_at: undefined,
         organization_id: undefined,
       };
+      for (const key of LOCKED_REGIONAL_KEYS) delete payload[key];
       await update.mutateAsync(payload);
       toast.success("Configurações atualizadas com segurança.");
     } catch (error) {
@@ -331,30 +338,17 @@ function SettingsPage() {
         </TabsContent>
         <TabsContent value="preferencias">
           <Section title="Preferências regionais">
-            <Field
-              label="Fuso horário"
-              value={d.timezone}
-              disabled={!canEdit}
-              onChange={(v) => set("timezone", v)}
-            />
-            <Field
-              label="Idioma"
-              value={d.locale}
-              disabled={!canEdit}
-              onChange={(v) => set("locale", v)}
-            />
-            <Field
-              label="Formato de data"
-              value={d.date_format}
-              disabled={!canEdit}
-              onChange={(v) => set("date_format", v)}
-            />
-            <Field
-              label="Moeda"
-              value={d.currency}
-              disabled={!canEdit}
-              onChange={(v) => set("currency", v)}
-            />
+            <div className="sm:col-span-2 flex items-start gap-2 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+              <Lock className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <p>
+                Fuso horário, idioma, formato de data e moeda são padrões protegidos da FLUXA e
+                ficam disponíveis somente para visualização.
+              </p>
+            </div>
+            <Field label="Fuso horário" value={d.timezone} readOnly />
+            <Field label="Idioma" value={d.locale} readOnly />
+            <Field label="Formato de data" value={d.date_format} readOnly />
+            <Field label="Moeda" value={d.currency} readOnly />
             <Field
               label="Primeiro dia da semana (0–6)"
               type="number"
@@ -428,12 +422,7 @@ function SettingsPage() {
         </TabsContent>
         <TabsContent value="financeiro">
           <Section title="Padrões financeiros">
-            <Field
-              label="Moeda padrão"
-              value={d.currency}
-              disabled={!canEdit}
-              onChange={(v) => set("currency", v)}
-            />
+            <Field label="Moeda padrão" value={d.currency} readOnly />
             <Field
               label="Antecedência de alertas (dias)"
               type="number"
