@@ -29,8 +29,19 @@ export function subscriptionStatusLabel(status: string | null): string {
   return "Ainda não contratada";
 }
 
-export function canRestartKiwifyCheckout(status: string | null): boolean {
-  return status === null || status === "pending" || status === "canceled";
+export function canRestartKiwifyCheckout(
+  status: string | null,
+  accessUntil: string | null = null,
+  now = new Date(),
+): boolean {
+  if (status === null || status === "pending" || status === "refunded" || status === "chargeback") {
+    return true;
+  }
+  if (status !== "past_due" && status !== "canceled") return false;
+  if (!accessUntil) return status === "canceled";
+
+  const accessEnd = new Date(accessUntil).getTime();
+  return Number.isFinite(accessEnd) && accessEnd <= now.getTime();
 }
 
 export function buildKiwifyCheckoutUrl({

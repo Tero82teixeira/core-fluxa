@@ -2,13 +2,29 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
-import { buildKiwifyCheckoutUrl, canManageSubscription } from "@/lib/billing";
+import { useOrganizationSubscription } from "@/hooks/use-subscription";
+import {
+  buildKiwifyCheckoutUrl,
+  canManageSubscription,
+  canRestartKiwifyCheckout,
+} from "@/lib/billing";
+import { describeError } from "@/lib/errors";
 import { useWorkspace } from "@/lib/workspace";
 
 export function useSubscriptionCheckout() {
   const { organizationId, role, user, displayName } = useWorkspace();
   const [loading, setLoading] = useState(false);
-  const canSubscribe = Boolean(organizationId && canManageSubscription(role));
+  const canManage = Boolean(organizationId && canManageSubscription(role));
+  const subscription = useOrganizationSubscription(organizationId, canManage);
+  const canSubscribe = Boolean(
+    canManage &&
+    !subscription.isLoading &&
+    !subscription.isError &&
+    canRestartKiwifyCheckout(
+      subscription.data?.status ?? null,
+      subscription.data?.access_until ?? null,
+    ),
+  );
 
   const openCheckout = async () => {
     if (!organizationId || !canSubscribe || loading) return;
@@ -29,7 +45,7 @@ export function useSubscriptionCheckout() {
       );
     } catch (error) {
       console.error("Não foi possível abrir o checkout da Kiwify", error);
-      toast.error("Não foi possível iniciar a assinatura. Tente novamente.");
+      toast.error(describeError(error));
       setLoading(false);
     }
   };

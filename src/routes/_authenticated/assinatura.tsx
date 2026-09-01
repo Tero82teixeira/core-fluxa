@@ -148,7 +148,8 @@ function SubscriptionPage() {
   const isTrial = commercialStatus === "trial";
   const displayStatus = isTrial ? "Teste grátis" : subscriptionStatusLabel(status);
   const accessUntil = subscription?.access_until ?? (isTrial ? trialEndsAt : null);
-  const canOpenCheckout = checkout.canSubscribe && canRestartKiwifyCheckout(status);
+  const canOpenCheckout =
+    checkout.canSubscribe && canRestartKiwifyCheckout(status, subscription?.access_until ?? null);
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
