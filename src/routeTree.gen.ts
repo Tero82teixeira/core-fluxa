@@ -32,6 +32,7 @@ import { Route as AuthenticatedNovidadesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedProcessosRouteImport } from './routes/_authenticated/processos'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedSuportePlataformaRouteImport } from './routes/_authenticated/suporte-plataforma'
 import { Route as AuthenticatedTarefasRouteImport } from './routes/_authenticated/tarefas'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
@@ -161,6 +162,12 @@ const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   path: '/relatorios',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSuportePlataformaRoute =
+  AuthenticatedSuportePlataformaRouteImport.update({
+    id: '/suporte-plataforma',
+    path: '/suporte-plataforma',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedTarefasRoute = AuthenticatedTarefasRouteImport.update({
   id: '/tarefas',
   path: '/tarefas',
@@ -237,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/processos': typeof AuthenticatedProcessosRouteWithChildren
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/suporte-plataforma': typeof AuthenticatedSuportePlataformaRoute
   '/tarefas': typeof AuthenticatedTarefasRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
@@ -268,6 +276,7 @@ export interface FileRoutesByTo {
   '/novidades': typeof AuthenticatedNovidadesRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/suporte-plataforma': typeof AuthenticatedSuportePlataformaRoute
   '/tarefas': typeof AuthenticatedTarefasRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
@@ -303,6 +312,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/processos': typeof AuthenticatedProcessosRouteWithChildren
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/_authenticated/suporte-plataforma': typeof AuthenticatedSuportePlataformaRoute
   '/_authenticated/tarefas': typeof AuthenticatedTarefasRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/_authenticated/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/processos'
     | '/relatorios'
+    | '/suporte-plataforma'
     | '/tarefas'
     | '/convite/$token'
     | '/clientes/$clientId'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/novidades'
     | '/onboarding'
     | '/relatorios'
+    | '/suporte-plataforma'
     | '/tarefas'
     | '/convite/$token'
     | '/clientes/$clientId'
@@ -403,6 +415,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/processos'
     | '/_authenticated/relatorios'
+    | '/_authenticated/suporte-plataforma'
     | '/_authenticated/tarefas'
     | '/convite/$token'
     | '/_authenticated/clientes/$clientId'
@@ -587,6 +600,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/suporte-plataforma': {
+      id: '/_authenticated/suporte-plataforma'
+      path: '/suporte-plataforma'
+      fullPath: '/suporte-plataforma'
+      preLoaderRoute: typeof AuthenticatedSuportePlataformaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/tarefas': {
       id: '/_authenticated/tarefas'
       path: '/tarefas'
@@ -709,6 +729,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedProcessosRoute: typeof AuthenticatedProcessosRouteWithChildren
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
+  AuthenticatedSuportePlataformaRoute: typeof AuthenticatedSuportePlataformaRoute
   AuthenticatedTarefasRoute: typeof AuthenticatedTarefasRoute
 }
 
@@ -731,6 +752,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedProcessosRoute: AuthenticatedProcessosRouteWithChildren,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
+  AuthenticatedSuportePlataformaRoute: AuthenticatedSuportePlataformaRoute,
   AuthenticatedTarefasRoute: AuthenticatedTarefasRoute,
 }
 
