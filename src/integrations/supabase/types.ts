@@ -3639,6 +3639,19 @@ export type Database = {
           trial_started_at: string
         }[]
       }
+      platform_kiwify_event_health: {
+        Args: { _limit?: number }
+        Returns: {
+          diagnostic_code: string
+          event_key: string
+          event_type: string
+          organization_id: string
+          organization_name: string
+          outcome: string
+          processed_at: string
+          received_at: string
+        }[]
+      }
       prepare_kiwify_checkout: {
         Args: { _organization: string }
         Returns: undefined

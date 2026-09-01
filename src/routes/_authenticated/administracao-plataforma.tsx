@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Activity,
   Archive,
   ArchiveRestore,
   Building2,
@@ -10,6 +11,7 @@ import {
   Clock3,
   CreditCard,
   HandCoins,
+  RefreshCw,
   ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -22,6 +24,12 @@ import { formatDate } from "@/lib/format";
 import { brl } from "@/lib/finance";
 import { cn } from "@/lib/utils";
 import { subscriptionStatusLabel } from "@/lib/billing";
+import {
+  kiwifyDiagnosticLabel,
+  kiwifyEventHealthSummary,
+  kiwifyEventTypeLabel,
+  type KiwifyEventOutcome,
+} from "@/lib/kiwify-health";
 import {
   canArchivePlatformOrganization,
   matchesPlatformSubscriptionFilter,
@@ -95,6 +103,17 @@ type PlatformSubscription = Pick<
   | "last_event_at"
 >;
 
+type PlatformKiwifyEvent = {
+  event_key: string;
+  organization_id: string | null;
+  organization_name: string | null;
+  event_type: string;
+  received_at: string;
+  processed_at: string | null;
+  outcome: KiwifyEventOutcome;
+  diagnostic_code: string | null;
+};
+
 const statusTone: Record<EffectiveCommercialStatus, string> = {
   trial: "border-info/30 bg-info/10 text-info",
   active: "border-success/30 bg-success/10 text-success",
@@ -130,11 +149,26 @@ function usePlatformSubscriptions(enabled: boolean) {
   });
 }
 
+function usePlatformKiwifyEvents(enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryKey: ["platform-kiwify-event-health"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("platform_kiwify_event_health", {
+        _limit: 20,
+      });
+      if (error) throw error;
+      return (data ?? []) as PlatformKiwifyEvent[];
+    },
+  });
+}
+
 function PlatformAdministration() {
   const { platformAdmin } = useWorkspace();
   const queryClient = useQueryClient();
   const organizations = usePlatformOrganizations(platformAdmin);
   const subscriptions = usePlatformSubscriptions(platformAdmin);
+  const kiwifyEvents = usePlatformKiwifyEvents(platformAdmin);
   const [search, setSearch] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState<PlatformSubscriptionFilter>("all");
   const [includeArchived, setIncludeArchived] = useState(false);
@@ -278,6 +312,8 @@ function PlatformAdministration() {
           icon={HandCoins}
         />
       </div>
+
+      <KiwifyEventHealthPanel query={kiwifyEvents} />
 
       <Card>
         <CardHeader className="gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -534,6 +570,126 @@ const subscriptionTone: Record<string, string> = {
   chargeback:
     "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200",
 };
+
+const eventOutcomeLabel: Record<KiwifyEventOutcome, string> = {
+  processed: "Processado",
+  ignored: "Ignorado com segurança",
+  attention: "Precisa de atenção",
+};
+
+const eventOutcomeTone: Record<KiwifyEventOutcome, string> = {
+  processed:
+    "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200",
+  ignored:
+    "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-200",
+  attention:
+    "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200",
+};
+
+function formatEventDate(value: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
+}
+
+function KiwifyEventHealthPanel({ query }: { query: ReturnType<typeof usePlatformKiwifyEvents> }) {
+  const events = query.data ?? [];
+  const summary = kiwifyEventHealthSummary(events);
+
+  return (
+    <Card>
+      <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="size-5 text-brand" aria-hidden />
+            Saúde dos pagamentos Kiwify
+          </CardTitle>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Últimos eventos recebidos pelo FLUXA, sem expor dados pessoais do comprador.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={query.isFetching}
+          onClick={() => void query.refetch()}
+        >
+          <RefreshCw className={cn("size-4", query.isFetching && "animate-spin")} aria-hidden />
+          Atualizar
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2 text-sm">
+          <Badge variant="outline" className={eventOutcomeTone.processed}>
+            {summary.processed} processado(s)
+          </Badge>
+          <Badge variant="outline" className={eventOutcomeTone.ignored}>
+            {summary.ignored} ignorado(s) com segurança
+          </Badge>
+          <Badge variant="outline" className={eventOutcomeTone.attention}>
+            {summary.attention} para verificar
+          </Badge>
+        </div>
+
+        {query.isLoading && (
+          <p className="text-sm text-muted-foreground">Carregando eventos de pagamento…</p>
+        )}
+        {query.isError && (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            Não foi possível consultar os eventos da Kiwify. Atualize a página em alguns instantes.
+          </p>
+        )}
+        {!query.isLoading && !query.isError && events.length === 0 && (
+          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            Nenhum evento de pagamento foi recebido ainda.
+          </p>
+        )}
+        {events.length > 0 && (
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full min-w-[760px] text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+                  <th className="px-3 py-2.5 font-medium">Resultado</th>
+                  <th className="px-3 py-2.5 font-medium">Empresa</th>
+                  <th className="px-3 py-2.5 font-medium">Evento</th>
+                  <th className="px-3 py-2.5 font-medium">Recebido em</th>
+                  <th className="px-3 py-2.5 font-medium">Detalhe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.map((event) => (
+                  <tr key={event.event_key} className="border-b last:border-0">
+                    <td className="px-3 py-3">
+                      <Badge variant="outline" className={eventOutcomeTone[event.outcome]}>
+                        {eventOutcomeLabel[event.outcome]}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-3 font-medium">
+                      {event.organization_name ?? "Empresa não identificada"}
+                    </td>
+                    <td className="px-3 py-3">{kiwifyEventTypeLabel(event.event_type)}</td>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {formatEventDate(event.received_at)}
+                    </td>
+                    <td className="px-3 py-3 text-muted-foreground">
+                      {kiwifyDiagnosticLabel(event.diagnostic_code) ?? "Atualização concluída"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 function SubscriptionStatusCell({
   subscription,
