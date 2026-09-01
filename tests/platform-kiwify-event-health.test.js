@@ -28,6 +28,14 @@ describe("saúde dos pagamentos Kiwify", () => {
       kiwifyDiagnosticLabel("SUBSCRIPTION_ID_MISMATCH_IGNORED"),
       "Evento de uma assinatura anterior",
     );
+    assert.equal(
+      kiwifyDiagnosticLabel("BILLING_EMAIL_MISMATCH"),
+      "E-mail do pagamento diferente do checkout",
+    );
+    assert.equal(
+      kiwifyDiagnosticLabel("RETRY_SUCCEEDED_IGNORED"),
+      "Falha anterior recuperada com segurança",
+    );
     assert.equal(kiwifyDiagnosticLabel(null), null);
   });
 
@@ -66,5 +74,42 @@ describe("saúde dos pagamentos Kiwify", () => {
     assert.match(route, /Nenhum evento de pagamento foi recebido ainda/);
     assert.doesNotMatch(route, /kiwify_webhook_events|service_role/);
     assert.match(generatedTypes, /platform_kiwify_event_health:/);
+  });
+
+  test("webhook registra falhas, alerta a plataforma e encerra o alerta após recuperação", async () => {
+    const [migration, webhook, notificationHook, generatedTypes] = await Promise.all([
+      readFile(
+        new URL("../supabase/migrations/20260901233000_kiwify_failure_alerts.sql", import.meta.url),
+        "utf8",
+      ),
+      readFile(new URL("../supabase/functions/kiwify-webhook/index.ts", import.meta.url), "utf8"),
+      readFile(new URL("../src/hooks/use-notifications.ts", import.meta.url), "utf8"),
+      readFile(new URL("../src/integrations/supabase/types.ts", import.meta.url), "utf8"),
+    ]);
+
+    assert.match(migration, /CREATE OR REPLACE FUNCTION public\.record_kiwify_webhook_failure/);
+    assert.match(migration, /CREATE OR REPLACE FUNCTION public\.resolve_kiwify_webhook_failure/);
+    assert.match(migration, /Falha no pagamento Kiwify/);
+    assert.match(migration, /Evento Kiwify recuperado/);
+    assert.match(migration, /ON CONFLICT DO NOTHING/);
+    assert.match(migration, /auth\.role\(\) <> 'service_role'/);
+    assert.doesNotMatch(migration, /customer_email|mobile|CPF|cnpj|raw_payload/i);
+
+    for (const diagnostic of [
+      "ORGANIZATION_TRACKING_REQUIRED",
+      "PREPARED_CHECK_FAILED",
+      "CHECKOUT_NOT_PREPARED",
+      "BILLING_EMAIL_MISMATCH",
+      "EVENT_PROCESSING_FAILED",
+    ]) {
+      assert.match(
+        webhook,
+        new RegExp(`recordFailure\\(supabase, failureReference, "${diagnostic}"`),
+      );
+    }
+    assert.match(webhook, /await resolveFailure\(supabase, eventKey\)/);
+    assert.equal(notificationHook.match(/refetchInterval: 60_000/g)?.length, 2);
+    assert.match(generatedTypes, /record_kiwify_webhook_failure:/);
+    assert.match(generatedTypes, /resolve_kiwify_webhook_failure:/);
   });
 });

@@ -24,7 +24,11 @@ const DIAGNOSTIC_LABELS: Record<string, string> = {
   PENDING_CHECKOUT_EVENT_IGNORED: "Evento não pertence ao novo checkout",
   SUBSCRIPTION_ID_MISMATCH_IGNORED: "Evento de uma assinatura anterior",
   CHECKOUT_NOT_PREPARED: "Checkout da empresa não foi iniciado",
+  ORGANIZATION_TRACKING_REQUIRED: "Empresa não identificada no checkout",
+  PREPARED_CHECK_FAILED: "Falha ao consultar a preparação do checkout",
+  BILLING_EMAIL_MISMATCH: "E-mail do pagamento diferente do checkout",
   EVENT_PROCESSING_FAILED: "Falha ao atualizar a assinatura",
+  RETRY_SUCCEEDED_IGNORED: "Falha anterior recuperada com segurança",
 };
 
 export function kiwifyEventTypeLabel(eventType: string): string {
