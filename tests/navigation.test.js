@@ -4,7 +4,7 @@ import { describe, test } from "node:test";
 
 const navigation = readFileSync("src/lib/navigation.ts", "utf8");
 const itemPattern =
-  /\{ to: "([^"]+)", label: "([^"]+)", icon: \w+, description: "[^"]+", ready: (true|false), group: "(\w+)" \}/g;
+  /\{\s*to: "([^"]+)",\s*label: "([^"]+)",\s*icon: \w+,\s*description: "[^"]+",\s*ready: (true|false),\s*group: "(\w+)",?\s*\}/g;
 const items = [...navigation.matchAll(itemPattern)].map(([, to, label, ready, group]) => ({
   to,
   label,
@@ -57,6 +57,7 @@ describe("status dos módulos na navegação lateral", () => {
         { to: "/relatorios", label: "Relatórios", ready: true, group: "gestao" },
         { to: "/equipe", label: "Equipe", ready: true, group: "gestao" },
         { to: "/automacoes", label: "Automações", ready: true, group: "gestao" },
+        { to: "/assinatura", label: "Minha assinatura", ready: true, group: "sistema" },
         { to: "/novidades", label: "Novidades", ready: true, group: "sistema" },
       ],
     );

@@ -22,6 +22,7 @@ import { initials } from "@/lib/format";
 import { useTheme } from "@/lib/theme";
 import { useWorkspace } from "@/lib/workspace";
 import { ROLE } from "@/lib/domain";
+import { canManageSubscription } from "@/lib/billing";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -38,6 +39,7 @@ const NAV_ICON_TONE: Record<string, string> = {
   "/equipe": "bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300",
   "/automacoes": "bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300",
   "/configuracoes": "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  "/assinatura": "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
   "/ajuda": "bg-lime-100 text-lime-700 dark:bg-lime-950/60 dark:text-lime-300",
   "/novidades": "bg-pink-100 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300",
 };
@@ -79,7 +81,11 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
 
       <SidebarContent className="gap-1 px-2">
         {NAV_GROUPS.map((group) => {
-          const items = NAV_ITEMS.filter((item) => item.group === group.key);
+          const items = NAV_ITEMS.filter(
+            (item) =>
+              item.group === group.key &&
+              (item.to !== "/assinatura" || canManageSubscription(role)),
+          );
           if (items.length === 0) return null;
           return (
             <SidebarGroup key={group.key} className="py-1.5">

@@ -17,6 +17,7 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as TermosDeUsoRouteImport } from './routes/termos-de-uso'
 import { Route as AuthenticatedAdministracaoPlataformaRouteImport } from './routes/_authenticated/administracao-plataforma'
 import { Route as AuthenticatedAjudaRouteImport } from './routes/_authenticated/ajuda'
+import { Route as AuthenticatedAssinaturaRouteImport } from './routes/_authenticated/assinatura'
 import { Route as AuthenticatedAutomacoesRouteImport } from './routes/_authenticated/automacoes'
 import { Route as AuthenticatedCentralRouteImport } from './routes/_authenticated/central'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
@@ -79,6 +80,11 @@ const AuthenticatedAdministracaoPlataformaRoute =
 const AuthenticatedAjudaRoute = AuthenticatedAjudaRouteImport.update({
   id: '/ajuda',
   path: '/ajuda',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAssinaturaRoute = AuthenticatedAssinaturaRouteImport.update({
+  id: '/assinatura',
+  path: '/assinatura',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAutomacoesRoute = AuthenticatedAutomacoesRouteImport.update({
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/termos-de-uso': typeof TermosDeUsoRoute
   '/administracao-plataforma': typeof AuthenticatedAdministracaoPlataformaRoute
   '/ajuda': typeof AuthenticatedAjudaRoute
+  '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/automacoes': typeof AuthenticatedAutomacoesRoute
   '/central': typeof AuthenticatedCentralRoute
   '/clientes': typeof AuthenticatedClientesRouteWithChildren
@@ -248,6 +255,7 @@ export interface FileRoutesByTo {
   '/termos-de-uso': typeof TermosDeUsoRoute
   '/administracao-plataforma': typeof AuthenticatedAdministracaoPlataformaRoute
   '/ajuda': typeof AuthenticatedAjudaRoute
+  '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/automacoes': typeof AuthenticatedAutomacoesRoute
   '/central': typeof AuthenticatedCentralRoute
   '/comunicacao': typeof AuthenticatedComunicacaoRoute
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/termos-de-uso': typeof TermosDeUsoRoute
   '/_authenticated/administracao-plataforma': typeof AuthenticatedAdministracaoPlataformaRoute
   '/_authenticated/ajuda': typeof AuthenticatedAjudaRoute
+  '/_authenticated/assinatura': typeof AuthenticatedAssinaturaRoute
   '/_authenticated/automacoes': typeof AuthenticatedAutomacoesRoute
   '/_authenticated/central': typeof AuthenticatedCentralRoute
   '/_authenticated/clientes': typeof AuthenticatedClientesRouteWithChildren
@@ -314,6 +323,7 @@ export interface FileRouteTypes {
     | '/termos-de-uso'
     | '/administracao-plataforma'
     | '/ajuda'
+    | '/assinatura'
     | '/automacoes'
     | '/central'
     | '/clientes'
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/termos-de-uso'
     | '/administracao-plataforma'
     | '/ajuda'
+    | '/assinatura'
     | '/automacoes'
     | '/central'
     | '/comunicacao'
@@ -377,6 +388,7 @@ export interface FileRouteTypes {
     | '/termos-de-uso'
     | '/_authenticated/administracao-plataforma'
     | '/_authenticated/ajuda'
+    | '/_authenticated/assinatura'
     | '/_authenticated/automacoes'
     | '/_authenticated/central'
     | '/_authenticated/clientes'
@@ -468,6 +480,13 @@ declare module '@tanstack/react-router' {
       path: '/ajuda'
       fullPath: '/ajuda'
       preLoaderRoute: typeof AuthenticatedAjudaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/assinatura': {
+      id: '/_authenticated/assinatura'
+      path: '/assinatura'
+      fullPath: '/assinatura'
+      preLoaderRoute: typeof AuthenticatedAssinaturaRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/automacoes': {
@@ -675,6 +694,7 @@ const AuthenticatedProcessosRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAdministracaoPlataformaRoute: typeof AuthenticatedAdministracaoPlataformaRoute
   AuthenticatedAjudaRoute: typeof AuthenticatedAjudaRoute
+  AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
   AuthenticatedAutomacoesRoute: typeof AuthenticatedAutomacoesRoute
   AuthenticatedCentralRoute: typeof AuthenticatedCentralRoute
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRouteWithChildren
@@ -696,6 +716,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdministracaoPlataformaRoute:
     AuthenticatedAdministracaoPlataformaRoute,
   AuthenticatedAjudaRoute: AuthenticatedAjudaRoute,
+  AuthenticatedAssinaturaRoute: AuthenticatedAssinaturaRoute,
   AuthenticatedAutomacoesRoute: AuthenticatedAutomacoesRoute,
   AuthenticatedCentralRoute: AuthenticatedCentralRoute,
   AuthenticatedClientesRoute: AuthenticatedClientesRouteWithChildren,
