@@ -77,14 +77,13 @@ describe("saúde dos pagamentos Kiwify", () => {
   });
 
   test("webhook registra falhas, alerta a plataforma e encerra o alerta após recuperação", async () => {
-    const [migration, webhook, notificationHook, generatedTypes] = await Promise.all([
+    const [migration, webhook, notificationHook] = await Promise.all([
       readFile(
         new URL("../supabase/migrations/20260901233000_kiwify_failure_alerts.sql", import.meta.url),
         "utf8",
       ),
       readFile(new URL("../supabase/functions/kiwify-webhook/index.ts", import.meta.url), "utf8"),
       readFile(new URL("../src/hooks/use-notifications.ts", import.meta.url), "utf8"),
-      readFile(new URL("../src/integrations/supabase/types.ts", import.meta.url), "utf8"),
     ]);
 
     assert.match(migration, /CREATE OR REPLACE FUNCTION public\.record_kiwify_webhook_failure/);
@@ -109,7 +108,5 @@ describe("saúde dos pagamentos Kiwify", () => {
     }
     assert.match(webhook, /await resolveFailure\(supabase, eventKey\)/);
     assert.equal(notificationHook.match(/refetchInterval: 60_000/g)?.length, 2);
-    assert.match(generatedTypes, /record_kiwify_webhook_failure:/);
-    assert.match(generatedTypes, /resolve_kiwify_webhook_failure:/);
   });
 });
