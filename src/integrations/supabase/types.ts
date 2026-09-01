@@ -2721,6 +2721,58 @@ export type Database = {
           },
         ]
       }
+      support_request_messages: {
+        Row: {
+          author_id: string | null
+          author_kind: string
+          created_at: string
+          id: string
+          message: string
+          organization_id: string
+          request_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_kind: string
+          created_at?: string
+          id?: string
+          message: string
+          organization_id: string
+          request_id: string
+        }
+        Update: {
+          author_id?: string | null
+          author_kind?: string
+          created_at?: string
+          id?: string
+          message?: string
+          organization_id?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_request_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_request_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_request_messages_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "support_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_requests: {
         Row: {
           archived_at: string | null
@@ -3652,6 +3704,30 @@ export type Database = {
           received_at: string
         }[]
       }
+      platform_support_open_count: { Args: never; Returns: number }
+      platform_support_requests: {
+        Args: { _limit?: number; _status?: string }
+        Returns: {
+          category: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          last_reply_at: string
+          organization_id: string
+          organization_name: string
+          priority: string
+          related_module: string
+          related_route: string
+          reply_count: number
+          requester_email: string
+          requester_name: string
+          resolved_at: string
+          status: string
+          subject: string
+          updated_at: string
+        }[]
+      }
       prepare_kiwify_checkout: {
         Args: { _organization: string }
         Returns: undefined
@@ -3705,6 +3781,10 @@ export type Database = {
         }
         Returns: string
       }
+      reply_support_request: {
+        Args: { _message: string; _next_status?: string; _request_id: string }
+        Returns: string
+      }
       restore_financial_account: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
@@ -3752,6 +3832,16 @@ export type Database = {
       }
       storage_path_org: { Args: { _name: string }; Returns: string }
       support_assert_admin: { Args: { _org: string }; Returns: undefined }
+      support_request_thread: {
+        Args: { _request_id: string }
+        Returns: {
+          author_kind: string
+          author_name: string
+          created_at: string
+          id: string
+          message: string
+        }[]
+      }
       suspend_expired_kiwify_subscriptions: {
         Args: { _limit?: number; _now?: string }
         Returns: number

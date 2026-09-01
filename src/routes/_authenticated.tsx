@@ -1,4 +1,10 @@
-import { createFileRoute, Outlet, redirect, useLocation, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useLocation,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -26,15 +32,25 @@ function OnboardingGate() {
   const location = useLocation();
   const navigate = useNavigate();
   const onOnboarding = location.pathname.startsWith("/onboarding");
-  const onPlatformAdministration = location.pathname.startsWith("/administracao-plataforma");
+  const onPlatformArea =
+    location.pathname.startsWith("/administracao-plataforma") ||
+    location.pathname.startsWith("/suporte-plataforma");
 
   useEffect(() => {
     if (status !== "ready") return;
     if (!commercialAccess) return;
-    if (platformAdmin && onPlatformAdministration) return;
+    if (platformAdmin && onPlatformArea) return;
     if (!onboardingCompleted && !onOnboarding) navigate({ to: "/onboarding", replace: true });
     if (onboardingCompleted && onOnboarding) navigate({ to: "/central", replace: true });
-  }, [status, onboardingCompleted, commercialAccess, platformAdmin, onOnboarding, onPlatformAdministration, navigate]);
+  }, [
+    status,
+    onboardingCompleted,
+    commercialAccess,
+    platformAdmin,
+    onOnboarding,
+    onPlatformArea,
+    navigate,
+  ]);
 
   return null;
 }
@@ -48,7 +64,9 @@ function WorkspaceRecovery() {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-6 text-center">
       <div className="space-y-1">
-        <h1 className="text-lg font-semibold text-foreground">Não foi possível configurar seu acesso.</h1>
+        <h1 className="text-lg font-semibold text-foreground">
+          Não foi possível configurar seu acesso.
+        </h1>
         <p className="text-sm text-muted-foreground">{bootstrapError}</p>
       </div>
       <div className="flex flex-wrap justify-center gap-2">
@@ -81,7 +99,11 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
   if (
     status === "ready" &&
     !commercialAccess &&
-    !(platformAdmin && pathname.startsWith("/administracao-plataforma"))
+    !(
+      platformAdmin &&
+      (pathname.startsWith("/administracao-plataforma") ||
+        pathname.startsWith("/suporte-plataforma"))
+    )
   ) {
     return <CommercialAccessBlocked onSignOut={onSignOut} />;
   }

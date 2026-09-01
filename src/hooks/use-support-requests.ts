@@ -1,8 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-const db = () =>
-  supabase as unknown as { from: (table: string) => any; rpc: (name: string, args?: any) => any };
 export type SupportPriority = "baixa" | "normal" | "alta";
 export type SupportStatus =
   "aberto" | "em_analise" | "aguardando_usuario" | "resolvido" | "arquivado";
@@ -23,12 +21,20 @@ export type SupportRequest = {
   resolved_at: string | null;
   archived_at: string | null;
 };
+export type SupportMessage = {
+  id: string;
+  author_kind: "customer" | "platform";
+  author_name: string;
+  message: string;
+  created_at: string;
+};
 export function useSupportRequests(organizationId: string | null) {
   return useQuery({
     enabled: Boolean(organizationId),
     queryKey: ["support-requests", organizationId],
     queryFn: async () => {
-      const { data, error } = await db()
+      if (!organizationId) return [];
+      const { data, error } = await supabase
         .from("support_requests")
         .select("*")
         .eq("organization_id", organizationId)
@@ -53,14 +59,15 @@ export function useCreateSupportRequest(organizationId: string | null) {
       relatedModule?: string | null;
       relatedRoute?: string | null;
     }) => {
-      const { data, error } = await db().rpc("create_support_request", {
+      if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
+      const { data, error } = await supabase.rpc("create_support_request", {
         _organization_id: organizationId,
         _subject: v.subject,
         _category: v.category,
         _description: v.description,
         _priority: v.priority,
-        _related_module: v.relatedModule || null,
-        _related_route: v.relatedRoute || null,
+        ...(v.relatedModule ? { _related_module: v.relatedModule } : {}),
+        ...(v.relatedRoute ? { _related_route: v.relatedRoute } : {}),
       });
       if (error) throw error;
       return data as string;
@@ -72,7 +79,7 @@ export function useUpdateSupportStatus(organizationId: string | null) {
   const refresh = useRefresh(organizationId);
   return useMutation({
     mutationFn: async (v: { id: string; status: SupportStatus }) => {
-      const { error } = await db().rpc("update_support_request_status", {
+      const { error } = await supabase.rpc("update_support_request_status", {
         _request_id: v.id,
         _status: v.status,
       });
@@ -85,9 +92,9 @@ export function useAssignSupportRequest(organizationId: string | null) {
   const refresh = useRefresh(organizationId);
   return useMutation({
     mutationFn: async (v: { id: string; assignedTo: string | null }) => {
-      const { error } = await db().rpc("assign_support_request", {
+      const { error } = await supabase.rpc("assign_support_request", {
         _request_id: v.id,
-        _assigned_to: v.assignedTo,
+        _assigned_to: v.assignedTo as string,
       });
       if (error) throw error;
     },
@@ -98,9 +105,54 @@ export function useArchiveSupportRequest(organizationId: string | null) {
   const refresh = useRefresh(organizationId);
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await db().rpc("archive_support_request", { _request_id: id });
+      const { error } = await supabase.rpc("archive_support_request", { _request_id: id });
       if (error) throw error;
     },
     onSuccess: refresh,
+  });
+}
+
+export function useSupportRequestThread(requestId: string | null) {
+  return useQuery({
+    enabled: Boolean(requestId),
+    queryKey: ["support-request-thread", requestId],
+    queryFn: async () => {
+      if (!requestId) return [];
+      const { data, error } = await supabase.rpc("support_request_thread", {
+        _request_id: requestId,
+      });
+      if (error) throw error;
+      return (data ?? []) as SupportMessage[];
+    },
+  });
+}
+
+export function useReplySupportRequest(organizationId: string | null, requestId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      message,
+      nextStatus,
+    }: {
+      message: string;
+      nextStatus?: SupportStatus | null;
+    }) => {
+      if (!requestId) throw new Error("SUPPORT_REQUEST_REQUIRED");
+      const { data, error } = await supabase.rpc("reply_support_request", {
+        _request_id: requestId,
+        _message: message,
+        ...(nextStatus ? { _next_status: nextStatus } : {}),
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["support-request-thread", requestId] }),
+        queryClient.invalidateQueries({ queryKey: ["support-requests", organizationId] }),
+        queryClient.invalidateQueries({ queryKey: ["platform-support-requests"] }),
+        queryClient.invalidateQueries({ queryKey: ["platform-support-open-count"] }),
+      ]);
+    },
   });
 }

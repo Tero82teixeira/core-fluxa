@@ -15,9 +15,12 @@ import {
 import { goToHelpArticleModule, openHelpArticle } from "@/lib/help-center-interactions";
 import {
   useCreateSupportRequest,
+  useReplySupportRequest,
+  useSupportRequestThread,
   useSupportRequests,
   useUpdateSupportStatus,
   type SupportPriority,
+  type SupportRequest,
   type SupportStatus,
 } from "@/hooks/use-support-requests";
 import { Badge } from "@/components/ui/badge";
@@ -422,6 +425,7 @@ function SupportArea({
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [category, setCategory] = useState("");
+  const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null);
   const visible = (requests.data ?? []).filter(
     (r) =>
       (admin || r.created_by === userId) &&
@@ -488,29 +492,37 @@ function SupportArea({
                     {new Date(r.updated_at).toLocaleDateString("pt-BR")}
                   </p>
                 </div>
-                {admin ? (
-                  <select
-                    aria-label={`Status de ${r.subject}`}
-                    className="h-9 rounded-md border bg-background px-2 text-sm"
-                    value={r.status}
-                    disabled={r.status === "arquivado" || update.isPending}
-                    onChange={(e) =>
-                      void update.mutateAsync({ id: r.id, status: e.target.value as SupportStatus })
-                    }
-                  >
-                    {Object.entries(statusLabel)
-                      .filter(([v]) => v !== "arquivado")
-                      .map(([v, l]) => (
-                        <option value={v} key={v}>
-                          {l}
-                        </option>
-                      ))}
-                  </select>
-                ) : (
-                  <Badge className="w-fit" variant="secondary">
-                    {statusLabel[r.status]}
-                  </Badge>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {admin ? (
+                    <select
+                      aria-label={`Status de ${r.subject}`}
+                      className="h-9 rounded-md border bg-background px-2 text-sm"
+                      value={r.status}
+                      disabled={r.status === "arquivado" || update.isPending}
+                      onChange={(e) =>
+                        void update.mutateAsync({
+                          id: r.id,
+                          status: e.target.value as SupportStatus,
+                        })
+                      }
+                    >
+                      {Object.entries(statusLabel)
+                        .filter(([v]) => v !== "arquivado")
+                        .map(([v, l]) => (
+                          <option value={v} key={v}>
+                            {l}
+                          </option>
+                        ))}
+                    </select>
+                  ) : (
+                    <Badge className="w-fit" variant="secondary">
+                      {statusLabel[r.status]}
+                    </Badge>
+                  )}
+                  <Button variant="outline" size="sm" onClick={() => setSelectedRequest(r)}>
+                    Ver atendimento
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -522,7 +534,111 @@ function SupportArea({
           </CardContent>
         </Card>
       )}
+      <CustomerSupportDialog
+        request={selectedRequest}
+        organizationId={organizationId}
+        onClose={() => setSelectedRequest(null)}
+      />
     </section>
+  );
+}
+
+function CustomerSupportDialog({
+  request,
+  organizationId,
+  onClose,
+}: {
+  request: SupportRequest | null;
+  organizationId: string | null;
+  onClose: () => void;
+}) {
+  const thread = useSupportRequestThread(request?.id ?? null);
+  const reply = useReplySupportRequest(organizationId, request?.id ?? null);
+  const [message, setMessage] = useState("");
+
+  const submit = async () => {
+    if (message.trim().length < 2) {
+      toast.error("Escreva sua resposta antes de enviar.");
+      return;
+    }
+    try {
+      await reply.mutateAsync({ message });
+      setMessage("");
+      toast.success("Resposta enviada ao suporte FLUXA.");
+    } catch {
+      toast.error("Não foi possível enviar sua resposta.");
+    }
+  };
+
+  return (
+    <Dialog open={Boolean(request)} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        {request && (
+          <>
+            <DialogHeader>
+              <DialogTitle>{request.subject}</DialogTitle>
+              <DialogDescription>
+                {request.category} · {statusLabel[request.status]}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Solicitação original
+                </p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{request.description}</p>
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-semibold">Conversa com o suporte</h3>
+                {thread.isLoading && (
+                  <p className="text-sm text-muted-foreground">Carregando respostas…</p>
+                )}
+                {!thread.isLoading && (thread.data ?? []).length === 0 && (
+                  <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                    O suporte ainda não enviou uma resposta.
+                  </p>
+                )}
+                {(thread.data ?? []).map((entry) => (
+                  <div
+                    key={entry.id}
+                    className={`rounded-lg border p-3 ${
+                      entry.author_kind === "platform" ? "border-blue-200 bg-blue-50/70" : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <strong>{entry.author_name}</strong>
+                      <span className="text-muted-foreground">
+                        {new Date(entry.created_at).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{entry.message}</p>
+                  </div>
+                ))}
+              </div>
+              {request.status !== "arquivado" && (
+                <div className="space-y-2 rounded-lg border p-4">
+                  <h3 className="font-semibold">Responder</h3>
+                  <Textarea
+                    rows={4}
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
+                    placeholder="Escreva uma resposta ou envie mais informações…"
+                  />
+                  <Button disabled={reply.isPending} onClick={() => void submit()}>
+                    {reply.isPending ? "Enviando…" : "Enviar resposta"}
+                  </Button>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose}>
+                Fechar
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 function Filter({

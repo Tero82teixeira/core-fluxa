@@ -10,6 +10,7 @@ import {
   Clock3,
   CreditCard,
   FilePlus2,
+  LifeBuoy,
   ListPlus,
   Plus,
   Search,
@@ -51,6 +52,7 @@ import { NAV_ITEMS } from "@/lib/navigation";
 import { isSafeNotificationUrl } from "@/lib/notifications";
 import { GlobalSearch } from "@/components/global-search";
 import { useSubscriptionCheckout } from "@/hooks/use-subscription-checkout";
+import { usePlatformSupportOpenCount } from "@/hooks/use-platform-support";
 
 export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const navigate = useNavigate();
@@ -67,6 +69,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   } = useWorkspace();
   const [searchOpen, setSearchOpen] = useState(false);
   const subscription = useSubscriptionCheckout();
+  const platformSupport = usePlatformSupportOpenCount(platformAdmin);
 
   const current = NAV_ITEMS.find(
     (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
@@ -315,9 +318,20 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
                 Ajuda e suporte
               </DropdownMenuItem>
               {platformAdmin && (
-                <DropdownMenuItem onSelect={() => navigate({ to: "/administracao-plataforma" })}>
-                  Administração da plataforma
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem onSelect={() => navigate({ to: "/administracao-plataforma" })}>
+                    Administração da plataforma
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate({ to: "/suporte-plataforma" })}>
+                    <LifeBuoy className="size-4" aria-hidden />
+                    Central de suporte
+                    {(platformSupport.data ?? 0) > 0 && (
+                      <Badge className="ml-auto h-5 min-w-5 justify-center px-1.5">
+                        {platformSupport.data}
+                      </Badge>
+                    )}
+                  </DropdownMenuItem>
+                </>
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={onSignOut}>Sair da conta</DropdownMenuItem>
