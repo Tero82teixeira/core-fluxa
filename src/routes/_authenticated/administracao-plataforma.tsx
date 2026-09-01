@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Archive,
+  ArchiveRestore,
   Building2,
   CalendarPlus,
   CheckCircle2,
@@ -18,8 +20,10 @@ import { COMMERCIAL_STATUS_LABEL, type EffectiveCommercialStatus } from "@/lib/c
 import { describeError } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
 import { brl } from "@/lib/finance";
+import { cn } from "@/lib/utils";
 import { subscriptionStatusLabel } from "@/lib/billing";
 import {
+  canArchivePlatformOrganization,
   matchesPlatformSubscriptionFilter,
   platformBillingMetrics,
   type PlatformSubscriptionFilter,
@@ -78,6 +82,7 @@ type PlatformOrganization = {
   days_remaining: number | null;
   onboarding_completed: boolean;
   created_at: string;
+  archived_at: string | null;
 };
 
 type PlatformSubscription = Pick<
@@ -132,7 +137,9 @@ function PlatformAdministration() {
   const subscriptions = usePlatformSubscriptions(platformAdmin);
   const [search, setSearch] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState<PlatformSubscriptionFilter>("all");
+  const [includeArchived, setIncludeArchived] = useState(false);
   const [suspendTarget, setSuspendTarget] = useState<PlatformOrganization | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<PlatformOrganization | null>(null);
 
   const update = useMutation({
     mutationFn: async ({
@@ -161,6 +168,30 @@ function PlatformAdministration() {
     onError: (error) => toast.error(describeError(error)),
   });
 
+  const archive = useMutation({
+    mutationFn: async ({
+      organizationId,
+      archived,
+    }: {
+      organizationId: string;
+      archived: boolean;
+    }) => {
+      const { error } = await supabase.rpc("set_platform_organization_archived", {
+        _organization_id: organizationId,
+        _archived: archived,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async (_, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["platform-organizations"] }),
+        queryClient.invalidateQueries({ queryKey: ["platform-subscriptions"] }),
+      ]);
+      toast.success(variables.archived ? "Empresa arquivada." : "Empresa restaurada.");
+    },
+    onError: (error) => toast.error(describeError(error)),
+  });
+
   const rows = organizations.data ?? [];
   const subscriptionRows = subscriptions.data ?? [];
   const subscriptionsByOrganization = useMemo(
@@ -171,6 +202,7 @@ function PlatformAdministration() {
   const filtered = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("pt-BR");
     return rows.filter((organization) => {
+      if (organization.archived_at && !includeArchived) return false;
       const subscription = subscriptionsByOrganization.get(organization.organization_id);
       const matchesSearch =
         !term ||
@@ -192,7 +224,7 @@ function PlatformAdministration() {
         )
       );
     });
-  }, [rows, search, subscriptionFilter, subscriptionsByOrganization]);
+  }, [rows, search, subscriptionFilter, subscriptionsByOrganization, includeArchived]);
 
   if (!platformAdmin) {
     return (
@@ -210,10 +242,11 @@ function PlatformAdministration() {
     );
   }
 
-  const billing = platformBillingMetrics(rows, subscriptionRows);
+  const activeRows = rows.filter((row) => !row.archived_at);
+  const billing = platformBillingMetrics(activeRows, subscriptionRows);
   const summary = {
-    total: rows.length,
-    trial: rows.filter((row) => row.effective_status === "trial").length,
+    total: activeRows.length,
+    trial: activeRows.filter((row) => row.effective_status === "trial").length,
     ...billing,
   };
 
@@ -227,7 +260,7 @@ function PlatformAdministration() {
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <SummaryCard label="Empresas" value={summary.total} icon={Building2} />
+        <SummaryCard label="Empresas ativas" value={summary.total} icon={Building2} />
         <SummaryCard label="Em teste" value={summary.trial} icon={Clock3} />
         <SummaryCard
           label="Assinaturas ativas"
@@ -254,7 +287,7 @@ function PlatformAdministration() {
               {filtered.length} empresa(s) encontrada(s).
             </p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-[minmax(0,22rem)_13rem]">
+          <div className="grid gap-2 sm:grid-cols-[minmax(0,22rem)_13rem_auto]">
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -276,6 +309,15 @@ function PlatformAdministration() {
                 <SelectItem value="not_started">Checkout não iniciado</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              type="button"
+              variant="outline"
+              aria-pressed={includeArchived}
+              onClick={() => setIncludeArchived((current) => !current)}
+            >
+              <Archive className="size-4" aria-hidden />
+              {includeArchived ? "Ocultar arquivadas" : "Incluir arquivadas"}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -311,7 +353,13 @@ function PlatformAdministration() {
                 </thead>
                 <tbody>
                   {filtered.map((organization) => (
-                    <tr key={organization.organization_id} className="border-b last:border-0">
+                    <tr
+                      key={organization.organization_id}
+                      className={cn(
+                        "border-b last:border-0",
+                        organization.archived_at && "bg-muted/25 text-muted-foreground",
+                      )}
+                    >
                       <td className="px-4 py-3">
                         <p className="font-medium">
                           {organization.trade_name || organization.legal_name}
@@ -327,17 +375,30 @@ function PlatformAdministration() {
                         </p>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge
-                          variant="outline"
-                          className={statusTone[organization.effective_status]}
-                        >
-                          {COMMERCIAL_STATUS_LABEL[organization.effective_status]}
-                        </Badge>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {organization.onboarding_completed
-                            ? "Configuração concluída"
-                            : "Configuração pendente"}
-                        </p>
+                        {organization.archived_at ? (
+                          <>
+                            <Badge variant="outline" className="border-slate-300 bg-slate-100">
+                              Arquivada
+                            </Badge>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Em {formatDate(organization.archived_at)}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <Badge
+                              variant="outline"
+                              className={statusTone[organization.effective_status]}
+                            >
+                              {COMMERCIAL_STATUS_LABEL[organization.effective_status]}
+                            </Badge>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {organization.onboarding_completed
+                                ? "Configuração concluída"
+                                : "Configuração pendente"}
+                            </p>
+                          </>
+                        )}
                       </td>
                       <SubscriptionStatusCell
                         subscription={subscriptionsByOrganization.get(organization.organization_id)}
@@ -363,7 +424,10 @@ function PlatformAdministration() {
                       <td className="px-4 py-3 text-right">
                         <CommercialActions
                           organization={organization}
-                          pending={update.isPending}
+                          subscription={subscriptionsByOrganization.get(
+                            organization.organization_id,
+                          )}
+                          pending={update.isPending || archive.isPending}
                           onActivate={() =>
                             update.mutate({
                               organizationId: organization.organization_id,
@@ -378,6 +442,13 @@ function PlatformAdministration() {
                             })
                           }
                           onSuspend={() => setSuspendTarget(organization)}
+                          onArchive={() => setArchiveTarget(organization)}
+                          onRestore={() =>
+                            archive.mutate({
+                              organizationId: organization.organization_id,
+                              archived: false,
+                            })
+                          }
                         />
                       </td>
                     </tr>
@@ -411,6 +482,36 @@ function PlatformAdministration() {
               }}
             >
               Confirmar suspensão
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={Boolean(archiveTarget)}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Arquivar esta empresa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A empresa sairá da lista principal e perderá o acesso aos módulos. Nenhum cliente,
+              processo, documento ou histórico será apagado, e você poderá restaurá-la depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!archiveTarget) return;
+                archive.mutate({
+                  organizationId: archiveTarget.organization_id,
+                  archived: true,
+                });
+                setArchiveTarget(null);
+              }}
+            >
+              Confirmar arquivamento
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -512,17 +613,34 @@ function SummaryCard({
 
 function CommercialActions({
   organization,
+  subscription,
   pending,
   onActivate,
   onExtend,
   onSuspend,
+  onArchive,
+  onRestore,
 }: {
   organization: PlatformOrganization;
+  subscription: PlatformSubscription | undefined;
   pending: boolean;
   onActivate: () => void;
   onExtend: (days: number) => void;
   onSuspend: () => void;
+  onArchive: () => void;
+  onRestore: () => void;
 }) {
+  if (organization.archived_at) {
+    return (
+      <Button variant="outline" size="sm" disabled={pending} onClick={onRestore}>
+        <ArchiveRestore className="size-4" aria-hidden />
+        Restaurar
+      </Button>
+    );
+  }
+
+  const canArchive = canArchivePlatformOrganization(subscription);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -555,6 +673,11 @@ function CommercialActions({
             </DropdownMenuItem>
           </>
         )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-destructive" disabled={!canArchive} onSelect={onArchive}>
+          <Archive className="size-4" />
+          {canArchive ? "Arquivar empresa" : "Assinatura ainda possui acesso"}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

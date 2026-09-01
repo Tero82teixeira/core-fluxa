@@ -3624,6 +3624,7 @@ export type Database = {
       platform_organizations: {
         Args: never
         Returns: {
+          archived_at: string
           commercial_status: string
           created_at: string
           days_remaining: number
@@ -3802,6 +3803,10 @@ export type Database = {
           _receives_automatic_tasks: boolean
           _sector: string
         }
+        Returns: undefined
+      }
+      set_platform_organization_archived: {
+        Args: { _archived: boolean; _organization_id: string }
         Returns: undefined
       }
       update_organization_commercial_status: {
