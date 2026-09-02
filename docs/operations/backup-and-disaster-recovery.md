@@ -34,6 +34,8 @@ Backups do banco não contêm os arquivos binários do Supabase Storage. Restaur
 - [ ] Registrar o commit da versão em produção e a data de cada cópia.
 - [ ] Executar `scripts/admin/backup-readiness.sql` e guardar o resultado junto ao registro da cópia.
 
+No plano gratuito, siga o guia [Backup manual gratuito do FLUXA no Windows](./manual-backup-free-plan.md).
+
 ## Rotina de backup
 
 ### Diária

@@ -19,6 +19,11 @@ dist-ssr
 .env.*.local
 .env.production
 
+# Local backups must never be committed (they can contain customer data)
+.fluxa-backups/
+fluxa-backup-*/
+fluxa-backup-*.zip
+
 # Supabase CLI temporary artifacts
 supabase/.temp/
 
