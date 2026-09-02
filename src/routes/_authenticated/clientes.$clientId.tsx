@@ -19,15 +19,30 @@ import { CLIENT_STATUS, PRIORITY, PROCESS_STAGE, TASK_STATUS } from "@/lib/domai
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DocumentScopePanel } from "@/components/documents/document-scope-panel";
-import { formatCurrency, formatDate, initials, maskCEP, maskDocument, maskPhone, relativeTime } from "@/lib/format";
+import { ClientPortalPanel } from "@/components/clients/client-portal-panel";
+import {
+  formatCurrency,
+  formatDate,
+  initials,
+  maskCEP,
+  maskDocument,
+  maskPhone,
+  relativeTime,
+} from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/clientes/$clientId")({
   head: () => ({
     meta: [
       { title: "Ficha do cliente — FLUXA" },
-      { name: "description", content: "Visão 360 do cliente: cadastro, processos, tarefas e histórico." },
+      {
+        name: "description",
+        content: "Visão 360 do cliente: cadastro, processos, tarefas e histórico.",
+      },
       { property: "og:title", content: "Ficha do cliente — FLUXA" },
-      { property: "og:description", content: "Visão 360 do cliente: cadastro, processos, tarefas e histórico." },
+      {
+        property: "og:description",
+        content: "Visão 360 do cliente: cadastro, processos, tarefas e histórico.",
+      },
     ],
   }),
   component: ClientDetail,
@@ -45,7 +60,7 @@ const CLOSED = ["finalizado", "arquivado", "cancelado"];
 function ClientDetail() {
   const { clientId } = Route.useParams();
   const navigate = useNavigate();
-  const { organizationId } = useWorkspace();
+  const { organizationId, role } = useWorkspace();
   const permissions = usePermissions();
   const client = useClient(clientId);
   const processes = useClientProcesses(clientId);
@@ -53,9 +68,13 @@ function ClientDetail() {
   const history = useEntityHistory(organizationId, clientId);
   const archiveClient = useArchiveClient(organizationId);
   const [busy, setBusy] = useState(false);
+  const canManageClientPortal = role === "proprietario" || role === "administrador";
 
   const related = processes.data ?? [];
-  const openRelated = useMemo(() => related.filter((process) => !CLOSED.includes(process.stage)), [related]);
+  const openRelated = useMemo(
+    () => related.filter((process) => !CLOSED.includes(process.stage)),
+    [related],
+  );
   const relatedTasks = (tasks.data ?? []).filter((task) => task.client_id === clientId);
 
   if (client.isLoading) {
@@ -85,7 +104,10 @@ function ClientDetail() {
   const data = client.data;
   const contracted = related.reduce((total, process) => total + (process.value ?? 0), 0);
   const openValue = related
-    .filter((process) => process.financial_status === "pendente" || process.financial_status === "atrasado")
+    .filter(
+      (process) =>
+        process.financial_status === "pendente" || process.financial_status === "atrasado",
+    )
     .reduce((total, process) => total + (process.value ?? 0), 0);
   const archived = Boolean(data.archived_at);
 
@@ -127,7 +149,10 @@ function ClientDetail() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="page-title truncate">{data.name}</h1>
-                <StatusBadge label={CLIENT_STATUS[data.status].label} tone={CLIENT_STATUS[data.status].tone} />
+                <StatusBadge
+                  label={CLIENT_STATUS[data.status].label}
+                  tone={CLIENT_STATUS[data.status].tone}
+                />
                 {archived && <StatusBadge label="Arquivado" tone="neutral" />}
               </div>
               <p className="page-subtitle mt-1.5">
@@ -182,13 +207,19 @@ function ClientDetail() {
             )}
             {permissions.canArchive && (
               <Button variant="outline" onClick={() => void toggleArchive()} disabled={busy}>
-                {archived ? <RotateCcw className="size-4" aria-hidden /> : <Archive className="size-4" aria-hidden />}
+                {archived ? (
+                  <RotateCcw className="size-4" aria-hidden />
+                ) : (
+                  <Archive className="size-4" aria-hidden />
+                )}
                 {archived ? "Reativar" : "Arquivar"}
               </Button>
             )}
             {permissions.canCreate && !archived && (
               <Button asChild>
-                <Link to="/processos/novo" search={{ clientId }}>Novo processo</Link>
+                <Link to="/processos/novo" search={{ clientId }}>
+                  Novo processo
+                </Link>
               </Button>
             )}
           </div>
@@ -208,11 +239,26 @@ function ClientDetail() {
 
       <Tabs defaultValue="visao">
         <TabsList className="h-auto flex-wrap gap-1.5 p-1.5">
-          <TabsTrigger value="visao" className="px-4 py-2 text-sm">Visão geral</TabsTrigger>
-          <TabsTrigger value="processos" className="px-4 py-2 text-sm">Processos ({related.length})</TabsTrigger>
-          <TabsTrigger value="documentos" className="px-4 py-2 text-sm">Documentos</TabsTrigger>
-          <TabsTrigger value="tarefas" className="px-4 py-2 text-sm">Tarefas ({relatedTasks.length})</TabsTrigger>
-          <TabsTrigger value="historico" className="px-4 py-2 text-sm">Histórico</TabsTrigger>
+          <TabsTrigger value="visao" className="px-4 py-2 text-sm">
+            Visão geral
+          </TabsTrigger>
+          <TabsTrigger value="processos" className="px-4 py-2 text-sm">
+            Processos ({related.length})
+          </TabsTrigger>
+          <TabsTrigger value="documentos" className="px-4 py-2 text-sm">
+            Documentos
+          </TabsTrigger>
+          <TabsTrigger value="tarefas" className="px-4 py-2 text-sm">
+            Tarefas ({relatedTasks.length})
+          </TabsTrigger>
+          <TabsTrigger value="historico" className="px-4 py-2 text-sm">
+            Histórico
+          </TabsTrigger>
+          {canManageClientPortal && (
+            <TabsTrigger value="portal" className="px-4 py-2 text-sm">
+              Portal do Cliente
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="documentos" className="mt-4">
@@ -222,6 +268,15 @@ function ClientDetail() {
           />
         </TabsContent>
 
+        {canManageClientPortal && organizationId && (
+          <TabsContent value="portal" className="mt-4">
+            <ClientPortalPanel
+              organizationId={organizationId}
+              clientId={clientId}
+              clientEmail={data.email}
+            />
+          </TabsContent>
+        )}
 
         <TabsContent value="visao" className="mt-4">
           <Card>
@@ -262,7 +317,8 @@ function ClientDetail() {
                   {data.notes?.trim() || "Nenhuma observação registrada."}
                 </p>
                 <p className="helper-text mt-4">
-                  Última interação: {data.last_interaction_at ? relativeTime(data.last_interaction_at) : "—"}
+                  Última interação:{" "}
+                  {data.last_interaction_at ? relativeTime(data.last_interaction_at) : "—"}
                 </p>
               </div>
             </CardContent>
@@ -281,17 +337,22 @@ function ClientDetail() {
               ) : (
                 <ul className="divide-y divide-border">
                   {related.map((process) => (
-                    <li key={process.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                    <li
+                      key={process.id}
+                      className="flex flex-wrap items-center justify-between gap-3 p-4"
+                    >
                       <div className="min-w-0">
                         <Link
                           to="/processos/$processId"
                           params={{ processId: process.id }}
                           className="truncate text-sm font-medium hover:underline"
                         >
-                          {process.code} · {process.title ?? process.service_types?.name ?? "Processo"}
+                          {process.code} ·{" "}
+                          {process.title ?? process.service_types?.name ?? "Processo"}
                         </Link>
                         <p className="helper-text mt-1">
-                          Prazo {formatDate(process.due_date)} · Responsável {process.owner_name ?? "—"}
+                          Prazo {formatDate(process.due_date)} · Responsável{" "}
+                          {process.owner_name ?? "—"}
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center gap-1.5">
@@ -299,7 +360,10 @@ function ClientDetail() {
                           label={PROCESS_STAGE[process.stage].label}
                           tone={PROCESS_STAGE[process.stage].tone}
                         />
-                        <StatusBadge label={PRIORITY[process.priority].label} tone={PRIORITY[process.priority].tone} />
+                        <StatusBadge
+                          label={PRIORITY[process.priority].label}
+                          tone={PRIORITY[process.priority].tone}
+                        />
                       </div>
                     </li>
                   ))}
@@ -321,14 +385,21 @@ function ClientDetail() {
               ) : (
                 <ul className="divide-y divide-border">
                   {relatedTasks.map((task) => (
-                    <li key={task.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                    <li
+                      key={task.id}
+                      className="flex flex-wrap items-center justify-between gap-3 p-4"
+                    >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{task.title}</p>
                         <p className="helper-text mt-1">
-                          Prazo {formatDate(task.due_at)} · {task.assignee_name ?? "Sem responsável"}
+                          Prazo {formatDate(task.due_at)} ·{" "}
+                          {task.assignee_name ?? "Sem responsável"}
                         </p>
                       </div>
-                      <StatusBadge label={TASK_STATUS[task.status].label} tone={TASK_STATUS[task.status].tone} />
+                      <StatusBadge
+                        label={TASK_STATUS[task.status].label}
+                        tone={TASK_STATUS[task.status].tone}
+                      />
                     </li>
                   ))}
                 </ul>
@@ -350,7 +421,9 @@ function ClientDetail() {
                 <ul className="divide-y divide-border">
                   {(history.data ?? []).map((entry) => (
                     <li key={entry.id} className="p-4">
-                      <p className="text-sm font-medium">{AUDIT_LABEL[entry.action] ?? entry.action}</p>
+                      <p className="text-sm font-medium">
+                        {AUDIT_LABEL[entry.action] ?? entry.action}
+                      </p>
                       <p className="helper-text mt-1">
                         {entry.actor_name ?? "Sistema"} · {relativeTime(entry.created_at)}
                       </p>
