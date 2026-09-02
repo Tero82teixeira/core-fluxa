@@ -421,6 +421,137 @@ export type Database = {
           },
         ]
       }
+      client_portal_access: {
+        Row: {
+          accepted_at: string
+          client_id: string
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          is_active: boolean
+          organization_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          client_id: string
+          created_at?: string
+          email: string
+          id?: string
+          invited_by: string
+          is_active?: boolean
+          organization_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          client_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          is_active?: boolean
+          organization_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_access_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_access_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_access_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          cancelled_at: string | null
+          client_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          organization_id: string
+          status: string
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          cancelled_at?: string | null
+          client_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          organization_id: string
+          status?: string
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          cancelled_at?: string | null
+          client_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          organization_id?: string
+          status?: string
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_invitations_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_invitations_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           archived_at: string | null
@@ -3282,6 +3413,16 @@ export type Database = {
       }
     }
     Functions: {
+      accept_client_portal_invitation: {
+        Args: { _token: string }
+        Returns: {
+          access_id: string
+          client_id: string
+          client_name: string
+          organization_id: string
+          organization_name: string
+        }[]
+      }
       accept_invitation: {
         Args: { _token: string }
         Returns: {
@@ -3399,6 +3540,10 @@ export type Database = {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
       }
+      cancel_client_portal_invitation: {
+        Args: { _invitation_id: string }
+        Returns: undefined
+      }
       cancel_invitation: { Args: { _invitation: string }; Returns: undefined }
       change_communication_thread_status: {
         Args: {
@@ -3440,6 +3585,16 @@ export type Database = {
           street: string
           whatsapp: string
           zip_code: string
+        }[]
+      }
+      client_portal_invitation_preview: {
+        Args: { _token: string }
+        Returns: {
+          client_name: string
+          email: string
+          expires_at: string
+          organization_name: string
+          status: string
         }[]
       }
       communication_assert_role: {
@@ -3506,6 +3661,18 @@ export type Database = {
           _email: string
           _org: string
           _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: {
+          expires_at: string
+          invitation_id: string
+          token: string
+        }[]
+      }
+      create_client_portal_invitation: {
+        Args: {
+          _client_id: string
+          _email: string
+          _organization_id: string
         }
         Returns: {
           expires_at: string
@@ -3627,6 +3794,10 @@ export type Database = {
         Returns: Json
       }
       has_org_membership: { Args: { _org: string }; Returns: boolean }
+      has_client_portal_access: {
+        Args: { _client_id: string; _organization_id: string }
+        Returns: boolean
+      }
       has_org_role: {
         Args: {
           _org: string
@@ -3925,6 +4096,10 @@ export type Database = {
       }
       set_platform_organization_archived: {
         Args: { _archived: boolean; _organization_id: string }
+        Returns: undefined
+      }
+      set_client_portal_access_active: {
+        Args: { _access_id: string; _active: boolean }
         Returns: undefined
       }
       update_organization_commercial_status: {
