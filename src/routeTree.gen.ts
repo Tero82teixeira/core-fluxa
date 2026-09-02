@@ -35,6 +35,7 @@ import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authentic
 import { Route as AuthenticatedSuportePlataformaRouteImport } from './routes/_authenticated/suporte-plataforma'
 import { Route as AuthenticatedTarefasRouteImport } from './routes/_authenticated/tarefas'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
+import { Route as PortalDoClienteTokenRouteImport } from './routes/portal-do-cliente.$token'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as AuthenticatedClientesClientIdRouteImport } from './routes/_authenticated/clientes.$clientId'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
@@ -178,6 +179,11 @@ const ConviteTokenRoute = ConviteTokenRouteImport.update({
   path: '/convite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalDoClienteTokenRoute = PortalDoClienteTokenRouteImport.update({
+  id: '/portal-do-cliente/$token',
+  path: '/portal-do-cliente/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedClientesIndexRoute =
   AuthenticatedClientesIndexRouteImport.update({
     id: '/',
@@ -247,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/suporte-plataforma': typeof AuthenticatedSuportePlataformaRoute
   '/tarefas': typeof AuthenticatedTarefasRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/portal-do-cliente/$token': typeof PortalDoClienteTokenRoute
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/suporte-plataforma': typeof AuthenticatedSuportePlataformaRoute
   '/tarefas': typeof AuthenticatedTarefasRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/portal-do-cliente/$token': typeof PortalDoClienteTokenRoute
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
@@ -315,6 +323,7 @@ export interface FileRoutesById {
   '/_authenticated/suporte-plataforma': typeof AuthenticatedSuportePlataformaRoute
   '/_authenticated/tarefas': typeof AuthenticatedTarefasRoute
   '/convite/$token': typeof ConviteTokenRoute
+  '/portal-do-cliente/$token': typeof PortalDoClienteTokenRoute
   '/_authenticated/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/_authenticated/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
@@ -351,6 +360,7 @@ export interface FileRouteTypes {
     | '/suporte-plataforma'
     | '/tarefas'
     | '/convite/$token'
+    | '/portal-do-cliente/$token'
     | '/clientes/$clientId'
     | '/clientes/novo'
     | '/processos/$processId'
@@ -383,6 +393,7 @@ export interface FileRouteTypes {
     | '/suporte-plataforma'
     | '/tarefas'
     | '/convite/$token'
+    | '/portal-do-cliente/$token'
     | '/clientes/$clientId'
     | '/clientes/novo'
     | '/processos/$processId'
@@ -418,6 +429,7 @@ export interface FileRouteTypes {
     | '/_authenticated/suporte-plataforma'
     | '/_authenticated/tarefas'
     | '/convite/$token'
+    | '/portal-do-cliente/$token'
     | '/_authenticated/clientes/$clientId'
     | '/_authenticated/clientes/novo'
     | '/_authenticated/processos/$processId'
@@ -435,6 +447,7 @@ export interface RootRouteChildren {
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   TermosDeUsoRoute: typeof TermosDeUsoRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
+  PortalDoClienteTokenRoute: typeof PortalDoClienteTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -621,6 +634,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal-do-cliente/$token': {
+      id: '/portal-do-cliente/$token'
+      path: '/portal-do-cliente/$token'
+      fullPath: '/portal-do-cliente/$token'
+      preLoaderRoute: typeof PortalDoClienteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/clientes/': {
       id: '/_authenticated/clientes/'
       path: '/'
@@ -768,6 +788,7 @@ const rootRouteChildren: RootRouteChildren = {
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   TermosDeUsoRoute: TermosDeUsoRoute,
   ConviteTokenRoute: ConviteTokenRoute,
+  PortalDoClienteTokenRoute: PortalDoClienteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
