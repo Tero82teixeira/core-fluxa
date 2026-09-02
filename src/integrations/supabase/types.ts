@@ -463,6 +463,13 @@ export type Database = {
             foreignKeyName: "client_portal_access_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_access_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["organization_id", "id"]
           },
@@ -522,6 +529,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "client_portal_invitations_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
           {
             foreignKeyName: "client_portal_invitations_client_fkey"
             columns: ["organization_id", "client_id"]
