@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -91,10 +91,26 @@ function AuthPage() {
   }>({});
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [validated, setValidated] = useState(false);
+  const routingAuthenticatedUser = useRef(false);
 
-  // Já autenticado: a rota protegida decide entre onboarding e central.
+  // Contas internas seguem para o workspace; clientes ficam no portal isolado.
   useEffect(() => {
-    if (authStatus === "authenticated") navigate({ to: "/central", replace: true });
+    if (authStatus !== "authenticated" || routingAuthenticatedUser.current) return;
+    routingAuthenticatedUser.current = true;
+    setLoading(true);
+    supabase.rpc("resolve_authenticated_home").then(({ data, error }) => {
+      if (error) {
+        console.error("[Auth] falha ao resolver destino autenticado", {
+          message: error.message,
+          code: error.code,
+        });
+        routingAuthenticatedUser.current = false;
+        setLoading(false);
+        setErrors({ form: "Não foi possível identificar sua área de acesso. Tente novamente." });
+        return;
+      }
+      navigate({ to: data === "client_portal" ? "/meu-portal" : "/central", replace: true });
+    });
   }, [authStatus, navigate]);
 
   useEffect(() => {
@@ -144,8 +160,7 @@ function AuthPage() {
           /* armazenamento indisponível */
         }
         setPassword("");
-        // O vínculo com a empresa é criado pelo WorkspaceProvider; a rota decide o destino.
-        navigate({ to: "/central", replace: true });
+        // O efeito acima consulta o destino seguro antes de navegar.
       } else {
         const { needsEmailConfirmation } = await signUp({
           email: email.trim(),
@@ -160,7 +175,6 @@ function AuthPage() {
         } else {
           setValidated(true);
           toast.success("Conta criada. Vamos configurar sua empresa.");
-          navigate({ to: "/central", replace: true });
         }
       }
     } catch (error) {

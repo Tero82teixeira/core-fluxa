@@ -154,9 +154,14 @@ function ClientPortalInvitationPage() {
               O portal ainda está na primeira etapa. Nenhum processo, documento, tarefa ou dado
               interno da empresa foi liberado nesta tela.
             </div>
-            <Button variant="outline" disabled={signingOut} onClick={() => void signOut()}>
-              Sair com segurança
-            </Button>
+            <div className="flex flex-col justify-center gap-2 sm:flex-row">
+              <Button asChild>
+                <Link to="/meu-portal">Acessar Meu Portal</Link>
+              </Button>
+              <Button variant="outline" disabled={signingOut} onClick={() => void signOut()}>
+                Sair com segurança
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </main>

@@ -3597,6 +3597,19 @@ export type Database = {
           status: string
         }[]
       }
+      client_portal_session: {
+        Args: never
+        Returns: {
+          accepted_at: string
+          access_id: string
+          client_id: string
+          client_name: string
+          email: string
+          is_active: boolean
+          organization_id: string
+          organization_name: string
+        }[]
+      }
       communication_assert_role: {
         Args: { _administrative?: boolean; _org: string }
         Returns: undefined
@@ -4102,6 +4115,7 @@ export type Database = {
         Args: { _access_id: string; _active: boolean }
         Returns: undefined
       }
+      resolve_authenticated_home: { Args: never; Returns: string }
       update_organization_commercial_status: {
         Args: { _action: string; _days?: number; _organization_id: string }
         Returns: undefined
