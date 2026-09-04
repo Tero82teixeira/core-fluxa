@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { Check, Copy, Link2, Loader2, ShieldCheck, UserRoundCheck } from "lucide-react";
+import {
+  Check,
+  Copy,
+  FileText,
+  FolderKanban,
+  Link2,
+  Loader2,
+  LockKeyhole,
+  ShieldCheck,
+  UserRoundCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -8,7 +18,14 @@ import {
   useCreateClientPortalInvitation,
   useSetClientPortalAccessActive,
 } from "@/hooks/use-client-portal";
+import {
+  useClientPortalShareManagement,
+  useSetClientPortalItemShared,
+  type ClientPortalShareItem,
+} from "@/hooks/use-client-portal-content";
 import { describeClientPortalError, effectivePortalInvitationStatus } from "@/lib/client-portal";
+import { PROCESS_STAGE, type ProcessStage } from "@/lib/domain";
+import { DOCUMENT_STATUS, type DocumentStatus } from "@/lib/documents";
 import { formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +55,8 @@ export function ClientPortalPanel({
   const createInvitation = useCreateClientPortalInvitation(organizationId, clientId);
   const cancelInvitation = useCancelClientPortalInvitation(organizationId, clientId);
   const setAccessActive = useSetClientPortalAccessActive(organizationId, clientId);
+  const shares = useClientPortalShareManagement(organizationId, clientId);
+  const setItemShared = useSetClientPortalItemShared(organizationId, clientId);
   const [email, setEmail] = useState(clientEmail ?? "");
   const [freshLink, setFreshLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -78,6 +97,19 @@ export function ClientPortalPanel({
     try {
       await setAccessActive.mutateAsync({ accessId, active });
       toast.success(active ? "Acesso reativado." : "Acesso desativado.");
+    } catch (error) {
+      toast.error(describeClientPortalError(error));
+    }
+  }
+
+  async function toggleItem(item: ClientPortalShareItem, shared: boolean) {
+    try {
+      await setItemShared.mutateAsync({
+        itemType: item.item_type,
+        itemId: item.item_id,
+        shared,
+      });
+      toast.success(shared ? "Item liberado no portal." : "Item removido do portal.");
     } catch (error) {
       toast.error(describeClientPortalError(error));
     }
@@ -245,6 +277,111 @@ export function ClientPortalPanel({
           </Card>
         </div>
       )}
+
+      <Card>
+        <CardContent className="space-y-5 p-6">
+          <div className="flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <LockKeyhole className="size-5" aria-hidden />
+            </span>
+            <div>
+              <h2 className="font-semibold">Conteúdo visível no portal</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tudo começa privado. Libere somente os processos e documentos que este cliente pode
+                acompanhar.
+              </p>
+            </div>
+          </div>
+
+          {shares.isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ) : shares.isError ? (
+            <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-4 text-sm text-destructive">
+              Não foi possível carregar os controles de compartilhamento.
+            </div>
+          ) : (
+            <div className="grid gap-6 xl:grid-cols-2">
+              <ShareItems
+                title="Processos"
+                icon={FolderKanban}
+                items={(shares.data ?? []).filter((item) => item.item_type === "process")}
+                busy={setItemShared.isPending}
+                onToggle={toggleItem}
+              />
+              <ShareItems
+                title="Documentos"
+                icon={FileText}
+                items={(shares.data ?? []).filter((item) => item.item_type === "document")}
+                busy={setItemShared.isPending}
+                onToggle={toggleItem}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
+  );
+}
+
+function ShareItems({
+  title,
+  icon: Icon,
+  items,
+  busy,
+  onToggle,
+}: {
+  title: string;
+  icon: typeof FolderKanban;
+  items: ClientPortalShareItem[];
+  busy: boolean;
+  onToggle: (item: ClientPortalShareItem, shared: boolean) => Promise<void>;
+}) {
+  return (
+    <section>
+      <div className="flex items-center gap-2">
+        <Icon className="size-4 text-primary" aria-hidden />
+        <h3 className="text-sm font-semibold">{title}</h3>
+        <span className="text-xs text-muted-foreground">({items.length})</span>
+      </div>
+      {items.length === 0 ? (
+        <p className="mt-3 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          Nenhum item disponível para este cliente.
+        </p>
+      ) : (
+        <ul className="mt-3 divide-y divide-border rounded-lg border">
+          {items.map((item) => {
+            const status =
+              item.item_type === "process"
+                ? PROCESS_STAGE[item.status as ProcessStage]?.label
+                : DOCUMENT_STATUS[item.status as DocumentStatus]?.label;
+            return (
+              <li key={`${item.item_type}-${item.item_id}`} className="flex items-center gap-4 p-4">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{item.title}</p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                    {item.subtitle}
+                    {status ? ` · ${status}` : ""}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="hidden text-xs text-muted-foreground sm:inline">
+                    {item.is_shared ? "Visível" : "Privado"}
+                  </span>
+                  <Switch
+                    checked={item.is_shared}
+                    disabled={busy}
+                    aria-label={`${item.is_shared ? "Remover" : "Liberar"} ${item.title} no portal`}
+                    onCheckedChange={(shared) => void onToggle(item, shared)}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

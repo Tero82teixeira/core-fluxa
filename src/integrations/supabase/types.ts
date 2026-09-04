@@ -482,6 +482,70 @@ export type Database = {
           },
         ]
       }
+      client_portal_document_shares: {
+        Row: {
+          client_id: string
+          created_at: string
+          document_id: string
+          id: string
+          is_shared: boolean
+          organization_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          shared_at: string | null
+          shared_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          document_id: string
+          id?: string
+          is_shared?: boolean
+          organization_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          is_shared?: boolean
+          organization_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_document_shares_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_document_shares_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_document_shares_document_fkey"
+            columns: ["organization_id", "client_id", "document_id"]
+            isOneToOne: true
+            referencedRelation: "documents"
+            referencedColumns: ["organization_id", "client_id", "id"]
+          },
+        ]
+      }
       client_portal_invitations: {
         Row: {
           accepted_at: string | null
@@ -549,6 +613,70 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_process_shares: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          is_shared: boolean
+          organization_id: string
+          process_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          shared_at: string | null
+          shared_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          organization_id: string
+          process_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          organization_id?: string
+          process_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_process_shares_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_process_shares_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_process_shares_process_fkey"
+            columns: ["organization_id", "client_id", "process_id"]
+            isOneToOne: true
+            referencedRelation: "processes"
+            referencedColumns: ["organization_id", "client_id", "id"]
           },
         ]
       }
@@ -3610,6 +3738,49 @@ export type Database = {
           organization_name: string
         }[]
       }
+      client_portal_documents: {
+        Args: never
+        Returns: {
+          access_id: string
+          created_at: string
+          document_id: string
+          expiration_date: string
+          file_extension: string
+          file_path: string
+          file_size: number
+          mime_type: string
+          original_file_name: string
+          process_code: string
+          status: string
+          title: string
+        }[]
+      }
+      client_portal_processes: {
+        Args: never
+        Returns: {
+          access_id: string
+          code: string
+          due_date: string
+          opened_at: string
+          process_id: string
+          protocol: string
+          stage: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      client_portal_share_management: {
+        Args: { _client_id: string; _organization_id: string }
+        Returns: {
+          is_shared: boolean
+          item_id: string
+          item_type: string
+          status: string
+          subtitle: string
+          title: string
+          updated_at: string
+        }[]
+      }
       communication_assert_role: {
         Args: { _administrative?: boolean; _org: string }
         Returns: undefined
@@ -4114,6 +4285,20 @@ export type Database = {
       set_client_portal_access_active: {
         Args: { _access_id: string; _active: boolean }
         Returns: undefined
+      }
+      set_client_portal_item_shared: {
+        Args: {
+          _client_id: string
+          _item_id: string
+          _item_type: string
+          _organization_id: string
+          _shared: boolean
+        }
+        Returns: undefined
+      }
+      can_access_client_portal_document: {
+        Args: { _file_path: string }
+        Returns: boolean
       }
       resolve_authenticated_home: { Args: never; Returns: string }
       update_organization_commercial_status: {
