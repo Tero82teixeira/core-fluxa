@@ -1,14 +1,42 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { Building2, Loader2, LockKeyhole, LogOut, ShieldCheck, UserRound } from "lucide-react";
-import { useEffect } from "react";
+import {
+  Bell,
+  Building2,
+  CalendarDays,
+  Download,
+  FileText,
+  FolderKanban,
+  Home,
+  ListTodo,
+  Loader2,
+  LockKeyhole,
+  LogOut,
+  MessageSquare,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { useClientPortalSession } from "@/hooks/use-client-portal-session";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  createClientPortalDocumentUrl,
+  useClientPortalDocuments,
+  useClientPortalProcesses,
+} from "@/hooks/use-client-portal-content";
+import {
+  useClientPortalSession,
+  type ClientPortalSessionRow,
+} from "@/hooks/use-client-portal-session";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { formatDateTime } from "@/lib/format";
+import { DOCUMENT_STATUS, formatFileSize } from "@/lib/documents";
+import { PROCESS_STAGE } from "@/lib/domain";
+import { describeError } from "@/lib/errors";
+import { formatDate, formatDateTime } from "@/lib/format";
 
 export const Route = createFileRoute("/meu-portal")({
   ssr: false,
@@ -19,10 +47,7 @@ export const Route = createFileRoute("/meu-portal")({
   head: () => ({
     meta: [
       { title: "Meu Portal — FLUXA" },
-      {
-        name: "description",
-        content: "Área segura e exclusiva do cliente FLUXA.",
-      },
+      { name: "description", content: "Área segura e exclusiva do cliente FLUXA." },
     ],
   }),
   component: MyClientPortal,
@@ -32,17 +57,33 @@ function MyClientPortal() {
   const navigate = useNavigate();
   const { status, user, signOut, signingOut } = useAuth();
   const session = useClientPortalSession(status === "authenticated");
+  const activeAccesses = (session.data ?? []).filter((access) => access.is_active);
+  const contentEnabled = status === "authenticated" && activeAccesses.length > 0;
+  const processes = useClientPortalProcesses(contentEnabled, user?.id ?? null);
+  const documents = useClientPortalDocuments(contentEnabled, user?.id ?? null);
+  const [openingDocument, setOpeningDocument] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") navigate({ to: "/entrar", replace: true });
   }, [status, navigate]);
 
+  async function openDocument(documentId: string, filePath: string) {
+    setOpeningDocument(documentId);
+    try {
+      const url = await createClientPortalDocumentUrl(filePath);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error(describeError(error, "documento"));
+    } finally {
+      setOpeningDocument(null);
+    }
+  }
+
   if (status === "initializing" || session.isLoading) {
     return (
       <div className="grid min-h-dvh place-items-center bg-muted/30">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-5 animate-spin" aria-hidden />
-          Preparando seu portal…
+          <Loader2 className="size-5 animate-spin" aria-hidden /> Preparando seu portal…
         </div>
       </div>
     );
@@ -51,7 +92,7 @@ function MyClientPortal() {
   return (
     <main className="min-h-dvh bg-muted/30">
       <header className="border-b bg-background">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <Link to="/meu-portal" className="flex items-center gap-2 text-primary">
             <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
               <Building2 className="size-5" aria-hidden />
@@ -66,13 +107,13 @@ function MyClientPortal() {
               <Loader2 className="size-4 animate-spin" aria-hidden />
             ) : (
               <LogOut className="size-4" aria-hidden />
-            )}
+            )}{" "}
             Sair
           </Button>
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6">
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
         <section>
           <div className="flex items-center gap-2 text-sm font-medium text-primary">
             <ShieldCheck className="size-4" aria-hidden /> Área exclusiva do cliente
@@ -86,17 +127,7 @@ function MyClientPortal() {
         </section>
 
         {session.isError ? (
-          <Card>
-            <CardContent className="space-y-3 p-6">
-              <h2 className="font-semibold">Não foi possível carregar seu acesso</h2>
-              <p className="text-sm text-muted-foreground">
-                Atualize a página. Se o problema continuar, solicite ajuda à empresa responsável.
-              </p>
-              <Button variant="outline" onClick={() => void session.refetch()}>
-                Tentar novamente
-              </Button>
-            </CardContent>
-          </Card>
+          <PortalError retry={() => void session.refetch()} />
         ) : (session.data?.length ?? 0) === 0 ? (
           <Card>
             <CardContent className="space-y-3 p-6">
@@ -107,45 +138,199 @@ function MyClientPortal() {
               </p>
             </CardContent>
           </Card>
+        ) : activeAccesses.length === 0 ? (
+          <AccessCards accesses={session.data ?? []} />
         ) : (
-          <section className="grid gap-4 md:grid-cols-2">
-            {session.data?.map((access) => (
-              <Card key={access.access_id}>
-                <CardContent className="space-y-5 p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                      <UserRound className="size-5" aria-hidden />
-                    </span>
-                    <StatusBadge
-                      label={access.is_active ? "Acesso ativo" : "Acesso desativado"}
-                      tone={access.is_active ? "success" : "danger"}
-                    />
-                  </div>
+          <Tabs defaultValue="inicio" className="space-y-6">
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1.5 sm:grid-cols-3 lg:grid-cols-6">
+              <TabsTrigger value="inicio" className="gap-2 py-2.5">
+                <Home className="size-4" aria-hidden /> Início
+              </TabsTrigger>
+              <TabsTrigger value="processos" className="gap-2 py-2.5">
+                <FolderKanban className="size-4" aria-hidden /> Processos
+              </TabsTrigger>
+              <TabsTrigger value="documentos" className="gap-2 py-2.5">
+                <FileText className="size-4" aria-hidden /> Documentos
+              </TabsTrigger>
+              <TabsTrigger value="pendencias" className="gap-2 py-2.5" disabled>
+                <ListTodo className="size-4" aria-hidden /> Pendências
+              </TabsTrigger>
+              <TabsTrigger value="comunicacao" className="gap-2 py-2.5" disabled>
+                <MessageSquare className="size-4" aria-hidden /> Comunicação
+              </TabsTrigger>
+              <TabsTrigger value="notificacoes" className="gap-2 py-2.5" disabled>
+                <Bell className="size-4" aria-hidden /> Notificações
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="inicio" className="space-y-6">
+              <AccessCards accesses={session.data ?? []} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <SummaryCard
+                  icon={FolderKanban}
+                  label="Processos compartilhados"
+                  value={processes.data?.length ?? 0}
+                  loading={processes.isLoading}
+                />
+                <SummaryCard
+                  icon={FileText}
+                  label="Documentos compartilhados"
+                  value={documents.data?.length ?? 0}
+                  loading={documents.isLoading}
+                />
+              </div>
+              <div className="rounded-lg border border-dashed bg-background p-4 text-sm text-muted-foreground">
+                Pendências, comunicação e notificações serão adicionadas nas próximas etapas.
+              </div>
+            </TabsContent>
+
+            <TabsContent value="processos">
+              <Card>
+                <CardContent className="space-y-4 p-4 sm:p-6">
                   <div>
-                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                      Cliente
+                    <h2 className="font-semibold">Processos compartilhados</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Acompanhe somente os processos liberados pela empresa.
                     </p>
-                    <h2 className="mt-1 text-lg font-semibold">{access.client_name}</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">{access.organization_name}</p>
                   </div>
-                  {access.is_active ? (
-                    <div className="rounded-lg border border-success/25 bg-success/5 p-4 text-sm text-muted-foreground">
-                      Seu vínculo está confirmado. Processos, documentos e tarefas ainda não foram
-                      liberados nesta etapa.
-                    </div>
+                  {processes.isLoading ? (
+                    <LoadingRows />
+                  ) : processes.isError ? (
+                    <ContentError retry={() => void processes.refetch()} />
+                  ) : (processes.data?.length ?? 0) === 0 ? (
+                    <EmptyContent
+                      icon={FolderKanban}
+                      title="Nenhum processo compartilhado"
+                      description="Quando a empresa liberar um processo, ele aparecerá aqui."
+                    />
                   ) : (
-                    <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-4 text-sm text-muted-foreground">
-                      Este acesso foi desativado pela empresa. Entre em contato com o responsável
-                      para solicitar a reativação.
-                    </div>
+                    <ul className="grid gap-3 md:grid-cols-2">
+                      {processes.data?.map((process) => {
+                        const access = activeAccesses.find(
+                          (item) => item.access_id === process.access_id,
+                        );
+                        const stage = PROCESS_STAGE[process.stage];
+                        return (
+                          <li
+                            key={`${process.access_id}-${process.process_id}`}
+                            className="rounded-xl border bg-background p-4"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-primary">{process.code}</p>
+                                <h3 className="mt-1 truncate font-semibold">{process.title}</h3>
+                              </div>
+                              <StatusBadge
+                                label={stage?.label ?? process.stage}
+                                tone={stage?.tone ?? "neutral"}
+                              />
+                            </div>
+                            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <dt className="text-xs text-muted-foreground">Abertura</dt>
+                                <dd className="mt-1">{formatDate(process.opened_at)}</dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs text-muted-foreground">Prazo</dt>
+                                <dd className="mt-1">
+                                  {process.due_date ? formatDate(process.due_date) : "Sem prazo"}
+                                </dd>
+                              </div>
+                              {process.protocol && (
+                                <div className="col-span-2">
+                                  <dt className="text-xs text-muted-foreground">Protocolo</dt>
+                                  <dd className="mt-1 break-all">{process.protocol}</dd>
+                                </div>
+                              )}
+                            </dl>
+                            {access && <AccessLabel access={access} />}
+                          </li>
+                        );
+                      })}
+                    </ul>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    Acesso vinculado em {formatDateTime(access.accepted_at)}
-                  </p>
                 </CardContent>
               </Card>
-            ))}
-          </section>
+            </TabsContent>
+
+            <TabsContent value="documentos">
+              <Card>
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div>
+                    <h2 className="font-semibold">Documentos compartilhados</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Abra ou baixe com segurança os arquivos liberados pela empresa.
+                    </p>
+                  </div>
+                  {documents.isLoading ? (
+                    <LoadingRows />
+                  ) : documents.isError ? (
+                    <ContentError retry={() => void documents.refetch()} />
+                  ) : (documents.data?.length ?? 0) === 0 ? (
+                    <EmptyContent
+                      icon={FileText}
+                      title="Nenhum documento compartilhado"
+                      description="Quando a empresa liberar um documento, ele aparecerá aqui."
+                    />
+                  ) : (
+                    <ul className="space-y-3">
+                      {documents.data?.map((document) => {
+                        const access = activeAccesses.find(
+                          (item) => item.access_id === document.access_id,
+                        );
+                        const documentStatus = DOCUMENT_STATUS[document.status];
+                        return (
+                          <li
+                            key={`${document.access_id}-${document.document_id}`}
+                            className="flex flex-col gap-4 rounded-xl border bg-background p-4 sm:flex-row sm:items-center"
+                          >
+                            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                              <FileText className="size-5" aria-hidden />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="truncate font-semibold">{document.title}</h3>
+                                <StatusBadge
+                                  label={documentStatus?.label ?? document.status}
+                                  tone={documentStatus?.tone ?? "neutral"}
+                                />
+                              </div>
+                              <p className="mt-1 truncate text-xs text-muted-foreground">
+                                {document.original_file_name} · {formatFileSize(document.file_size)}
+                                {document.process_code ? ` · ${document.process_code}` : ""}
+                              </p>
+                              {document.expiration_date && (
+                                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                                  <CalendarDays className="size-3.5" aria-hidden /> Validade:{" "}
+                                  {formatDate(document.expiration_date)}
+                                </p>
+                              )}
+                              {access && <AccessLabel access={access} />}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={openingDocument === document.document_id}
+                              onClick={() =>
+                                void openDocument(document.document_id, document.file_path)
+                              }
+                            >
+                              {openingDocument === document.document_id ? (
+                                <Loader2 className="size-4 animate-spin" aria-hidden />
+                              ) : (
+                                <Download className="size-4" aria-hidden />
+                              )}{" "}
+                              Abrir
+                            </Button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         )}
 
         <footer className="flex flex-wrap gap-x-4 gap-y-2 border-t pt-5 text-xs text-muted-foreground">
@@ -159,5 +344,133 @@ function MyClientPortal() {
         </footer>
       </div>
     </main>
+  );
+}
+
+function AccessCards({ accesses }: { accesses: ClientPortalSessionRow[] }) {
+  return (
+    <section className="grid gap-4 md:grid-cols-2">
+      {accesses.map((access) => (
+        <Card key={access.access_id}>
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-start justify-between gap-4">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <UserRound className="size-5" aria-hidden />
+              </span>
+              <StatusBadge
+                label={access.is_active ? "Acesso ativo" : "Acesso desativado"}
+                tone={access.is_active ? "success" : "danger"}
+              />
+            </div>
+            <div>
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Cliente
+              </p>
+              <h2 className="mt-1 text-lg font-semibold">{access.client_name}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{access.organization_name}</p>
+            </div>
+            {access.is_active ? (
+              <p className="rounded-lg border border-success/25 bg-success/5 p-3 text-sm text-muted-foreground">
+                Seu vínculo está confirmado. Você verá somente o conteúdo liberado pela empresa.
+              </p>
+            ) : (
+              <p className="rounded-lg border border-destructive/25 bg-destructive/5 p-3 text-sm text-muted-foreground">
+                Este acesso foi desativado. Entre em contato com a empresa para solicitar a
+                reativação.
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Acesso vinculado em {formatDateTime(access.accepted_at)}
+            </p>
+          </CardContent>
+        </Card>
+      ))}
+    </section>
+  );
+}
+
+function AccessLabel({ access }: { access: ClientPortalSessionRow }) {
+  return (
+    <p className="mt-3 text-xs text-muted-foreground">
+      {access.client_name} · {access.organization_name}
+    </p>
+  );
+}
+function SummaryCard({
+  icon: Icon,
+  label,
+  value,
+  loading,
+}: {
+  icon: typeof FolderKanban;
+  label: string;
+  value: number;
+  loading: boolean;
+}) {
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-4 p-6">
+        <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="size-5" aria-hidden />
+        </span>
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="mt-1 text-2xl font-semibold">{loading ? "—" : value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+function LoadingRows() {
+  return (
+    <div className="grid min-h-32 place-items-center text-sm text-muted-foreground">
+      <span className="flex items-center gap-2">
+        <Loader2 className="size-4 animate-spin" aria-hidden /> Carregando conteúdo…
+      </span>
+    </div>
+  );
+}
+function ContentError({ retry }: { retry: () => void }) {
+  return (
+    <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-4">
+      <p className="text-sm text-destructive">Não foi possível carregar este conteúdo.</p>
+      <Button variant="outline" size="sm" className="mt-3" onClick={retry}>
+        Tentar novamente
+      </Button>
+    </div>
+  );
+}
+function PortalError({ retry }: { retry: () => void }) {
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-6">
+        <h2 className="font-semibold">Não foi possível carregar seu acesso</h2>
+        <p className="text-sm text-muted-foreground">
+          Atualize a página. Se o problema continuar, solicite ajuda à empresa responsável.
+        </p>
+        <Button variant="outline" onClick={retry}>
+          Tentar novamente
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+function EmptyContent({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: typeof FolderKanban;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="grid min-h-48 place-items-center rounded-lg border border-dashed p-6 text-center">
+      <div>
+        <Icon className="mx-auto size-8 text-muted-foreground" aria-hidden />
+        <h3 className="mt-3 font-semibold">{title}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      </div>
+    </div>
   );
 }
