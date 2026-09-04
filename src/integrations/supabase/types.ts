@@ -1,3 +1,5 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 export type Json =
   | string
   | number
@@ -527,6 +529,13 @@ export type Database = {
             foreignKeyName: "client_portal_document_shares_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_document_shares_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["organization_id", "id"]
           },
@@ -650,6 +659,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "client_portal_process_shares_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
           {
             foreignKeyName: "client_portal_process_shares_client_fkey"
             columns: ["organization_id", "client_id"]
