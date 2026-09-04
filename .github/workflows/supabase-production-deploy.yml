@@ -1,0 +1,62 @@
+name: Supabase Production Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Executar somente dry-run ou aplicar migrations em produção"
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - deploy
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: ${{ inputs.mode == 'deploy' && 'Deploy migrations' || 'Dry-run migrations' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: nobtbymxudlcsyurbopl
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "SUPABASE_ACCESS_TOKEN ausente"; exit 1; }
+          test -n "$SUPABASE_DB_PASSWORD" || { echo "SUPABASE_DB_PASSWORD ausente"; exit 1; }
+
+      - name: Link production project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Show migration status
+        run: supabase migration list --linked
+
+      - name: Preview pending migrations
+        run: supabase db push --linked --dry-run --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Apply pending migrations
+        if: ${{ inputs.mode == 'deploy' }}
+        run: supabase db push --linked --password "$SUPABASE_DB_PASSWORD"
