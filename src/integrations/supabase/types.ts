@@ -540,7 +540,7 @@ export type Database = {
           {
             foreignKeyName: "client_portal_document_shares_document_fkey"
             columns: ["organization_id", "client_id", "document_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "documents"
             referencedColumns: ["organization_id", "client_id", "id"]
           },
@@ -674,7 +674,7 @@ export type Database = {
           {
             foreignKeyName: "client_portal_process_shares_process_fkey"
             columns: ["organization_id", "client_id", "process_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "processes"
             referencedColumns: ["organization_id", "client_id", "id"]
           },
