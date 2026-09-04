@@ -3730,13 +3730,13 @@ export type Database = {
           access_id: string
           created_at: string
           document_id: string
-          expiration_date: string | null
+          expiration_date: string
           file_extension: string
           file_path: string
           file_size: number
           mime_type: string
           original_file_name: string
-          process_code: string | null
+          process_code: string
           status: string
           title: string
         }[]
@@ -3746,10 +3746,10 @@ export type Database = {
         Returns: {
           access_id: string
           code: string
-          due_date: string | null
+          due_date: string
           opened_at: string
           process_id: string
-          protocol: string | null
+          protocol: string
           stage: string
           title: string
           updated_at: string
