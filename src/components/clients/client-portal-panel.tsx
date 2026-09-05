@@ -6,6 +6,7 @@ import {
   FolderKanban,
   Link2,
   Loader2,
+  ListTodo,
   LockKeyhole,
   ShieldCheck,
   UserRoundCheck,
@@ -23,16 +24,25 @@ import {
   useSetClientPortalItemShared,
   type ClientPortalShareItem,
 } from "@/hooks/use-client-portal-content";
+import {
+  useCreateClientPortalDocumentRequest,
+  useManageClientPortalDocumentRequests,
+  useSetClientPortalDocumentRequestStatus,
+  type ClientPortalDocumentRequest,
+  type ClientPortalRequestStatus,
+} from "@/hooks/use-client-portal-requests";
 import { describeClientPortalError, effectivePortalInvitationStatus } from "@/lib/client-portal";
 import { PROCESS_STAGE, type ProcessStage } from "@/lib/domain";
 import { DOCUMENT_STATUS, type DocumentStatus } from "@/lib/documents";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/shared/status-badge";
 
 const STATUS = {
@@ -40,6 +50,13 @@ const STATUS = {
   accepted: { label: "Aceito", tone: "success" as const },
   expired: { label: "Expirado", tone: "neutral" as const },
   cancelled: { label: "Cancelado", tone: "neutral" as const },
+};
+
+const REQUEST_STATUS: Record<ClientPortalRequestStatus, { label: string; tone: "warning" | "info" | "success" | "neutral" }> = {
+  pending: { label: "Aguardando cliente", tone: "warning" },
+  submitted: { label: "Documento recebido", tone: "info" },
+  completed: { label: "Concluída", tone: "success" },
+  cancelled: { label: "Cancelada", tone: "neutral" },
 };
 
 export function ClientPortalPanel({
@@ -57,9 +74,16 @@ export function ClientPortalPanel({
   const setAccessActive = useSetClientPortalAccessActive(organizationId, clientId);
   const shares = useClientPortalShareManagement(organizationId, clientId);
   const setItemShared = useSetClientPortalItemShared(organizationId, clientId);
+  const requests = useManageClientPortalDocumentRequests(organizationId, clientId);
+  const createRequest = useCreateClientPortalDocumentRequest(organizationId, clientId);
+  const setRequestStatus = useSetClientPortalDocumentRequestStatus(organizationId, clientId);
   const [email, setEmail] = useState(clientEmail ?? "");
   const [freshLink, setFreshLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [requestTitle, setRequestTitle] = useState("");
+  const [requestDescription, setRequestDescription] = useState("");
+  const [requestDueDate, setRequestDueDate] = useState("");
+  const [requestProcessId, setRequestProcessId] = useState("none");
 
   async function create() {
     try {
@@ -110,6 +134,36 @@ export function ClientPortalPanel({
         shared,
       });
       toast.success(shared ? "Item liberado no portal." : "Item removido do portal.");
+    } catch (error) {
+      toast.error(describeClientPortalError(error));
+    }
+  }
+
+  async function submitRequest() {
+    try {
+      await createRequest.mutateAsync({
+        title: requestTitle,
+        description: requestDescription.trim() || null,
+        dueDate: requestDueDate || null,
+        processId: requestProcessId === "none" ? null : requestProcessId,
+      });
+      setRequestTitle("");
+      setRequestDescription("");
+      setRequestDueDate("");
+      setRequestProcessId("none");
+      toast.success("Solicitação enviada ao Meu Portal.");
+    } catch (error) {
+      toast.error(describeClientPortalError(error));
+    }
+  }
+
+  async function changeRequestStatus(
+    request: ClientPortalDocumentRequest,
+    status: "completed" | "cancelled",
+  ) {
+    try {
+      await setRequestStatus.mutateAsync({ requestId: request.request_id, status });
+      toast.success(status === "completed" ? "Solicitação concluída." : "Solicitação cancelada.");
     } catch (error) {
       toast.error(describeClientPortalError(error));
     }
@@ -277,6 +331,117 @@ export function ClientPortalPanel({
           </Card>
         </div>
       )}
+
+      <Card>
+        <CardContent className="space-y-5 p-6">
+          <div className="flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <ListTodo className="size-5" aria-hidden />
+            </span>
+            <div>
+              <h2 className="font-semibold">Solicitações de documentos</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Peça um arquivo ao cliente. Ele verá a pendência e poderá enviá-lo pelo portal seguro.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 rounded-xl border bg-muted/20 p-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="portal-request-title">Documento solicitado</Label>
+              <Input
+                id="portal-request-title"
+                placeholder="Ex.: Comprovante de endereço atualizado"
+                value={requestTitle}
+                maxLength={160}
+                onChange={(event) => setRequestTitle(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="portal-request-description">Orientações (opcional)</Label>
+              <Textarea
+                id="portal-request-description"
+                placeholder="Informe período, dados necessários ou outra orientação."
+                value={requestDescription}
+                maxLength={2000}
+                onChange={(event) => setRequestDescription(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="portal-request-process">Processo (opcional)</Label>
+              <Select value={requestProcessId} onValueChange={setRequestProcessId}>
+                <SelectTrigger id="portal-request-process"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem processo</SelectItem>
+                  {(shares.data ?? []).filter((item) => item.item_type === "process").map((item) => (
+                    <SelectItem key={item.item_id} value={item.item_id}>
+                      {item.subtitle} · {item.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="portal-request-due-date">Prazo (opcional)</Label>
+              <Input
+                id="portal-request-due-date"
+                type="date"
+                value={requestDueDate}
+                onChange={(event) => setRequestDueDate(event.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-2 sm:flex sm:justify-end">
+              <Button
+                onClick={() => void submitRequest()}
+                disabled={!requestTitle.trim() || createRequest.isPending}
+              >
+                {createRequest.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <ListTodo className="size-4" aria-hidden />}
+                Criar solicitação
+              </Button>
+            </div>
+          </div>
+
+          {requests.isLoading ? (
+            <Skeleton className="h-32 w-full" />
+          ) : requests.isError ? (
+            <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-4 text-sm text-destructive">
+              Não foi possível carregar as solicitações.
+            </div>
+          ) : (requests.data?.length ?? 0) === 0 ? (
+            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              Nenhuma solicitação criada para este cliente.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border rounded-lg border">
+              {requests.data?.map((request) => (
+                <li key={request.request_id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{request.title}</p>
+                      <StatusBadge label={REQUEST_STATUS[request.status].label} tone={REQUEST_STATUS[request.status].tone} />
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {request.process_code ? `${request.process_code} · ` : ""}
+                      {request.due_date ? `Prazo: ${formatDate(request.due_date)}` : "Sem prazo"}
+                      {request.submitted_file_name ? ` · ${request.submitted_file_name}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    {request.status === "pending" && (
+                      <Button variant="outline" size="sm" disabled={setRequestStatus.isPending} onClick={() => void changeRequestStatus(request, "cancelled")}>Cancelar</Button>
+                    )}
+                    {request.status === "submitted" && (
+                      <Button size="sm" disabled={setRequestStatus.isPending} onClick={() => void changeRequestStatus(request, "completed")}>
+                        <Check className="size-4" aria-hidden /> Concluir
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="space-y-5 p-6">

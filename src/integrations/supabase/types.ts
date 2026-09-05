@@ -546,6 +546,95 @@ export type Database = {
           },
         ]
       }
+      client_portal_document_requests: {
+        Row: {
+          cancelled_at: string | null
+          cancelled_by: string | null
+          client_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          organization_id: string
+          process_id: string | null
+          status: string
+          submitted_at: string | null
+          submitted_document_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          client_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          organization_id: string
+          process_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_document_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          client_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          organization_id?: string
+          process_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_document_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_document_requests_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_document_requests_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_document_requests_document_fkey"
+            columns: ["organization_id", "client_id", "process_id", "submitted_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["organization_id", "client_id", "process_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_document_requests_process_fkey"
+            columns: ["organization_id", "client_id", "process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["organization_id", "client_id", "id"]
+          },
+        ]
+      }
       client_portal_invitations: {
         Row: {
           accepted_at: string | null
@@ -676,6 +765,72 @@ export type Database = {
             columns: ["organization_id", "client_id", "process_id"]
             isOneToOne: true
             referencedRelation: "processes"
+            referencedColumns: ["organization_id", "client_id", "id"]
+          },
+        ]
+      }
+      client_portal_upload_intents: {
+        Row: {
+          client_id: string
+          created_at: string
+          expected_size: number
+          expires_at: string
+          file_extension: string
+          file_path: string
+          id: string
+          mime_type: string
+          organization_id: string
+          original_file_name: string
+          request_id: string
+          stored_file_name: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          expected_size: number
+          expires_at: string
+          file_extension: string
+          file_path: string
+          id?: string
+          mime_type: string
+          organization_id: string
+          original_file_name: string
+          request_id: string
+          stored_file_name: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          expected_size?: number
+          expires_at?: string
+          file_extension?: string
+          file_path?: string
+          id?: string
+          mime_type?: string
+          organization_id?: string
+          original_file_name?: string
+          request_id?: string
+          stored_file_name?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_upload_intents_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_document_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_upload_intents_request_scope_fkey"
+            columns: ["organization_id", "client_id", "request_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_document_requests"
             referencedColumns: ["organization_id", "client_id", "id"]
           },
         ]
@@ -3755,6 +3910,24 @@ export type Database = {
           title: string
         }[]
       }
+      client_portal_document_requests: {
+        Args: never
+        Returns: {
+          access_id: string
+          client_name: string
+          created_at: string
+          description: string
+          due_date: string
+          organization_name: string
+          process_code: string
+          request_id: string
+          status: string
+          submitted_at: string
+          submitted_document_id: string
+          submitted_file_name: string
+          title: string
+        }[]
+      }
       client_portal_processes: {
         Args: never
         Returns: {
@@ -3864,6 +4037,17 @@ export type Database = {
           token: string
         }[]
       }
+      create_client_portal_document_request: {
+        Args: {
+          _client_id: string
+          _description?: string
+          _due_date?: string
+          _organization_id: string
+          _process_id?: string
+          _title?: string
+        }
+        Returns: string
+      }
       create_operational_close_for_organization: {
         Args: {
           _as_of: string
@@ -3959,6 +4143,26 @@ export type Database = {
         Returns: string
       }
       financial_assert_editor: { Args: { _org: string }; Returns: undefined }
+      finalize_client_portal_document_upload: {
+        Args: { _upload_intent_id: string }
+        Returns: string
+      }
+      manage_client_portal_document_requests: {
+        Args: { _client_id: string; _organization_id: string }
+        Returns: {
+          created_at: string
+          description: string
+          due_date: string
+          process_code: string
+          process_id: string
+          request_id: string
+          status: string
+          submitted_at: string
+          submitted_document_id: string
+          submitted_file_name: string
+          title: string
+        }[]
+      }
       financial_audit: {
         Args: {
           _action: string
@@ -4086,6 +4290,18 @@ export type Database = {
       prepare_kiwify_checkout: {
         Args: { _organization: string }
         Returns: undefined
+      }
+      prepare_client_portal_document_upload: {
+        Args: {
+          _file_size: number
+          _mime_type: string
+          _original_file_name: string
+          _request_id: string
+        }
+        Returns: {
+          file_path: string
+          upload_intent_id: string
+        }[]
       }
       process_automation_event: {
         Args: {
@@ -4296,8 +4512,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_client_portal_document_request_status: {
+        Args: { _request_id: string; _status: string }
+        Returns: undefined
+      }
       can_access_client_portal_document: {
         Args: { _file_path: string }
+        Returns: boolean
+      }
+      can_upload_client_portal_document: {
+        Args: { _file_path: string }
+        Returns: boolean
+      }
+      is_client_portal_upload_context: {
+        Args: {
+          _client_id: string
+          _file_path: string
+          _organization_id: string
+        }
         Returns: boolean
       }
       resolve_authenticated_home: { Args: never; Returns: string }
