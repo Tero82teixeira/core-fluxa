@@ -315,7 +315,7 @@ BEGIN
   IF char_length(COALESCE(_original_file_name, '')) NOT BETWEEN 1 AND 255
      OR _original_file_name ~ '[[:cntrl:]/\\]'
   THEN RAISE EXCEPTION 'INVALID_FILE_NAME'; END IF;
-  v_extension := lower(substring(_original_file_name from '\\.([^.]+)$'));
+  v_extension := lower(substring(_original_file_name from '\.([^.]+)$'));
   v_expected_mime := CASE v_extension
     WHEN 'pdf' THEN 'application/pdf'
     WHEN 'jpg' THEN 'image/jpeg'
