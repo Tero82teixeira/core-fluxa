@@ -91,9 +91,10 @@ SELECT is(
   1,
   'the first submitted file is counted'
 );
-SELECT is(
-  (SELECT count(*)::integer FROM public.client_portal_document_requests),
-  0,
+SELECT throws_ok(
+  $$SELECT count(*) FROM public.client_portal_document_requests$$,
+  '42501',
+  'permission denied for table client_portal_document_requests',
   'portal still has no direct table access'
 );
 SELECT is(
