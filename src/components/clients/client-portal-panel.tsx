@@ -12,6 +12,7 @@ import {
   ListTodo,
   LockKeyhole,
   MessageSquare,
+  RotateCcw,
   ShieldCheck,
   UserRoundCheck,
 } from "lucide-react";
@@ -38,6 +39,7 @@ import {
 import {
   useCreateClientPortalDocumentRequest,
   useManageClientPortalDocumentRequests,
+  useReviewClientPortalDocumentRequest,
   useSetClientPortalDocumentRequestStatus,
   type ClientPortalDocumentRequest,
   type ClientPortalRequestStatus,
@@ -50,6 +52,7 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -65,10 +68,11 @@ const STATUS = {
   cancelled: { label: "Cancelado", tone: "neutral" as const },
 };
 
-const REQUEST_STATUS: Record<ClientPortalRequestStatus, { label: string; tone: "warning" | "info" | "success" | "neutral" }> = {
+const REQUEST_STATUS: Record<ClientPortalRequestStatus, { label: string; tone: "warning" | "info" | "success" | "neutral" | "danger" }> = {
   pending: { label: "Aguardando cliente", tone: "warning" },
-  submitted: { label: "Documento recebido", tone: "info" },
-  completed: { label: "Concluída", tone: "success" },
+  submitted: { label: "Aguardando análise", tone: "info" },
+  revision_requested: { label: "Correção solicitada", tone: "danger" },
+  completed: { label: "Aprovada", tone: "success" },
   cancelled: { label: "Cancelada", tone: "neutral" },
 };
 
@@ -106,6 +110,7 @@ export function ClientPortalPanel({
   const requests = useManageClientPortalDocumentRequests(organizationId, clientId);
   const createRequest = useCreateClientPortalDocumentRequest(organizationId, clientId);
   const setRequestStatus = useSetClientPortalDocumentRequestStatus(organizationId, clientId);
+  const reviewRequest = useReviewClientPortalDocumentRequest(organizationId, clientId);
   const [email, setEmail] = useState(clientEmail ?? "");
   const [freshLink, setFreshLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -113,6 +118,8 @@ export function ClientPortalPanel({
   const [requestDescription, setRequestDescription] = useState("");
   const [requestDueDate, setRequestDueDate] = useState("");
   const [requestProcessId, setRequestProcessId] = useState("none");
+  const [correctionRequest, setCorrectionRequest] = useState<ClientPortalDocumentRequest | null>(null);
+  const [correctionFeedback, setCorrectionFeedback] = useState("");
 
   async function create() {
     try {
@@ -193,6 +200,35 @@ export function ClientPortalPanel({
     try {
       await setRequestStatus.mutateAsync({ requestId: request.request_id, status });
       toast.success(status === "completed" ? "Solicitação concluída." : "Solicitação cancelada.");
+    } catch (error) {
+      toast.error(describeClientPortalError(error));
+    }
+  }
+
+  async function approveRequest(request: ClientPortalDocumentRequest) {
+    try {
+      await reviewRequest.mutateAsync({
+        requestId: request.request_id,
+        decision: "completed",
+        feedback: null,
+      });
+      toast.success("Documento aprovado e cliente notificado.");
+    } catch (error) {
+      toast.error(describeClientPortalError(error));
+    }
+  }
+
+  async function requestCorrection() {
+    if (!correctionRequest || !correctionFeedback.trim()) return;
+    try {
+      await reviewRequest.mutateAsync({
+        requestId: correctionRequest.request_id,
+        decision: "revision_requested",
+        feedback: correctionFeedback.trim(),
+      });
+      setCorrectionRequest(null);
+      setCorrectionFeedback("");
+      toast.success("Correção solicitada e cliente notificado.");
     } catch (error) {
       toast.error(describeClientPortalError(error));
     }
@@ -467,16 +503,36 @@ export function ClientPortalPanel({
                       {request.process_code ? `${request.process_code} · ` : ""}
                       {request.due_date ? `Prazo: ${formatDate(request.due_date)}` : "Sem prazo"}
                       {request.submitted_file_name ? ` · ${request.submitted_file_name}` : ""}
+                      {request.submission_count > 0 ? ` · ${request.submission_count} envio(s)` : ""}
                     </p>
+                    {request.company_feedback && (
+                      <div className="mt-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm">
+                        <span className="font-medium">Último retorno: </span>
+                        <span className="whitespace-pre-wrap">{request.company_feedback}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex shrink-0 gap-2">
                     {request.status === "pending" && (
                       <Button variant="outline" size="sm" disabled={setRequestStatus.isPending} onClick={() => void changeRequestStatus(request, "cancelled")}>Cancelar</Button>
                     )}
                     {request.status === "submitted" && (
-                      <Button size="sm" disabled={setRequestStatus.isPending} onClick={() => void changeRequestStatus(request, "completed")}>
-                        <Check className="size-4" aria-hidden /> Concluir
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={reviewRequest.isPending}
+                          onClick={() => {
+                            setCorrectionRequest(request);
+                            setCorrectionFeedback("");
+                          }}
+                        >
+                          <RotateCcw className="size-4" aria-hidden /> Pedir correção
+                        </Button>
+                        <Button size="sm" disabled={reviewRequest.isPending} onClick={() => void approveRequest(request)}>
+                          <Check className="size-4" aria-hidden /> Aprovar
+                        </Button>
+                      </>
                     )}
                   </div>
                 </li>
@@ -485,6 +541,59 @@ export function ClientPortalPanel({
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={Boolean(correctionRequest)}
+        onOpenChange={(open) => {
+          if (!open && !reviewRequest.isPending) {
+            setCorrectionRequest(null);
+            setCorrectionFeedback("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Solicitar correção</DialogTitle>
+            <DialogDescription>
+              Explique ao cliente exatamente o que precisa ser ajustado antes do reenvio.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="portal-request-correction">Orientação para o cliente</Label>
+            <Textarea
+              id="portal-request-correction"
+              value={correctionFeedback}
+              maxLength={2000}
+              rows={5}
+              placeholder="Ex.: envie o documento completo, com todas as páginas legíveis."
+              onChange={(event) => setCorrectionFeedback(event.target.value)}
+            />
+            <p className="text-right text-xs text-muted-foreground">
+              {correctionFeedback.length}/2000
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={reviewRequest.isPending}
+              onClick={() => setCorrectionRequest(null)}
+            >
+              Voltar
+            </Button>
+            <Button
+              disabled={!correctionFeedback.trim() || reviewRequest.isPending}
+              onClick={() => void requestCorrection()}
+            >
+              {reviewRequest.isPending ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <RotateCcw className="size-4" aria-hidden />
+              )}
+              Solicitar correção
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardContent className="space-y-5 p-6">
