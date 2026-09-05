@@ -4520,6 +4520,18 @@ export type Database = {
         Args: { _file_path: string }
         Returns: boolean
       }
+      can_upload_client_portal_document: {
+        Args: { _file_path: string }
+        Returns: boolean
+      }
+      is_client_portal_upload_context: {
+        Args: {
+          _client_id: string
+          _file_path: string
+          _organization_id: string
+        }
+        Returns: boolean
+      }
       resolve_authenticated_home: { Args: never; Returns: string }
       update_organization_commercial_status: {
         Args: { _action: string; _days?: number; _organization_id: string }
