@@ -13,6 +13,7 @@ import {
   LogOut,
   MessageSquare,
   ShieldCheck,
+  Upload,
   UserRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -28,12 +29,17 @@ import {
   useClientPortalProcesses,
 } from "@/hooks/use-client-portal-content";
 import {
+  useClientPortalDocumentRequests,
+  useSubmitClientPortalDocument,
+  type ClientPortalRequestStatus,
+} from "@/hooks/use-client-portal-requests";
+import {
   useClientPortalSession,
   type ClientPortalSessionRow,
 } from "@/hooks/use-client-portal-session";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { DOCUMENT_STATUS, formatFileSize } from "@/lib/documents";
+import { ACCEPT_ATTRIBUTE, DOCUMENT_STATUS, formatFileSize, validateFile } from "@/lib/documents";
 import { PROCESS_STAGE } from "@/lib/domain";
 import { describeError } from "@/lib/errors";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -61,7 +67,10 @@ function MyClientPortal() {
   const contentEnabled = status === "authenticated" && activeAccesses.length > 0;
   const processes = useClientPortalProcesses(contentEnabled, user?.id ?? null);
   const documents = useClientPortalDocuments(contentEnabled, user?.id ?? null);
+  const requests = useClientPortalDocumentRequests(contentEnabled, user?.id ?? null);
+  const submitDocument = useSubmitClientPortalDocument(user?.id ?? null);
   const [openingDocument, setOpeningDocument] = useState<string | null>(null);
+  const [uploadingRequest, setUploadingRequest] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") navigate({ to: "/entrar", replace: true });
@@ -76,6 +85,23 @@ function MyClientPortal() {
       toast.error(describeError(error, "documento"));
     } finally {
       setOpeningDocument(null);
+    }
+  }
+
+  async function uploadRequestedDocument(requestId: string, file: File) {
+    const validationError = validateFile(file);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+    setUploadingRequest(requestId);
+    try {
+      await submitDocument.mutateAsync({ requestId, file });
+      toast.success("Documento enviado com segurança.");
+    } catch (error) {
+      toast.error(describeError(error, "documento"));
+    } finally {
+      setUploadingRequest(null);
     }
   }
 
@@ -152,7 +178,7 @@ function MyClientPortal() {
               <TabsTrigger value="documentos" className="gap-2 py-2.5">
                 <FileText className="size-4" aria-hidden /> Documentos
               </TabsTrigger>
-              <TabsTrigger value="pendencias" className="gap-2 py-2.5" disabled>
+              <TabsTrigger value="pendencias" className="gap-2 py-2.5">
                 <ListTodo className="size-4" aria-hidden /> Pendências
               </TabsTrigger>
               <TabsTrigger value="comunicacao" className="gap-2 py-2.5" disabled>
@@ -165,7 +191,7 @@ function MyClientPortal() {
 
             <TabsContent value="inicio" className="space-y-6">
               <AccessCards accesses={session.data ?? []} />
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-3">
                 <SummaryCard
                   icon={FolderKanban}
                   label="Processos compartilhados"
@@ -178,9 +204,15 @@ function MyClientPortal() {
                   value={documents.data?.length ?? 0}
                   loading={documents.isLoading}
                 />
+                <SummaryCard
+                  icon={ListTodo}
+                  label="Pendências aguardando envio"
+                  value={(requests.data ?? []).filter((request) => request.status === "pending").length}
+                  loading={requests.isLoading}
+                />
               </div>
               <div className="rounded-lg border border-dashed bg-background p-4 text-sm text-muted-foreground">
-                Pendências, comunicação e notificações serão adicionadas nas próximas etapas.
+                Comunicação e notificações serão adicionadas nas próximas etapas.
               </div>
             </TabsContent>
 
@@ -330,6 +362,86 @@ function MyClientPortal() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="pendencias">
+              <Card>
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div>
+                    <h2 className="font-semibold">Documentos solicitados</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Consulte as solicitações da empresa e envie o arquivo correspondente.
+                    </p>
+                  </div>
+                  {requests.isLoading ? (
+                    <LoadingRows />
+                  ) : requests.isError ? (
+                    <ContentError retry={() => void requests.refetch()} />
+                  ) : (requests.data?.length ?? 0) === 0 ? (
+                    <EmptyContent
+                      icon={ListTodo}
+                      title="Nenhuma pendência"
+                      description="Quando a empresa solicitar um documento, ele aparecerá aqui."
+                    />
+                  ) : (
+                    <ul className="space-y-3">
+                      {requests.data?.map((request) => {
+                        const requestStatus = PORTAL_REQUEST_STATUS[request.status];
+                        const overdue = request.status === "pending" && request.due_date && request.due_date < new Date().toISOString().slice(0, 10);
+                        return (
+                          <li key={request.request_id} className="rounded-xl border bg-background p-4">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                                <ListTodo className="size-5" aria-hidden />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className="font-semibold">{request.title}</h3>
+                                  <StatusBadge label={requestStatus.label} tone={requestStatus.tone} />
+                                  {overdue && <StatusBadge label="Prazo vencido" tone="danger" />}
+                                </div>
+                                {request.description && (
+                                  <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{request.description}</p>
+                                )}
+                                <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                  {request.process_code && <span>Processo {request.process_code}</span>}
+                                  <span>{request.due_date ? `Prazo: ${formatDate(request.due_date)}` : "Sem prazo definido"}</span>
+                                  {request.submitted_file_name && <span>Enviado: {request.submitted_file_name}</span>}
+                                </p>
+                                {request.organization_name && request.client_name && (
+                                  <p className="mt-2 text-xs text-muted-foreground">{request.client_name} · {request.organization_name}</p>
+                                )}
+                              </div>
+                              {request.status === "pending" && (
+                                <label className="shrink-0">
+                                  <input
+                                    type="file"
+                                    accept={ACCEPT_ATTRIBUTE}
+                                    className="sr-only"
+                                    disabled={uploadingRequest !== null}
+                                    onChange={(event) => {
+                                      const file = event.currentTarget.files?.[0];
+                                      event.currentTarget.value = "";
+                                      if (file) void uploadRequestedDocument(request.request_id, file);
+                                    }}
+                                  />
+                                  <span className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 aria-disabled:pointer-events-none aria-disabled:opacity-50" aria-disabled={uploadingRequest !== null}>
+                                    {uploadingRequest === request.request_id ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Upload className="size-4" aria-hidden />}
+                                    {uploadingRequest === request.request_id ? "Enviando…" : "Enviar arquivo"}
+                                  </span>
+                                </label>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Formatos aceitos: PDF, JPG, PNG, DOCX e XLSX, com até 20 MB.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         )}
 
@@ -346,6 +458,16 @@ function MyClientPortal() {
     </main>
   );
 }
+
+const PORTAL_REQUEST_STATUS: Record<
+  ClientPortalRequestStatus,
+  { label: string; tone: "warning" | "info" | "success" | "neutral" }
+> = {
+  pending: { label: "Aguardando envio", tone: "warning" },
+  submitted: { label: "Enviado", tone: "info" },
+  completed: { label: "Concluído", tone: "success" },
+  cancelled: { label: "Cancelado", tone: "neutral" },
+};
 
 function AccessCards({ accesses }: { accesses: ClientPortalSessionRow[] }) {
   return (
