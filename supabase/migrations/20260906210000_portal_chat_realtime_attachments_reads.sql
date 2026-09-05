@@ -1,6 +1,6 @@
 -- Client Portal chat: private attachments, read receipts and secure realtime signals.
 
-CREATE TABLE public.communication_attachments (
+CREATE TABLE IF NOT EXISTS public.communication_attachments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   client_id uuid NOT NULL,
@@ -19,13 +19,13 @@ CREATE TABLE public.communication_attachments (
     FOREIGN KEY (organization_id, client_id, thread_id)
     REFERENCES public.communication_threads(organization_id, client_id, id) ON DELETE CASCADE
 );
-CREATE INDEX communication_attachments_thread_idx
+CREATE INDEX IF NOT EXISTS communication_attachments_thread_idx
   ON public.communication_attachments(organization_id, thread_id, created_at);
 ALTER TABLE public.communication_attachments ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.communication_attachments FROM PUBLIC, anon, authenticated;
 GRANT ALL ON TABLE public.communication_attachments TO service_role;
 
-CREATE TABLE public.communication_thread_reads (
+CREATE TABLE IF NOT EXISTS public.communication_thread_reads (
   organization_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   thread_id uuid NOT NULL REFERENCES public.communication_threads(id) ON DELETE CASCADE,
   user_id uuid NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE public.communication_thread_reads (
   last_read_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (organization_id, thread_id, user_id, reader_kind)
 );
-CREATE INDEX communication_thread_reads_lookup_idx
+CREATE INDEX IF NOT EXISTS communication_thread_reads_lookup_idx
   ON public.communication_thread_reads(organization_id, thread_id, reader_kind, last_read_at DESC);
 ALTER TABLE public.communication_thread_reads ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.communication_thread_reads FROM PUBLIC, anon, authenticated;
@@ -356,7 +356,7 @@ BEGIN
 END;
 $function$;
 
-DROP FUNCTION public.client_portal_communication_entries(uuid);
+DROP FUNCTION IF EXISTS public.client_portal_communication_entries(uuid);
 CREATE FUNCTION public.client_portal_communication_entries(_thread_id uuid)
 RETURNS TABLE(
   entry_id uuid, content text, author_kind text, occurred_at timestamptz,
@@ -459,30 +459,48 @@ BEGIN
   RETURN NEW;
 END;
 $function$;
-CREATE TRIGGER communication_entries_portal_broadcast
-  AFTER INSERT ON public.communication_entries
-  FOR EACH ROW WHEN (NEW.entry_type = 'mensagem' AND NOT NEW.is_internal)
-  EXECUTE FUNCTION public.broadcast_portal_chat_change();
-CREATE TRIGGER communication_reads_portal_broadcast
-  AFTER INSERT OR UPDATE ON public.communication_thread_reads
-  FOR EACH ROW EXECUTE FUNCTION public.broadcast_portal_chat_change();
+DROP TRIGGER IF EXISTS communication_entries_portal_broadcast
+  ON public.communication_entries;
+DROP TRIGGER IF EXISTS communication_reads_portal_broadcast
+  ON public.communication_thread_reads;
 
-DROP POLICY IF EXISTS portal_chat_broadcast_select ON realtime.messages;
-CREATE POLICY portal_chat_broadcast_select ON realtime.messages
-FOR SELECT TO authenticated
-USING (
-  extension = 'broadcast' AND (
-    realtime.topic() = 'portal-user:' || auth.uid()::text
-    OR CASE
-      WHEN realtime.topic() ~ '^staff-org:[0-9a-fA-F-]{36}$' THEN
-        public.has_org_role(
-          substring(realtime.topic() from 11)::uuid,
-          ARRAY['superadmin','proprietario','administrador','gestor','operacional']::public.app_role[]
+-- Older hosted projects may not expose Realtime Authorization's messages table.
+-- In that case the application keeps its polling fallback and the database must
+-- not install triggers that would call an unavailable broadcast API.
+DO $realtime_setup$
+BEGIN
+  IF to_regclass('realtime.messages') IS NOT NULL
+     AND to_regprocedure('realtime.send(jsonb,text,text,boolean)') IS NOT NULL
+  THEN
+    CREATE TRIGGER communication_entries_portal_broadcast
+      AFTER INSERT ON public.communication_entries
+      FOR EACH ROW WHEN (NEW.entry_type = 'mensagem' AND NOT NEW.is_internal)
+      EXECUTE FUNCTION public.broadcast_portal_chat_change();
+    CREATE TRIGGER communication_reads_portal_broadcast
+      AFTER INSERT OR UPDATE ON public.communication_thread_reads
+      FOR EACH ROW EXECUTE FUNCTION public.broadcast_portal_chat_change();
+
+    EXECUTE 'DROP POLICY IF EXISTS portal_chat_broadcast_select ON realtime.messages';
+    EXECUTE $policy$
+      CREATE POLICY portal_chat_broadcast_select ON realtime.messages
+      FOR SELECT TO authenticated
+      USING (
+        extension = 'broadcast' AND (
+          realtime.topic() = 'portal-user:' || auth.uid()::text
+          OR CASE
+            WHEN realtime.topic() ~ '^staff-org:[0-9a-fA-F-]{36}$' THEN
+              public.has_org_role(
+                substring(realtime.topic() from 11)::uuid,
+                ARRAY['superadmin','proprietario','administrador','gestor','operacional']::public.app_role[]
+              )
+            ELSE false
+          END
         )
-      ELSE false
-    END
-  )
-);
+      )
+    $policy$;
+  END IF;
+END;
+$realtime_setup$;
 
 REVOKE ALL ON FUNCTION public.prepare_communication_attachment_upload(uuid,text,text,bigint)
   FROM PUBLIC, anon, authenticated, service_role;

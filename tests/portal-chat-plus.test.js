@@ -30,7 +30,7 @@ describe("chat completo e seguro do Meu Portal", () => {
   });
 
   test("confirmações de leitura são isoladas e projetadas por RPC", () => {
-    assert.match(migration, /CREATE TABLE public\.communication_thread_reads/);
+    assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.communication_thread_reads/);
     assert.match(migration, /REVOKE ALL ON TABLE public\.communication_thread_reads/);
     assert.match(migration, /mark_client_portal_communication_read/);
     assert.match(migration, /mark_staff_portal_communication_read/);
@@ -46,6 +46,18 @@ describe("chat completo e seguro do Meu Portal", () => {
     assert.match(migration, /portal_chat_broadcast_select/);
     assert.match(chatHook, /config: \{ private: true \}/);
     assert.match(chatHook, /invalidateQueries/);
+  });
+
+  test("a migração pode ser repetida e tolera projetos sem Realtime Authorization", () => {
+    assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.communication_attachments/);
+    assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.communication_thread_reads/);
+    assert.match(migration, /DROP FUNCTION IF EXISTS public\.client_portal_communication_entries/);
+    assert.match(migration, /to_regclass\('realtime\.messages'\) IS NOT NULL/);
+    assert.match(
+      migration,
+      /to_regprocedure\('realtime\.send\(jsonb,text,text,boolean\)'\) IS NOT NULL/,
+    );
+    assert.match(migration, /DROP TRIGGER IF EXISTS communication_entries_portal_broadcast/);
   });
 
   test("cliente e equipe podem anexar e abrir arquivos autorizados", () => {
