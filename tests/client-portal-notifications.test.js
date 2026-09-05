@@ -70,8 +70,9 @@ describe("notificações seguras no Meu Portal", () => {
     assert.match(portal, /Marcar como lida/);
   });
 
-  test("tipos gerados incluem a tabela e os três contratos públicos", () => {
+  test("tipos gerados incluem a tabela e os contratos do banco", () => {
     assert.match(types, /client_portal_notifications: \{/);
+    assert.match(types, /enqueue_client_portal_notification: \{/);
     assert.match(types, /mark_client_portal_notification_read: \{/);
     assert.match(types, /mark_all_client_portal_notifications_read: \{/);
   });

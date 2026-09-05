@@ -4325,6 +4325,19 @@ export type Database = {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
       }
+      enqueue_client_portal_notification: {
+        Args: {
+          _body: string
+          _client_id: string
+          _dedupe_key: string
+          _entity_id: string
+          _entity_type: string
+          _kind: string
+          _organization_id: string
+          _title: string
+        }
+        Returns: undefined
+      }
       financial_assert_editor: { Args: { _org: string }; Returns: undefined }
       finalize_client_portal_document_upload: {
         Args: { _upload_intent_id: string }
