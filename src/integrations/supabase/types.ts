@@ -4201,7 +4201,7 @@ export type Database = {
           created_at: string
           current_version: number
           document_id: string
-          document_type_name: string | null
+          document_type_name: string
           expiration_date: string
           file_extension: string
           file_path: string
