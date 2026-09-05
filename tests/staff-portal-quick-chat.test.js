@@ -11,6 +11,10 @@ const component = readFileSync("src/components/layout/staff-quick-chat.tsx", "ut
 const layout = readFileSync("src/routes/_authenticated.tsx", "utf8");
 const portal = readFileSync("src/routes/meu-portal.tsx", "utf8");
 const types = readFileSync("src/integrations/supabase/types.ts", "utf8");
+const notificationHook = readFileSync(
+  "src/hooks/use-client-portal-notifications.ts",
+  "utf8",
+);
 
 describe("atendimento rápido do Meu Portal para a equipe", () => {
   test("caixa de entrada respeita a permissão interna de Comunicação", () => {
@@ -53,5 +57,21 @@ describe("atendimento rápido do Meu Portal para a equipe", () => {
 
   test("tipos gerados incluem a caixa de entrada da equipe", () => {
     assert.match(types, /staff_client_portal_inbox: \{/);
+  });
+
+  test("os dois chats abrem na mensagem mais recente", () => {
+    assert.match(component, /timelineRef\.current\.scrollTop = timelineRef\.current\.scrollHeight/);
+    assert.match(portal, /communicationTimelineRef/);
+    assert.match(portal, /quickChatTimelineRef/);
+    assert.match(portal, /timeline\.scrollTop = timeline\.scrollHeight/);
+  });
+
+  test("abrir uma conversa baixa apenas os avisos de mensagem daquele atendimento", () => {
+    assert.match(notificationHook, /useMarkClientPortalNotificationsRead/);
+    assert.match(portal, /quickChatOpen \|\| activeTab === "comunicacao"/);
+    assert.match(portal, /notification\.kind === "communication"/);
+    assert.match(portal, /notification\.entity_id === selectedCommunicationId/);
+    assert.match(portal, /markConversationNotificationsRead\.mutateAsync\(notificationIds\)/);
+    assert.match(portal, /unreadMessages > 99 \? "99\+" : unreadMessages/);
   });
 });

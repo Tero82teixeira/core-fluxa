@@ -14,12 +14,13 @@ import {
   LockKeyhole,
   LogOut,
   MessageSquare,
+  Paperclip,
   Send,
   ShieldCheck,
   Upload,
   UserRound,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -36,7 +37,13 @@ import {
   useClientPortalCommunicationEntries,
   useClientPortalCommunicationThreads,
   useCreateClientPortalCommunicationThread,
+  useMarkClientPortalCommunicationRead,
 } from "@/hooks/use-client-portal-communication";
+import {
+  openPortalChatAttachment,
+  usePortalChatRealtime,
+  useUploadPortalChatAttachment,
+} from "@/hooks/use-portal-chat";
 import {
   createClientPortalDocumentUrl,
   useClientPortalDocuments,
@@ -51,6 +58,7 @@ import {
   useClientPortalNotifications,
   useMarkAllClientPortalNotificationsRead,
   useMarkClientPortalNotificationRead,
+  useMarkClientPortalNotificationsRead,
   type ClientPortalNotification,
 } from "@/hooks/use-client-portal-notifications";
 import {
@@ -91,6 +99,9 @@ function MyClientPortal() {
   const requests = useClientPortalDocumentRequests(contentEnabled, user?.id ?? null);
   const notifications = useClientPortalNotifications(contentEnabled, user?.id ?? null);
   const markNotificationRead = useMarkClientPortalNotificationRead(user?.id ?? null);
+  const markConversationNotificationsRead = useMarkClientPortalNotificationsRead(
+    user?.id ?? null,
+  );
   const markAllNotificationsRead = useMarkAllClientPortalNotificationsRead(user?.id ?? null);
   const [activeTab, setActiveTab] = useState<PortalTab>("inicio");
   const [highlightedEntity, setHighlightedEntity] = useState<string | null>(null);
@@ -100,6 +111,8 @@ function MyClientPortal() {
   );
   const createCommunication = useCreateClientPortalCommunicationThread(user?.id ?? null);
   const addCommunicationEntry = useAddClientPortalCommunicationEntry(user?.id ?? null);
+  const markCommunicationRead = useMarkClientPortalCommunicationRead(user?.id ?? null);
+  const uploadChatAttachment = useUploadPortalChatAttachment(user?.id ?? null);
   const submitDocument = useSubmitClientPortalDocument(user?.id ?? null);
   const [openingDocument, setOpeningDocument] = useState<string | null>(null);
   const [uploadingRequest, setUploadingRequest] = useState<string | null>(null);
@@ -120,6 +133,10 @@ function MyClientPortal() {
   const [quickSubject, setQuickSubject] = useState("");
   const [quickContent, setQuickContent] = useState("");
   const [quickReply, setQuickReply] = useState("");
+  const communicationTimelineRef = useRef<HTMLDivElement>(null);
+  const quickChatTimelineRef = useRef<HTMLDivElement>(null);
+  const communicationFileInputRef = useRef<HTMLInputElement>(null);
+  const quickChatFileInputRef = useRef<HTMLInputElement>(null);
   const selectedCommunication =
     communicationThreads.data?.find(
       (thread) => thread.thread_id === selectedCommunicationId,
@@ -152,6 +169,10 @@ function MyClientPortal() {
   ]
     .sort((left, right) => left.dueDate.localeCompare(right.dueDate))
     .slice(0, 4);
+  usePortalChatRealtime({
+    topic: user?.id ? `portal-user:${user.id}` : null,
+    enabled: contentEnabled,
+  });
 
   useEffect(() => {
     if (status === "unauthenticated") navigate({ to: "/entrar", replace: true });
@@ -161,6 +182,72 @@ function MyClientPortal() {
     if (!quickChatOpen || selectedCommunicationId || !communicationThreads.data?.[0]) return;
     setSelectedCommunicationId(communicationThreads.data[0].thread_id);
   }, [quickChatOpen, selectedCommunicationId, communicationThreads.data]);
+
+  useEffect(() => {
+    if (!selectedCommunicationId) return;
+    const frame = window.requestAnimationFrame(() => {
+      for (const timeline of [
+        communicationTimelineRef.current,
+        quickChatTimelineRef.current,
+      ]) {
+        if (timeline) timeline.scrollTop = timeline.scrollHeight;
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [
+    activeTab,
+    quickChatOpen,
+    selectedCommunicationId,
+    communicationEntries.data,
+  ]);
+
+  useEffect(() => {
+    const conversationIsVisible = quickChatOpen || activeTab === "comunicacao";
+    if (
+      !conversationIsVisible ||
+      !selectedCommunicationId ||
+      markConversationNotificationsRead.isPending
+    ) {
+      return;
+    }
+    const notificationIds = (notifications.data ?? [])
+      .filter(
+        (notification) =>
+          !notification.read_at &&
+          notification.kind === "communication" &&
+          notification.entity_id === selectedCommunicationId,
+      )
+      .map((notification) => notification.notification_id);
+    if (notificationIds.length === 0) return;
+    void markConversationNotificationsRead.mutateAsync(notificationIds).catch((error) => {
+      toast.error(describeError(error, "salvar"));
+    });
+  }, [
+    activeTab,
+    quickChatOpen,
+    selectedCommunicationId,
+    notifications.data,
+    markConversationNotificationsRead.isPending,
+  ]);
+
+  useEffect(() => {
+    const conversationIsVisible = quickChatOpen || activeTab === "comunicacao";
+    if (
+      !conversationIsVisible ||
+      !selectedCommunicationId ||
+      markCommunicationRead.isPending ||
+      !(communicationEntries.data ?? []).some(
+        (entry) => entry.author_kind === "company" && !entry.read_at,
+      )
+    ) return;
+    void markCommunicationRead.mutateAsync(selectedCommunicationId);
+  }, [
+    activeTab,
+    quickChatOpen,
+    selectedCommunicationId,
+    communicationEntries.data,
+    markCommunicationRead.isPending,
+  ]);
 
   async function openDocument(documentId: string, filePath: string) {
     setOpeningDocument(documentId);
@@ -253,6 +340,27 @@ function MyClientPortal() {
       toast.success("Mensagem enviada.");
     } catch (error) {
       toast.error(describeError(error, "salvar"));
+    }
+  }
+
+  async function sendChatAttachment(file: File) {
+    if (!selectedCommunicationId) return;
+    try {
+      await uploadChatAttachment.mutateAsync({
+        threadId: selectedCommunicationId,
+        file,
+      });
+      toast.success("Arquivo enviado.");
+    } catch (error) {
+      toast.error(describeError(error, "documento"));
+    }
+  }
+
+  async function openChatAttachment(path: string, name: string) {
+    try {
+      await openPortalChatAttachment(path, name);
+    } catch (error) {
+      toast.error(describeError(error, "documento"));
     }
   }
 
@@ -1037,7 +1145,10 @@ function MyClientPortal() {
                         ) : communicationEntries.isError ? (
                           <ContentError retry={() => void communicationEntries.refetch()} />
                         ) : (
-                          <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
+                          <div
+                            ref={communicationTimelineRef}
+                            className="max-h-96 space-y-3 overflow-y-auto pr-1"
+                          >
                             {communicationEntries.data?.map((entry) => (
                               <article
                                 key={entry.entry_id}
@@ -1049,6 +1160,21 @@ function MyClientPortal() {
                                 }
                               >
                                 <p className="whitespace-pre-wrap text-sm">{entry.content}</p>
+                                {entry.attachment_path && entry.attachment_name && (
+                                  <button
+                                    type="button"
+                                    className="mt-2 flex max-w-full items-center gap-2 rounded-lg border border-current/20 px-2.5 py-2 text-sm font-medium hover:bg-black/5"
+                                    onClick={() =>
+                                      void openChatAttachment(
+                                        entry.attachment_path!,
+                                        entry.attachment_name!,
+                                      )
+                                    }
+                                  >
+                                    <Download className="size-4 shrink-0" aria-hidden />
+                                    <span className="truncate">{entry.attachment_name}</span>
+                                  </button>
+                                )}
                                 <p
                                   className={
                                     "mt-2 text-xs " +
@@ -1059,6 +1185,9 @@ function MyClientPortal() {
                                 >
                                   {entry.author_kind === "client" ? "Você" : "Empresa"} ·{" "}
                                   {formatDateTime(entry.occurred_at)}
+                                  {entry.author_kind === "client" && (
+                                    <> · {entry.read_at ? "Lida" : "Enviada"}</>
+                                  )}
                                 </p>
                               </article>
                             ))}
@@ -1072,6 +1201,17 @@ function MyClientPortal() {
                           </p>
                         ) : (
                           <div className="space-y-3 border-t pt-4">
+                            <input
+                              ref={communicationFileInputRef}
+                              type="file"
+                              className="hidden"
+                              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                              onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                if (file) void sendChatAttachment(file);
+                                event.target.value = "";
+                              }}
+                            />
                             <Textarea
                               value={communicationReply}
                               maxLength={5000}
@@ -1079,7 +1219,19 @@ function MyClientPortal() {
                               placeholder="Escreva uma resposta."
                               onChange={(event) => setCommunicationReply(event.target.value)}
                             />
-                            <div className="flex justify-end">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                disabled={uploadChatAttachment.isPending}
+                                onClick={() => communicationFileInputRef.current?.click()}
+                              >
+                                {uploadChatAttachment.isPending ? (
+                                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                                ) : (
+                                  <Paperclip className="size-4" aria-hidden />
+                                )}
+                                Anexar
+                              </Button>
                               <Button
                                 disabled={
                                   !communicationReply.trim() ||
@@ -1222,8 +1374,8 @@ function MyClientPortal() {
                 <MessageSquare className="size-5" aria-hidden />
                 <span className="hidden sm:inline">Falar com a empresa</span>
                 {unreadMessages > 0 && (
-                  <span className="absolute -top-1 -right-1 grid min-w-5 place-items-center rounded-full border-2 border-background bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-                    {unreadMessages}
+                  <span className="absolute -top-2 right-1 grid h-6 min-w-6 place-items-center rounded-full border-2 border-background bg-destructive px-1 text-[10px] font-bold text-destructive-foreground shadow-sm">
+                    {unreadMessages > 99 ? "99+" : unreadMessages}
                   </span>
                 )}
               </Button>
@@ -1345,7 +1497,10 @@ function MyClientPortal() {
                       </SelectContent>
                     </Select>
 
-                    <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl bg-muted/35 p-3">
+                    <div
+                      ref={quickChatTimelineRef}
+                      className="max-h-56 space-y-2 overflow-y-auto rounded-xl bg-muted/35 p-3"
+                    >
                       {communicationEntries.isLoading ? (
                         <LoadingRows />
                       ) : (communicationEntries.data?.length ?? 0) === 0 ? (
@@ -1364,6 +1519,21 @@ function MyClientPortal() {
                             }
                           >
                             <p className="whitespace-pre-wrap">{entry.content}</p>
+                            {entry.attachment_path && entry.attachment_name && (
+                              <button
+                                type="button"
+                                className="mt-2 flex max-w-full items-center gap-1.5 rounded-lg border border-current/20 px-2 py-1.5 font-medium hover:bg-black/5"
+                                onClick={() =>
+                                  void openChatAttachment(
+                                    entry.attachment_path!,
+                                    entry.attachment_name!,
+                                  )
+                                }
+                              >
+                                <Download className="size-3.5 shrink-0" aria-hidden />
+                                <span className="truncate">{entry.attachment_name}</span>
+                              </button>
+                            )}
                             <p
                               className={
                                 "mt-1 text-[10px] " +
@@ -1374,6 +1544,9 @@ function MyClientPortal() {
                             >
                               {entry.author_kind === "client" ? "Você" : "Empresa"} ·{" "}
                               {formatDateTime(entry.occurred_at)}
+                              {entry.author_kind === "client" && (
+                                <> · {entry.read_at ? "Lida" : "Enviada"}</>
+                              )}
                             </p>
                           </div>
                         ))
@@ -1387,6 +1560,31 @@ function MyClientPortal() {
                       </p>
                     ) : (
                       <div className="flex items-end gap-2">
+                        <input
+                          ref={quickChatFileInputRef}
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) void sendChatAttachment(file);
+                            event.target.value = "";
+                          }}
+                        />
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="shrink-0"
+                          disabled={uploadChatAttachment.isPending}
+                          onClick={() => quickChatFileInputRef.current?.click()}
+                          aria-label="Anexar arquivo"
+                        >
+                          {uploadChatAttachment.isPending ? (
+                            <Loader2 className="size-4 animate-spin" aria-hidden />
+                          ) : (
+                            <Paperclip className="size-4" aria-hidden />
+                          )}
+                        </Button>
                         <Textarea
                           value={quickReply}
                           maxLength={5000}

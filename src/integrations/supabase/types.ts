@@ -1063,6 +1063,79 @@ export type Database = {
           },
         ]
       }
+      communication_attachments: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          entry_id: string | null
+          expires_at: string
+          file_path: string
+          file_size: number
+          id: string
+          mime_type: string
+          organization_id: string
+          original_file_name: string
+          thread_id: string
+          uploader_id: string
+          uploader_kind: string
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          entry_id?: string | null
+          expires_at?: string
+          file_path: string
+          file_size: number
+          id?: string
+          mime_type: string
+          organization_id: string
+          original_file_name: string
+          thread_id: string
+          uploader_id: string
+          uploader_kind: string
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          entry_id?: string | null
+          expires_at?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          organization_id?: string
+          original_file_name?: string
+          thread_id?: string
+          uploader_id?: string
+          uploader_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_attachments_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "communication_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_attachments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_attachments_thread_fkey"
+            columns: ["organization_id", "client_id", "thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["organization_id", "client_id", "id"]
+          },
+        ]
+      }
       communication_entries: {
         Row: {
           contact_made: boolean
@@ -1113,6 +1186,45 @@ export type Database = {
           },
           {
             foreignKeyName: "communication_entries_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_thread_reads: {
+        Row: {
+          last_read_at: string
+          organization_id: string
+          reader_kind: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          organization_id: string
+          reader_kind: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          last_read_at?: string
+          organization_id?: string
+          reader_kind?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_thread_reads_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_thread_reads_thread_id_fkey"
             columns: ["thread_id"]
             isOneToOne: false
             referencedRelation: "communication_threads"
@@ -4041,10 +4153,16 @@ export type Database = {
       client_portal_communication_entries: {
         Args: { _thread_id: string }
         Returns: {
+          attachment_id: string
+          attachment_mime_type: string
+          attachment_name: string
+          attachment_path: string
+          attachment_size: number
           author_kind: string
           content: string
           entry_id: string
           occurred_at: string
+          read_at: string
         }[]
       }
       client_portal_communication_management: {
@@ -4728,6 +4846,53 @@ export type Database = {
       set_client_portal_document_request_status: {
         Args: { _request_id: string; _status: string }
         Returns: undefined
+      }
+      prepare_communication_attachment_upload: {
+        Args: {
+          _file_size: number
+          _mime_type: string
+          _original_file_name: string
+          _thread_id: string
+        }
+        Returns: {
+          attachment_id: string
+          file_path: string
+        }[]
+      }
+      finalize_communication_attachment_upload: {
+        Args: { _attachment_id: string; _content?: string }
+        Returns: string
+      }
+      mark_client_portal_communication_read: {
+        Args: { _thread_id: string }
+        Returns: undefined
+      }
+      mark_staff_portal_communication_read: {
+        Args: { _organization_id: string; _thread_id: string }
+        Returns: undefined
+      }
+      can_access_communication_attachment: {
+        Args: { _file_path: string }
+        Returns: boolean
+      }
+      can_upload_communication_attachment: {
+        Args: { _file_path: string }
+        Returns: boolean
+      }
+      staff_client_portal_communication_entries: {
+        Args: { _organization_id: string; _thread_id: string }
+        Returns: {
+          attachment_id: string
+          attachment_mime_type: string
+          attachment_name: string
+          attachment_path: string
+          attachment_size: number
+          author_kind: string
+          content: string
+          entry_id: string
+          occurred_at: string
+          read_at: string
+        }[]
       }
       staff_client_portal_inbox: {
         Args: { _organization_id: string }

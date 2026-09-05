@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { CommunicationStatus } from "@/lib/communication";
+import type { PortalChatAttachment } from "@/hooks/use-portal-chat";
 
 export type ClientPortalCommunicationManagementRow = {
   thread_id: string;
@@ -25,11 +26,12 @@ export type ClientPortalCommunicationThread = {
   updated_at: string;
 };
 
-export type ClientPortalCommunicationEntry = {
+export type ClientPortalCommunicationEntry = PortalChatAttachment & {
   entry_id: string;
   content: string;
   author_kind: "client" | "company";
   occurred_at: string;
+  read_at: string | null;
 };
 
 const managementKey = (organizationId: string | null, clientId: string) => [
@@ -159,5 +161,21 @@ export function useAddClientPortalCommunicationEntry(identityScope: string | nul
           queryKey: ["client-portal-communication-entries", identityScope, input.threadId],
         }),
       ]),
+  });
+}
+
+export function useMarkClientPortalCommunicationRead(identityScope: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (threadId: string) => {
+      const { error } = await supabase.rpc("mark_client_portal_communication_read", {
+        _thread_id: threadId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["client-portal-communication-entries", identityScope],
+      }),
   });
 }

@@ -47,6 +47,21 @@ export function useMarkClientPortalNotificationRead(identityScope: string | null
   });
 }
 
+export function useMarkClientPortalNotificationsRead(identityScope: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (notificationIds: string[]) => {
+      for (const notificationId of notificationIds) {
+        const { error } = await supabase.rpc("mark_client_portal_notification_read", {
+          _notification_id: notificationId,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: notificationKey(identityScope) }),
+  });
+}
+
 export function useMarkAllClientPortalNotificationsRead(identityScope: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
