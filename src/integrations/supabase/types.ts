@@ -549,6 +549,63 @@ export type Database = {
           },
         ]
       }
+      client_portal_notifications: {
+        Row: {
+          body: string | null
+          client_id: string
+          created_at: string
+          dedupe_key: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          kind: string
+          organization_id: string
+          read_at: string | null
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          client_id: string
+          created_at?: string
+          dedupe_key?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind: string
+          organization_id: string
+          read_at?: string | null
+          title: string
+        }
+        Update: {
+          body?: string | null
+          client_id?: string
+          created_at?: string
+          dedupe_key?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind?: string
+          organization_id?: string
+          read_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_notifications_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_notifications_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
       client_portal_document_shares: {
         Row: {
           client_id: string
@@ -4016,6 +4073,22 @@ export type Database = {
           updated_at: string
         }[]
       }
+      client_portal_notifications: {
+        Args: never
+        Returns: {
+          access_id: string
+          body: string
+          client_name: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          kind: string
+          notification_id: string
+          organization_name: string
+          read_at: string
+          title: string
+        }[]
+      }
       client_portal_document_requests: {
         Args: never
         Returns: {
@@ -4318,6 +4391,14 @@ export type Database = {
       mark_all_notifications_read: {
         Args: { _organization: string }
         Returns: number
+      }
+      mark_all_client_portal_notifications_read: {
+        Args: never
+        Returns: number
+      }
+      mark_client_portal_notification_read: {
+        Args: { _notification_id: string }
+        Returns: undefined
       }
       mark_financial_transaction_paid: {
         Args: {

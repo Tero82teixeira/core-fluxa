@@ -3,6 +3,7 @@ import {
   Bell,
   Building2,
   CalendarDays,
+  CheckCheck,
   Download,
   FileText,
   FolderKanban,
@@ -45,6 +46,11 @@ import {
   type ClientPortalRequestStatus,
 } from "@/hooks/use-client-portal-requests";
 import {
+  useClientPortalNotifications,
+  useMarkAllClientPortalNotificationsRead,
+  useMarkClientPortalNotificationRead,
+} from "@/hooks/use-client-portal-notifications";
+import {
   useClientPortalSession,
   type ClientPortalSessionRow,
 } from "@/hooks/use-client-portal-session";
@@ -80,6 +86,9 @@ function MyClientPortal() {
   const processes = useClientPortalProcesses(contentEnabled, user?.id ?? null);
   const documents = useClientPortalDocuments(contentEnabled, user?.id ?? null);
   const requests = useClientPortalDocumentRequests(contentEnabled, user?.id ?? null);
+  const notifications = useClientPortalNotifications(contentEnabled, user?.id ?? null);
+  const markNotificationRead = useMarkClientPortalNotificationRead(user?.id ?? null);
+  const markAllNotificationsRead = useMarkAllClientPortalNotificationsRead(user?.id ?? null);
   const communicationThreads = useClientPortalCommunicationThreads(
     contentEnabled,
     user?.id ?? null,
@@ -104,6 +113,9 @@ function MyClientPortal() {
     communicationThreads.data?.find(
       (thread) => thread.thread_id === selectedCommunicationId,
     ) ?? null;
+  const unreadNotifications = (notifications.data ?? []).filter(
+    (notification) => !notification.read_at,
+  ).length;
 
   useEffect(() => {
     if (status === "unauthenticated") navigate({ to: "/entrar", replace: true });
@@ -165,6 +177,23 @@ function MyClientPortal() {
       });
       setCommunicationReply("");
       toast.success("Mensagem enviada.");
+    } catch (error) {
+      toast.error(describeError(error, "salvar"));
+    }
+  }
+
+  async function markNotification(notificationId: string) {
+    try {
+      await markNotificationRead.mutateAsync(notificationId);
+    } catch (error) {
+      toast.error(describeError(error, "salvar"));
+    }
+  }
+
+  async function markAllNotifications() {
+    try {
+      await markAllNotificationsRead.mutateAsync();
+      toast.success("Notificações marcadas como lidas.");
     } catch (error) {
       toast.error(describeError(error, "salvar"));
     }
@@ -249,14 +278,19 @@ function MyClientPortal() {
               <TabsTrigger value="comunicacao" className="gap-2 py-2.5">
                 <MessageSquare className="size-4" aria-hidden /> Comunicação
               </TabsTrigger>
-              <TabsTrigger value="notificacoes" className="gap-2 py-2.5" disabled>
+              <TabsTrigger value="notificacoes" className="gap-2 py-2.5">
                 <Bell className="size-4" aria-hidden /> Notificações
+                {unreadNotifications > 0 && (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] leading-none text-primary-foreground">
+                    {unreadNotifications}
+                  </span>
+                )}
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="inicio" className="space-y-6">
               <AccessCards accesses={session.data ?? []} />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <SummaryCard
                   icon={FolderKanban}
                   label="Processos compartilhados"
@@ -281,9 +315,12 @@ function MyClientPortal() {
                   value={communicationThreads.data?.length ?? 0}
                   loading={communicationThreads.isLoading}
                 />
-              </div>
-              <div className="rounded-lg border border-dashed bg-background p-4 text-sm text-muted-foreground">
-                Notificações serão adicionadas na próxima etapa.
+                <SummaryCard
+                  icon={Bell}
+                  label="Notificações não lidas"
+                  value={unreadNotifications}
+                  loading={notifications.isLoading}
+                />
               </div>
             </TabsContent>
 
@@ -738,6 +775,98 @@ function MyClientPortal() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            <TabsContent value="notificacoes">
+              <Card>
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h2 className="font-semibold">Minhas notificações</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Avisos sobre processos, documentos, pendências e mensagens disponíveis no
+                        seu portal.
+                      </p>
+                    </div>
+                    {unreadNotifications > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={markAllNotificationsRead.isPending}
+                        onClick={() => void markAllNotifications()}
+                      >
+                        {markAllNotificationsRead.isPending ? (
+                          <Loader2 className="size-4 animate-spin" aria-hidden />
+                        ) : (
+                          <CheckCheck className="size-4" aria-hidden />
+                        )}
+                        Marcar todas como lidas
+                      </Button>
+                    )}
+                  </div>
+
+                  {notifications.isLoading ? (
+                    <LoadingRows />
+                  ) : notifications.isError ? (
+                    <ContentError retry={() => void notifications.refetch()} />
+                  ) : (notifications.data?.length ?? 0) === 0 ? (
+                    <EmptyContent
+                      icon={Bell}
+                      title="Nenhuma notificação"
+                      description="Os novos avisos da empresa aparecerão aqui."
+                    />
+                  ) : (
+                    <ul className="space-y-3">
+                      {notifications.data?.map((notification) => (
+                        <li key={notification.notification_id}>
+                          <article
+                            className={
+                              "flex items-start gap-3 rounded-lg border p-4 " +
+                              (notification.read_at ? "bg-background" : "bg-primary/5")
+                            }
+                          >
+                            <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                              <Bell className="size-4" aria-hidden />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <h3 className="text-sm font-medium">{notification.title}</h3>
+                                {!notification.read_at && (
+                                  <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
+                                    Nova
+                                  </span>
+                                )}
+                              </div>
+                              {notification.body && (
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  {notification.body}
+                                </p>
+                              )}
+                              <p className="mt-2 text-xs text-muted-foreground">
+                                {notification.client_name} · {notification.organization_name} ·{" "}
+                                {formatDateTime(notification.created_at)}
+                              </p>
+                              {!notification.read_at && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="mt-1 h-auto px-0"
+                                  disabled={markNotificationRead.isPending}
+                                  onClick={() =>
+                                    void markNotification(notification.notification_id)
+                                  }
+                                >
+                                  Marcar como lida
+                                </Button>
+                              )}
+                            </div>
+                          </article>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         )}
