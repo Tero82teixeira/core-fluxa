@@ -4729,6 +4729,22 @@ export type Database = {
         Args: { _request_id: string; _status: string }
         Returns: undefined
       }
+      staff_client_portal_inbox: {
+        Args: { _organization_id: string }
+        Returns: {
+          assigned_to: string
+          client_id: string
+          client_name: string
+          last_message: string
+          last_message_at: string
+          opened_by_client: boolean
+          priority: string
+          status: string
+          subject: string
+          thread_id: string
+          updated_at: string
+        }[]
+      }
       can_access_client_portal_document: {
         Args: { _file_path: string }
         Returns: boolean
