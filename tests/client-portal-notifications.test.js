@@ -7,6 +7,10 @@ const migration = readFileSync(
   "utf8",
 );
 const hook = readFileSync("src/hooks/use-client-portal-notifications.ts", "utf8");
+const communicationHook = readFileSync(
+  "src/hooks/use-client-portal-communication.ts",
+  "utf8",
+);
 const portal = readFileSync("src/routes/meu-portal.tsx", "utf8");
 const types = readFileSync("src/integrations/supabase/types.ts", "utf8");
 
@@ -68,6 +72,36 @@ describe("notificações seguras no Meu Portal", () => {
     assert.match(portal, /Notificações não lidas/);
     assert.match(portal, /Marcar todas como lidas/);
     assert.match(portal, /Marcar como lida/);
+  });
+
+  test("cada aviso abre e destaca o conteúdo autorizado correspondente", () => {
+    assert.match(portal, /function openNotification/);
+    assert.match(portal, /notificationDestination\(entityType\)/);
+    assert.match(portal, /setSelectedCommunicationId\(entityId\)/);
+    assert.match(portal, /scrollIntoView\(\{ behavior: "smooth", block: "center" \}\)/);
+    assert.match(portal, /ring-2 ring-primary ring-offset-2/);
+    assert.match(portal, /Abrir <ArrowRight/);
+  });
+
+  test("portal recebe acabamento visual responsivo e hierarquia moderna", () => {
+    assert.match(portal, /bg-gradient-to-b from-primary\/5 via-muted\/30 to-background/);
+    assert.match(portal, /sticky top-0 z-40[\s\S]*backdrop-blur-xl/);
+    assert.match(portal, /rounded-3xl[\s\S]*bg-gradient-to-br from-primary\/15/);
+    assert.match(portal, /PORTAL_TAB_CLASS/);
+    assert.match(portal, /data-\[state=active\]:bg-primary/);
+    assert.match(portal, /hover:-translate-y-1 hover:shadow-xl/);
+  });
+
+  test("atendimento flutuante permite conversar sem trocar de aba", () => {
+    assert.match(portal, /aria-label="Falar com a empresa"/);
+    assert.match(portal, /fixed right-4 bottom-5/);
+    assert.match(portal, /<PopoverContent/);
+    assert.match(portal, /function createQuickConversation/);
+    assert.match(portal, /function sendQuickReply/);
+    assert.match(portal, /Canal protegido do seu portal/);
+    assert.match(portal, /Nova conversa/);
+    assert.match(portal, /Digite sua mensagem/);
+    assert.match(communicationHook, /refetchInterval: 15_000/);
   });
 
   test("tipos gerados incluem a tabela e os contratos do banco", () => {

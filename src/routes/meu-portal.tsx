@@ -1,5 +1,6 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import {
+  ArrowRight,
   Bell,
   Building2,
   CalendarDays,
@@ -26,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +51,7 @@ import {
   useClientPortalNotifications,
   useMarkAllClientPortalNotificationsRead,
   useMarkClientPortalNotificationRead,
+  type ClientPortalNotification,
 } from "@/hooks/use-client-portal-notifications";
 import {
   useClientPortalSession,
@@ -89,6 +92,8 @@ function MyClientPortal() {
   const notifications = useClientPortalNotifications(contentEnabled, user?.id ?? null);
   const markNotificationRead = useMarkClientPortalNotificationRead(user?.id ?? null);
   const markAllNotificationsRead = useMarkAllClientPortalNotificationsRead(user?.id ?? null);
+  const [activeTab, setActiveTab] = useState<PortalTab>("inicio");
+  const [highlightedEntity, setHighlightedEntity] = useState<string | null>(null);
   const communicationThreads = useClientPortalCommunicationThreads(
     contentEnabled,
     user?.id ?? null,
@@ -109,6 +114,12 @@ function MyClientPortal() {
   const [communicationSubject, setCommunicationSubject] = useState("");
   const [communicationContent, setCommunicationContent] = useState("");
   const [communicationReply, setCommunicationReply] = useState("");
+  const [quickChatOpen, setQuickChatOpen] = useState(false);
+  const [quickNewConversation, setQuickNewConversation] = useState(false);
+  const [quickAccessId, setQuickAccessId] = useState("");
+  const [quickSubject, setQuickSubject] = useState("");
+  const [quickContent, setQuickContent] = useState("");
+  const [quickReply, setQuickReply] = useState("");
   const selectedCommunication =
     communicationThreads.data?.find(
       (thread) => thread.thread_id === selectedCommunicationId,
@@ -116,10 +127,18 @@ function MyClientPortal() {
   const unreadNotifications = (notifications.data ?? []).filter(
     (notification) => !notification.read_at,
   ).length;
+  const unreadMessages = (notifications.data ?? []).filter(
+    (notification) => !notification.read_at && notification.kind === "communication",
+  ).length;
 
   useEffect(() => {
     if (status === "unauthenticated") navigate({ to: "/entrar", replace: true });
   }, [status, navigate]);
+
+  useEffect(() => {
+    if (!quickChatOpen || selectedCommunicationId || !communicationThreads.data?.[0]) return;
+    setSelectedCommunicationId(communicationThreads.data[0].thread_id);
+  }, [quickChatOpen, selectedCommunicationId, communicationThreads.data]);
 
   async function openDocument(documentId: string, filePath: string) {
     setOpeningDocument(documentId);
@@ -182,6 +201,39 @@ function MyClientPortal() {
     }
   }
 
+  async function createQuickConversation() {
+    const accessId = quickAccessId || activeAccesses[0]?.access_id;
+    if (!accessId || !quickSubject.trim() || !quickContent.trim()) return;
+    try {
+      const threadId = await createCommunication.mutateAsync({
+        accessId,
+        subject: quickSubject.trim(),
+        content: quickContent.trim(),
+      });
+      setQuickSubject("");
+      setQuickContent("");
+      setSelectedCommunicationId(threadId);
+      setQuickNewConversation(false);
+      toast.success("Conversa iniciada com a empresa.");
+    } catch (error) {
+      toast.error(describeError(error, "salvar"));
+    }
+  }
+
+  async function sendQuickReply() {
+    if (!selectedCommunicationId || !quickReply.trim()) return;
+    try {
+      await addCommunicationEntry.mutateAsync({
+        threadId: selectedCommunicationId,
+        content: quickReply.trim(),
+      });
+      setQuickReply("");
+      toast.success("Mensagem enviada.");
+    } catch (error) {
+      toast.error(describeError(error, "salvar"));
+    }
+  }
+
   async function markNotification(notificationId: string) {
     try {
       await markNotificationRead.mutateAsync(notificationId);
@@ -199,6 +251,36 @@ function MyClientPortal() {
     }
   }
 
+  async function openNotification(notification: ClientPortalNotification) {
+    const entityType = notification.entity_type;
+    const entityId = notification.entity_id;
+    const destination = notificationDestination(entityType);
+    if (!destination || !entityType || !entityId) return;
+    if (!notification.read_at) {
+      try {
+        await markNotificationRead.mutateAsync(notification.notification_id);
+      } catch (error) {
+        toast.error(describeError(error, "salvar"));
+      }
+    }
+
+    const target = `${entityType}:${entityId}`;
+    setActiveTab(destination);
+    setHighlightedEntity(target);
+    if (entityType === "communication") {
+      setSelectedCommunicationId(entityId);
+    }
+    window.setTimeout(() => {
+      document
+        .getElementById(portalEntityElementId(entityType, entityId))
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+    window.setTimeout(
+      () => setHighlightedEntity((current) => (current === target ? null : current)),
+      3000,
+    );
+  }
+
   if (status === "initializing" || session.isLoading) {
     return (
       <div className="grid min-h-dvh place-items-center bg-muted/30">
@@ -210,11 +292,11 @@ function MyClientPortal() {
   }
 
   return (
-    <main className="min-h-dvh bg-muted/30">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <Link to="/meu-portal" className="flex items-center gap-2 text-primary">
-            <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
+    <main className="min-h-dvh bg-gradient-to-b from-primary/5 via-muted/30 to-background">
+      <header className="sticky top-0 z-40 border-b border-primary/10 bg-background/85 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+          <Link to="/meu-portal" className="group flex items-center gap-3 text-primary">
+            <span className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary/75 text-primary-foreground shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
               <Building2 className="size-5" aria-hidden />
             </span>
             <span>
@@ -222,7 +304,13 @@ function MyClientPortal() {
               <span className="mt-1 block text-xs text-muted-foreground">Meu Portal</span>
             </span>
           </Link>
-          <Button variant="outline" size="sm" disabled={signingOut} onClick={() => void signOut()}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl bg-background/70 shadow-sm"
+            disabled={signingOut}
+            onClick={() => void signOut()}
+          >
             {signingOut ? (
               <Loader2 className="size-4 animate-spin" aria-hidden />
             ) : (
@@ -233,23 +321,44 @@ function MyClientPortal() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-        <section>
-          <div className="flex items-center gap-2 text-sm font-medium text-primary">
-            <ShieldCheck className="size-4" aria-hidden /> Área exclusiva do cliente
+      <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pt-6 pb-28 sm:px-6 sm:pt-8">
+        <section className="relative overflow-hidden rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/15 via-background to-background p-6 shadow-xl shadow-primary/5 sm:p-8">
+          <div className="absolute -top-20 -right-16 size-64 rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute -bottom-24 left-1/3 size-52 rounded-full bg-primary/5 blur-3xl" />
+          <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-background/70 px-3 py-1.5 text-xs font-medium text-primary shadow-sm backdrop-blur">
+                <ShieldCheck className="size-4" aria-hidden /> Área segura e exclusiva
+              </div>
+              <h1 className="mt-4 max-w-2xl font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                Bem-vindo ao seu portal
+              </h1>
+              <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+                Acompanhe seu atendimento e fale com a empresa em um só lugar.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Conta conectada como {user?.email ?? "cliente"}.
+              </p>
+            </div>
+            {activeAccesses.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full border bg-background/75 px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur">
+                  {activeAccesses.length} {activeAccesses.length === 1 ? "acesso ativo" : "acessos ativos"}
+                </span>
+                {unreadNotifications > 0 && (
+                  <span className="rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm">
+                    {unreadNotifications} {unreadNotifications === 1 ? "novo aviso" : "novos avisos"}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
-          <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-            Bem-vindo ao seu portal
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Conta conectada como {user?.email ?? "cliente"}.
-          </p>
         </section>
 
         {session.isError ? (
           <PortalError retry={() => void session.refetch()} />
         ) : (session.data?.length ?? 0) === 0 ? (
-          <Card>
+          <Card className="border-primary/10 bg-background/90 shadow-lg shadow-primary/5">
             <CardContent className="space-y-3 p-6">
               <LockKeyhole className="size-8 text-muted-foreground" aria-hidden />
               <h2 className="font-semibold">Acesso ainda não concluído</h2>
@@ -261,24 +370,31 @@ function MyClientPortal() {
         ) : activeAccesses.length === 0 ? (
           <AccessCards accesses={session.data ?? []} />
         ) : (
-          <Tabs defaultValue="inicio" className="space-y-6">
-            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1.5 sm:grid-cols-3 lg:grid-cols-6">
-              <TabsTrigger value="inicio" className="gap-2 py-2.5">
+          <Tabs
+            value={activeTab}
+            className="space-y-6"
+            onValueChange={(value) => {
+              setActiveTab(value as PortalTab);
+              setHighlightedEntity(null);
+            }}
+          >
+            <TabsList className="sticky top-[73px] z-30 grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-primary/10 bg-background/90 p-2 shadow-lg shadow-primary/5 backdrop-blur-xl sm:grid-cols-3 lg:grid-cols-6">
+              <TabsTrigger value="inicio" className={PORTAL_TAB_CLASS}>
                 <Home className="size-4" aria-hidden /> Início
               </TabsTrigger>
-              <TabsTrigger value="processos" className="gap-2 py-2.5">
+              <TabsTrigger value="processos" className={PORTAL_TAB_CLASS}>
                 <FolderKanban className="size-4" aria-hidden /> Processos
               </TabsTrigger>
-              <TabsTrigger value="documentos" className="gap-2 py-2.5">
+              <TabsTrigger value="documentos" className={PORTAL_TAB_CLASS}>
                 <FileText className="size-4" aria-hidden /> Documentos
               </TabsTrigger>
-              <TabsTrigger value="pendencias" className="gap-2 py-2.5">
+              <TabsTrigger value="pendencias" className={PORTAL_TAB_CLASS}>
                 <ListTodo className="size-4" aria-hidden /> Pendências
               </TabsTrigger>
-              <TabsTrigger value="comunicacao" className="gap-2 py-2.5">
+              <TabsTrigger value="comunicacao" className={PORTAL_TAB_CLASS}>
                 <MessageSquare className="size-4" aria-hidden /> Comunicação
               </TabsTrigger>
-              <TabsTrigger value="notificacoes" className="gap-2 py-2.5">
+              <TabsTrigger value="notificacoes" className={PORTAL_TAB_CLASS}>
                 <Bell className="size-4" aria-hidden /> Notificações
                 {unreadNotifications > 0 && (
                   <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] leading-none text-primary-foreground">
@@ -325,7 +441,7 @@ function MyClientPortal() {
             </TabsContent>
 
             <TabsContent value="processos">
-              <Card>
+              <Card className={PORTAL_PANEL_CLASS}>
                 <CardContent className="space-y-4 p-4 sm:p-6">
                   <div>
                     <h2 className="font-semibold">Processos compartilhados</h2>
@@ -352,8 +468,14 @@ function MyClientPortal() {
                         const stage = PROCESS_STAGE[process.stage];
                         return (
                           <li
+                            id={portalEntityElementId("process", process.process_id)}
                             key={`${process.access_id}-${process.process_id}`}
-                            className="rounded-xl border bg-background p-4"
+                            className={
+                              "rounded-xl border bg-background p-4 transition-shadow " +
+                              (highlightedEntity === `process:${process.process_id}`
+                                ? "ring-2 ring-primary ring-offset-2"
+                                : "")
+                            }
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
@@ -394,7 +516,7 @@ function MyClientPortal() {
             </TabsContent>
 
             <TabsContent value="documentos">
-              <Card>
+              <Card className={PORTAL_PANEL_CLASS}>
                 <CardContent className="space-y-4 p-4 sm:p-6">
                   <div>
                     <h2 className="font-semibold">Documentos compartilhados</h2>
@@ -421,8 +543,14 @@ function MyClientPortal() {
                         const documentStatus = DOCUMENT_STATUS[document.status];
                         return (
                           <li
+                            id={portalEntityElementId("document", document.document_id)}
                             key={`${document.access_id}-${document.document_id}`}
-                            className="flex flex-col gap-4 rounded-xl border bg-background p-4 sm:flex-row sm:items-center"
+                            className={
+                              "flex flex-col gap-4 rounded-xl border bg-background p-4 transition-shadow sm:flex-row sm:items-center " +
+                              (highlightedEntity === `document:${document.document_id}`
+                                ? "ring-2 ring-primary ring-offset-2"
+                                : "")
+                            }
                           >
                             <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                               <FileText className="size-5" aria-hidden />
@@ -472,7 +600,7 @@ function MyClientPortal() {
             </TabsContent>
 
             <TabsContent value="pendencias">
-              <Card>
+              <Card className={PORTAL_PANEL_CLASS}>
                 <CardContent className="space-y-4 p-4 sm:p-6">
                   <div>
                     <h2 className="font-semibold">Documentos solicitados</h2>
@@ -496,7 +624,16 @@ function MyClientPortal() {
                         const requestStatus = PORTAL_REQUEST_STATUS[request.status];
                         const overdue = request.status === "pending" && request.due_date && request.due_date < new Date().toISOString().slice(0, 10);
                         return (
-                          <li key={request.request_id} className="rounded-xl border bg-background p-4">
+                          <li
+                            id={portalEntityElementId("document_request", request.request_id)}
+                            key={request.request_id}
+                            className={
+                              "rounded-xl border bg-background p-4 transition-shadow " +
+                              (highlightedEntity === `document_request:${request.request_id}`
+                                ? "ring-2 ring-primary ring-offset-2"
+                                : "")
+                            }
+                          >
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                               <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                                 <ListTodo className="size-5" aria-hidden />
@@ -552,7 +689,7 @@ function MyClientPortal() {
             </TabsContent>
 
             <TabsContent value="comunicacao" className="space-y-4">
-              <Card>
+              <Card className={PORTAL_PANEL_CLASS}>
                 <CardContent className="space-y-4 p-4 sm:p-6">
                   <div>
                     <h2 className="font-semibold">Iniciar uma conversa</h2>
@@ -622,7 +759,7 @@ function MyClientPortal() {
               </Card>
 
               <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)]">
-                <Card>
+                <Card className={PORTAL_PANEL_CLASS}>
                   <CardContent className="space-y-4 p-4 sm:p-6">
                     <h2 className="font-semibold">Minhas conversas</h2>
                     {communicationThreads.isLoading ? (
@@ -640,7 +777,10 @@ function MyClientPortal() {
                         {communicationThreads.data?.map((thread) => {
                           const threadStatus = PORTAL_COMMUNICATION_STATUS[thread.status];
                           return (
-                            <li key={thread.thread_id}>
+                            <li
+                              id={portalEntityElementId("communication", thread.thread_id)}
+                              key={thread.thread_id}
+                            >
                               <button
                                 type="button"
                                 className={
@@ -677,7 +817,7 @@ function MyClientPortal() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className={PORTAL_PANEL_CLASS}>
                   <CardContent className="space-y-4 p-4 sm:p-6">
                     {!selectedCommunication ? (
                       <EmptyContent
@@ -778,7 +918,7 @@ function MyClientPortal() {
             </TabsContent>
 
             <TabsContent value="notificacoes">
-              <Card>
+              <Card className={PORTAL_PANEL_CLASS}>
                 <CardContent className="space-y-4 p-4 sm:p-6">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -846,19 +986,32 @@ function MyClientPortal() {
                                 {notification.client_name} · {notification.organization_name} ·{" "}
                                 {formatDateTime(notification.created_at)}
                               </p>
-                              {!notification.read_at && (
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  className="mt-1 h-auto px-0"
-                                  disabled={markNotificationRead.isPending}
-                                  onClick={() =>
-                                    void markNotification(notification.notification_id)
-                                  }
-                                >
-                                  Marcar como lida
-                                </Button>
-                              )}
+                              <div className="mt-1 flex flex-wrap gap-3">
+                                {notification.entity_type && notification.entity_id && (
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    className="h-auto px-0"
+                                    disabled={markNotificationRead.isPending}
+                                    onClick={() => void openNotification(notification)}
+                                  >
+                                    Abrir <ArrowRight className="size-3.5" aria-hidden />
+                                  </Button>
+                                )}
+                                {!notification.read_at && (
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    className="h-auto px-0"
+                                    disabled={markNotificationRead.isPending}
+                                    onClick={() =>
+                                      void markNotification(notification.notification_id)
+                                    }
+                                  >
+                                    Marcar como lida
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </article>
                         </li>
@@ -869,6 +1022,212 @@ function MyClientPortal() {
               </Card>
             </TabsContent>
           </Tabs>
+        )}
+
+        {activeAccesses.length > 0 && (
+          <Popover open={quickChatOpen} onOpenChange={setQuickChatOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                size="lg"
+                className="fixed right-4 bottom-5 z-40 size-14 rounded-full shadow-2xl shadow-primary/30 transition-transform hover:scale-105 sm:right-6 sm:w-auto sm:px-5"
+                aria-label="Falar com a empresa"
+              >
+                <MessageSquare className="size-5" aria-hidden />
+                <span className="hidden sm:inline">Falar com a empresa</span>
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 grid min-w-5 place-items-center rounded-full border-2 border-background bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                    {unreadMessages}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="top"
+              align="end"
+              sideOffset={12}
+              className="w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-2xl border-primary/15 p-0 shadow-2xl"
+            >
+              <div className="bg-gradient-to-br from-primary to-primary/80 p-4 text-primary-foreground">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-10 place-items-center rounded-xl bg-white/15">
+                    <MessageSquare className="size-5" aria-hidden />
+                  </span>
+                  <div>
+                    <h2 className="font-semibold">Fale com a empresa</h2>
+                    <p className="text-xs text-primary-foreground/75">
+                      Canal protegido do seu portal
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 p-4">
+                {communicationThreads.isLoading ? (
+                  <LoadingRows />
+                ) : quickNewConversation || (communicationThreads.data?.length ?? 0) === 0 ? (
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-sm font-semibold">Nova conversa</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Sua mensagem será recebida pela equipe responsável.
+                      </p>
+                    </div>
+                    {activeAccesses.length > 1 && (
+                      <Select value={quickAccessId} onValueChange={setQuickAccessId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o atendimento" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {activeAccesses.map((access) => (
+                            <SelectItem key={access.access_id} value={access.access_id}>
+                              {access.client_name} · {access.organization_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Input
+                      value={quickSubject}
+                      maxLength={160}
+                      placeholder="Assunto"
+                      onChange={(event) => setQuickSubject(event.target.value)}
+                    />
+                    <Textarea
+                      value={quickContent}
+                      maxLength={5000}
+                      rows={4}
+                      placeholder="Como podemos ajudar?"
+                      onChange={(event) => setQuickContent(event.target.value)}
+                    />
+                    <div className="flex items-center justify-between gap-3">
+                      {(communicationThreads.data?.length ?? 0) > 0 ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setQuickNewConversation(false)}
+                        >
+                          Voltar
+                        </Button>
+                      ) : (
+                        <span />
+                      )}
+                      <Button
+                        size="sm"
+                        disabled={
+                          !quickSubject.trim() ||
+                          !quickContent.trim() ||
+                          createCommunication.isPending
+                        }
+                        onClick={() => void createQuickConversation()}
+                      >
+                        {createCommunication.isPending ? (
+                          <Loader2 className="size-4 animate-spin" aria-hidden />
+                        ) : (
+                          <Send className="size-4" aria-hidden />
+                        )}
+                        Enviar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-medium text-muted-foreground">Conversa</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setQuickNewConversation(true)}
+                      >
+                        Nova conversa
+                      </Button>
+                    </div>
+                    <Select
+                      value={selectedCommunicationId ?? undefined}
+                      onValueChange={setSelectedCommunicationId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma conversa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {communicationThreads.data?.map((thread) => (
+                          <SelectItem key={thread.thread_id} value={thread.thread_id}>
+                            {thread.subject}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl bg-muted/35 p-3">
+                      {communicationEntries.isLoading ? (
+                        <LoadingRows />
+                      ) : (communicationEntries.data?.length ?? 0) === 0 ? (
+                        <p className="py-6 text-center text-xs text-muted-foreground">
+                          Nenhuma mensagem nesta conversa.
+                        </p>
+                      ) : (
+                        communicationEntries.data?.map((entry) => (
+                          <div
+                            key={entry.entry_id}
+                            className={
+                              "max-w-[88%] rounded-xl px-3 py-2 text-xs " +
+                              (entry.author_kind === "client"
+                                ? "ml-auto bg-primary text-primary-foreground"
+                                : "border bg-background")
+                            }
+                          >
+                            <p className="whitespace-pre-wrap">{entry.content}</p>
+                            <p
+                              className={
+                                "mt-1 text-[10px] " +
+                                (entry.author_kind === "client"
+                                  ? "text-primary-foreground/70"
+                                  : "text-muted-foreground")
+                              }
+                            >
+                              {entry.author_kind === "client" ? "Você" : "Empresa"} ·{" "}
+                              {formatDateTime(entry.occurred_at)}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {selectedCommunication?.status === "resolvida" ||
+                    selectedCommunication?.status === "arquivada" ? (
+                      <p className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
+                        Esta conversa foi encerrada. Inicie uma nova conversa para continuar.
+                      </p>
+                    ) : (
+                      <div className="flex items-end gap-2">
+                        <Textarea
+                          value={quickReply}
+                          maxLength={5000}
+                          rows={2}
+                          className="min-h-16 resize-none"
+                          placeholder="Digite sua mensagem…"
+                          onChange={(event) => setQuickReply(event.target.value)}
+                        />
+                        <Button
+                          size="icon"
+                          className="shrink-0"
+                          disabled={!quickReply.trim() || addCommunicationEntry.isPending}
+                          onClick={() => void sendQuickReply()}
+                          aria-label="Enviar mensagem"
+                        >
+                          {addCommunicationEntry.isPending ? (
+                            <Loader2 className="size-4 animate-spin" aria-hidden />
+                          ) : (
+                            <Send className="size-4" aria-hidden />
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
         )}
 
         <footer className="flex flex-wrap gap-x-4 gap-y-2 border-t pt-5 text-xs text-muted-foreground">
@@ -895,6 +1254,36 @@ const PORTAL_REQUEST_STATUS: Record<
   cancelled: { label: "Cancelado", tone: "neutral" },
 };
 
+type PortalTab =
+  | "inicio"
+  | "processos"
+  | "documentos"
+  | "pendencias"
+  | "comunicacao"
+  | "notificacoes";
+
+const PORTAL_TAB_CLASS =
+  "gap-2 rounded-xl py-2.5 text-xs transition-all sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md";
+const PORTAL_PANEL_CLASS =
+  "overflow-hidden border-primary/10 bg-background/90 shadow-lg shadow-primary/5";
+
+function notificationDestination(
+  entityType: ClientPortalNotification["entity_type"],
+): PortalTab | null {
+  if (entityType === "process") return "processos";
+  if (entityType === "document") return "documentos";
+  if (entityType === "document_request") return "pendencias";
+  if (entityType === "communication") return "comunicacao";
+  return null;
+}
+
+function portalEntityElementId(
+  entityType: NonNullable<ClientPortalNotification["entity_type"]>,
+  entityId: string,
+) {
+  return `portal-${entityType}-${entityId}`;
+}
+
 const PORTAL_COMMUNICATION_STATUS: Record<
   CommunicationStatus,
   { label: string; tone: "warning" | "info" | "success" | "neutral" }
@@ -910,10 +1299,14 @@ function AccessCards({ accesses }: { accesses: ClientPortalSessionRow[] }) {
   return (
     <section className="grid gap-4 md:grid-cols-2">
       {accesses.map((access) => (
-        <Card key={access.access_id}>
-          <CardContent className="space-y-4 p-6">
+        <Card
+          key={access.access_id}
+          className="group overflow-hidden border-primary/10 bg-background/90 shadow-md shadow-primary/5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+        >
+          <CardContent className="relative space-y-4 p-6">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/60 to-transparent" />
             <div className="flex items-start justify-between gap-4">
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary transition-transform duration-300 group-hover:scale-105">
                 <UserRound className="size-5" aria-hidden />
               </span>
               <StatusBadge
@@ -967,14 +1360,14 @@ function SummaryCard({
   loading: boolean;
 }) {
   return (
-    <Card>
-      <CardContent className="flex items-center gap-4 p-6">
-        <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary">
+    <Card className="group overflow-hidden border-primary/10 bg-background/90 shadow-md shadow-primary/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <CardContent className="flex items-center gap-4 p-5">
+        <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary transition-transform duration-300 group-hover:scale-110">
           <Icon className="size-5" aria-hidden />
         </span>
         <div>
           <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-1 text-2xl font-semibold">{loading ? "—" : value}</p>
+          <p className="mt-1 text-2xl font-semibold tracking-tight">{loading ? "—" : value}</p>
         </div>
       </CardContent>
     </Card>
@@ -1001,7 +1394,7 @@ function ContentError({ retry }: { retry: () => void }) {
 }
 function PortalError({ retry }: { retry: () => void }) {
   return (
-    <Card>
+    <Card className="border-primary/10 bg-background/90 shadow-lg shadow-primary/5">
       <CardContent className="space-y-3 p-6">
         <h2 className="font-semibold">Não foi possível carregar seu acesso</h2>
         <p className="text-sm text-muted-foreground">
