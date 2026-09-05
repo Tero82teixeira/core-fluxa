@@ -130,6 +130,28 @@ function MyClientPortal() {
   const unreadMessages = (notifications.data ?? []).filter(
     (notification) => !notification.read_at && notification.kind === "communication",
   ).length;
+  const portalDeadlines: PortalDeadline[] = [
+    ...(requests.data ?? [])
+      .filter((request) => request.status === "pending" && request.due_date)
+      .map((request) => ({
+        id: request.request_id,
+        entityType: "document_request" as const,
+        title: request.title,
+        label: "Documento solicitado",
+        dueDate: request.due_date as string,
+      })),
+    ...(processes.data ?? [])
+      .filter((process) => process.due_date)
+      .map((process) => ({
+        id: process.process_id,
+        entityType: "process" as const,
+        title: process.title,
+        label: process.code,
+        dueDate: process.due_date as string,
+      })),
+  ]
+    .sort((left, right) => left.dueDate.localeCompare(right.dueDate))
+    .slice(0, 4);
 
   useEffect(() => {
     if (status === "unauthenticated") navigate({ to: "/entrar", replace: true });
@@ -264,12 +286,19 @@ function MyClientPortal() {
       }
     }
 
+    focusPortalEntity(entityType, entityId, destination);
+  }
+
+  function focusPortalEntity(
+    entityType: NonNullable<ClientPortalNotification["entity_type"]>,
+    entityId: string,
+    destination = notificationDestination(entityType),
+  ) {
+    if (!destination) return;
     const target = `${entityType}:${entityId}`;
     setActiveTab(destination);
     setHighlightedEntity(target);
-    if (entityType === "communication") {
-      setSelectedCommunicationId(entityId);
-    }
+    if (entityType === "communication") setSelectedCommunicationId(entityId);
     window.setTimeout(() => {
       document
         .getElementById(portalEntityElementId(entityType, entityId))
@@ -437,6 +466,164 @@ function MyClientPortal() {
                   value={unreadNotifications}
                   loading={notifications.isLoading}
                 />
+              </div>
+
+              <section className="flex flex-col gap-4 rounded-2xl border border-primary/10 bg-background/85 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="font-semibold">O que você precisa fazer?</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Acesse rapidamente as ações mais importantes do seu atendimento.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setActiveTab("pendencias")}>
+                    <Upload className="size-4" aria-hidden /> Enviar documento
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setActiveTab("processos")}>
+                    <FolderKanban className="size-4" aria-hidden /> Ver processos
+                  </Button>
+                  <Button size="sm" onClick={() => setQuickChatOpen(true)}>
+                    <MessageSquare className="size-4" aria-hidden /> Falar com a empresa
+                  </Button>
+                </div>
+              </section>
+
+              <div className="grid gap-4 lg:grid-cols-3">
+                <Card className={PORTAL_PANEL_CLASS}>
+                  <CardContent className="space-y-4 p-5">
+                    <div className="flex items-center gap-3">
+                      <span className="grid size-9 place-items-center rounded-xl bg-warning/10 text-warning">
+                        <CalendarDays className="size-4" aria-hidden />
+                      </span>
+                      <div>
+                        <h2 className="text-sm font-semibold">Próximos prazos</h2>
+                        <p className="text-xs text-muted-foreground">Prioridades do atendimento</p>
+                      </div>
+                    </div>
+                    {portalDeadlines.length === 0 ? (
+                      <p className="rounded-xl bg-muted/35 p-4 text-sm text-muted-foreground">
+                        Nenhum prazo próximo no momento.
+                      </p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {portalDeadlines.map((deadline) => {
+                          const overdue = deadline.dueDate < new Date().toISOString().slice(0, 10);
+                          return (
+                            <li key={`${deadline.entityType}-${deadline.id}`}>
+                              <button
+                                type="button"
+                                className="flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50"
+                                onClick={() =>
+                                  focusPortalEntity(deadline.entityType, deadline.id)
+                                }
+                              >
+                                <span className="min-w-0">
+                                  <span className="block truncate text-sm font-medium">
+                                    {deadline.title}
+                                  </span>
+                                  <span className="mt-1 block text-xs text-muted-foreground">
+                                    {deadline.label}
+                                  </span>
+                                </span>
+                                <span
+                                  className={
+                                    "shrink-0 text-xs font-medium " +
+                                    (overdue ? "text-destructive" : "text-muted-foreground")
+                                  }
+                                >
+                                  {overdue ? "Vencido" : formatDate(deadline.dueDate)}
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className={PORTAL_PANEL_CLASS}>
+                  <CardContent className="space-y-4 p-5">
+                    <div className="flex items-center gap-3">
+                      <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
+                        <MessageSquare className="size-4" aria-hidden />
+                      </span>
+                      <div>
+                        <h2 className="text-sm font-semibold">Últimas mensagens</h2>
+                        <p className="text-xs text-muted-foreground">Conversas com a empresa</p>
+                      </div>
+                    </div>
+                    {(communicationThreads.data?.length ?? 0) === 0 ? (
+                      <p className="rounded-xl bg-muted/35 p-4 text-sm text-muted-foreground">
+                        Nenhuma conversa iniciada.
+                      </p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {communicationThreads.data?.slice(0, 4).map((thread) => (
+                          <li key={thread.thread_id}>
+                            <button
+                              type="button"
+                              className="w-full rounded-xl border p-3 text-left transition-colors hover:bg-muted/50"
+                              onClick={() =>
+                                focusPortalEntity("communication", thread.thread_id)
+                              }
+                            >
+                              <span className="block truncate text-sm font-medium">
+                                {thread.subject}
+                              </span>
+                              <span className="mt-1 block truncate text-xs text-muted-foreground">
+                                {thread.last_message ?? "Conversa iniciada"}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className={PORTAL_PANEL_CLASS}>
+                  <CardContent className="space-y-4 p-5">
+                    <div className="flex items-center gap-3">
+                      <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
+                        <Bell className="size-4" aria-hidden />
+                      </span>
+                      <div>
+                        <h2 className="text-sm font-semibold">Atividade recente</h2>
+                        <p className="text-xs text-muted-foreground">Novidades do seu portal</p>
+                      </div>
+                    </div>
+                    {(notifications.data?.length ?? 0) === 0 ? (
+                      <p className="rounded-xl bg-muted/35 p-4 text-sm text-muted-foreground">
+                        Nenhuma atividade recente.
+                      </p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {notifications.data?.slice(0, 4).map((notification) => (
+                          <li key={notification.notification_id}>
+                            <button
+                              type="button"
+                              className="flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50"
+                              onClick={() => void openNotification(notification)}
+                            >
+                              {!notification.read_at && (
+                                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
+                              )}
+                              <span className="min-w-0">
+                                <span className="block truncate text-sm font-medium">
+                                  {notification.title}
+                                </span>
+                                <span className="mt-1 block text-xs text-muted-foreground">
+                                  {formatDateTime(notification.created_at)}
+                                </span>
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 
@@ -1261,6 +1448,14 @@ type PortalTab =
   | "pendencias"
   | "comunicacao"
   | "notificacoes";
+
+type PortalDeadline = {
+  id: string;
+  entityType: "process" | "document_request";
+  title: string;
+  label: string;
+  dueDate: string;
+};
 
 const PORTAL_TAB_CLASS =
   "gap-2 rounded-xl py-2.5 text-xs transition-all sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md";

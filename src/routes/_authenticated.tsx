@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
+import { StaffQuickChat } from "@/components/layout/staff-quick-chat";
 import { CommercialAccessBlocked } from "@/components/commercial-access-blocked";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 import { useAuth } from "@/lib/auth";
@@ -118,6 +119,7 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
             <Outlet />
           </main>
         </SidebarInset>
+        <StaffQuickChat />
       </div>
     </SidebarProvider>
   );

@@ -13,13 +13,13 @@ export type CommunicationEntry = { id: string; organization_id: string; thread_i
 export type NewCommunicationThread = { clientId: string; subject: string; channel: CommunicationChannel; assignedTo?: string | null; priority: CommunicationPriority; processId?: string | null; taskId?: string | null; firstContent?: string | null; followUpAt?: string | null };
 
 export function useCommunicationThreads(organizationId: string | null) {
-  return useQuery({ enabled: Boolean(organizationId), queryKey: ["communication-threads", organizationId], queryFn: async () => {
+  return useQuery({ enabled: Boolean(organizationId), queryKey: ["communication-threads", organizationId], refetchInterval: 30_000, queryFn: async () => {
     const { data, error } = await db().from("communication_threads").select("id, organization_id, client_id, subject, channel, status, priority, assigned_to, process_id, task_id, follow_up_at, created_by, created_at, updated_at, archived_at, clients(id,name), processes(id,code), tasks(id,title)").eq("organization_id", organizationId).order("updated_at", { ascending: false }).limit(500);
     if (error) throw error; return (data ?? []) as CommunicationThread[];
   }});
 }
 export function useCommunicationEntries(threadId: string | null) {
-  return useQuery({ enabled: Boolean(threadId), queryKey: ["communication-entries", threadId], queryFn: async () => {
+  return useQuery({ enabled: Boolean(threadId), queryKey: ["communication-entries", threadId], refetchInterval: 15_000, queryFn: async () => {
     const { data, error } = await db().from("communication_entries").select("id, organization_id, thread_id, entry_type, content, created_by, occurred_at, is_internal, contact_made, metadata, created_at").eq("thread_id", threadId).order("occurred_at").order("created_at");
     if (error) throw error; return (data ?? []) as CommunicationEntry[];
   }});
