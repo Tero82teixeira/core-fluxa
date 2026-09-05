@@ -90,6 +90,7 @@ export function useClientPortalCommunicationThreads(
   return useQuery({
     enabled: enabled && Boolean(identityScope),
     queryKey: threadsKey(identityScope),
+    refetchInterval: 30_000,
     queryFn: async (): Promise<ClientPortalCommunicationThread[]> => {
       const { data, error } = await supabase.rpc("client_portal_communication_threads");
       if (error) throw error;
@@ -105,6 +106,7 @@ export function useClientPortalCommunicationEntries(
   return useQuery({
     enabled: Boolean(threadId && identityScope),
     queryKey: ["client-portal-communication-entries", identityScope, threadId],
+    refetchInterval: 15_000,
     queryFn: async (): Promise<ClientPortalCommunicationEntry[]> => {
       if (!threadId) return [];
       const { data, error } = await supabase.rpc("client_portal_communication_entries", {
