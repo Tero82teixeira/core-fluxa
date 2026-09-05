@@ -1,14 +1,23 @@
 import { Link } from "@tanstack/react-router";
-import { Loader2, MessageSquare, Send } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Download, Loader2, MessageSquare, Paperclip, Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useAddCommunicationEntry, useCommunicationEntries } from "@/hooks/use-communication";
-import { useStaffPortalInbox } from "@/hooks/use-staff-portal-inbox";
+import { useAddCommunicationEntry } from "@/hooks/use-communication";
+import {
+  openPortalChatAttachment,
+  usePortalChatRealtime,
+  useUploadPortalChatAttachment,
+} from "@/hooks/use-portal-chat";
+import {
+  useMarkStaffPortalCommunicationRead,
+  useStaffPortalEntries,
+  useStaffPortalInbox,
+} from "@/hooks/use-staff-portal-inbox";
 import { canWriteCommunication } from "@/lib/communication";
 import { describeError } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
@@ -30,24 +39,46 @@ export function StaffQuickChat() {
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reply, setReply] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
   const selected = inbox.data?.find((thread) => thread.thread_id === selectedId) ?? null;
-  const entries = useCommunicationEntries(selectedId);
+  const entries = useStaffPortalEntries(organizationId, selectedId);
   const addEntry = useAddCommunicationEntry(organizationId);
-  const publicEntries = useMemo(
-    () =>
-      (entries.data ?? []).filter(
-        (entry) => entry.entry_type === "mensagem" && !entry.is_internal,
-      ),
-    [entries.data],
-  );
+  const uploadAttachment = useUploadPortalChatAttachment(organizationId);
+  const markRead = useMarkStaffPortalCommunicationRead(organizationId);
+  const publicEntries = entries.data ?? [];
   const waitingCount = (inbox.data ?? []).filter(
     (thread) => thread.status === "aguardando_equipe",
   ).length;
+  usePortalChatRealtime({
+    topic: organizationId ? `staff-org:${organizationId}` : null,
+    enabled: allowed,
+  });
 
   useEffect(() => {
     if (!open || inbox.isLoading || (selectedId && selected)) return;
     setSelectedId(inbox.data?.[0]?.thread_id ?? null);
   }, [open, inbox.isLoading, inbox.data, selectedId, selected]);
+
+  useEffect(() => {
+    if (!open || !selectedId) return;
+    const frame = window.requestAnimationFrame(() => {
+      if (timelineRef.current) {
+        timelineRef.current.scrollTop = timelineRef.current.scrollHeight;
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, selectedId, publicEntries]);
+
+  useEffect(() => {
+    if (
+      !open ||
+      !selectedId ||
+      markRead.isPending ||
+      !publicEntries.some((entry) => entry.author_kind === "client" && !entry.read_at)
+    ) return;
+    void markRead.mutateAsync(selectedId);
+  }, [open, selectedId, publicEntries, markRead.isPending]);
 
   if (!allowed) return null;
 
@@ -70,6 +101,24 @@ export function StaffQuickChat() {
     }
   }
 
+  async function sendAttachment(file: File) {
+    if (!selectedId) return;
+    try {
+      await uploadAttachment.mutateAsync({ threadId: selectedId, file });
+      toast.success("Arquivo enviado ao cliente.");
+    } catch (error) {
+      toast.error(describeError(error, "documento"));
+    }
+  }
+
+  async function openAttachment(path: string, name: string) {
+    try {
+      await openPortalChatAttachment(path, name);
+    } catch (error) {
+      toast.error(describeError(error, "documento"));
+    }
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -81,8 +130,8 @@ export function StaffQuickChat() {
           <MessageSquare className="size-5" aria-hidden />
           <span className="hidden sm:inline">Atender clientes</span>
           {waitingCount > 0 && (
-            <span className="absolute -top-1 -right-1 grid min-w-5 place-items-center rounded-full border-2 border-background bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-              {waitingCount}
+            <span className="absolute -top-2 right-1 grid h-6 min-w-6 place-items-center rounded-full border-2 border-background bg-destructive px-1 text-[10px] font-bold text-destructive-foreground shadow-sm">
+              {waitingCount > 99 ? "99+" : waitingCount}
             </span>
           )}
         </Button>
@@ -158,7 +207,10 @@ export function StaffQuickChat() {
                 </div>
               )}
 
-              <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl bg-muted/35 p-3">
+              <div
+                ref={timelineRef}
+                className="max-h-56 space-y-2 overflow-y-auto rounded-xl bg-muted/35 p-3"
+              >
                 {entries.isLoading ? (
                   <div className="grid min-h-28 place-items-center">
                     <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden />
@@ -169,28 +221,42 @@ export function StaffQuickChat() {
                   </p>
                 ) : (
                   publicEntries.map((entry) => {
-                    const fromClient = entry.metadata?.source === "client_portal";
                     return (
                       <div
-                        key={entry.id}
+                        key={entry.entry_id}
                         className={
                           "max-w-[88%] rounded-xl px-3 py-2 text-xs " +
-                          (fromClient
+                          (entry.author_kind === "client"
                             ? "border bg-background"
                             : "ml-auto bg-primary text-primary-foreground")
                         }
                       >
                         <p className="whitespace-pre-wrap">{entry.content}</p>
+                        {entry.attachment_path && entry.attachment_name && (
+                          <button
+                            type="button"
+                            className="mt-2 flex max-w-full items-center gap-1.5 rounded-lg border border-current/20 px-2 py-1.5 font-medium hover:bg-black/5"
+                            onClick={() =>
+                              void openAttachment(entry.attachment_path!, entry.attachment_name!)
+                            }
+                          >
+                            <Download className="size-3.5 shrink-0" aria-hidden />
+                            <span className="truncate">{entry.attachment_name}</span>
+                          </button>
+                        )}
                         <p
                           className={
                             "mt-1 text-[10px] " +
-                            (fromClient
+                            (entry.author_kind === "client"
                               ? "text-muted-foreground"
                               : "text-primary-foreground/70")
                           }
                         >
-                          {fromClient ? selected?.client_name : "Empresa"} ·{" "}
+                          {entry.author_kind === "client" ? selected?.client_name : "Empresa"} ·{" "}
                           {formatDateTime(entry.occurred_at)}
+                          {entry.author_kind === "company" && (
+                            <> · {entry.read_at ? "Lida" : "Enviada"}</>
+                          )}
                         </p>
                       </div>
                     );
@@ -204,6 +270,31 @@ export function StaffQuickChat() {
                 </p>
               ) : (
                 <div className="flex items-end gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) void sendAttachment(file);
+                      event.target.value = "";
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="shrink-0"
+                    disabled={uploadAttachment.isPending}
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Anexar arquivo"
+                  >
+                    {uploadAttachment.isPending ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden />
+                    ) : (
+                      <Paperclip className="size-4" aria-hidden />
+                    )}
+                  </Button>
                   <Textarea
                     value={reply}
                     maxLength={5000}
