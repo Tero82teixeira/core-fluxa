@@ -829,6 +829,66 @@ export type Database = {
           },
         ]
       }
+      client_portal_process_movement_shares: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          is_shared: boolean
+          movement_id: string
+          organization_id: string
+          process_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          shared_at: string | null
+          shared_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          movement_id: string
+          organization_id: string
+          process_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          movement_id?: string
+          organization_id?: string
+          process_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_process_movement_shares_movement_fkey"
+            columns: ["organization_id", "process_id", "movement_id"]
+            isOneToOne: false
+            referencedRelation: "process_movements"
+            referencedColumns: ["organization_id", "process_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_process_movement_shares_process_fkey"
+            columns: ["organization_id", "client_id", "process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["organization_id", "client_id", "id"]
+          },
+        ]
+      }
       client_portal_process_shares: {
         Row: {
           client_id: string
@@ -4145,6 +4205,7 @@ export type Database = {
           file_size: number
           mime_type: string
           original_file_name: string
+          process_id: string
           process_code: string
           status: string
           title: string
@@ -4237,6 +4298,31 @@ export type Database = {
           stage: string
           title: string
           updated_at: string
+        }[]
+      }
+      client_portal_process_timeline: {
+        Args: { _process_id: string }
+        Returns: {
+          description: string
+          from_stage: string
+          movement_id: string
+          occurred_at: string
+          to_stage: string
+        }[]
+      }
+      client_portal_process_timeline_management: {
+        Args: {
+          _client_id: string
+          _organization_id: string
+          _process_id: string
+        }
+        Returns: {
+          description: string
+          from_stage: string
+          is_shared: boolean
+          movement_id: string
+          occurred_at: string
+          to_stage: string
         }[]
       }
       client_portal_share_management: {
@@ -4830,6 +4916,16 @@ export type Database = {
           _item_id: string
           _item_type: string
           _organization_id: string
+          _shared: boolean
+        }
+        Returns: undefined
+      }
+      set_client_portal_process_movement_shared: {
+        Args: {
+          _client_id: string
+          _movement_id: string
+          _organization_id: string
+          _process_id: string
           _shared: boolean
         }
         Returns: undefined

@@ -38,7 +38,20 @@ export type ClientPortalDocument = {
   status: DocumentStatus;
   expiration_date: string | null;
   created_at: string;
+  process_id: string | null;
   process_code: string | null;
+};
+
+export type ClientPortalProcessMovement = {
+  movement_id: string;
+  description: string;
+  from_stage: ProcessStage | null;
+  to_stage: ProcessStage | null;
+  occurred_at: string;
+};
+
+export type ClientPortalProcessMovementShare = ClientPortalProcessMovement & {
+  is_shared: boolean;
 };
 
 const shareKey = (organizationId: string | null, clientId: string) => [
@@ -103,6 +116,77 @@ export function useClientPortalProcesses(enabled: boolean, identityScope: string
       if (error) throw error;
       return (data ?? []) as ClientPortalProcess[];
     },
+  });
+}
+
+export function useClientPortalProcessTimeline(
+  processId: string | null,
+  enabled: boolean,
+  identityScope: string | null,
+) {
+  return useQuery({
+    enabled: enabled && Boolean(identityScope && processId),
+    queryKey: ["client-portal-process-timeline", identityScope, processId],
+    queryFn: async (): Promise<ClientPortalProcessMovement[]> => {
+      if (!processId) return [];
+      const { data, error } = await supabase.rpc("client_portal_process_timeline", {
+        _process_id: processId,
+      });
+      if (error) throw error;
+      return (data ?? []) as ClientPortalProcessMovement[];
+    },
+  });
+}
+
+export function useClientPortalProcessTimelineManagement(
+  organizationId: string | null,
+  clientId: string,
+  processId: string,
+  enabled: boolean,
+) {
+  return useQuery({
+    enabled: enabled && Boolean(organizationId && clientId && processId),
+    queryKey: ["client-portal-process-timeline-management", organizationId, clientId, processId],
+    queryFn: async (): Promise<ClientPortalProcessMovementShare[]> => {
+      if (!organizationId) throw new Error("Empresa ativa não encontrada.");
+      const { data, error } = await supabase.rpc("client_portal_process_timeline_management", {
+        _organization_id: organizationId,
+        _client_id: clientId,
+        _process_id: processId,
+      });
+      if (error) throw error;
+      return (data ?? []) as ClientPortalProcessMovementShare[];
+    },
+  });
+}
+
+export function useSetClientPortalProcessMovementShared(
+  organizationId: string | null,
+  clientId: string,
+  processId: string,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ movementId, shared }: { movementId: string; shared: boolean }) => {
+      if (!organizationId) throw new Error("Empresa ativa não encontrada.");
+      const { error } = await supabase.rpc("set_client_portal_process_movement_shared", {
+        _organization_id: organizationId,
+        _client_id: clientId,
+        _process_id: processId,
+        _movement_id: movementId,
+        _shared: shared,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: [
+          "client-portal-process-timeline-management",
+          organizationId,
+          clientId,
+          processId,
+        ],
+      }),
   });
 }
 
