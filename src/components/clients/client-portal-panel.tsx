@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Check,
+  ChevronDown,
   Copy,
   FileText,
   FolderKanban,
+  History,
   Link2,
   Loader2,
   ListTodo,
@@ -23,6 +25,8 @@ import {
 } from "@/hooks/use-client-portal";
 import {
   useClientPortalShareManagement,
+  useClientPortalProcessTimelineManagement,
+  useSetClientPortalProcessMovementShared,
   useSetClientPortalItemShared,
   type ClientPortalShareItem,
 } from "@/hooks/use-client-portal-content";
@@ -45,6 +49,7 @@ import { DOCUMENT_STATUS, type DocumentStatus } from "@/lib/documents";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -567,8 +572,8 @@ export function ClientPortalPanel({
             <div>
               <h2 className="font-semibold">Conteúdo visível no portal</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Tudo começa privado. Libere somente os processos e documentos que este cliente pode
-                acompanhar.
+                Tudo começa privado. Libere somente os processos, documentos e atualizações que
+                este cliente pode acompanhar.
               </p>
             </div>
           </div>
@@ -590,6 +595,15 @@ export function ClientPortalPanel({
                 items={(shares.data ?? []).filter((item) => item.item_type === "process")}
                 busy={setItemShared.isPending}
                 onToggle={toggleItem}
+                renderDetails={(item) =>
+                  item.is_shared ? (
+                    <ProcessHistorySharing
+                      organizationId={organizationId}
+                      clientId={clientId}
+                      processId={item.item_id}
+                    />
+                  ) : null
+                }
               />
               <ShareItems
                 title="Documentos"
@@ -612,12 +626,14 @@ function ShareItems({
   items,
   busy,
   onToggle,
+  renderDetails,
 }: {
   title: string;
   icon: typeof FolderKanban;
   items: ClientPortalShareItem[];
   busy: boolean;
   onToggle: (item: ClientPortalShareItem, shared: boolean) => Promise<void>;
+  renderDetails?: (item: ClientPortalShareItem) => ReactNode;
 }) {
   return (
     <section>
@@ -638,30 +654,127 @@ function ShareItems({
                 ? PROCESS_STAGE[item.status as ProcessStage]?.label
                 : DOCUMENT_STATUS[item.status as DocumentStatus]?.label;
             return (
-              <li key={`${item.item_type}-${item.item_id}`} className="flex items-center gap-4 p-4">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{item.title}</p>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">
-                    {item.subtitle}
-                    {status ? ` · ${status}` : ""}
-                  </p>
+              <li key={`${item.item_type}-${item.item_id}`} className="p-4">
+                <div className="flex items-center gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{item.title}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {item.subtitle}
+                      {status ? ` · ${status}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="hidden text-xs text-muted-foreground sm:inline">
+                      {item.is_shared ? "Visível" : "Privado"}
+                    </span>
+                    <Switch
+                      checked={item.is_shared}
+                      disabled={busy}
+                      aria-label={`${item.is_shared ? "Remover" : "Liberar"} ${item.title} no portal`}
+                      onCheckedChange={(shared) => void onToggle(item, shared)}
+                    />
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="hidden text-xs text-muted-foreground sm:inline">
-                    {item.is_shared ? "Visível" : "Privado"}
-                  </span>
-                  <Switch
-                    checked={item.is_shared}
-                    disabled={busy}
-                    aria-label={`${item.is_shared ? "Remover" : "Liberar"} ${item.title} no portal`}
-                    onCheckedChange={(shared) => void onToggle(item, shared)}
-                  />
-                </div>
+                {renderDetails?.(item)}
               </li>
             );
           })}
         </ul>
       )}
     </section>
+  );
+}
+
+function ProcessHistorySharing({
+  organizationId,
+  clientId,
+  processId,
+}: {
+  organizationId: string;
+  clientId: string;
+  processId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const timeline = useClientPortalProcessTimelineManagement(
+    organizationId,
+    clientId,
+    processId,
+    open,
+  );
+  const setMovementShared = useSetClientPortalProcessMovementShared(
+    organizationId,
+    clientId,
+    processId,
+  );
+
+  async function toggleMovement(movementId: string, shared: boolean) {
+    try {
+      await setMovementShared.mutateAsync({ movementId, shared });
+      toast.success(shared ? "Atualização liberada no portal." : "Atualização removida do portal.");
+    } catch (error) {
+      toast.error(describeClientPortalError(error));
+    }
+  }
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="mt-3 border-t pt-3">
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 w-full justify-between px-2">
+          <span className="flex items-center gap-2 text-xs">
+            <History className="size-3.5 text-primary" aria-hidden />
+            Escolher atualizações visíveis
+          </span>
+          <ChevronDown
+            className={`size-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+            aria-hidden
+          />
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-3">
+        {timeline.isLoading ? (
+          <p className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
+            <Loader2 className="size-3.5 animate-spin" aria-hidden /> Carregando atualizações…
+          </p>
+        ) : timeline.isError ? (
+          <p className="rounded-lg bg-destructive/5 p-3 text-xs text-destructive">
+            Não foi possível carregar o histórico deste processo.
+          </p>
+        ) : (timeline.data?.length ?? 0) === 0 ? (
+          <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+            Nenhuma movimentação registrada neste processo.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {timeline.data?.map((movement) => (
+              <li
+                key={movement.movement_id}
+                className="flex items-start gap-3 rounded-lg bg-muted/35 p-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium">{movement.description}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {movement.from_stage && movement.to_stage
+                      ? `${PROCESS_STAGE[movement.from_stage].label} → ${PROCESS_STAGE[movement.to_stage].label} · `
+                      : ""}
+                    {formatDateTime(movement.occurred_at)}
+                  </p>
+                </div>
+                <Switch
+                  checked={movement.is_shared}
+                  disabled={setMovementShared.isPending}
+                  aria-label={`${movement.is_shared ? "Remover" : "Liberar"} atualização no portal`}
+                  onCheckedChange={(shared) =>
+                    void toggleMovement(movement.movement_id, shared)
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-3 px-2 text-[11px] text-muted-foreground">
+          Somente as atualizações marcadas como visíveis aparecerão para o cliente.
+        </p>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

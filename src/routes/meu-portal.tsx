@@ -5,10 +5,14 @@ import {
   Building2,
   CalendarDays,
   CheckCheck,
+  CheckCircle2,
+  ChevronDown,
+  Circle,
   Download,
   FileText,
   FolderKanban,
   Home,
+  History,
   ListTodo,
   Loader2,
   LockKeyhole,
@@ -26,9 +30,11 @@ import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,7 +53,10 @@ import {
 import {
   createClientPortalDocumentUrl,
   useClientPortalDocuments,
+  useClientPortalProcessTimeline,
   useClientPortalProcesses,
+  type ClientPortalDocument,
+  type ClientPortalProcess,
 } from "@/hooks/use-client-portal-content";
 import {
   useClientPortalDocumentRequests,
@@ -69,7 +78,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import type { CommunicationStatus } from "@/lib/communication";
 import { ACCEPT_ATTRIBUTE, DOCUMENT_STATUS, formatFileSize, validateFile } from "@/lib/documents";
-import { PROCESS_STAGE } from "@/lib/domain";
+import { PIPELINE_STAGES, PROCESS_STAGE } from "@/lib/domain";
 import { describeError } from "@/lib/errors";
 import { formatDate, formatDateTime } from "@/lib/format";
 
@@ -760,48 +769,22 @@ function MyClientPortal() {
                         const access = activeAccesses.find(
                           (item) => item.access_id === process.access_id,
                         );
-                        const stage = PROCESS_STAGE[process.stage];
                         return (
-                          <li
-                            id={portalEntityElementId("process", process.process_id)}
+                          <PortalProcessCard
                             key={`${process.access_id}-${process.process_id}`}
-                            className={
-                              "rounded-xl border bg-background p-4 transition-shadow " +
-                              (highlightedEntity === `process:${process.process_id}`
-                                ? "ring-2 ring-primary ring-offset-2"
-                                : "")
+                            process={process}
+                            documents={(documents.data ?? []).filter(
+                              (document) => document.process_id === process.process_id,
+                            )}
+                            documentsLoading={documents.isLoading}
+                            access={access}
+                            identityScope={user?.id ?? null}
+                            highlighted={
+                              highlightedEntity === `process:${process.process_id}`
                             }
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="text-xs font-medium text-primary">{process.code}</p>
-                                <h3 className="mt-1 truncate font-semibold">{process.title}</h3>
-                              </div>
-                              <StatusBadge
-                                label={stage?.label ?? process.stage}
-                                tone={stage?.tone ?? "neutral"}
-                              />
-                            </div>
-                            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                              <div>
-                                <dt className="text-xs text-muted-foreground">Abertura</dt>
-                                <dd className="mt-1">{formatDate(process.opened_at)}</dd>
-                              </div>
-                              <div>
-                                <dt className="text-xs text-muted-foreground">Prazo</dt>
-                                <dd className="mt-1">
-                                  {process.due_date ? formatDate(process.due_date) : "Sem prazo"}
-                                </dd>
-                              </div>
-                              {process.protocol && (
-                                <div className="col-span-2">
-                                  <dt className="text-xs text-muted-foreground">Protocolo</dt>
-                                  <dd className="mt-1 break-all">{process.protocol}</dd>
-                                </div>
-                              )}
-                            </dl>
-                            {access && <AccessLabel access={access} />}
-                          </li>
+                            openingDocument={openingDocument}
+                            onOpenDocument={openDocument}
+                          />
                         );
                       })}
                     </ul>
@@ -1687,6 +1670,249 @@ const PORTAL_COMMUNICATION_STATUS: Record<
   resolvida: { label: "Resolvida", tone: "success" },
   arquivada: { label: "Arquivada", tone: "neutral" },
 };
+
+function PortalProcessCard({
+  process,
+  documents,
+  documentsLoading,
+  access,
+  identityScope,
+  highlighted,
+  openingDocument,
+  onOpenDocument,
+}: {
+  process: ClientPortalProcess;
+  documents: ClientPortalDocument[];
+  documentsLoading: boolean;
+  access?: ClientPortalSessionRow;
+  identityScope: string | null;
+  highlighted: boolean;
+  openingDocument: string | null;
+  onOpenDocument: (documentId: string, filePath: string) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const timeline = useClientPortalProcessTimeline(process.process_id, open, identityScope);
+  const stage = PROCESS_STAGE[process.stage];
+  const pipelineIndex = PIPELINE_STAGES.findIndex((step) => step.key.includes(process.stage));
+  const effectiveIndex = process.stage === "arquivado" ? PIPELINE_STAGES.length - 1 : pipelineIndex;
+  const progress = effectiveIndex >= 0
+    ? Math.round(((effectiveIndex + 1) / PIPELINE_STAGES.length) * 100)
+    : 0;
+
+  return (
+    <li
+      id={portalEntityElementId("process", process.process_id)}
+      className={`transition-all ${open ? "md:col-span-2" : ""}`}
+    >
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <div
+          className={
+            "overflow-hidden rounded-2xl border bg-background transition-all duration-300 " +
+            (highlighted
+              ? "ring-2 ring-primary ring-offset-2"
+              : "hover:border-primary/25 hover:shadow-md")
+          }
+        >
+          <div className="p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold tracking-wide text-primary uppercase">
+                  {process.code}
+                </p>
+                <h3 className="mt-1 truncate font-semibold">{process.title}</h3>
+              </div>
+              <StatusBadge
+                label={stage?.label ?? process.stage}
+                tone={stage?.tone ?? "neutral"}
+              />
+            </div>
+
+            <div className="mt-4">
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="font-medium">Progresso do processo</span>
+                <span className="text-muted-foreground">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <dt className="text-xs text-muted-foreground">Abertura</dt>
+                <dd className="mt-1">{formatDate(process.opened_at)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Prazo</dt>
+                <dd className="mt-1">
+                  {process.due_date ? formatDate(process.due_date) : "Sem prazo"}
+                </dd>
+              </div>
+              {process.protocol && (
+                <div className="col-span-2">
+                  <dt className="text-xs text-muted-foreground">Protocolo</dt>
+                  <dd className="mt-1 break-all">{process.protocol}</dd>
+                </div>
+              )}
+            </dl>
+            {access && <AccessLabel access={access} />}
+
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" size="sm" className="mt-4 w-full justify-between">
+                <span>{open ? "Ocultar detalhes" : "Ver detalhes do processo"}</span>
+                <ChevronDown
+                  className={`size-4 transition-transform ${open ? "rotate-180" : ""}`}
+                  aria-hidden
+                />
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+
+          <CollapsibleContent>
+            <div className="border-t bg-muted/20 p-4 sm:p-5">
+              <div className="rounded-2xl border bg-background p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-sm font-semibold">Etapas do atendimento</h4>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Visão simplificada do caminho até a conclusão.
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {effectiveIndex >= 0
+                      ? `Etapa ${effectiveIndex + 1} de ${PIPELINE_STAGES.length}`
+                      : stage?.label ?? process.stage}
+                  </span>
+                </div>
+                <ol className="mt-4 flex flex-wrap gap-2">
+                  {PIPELINE_STAGES.map((step, index) => {
+                    const done = effectiveIndex >= 0 && index < effectiveIndex;
+                    const current = index === effectiveIndex;
+                    return (
+                      <li
+                        key={step.label}
+                        aria-current={current ? "step" : undefined}
+                        className={
+                          "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs " +
+                          (done
+                            ? "border-success/35 bg-success/10 text-success"
+                            : current
+                              ? "border-primary/40 bg-primary/10 font-semibold text-primary"
+                              : "text-muted-foreground")
+                        }
+                      >
+                        {done ? (
+                          <CheckCircle2 className="size-3.5" aria-hidden />
+                        ) : (
+                          <Circle className="size-3.5" aria-hidden />
+                        )}
+                        {step.label}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+
+              <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                <section className="rounded-2xl border bg-background p-4">
+                  <div className="flex items-center gap-2">
+                    <History className="size-4 text-primary" aria-hidden />
+                    <h4 className="text-sm font-semibold">Atualizações compartilhadas</h4>
+                  </div>
+                  {timeline.isLoading ? (
+                    <div className="mt-4"><LoadingRows /></div>
+                  ) : timeline.isError ? (
+                    <div className="mt-4">
+                      <ContentError retry={() => void timeline.refetch()} />
+                    </div>
+                  ) : (timeline.data?.length ?? 0) === 0 ? (
+                    <p className="mt-4 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                      Nenhuma atualização foi liberada pela empresa.
+                    </p>
+                  ) : (
+                    <ol className="mt-4 space-y-4">
+                      {timeline.data?.map((movement) => (
+                        <li key={movement.movement_id} className="relative border-l-2 border-primary/25 pl-4">
+                          <span className="absolute -left-[5px] top-1 size-2 rounded-full bg-primary" />
+                          <p className="text-sm font-medium">{movement.description}</p>
+                          {movement.from_stage && movement.to_stage && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {PROCESS_STAGE[movement.from_stage].label} →{" "}
+                              {PROCESS_STAGE[movement.to_stage].label}
+                            </p>
+                          )}
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {formatDateTime(movement.occurred_at)}
+                          </p>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </section>
+
+                <section className="rounded-2xl border bg-background p-4">
+                  <div className="flex items-center gap-2">
+                    <FileText className="size-4 text-primary" aria-hidden />
+                    <h4 className="text-sm font-semibold">Documentos deste processo</h4>
+                    {!documentsLoading && (
+                      <span className="text-xs text-muted-foreground">({documents.length})</span>
+                    )}
+                  </div>
+                  {documentsLoading ? (
+                    <div className="mt-4"><LoadingRows /></div>
+                  ) : documents.length === 0 ? (
+                    <p className="mt-4 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                      Nenhum documento deste processo foi compartilhado.
+                    </p>
+                  ) : (
+                    <ul className="mt-4 space-y-2">
+                      {documents.map((document) => {
+                        const documentStatus = DOCUMENT_STATUS[document.status];
+                        return (
+                          <li
+                            key={document.document_id}
+                            className="flex items-center gap-3 rounded-xl border p-3"
+                          >
+                            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                              <FileText className="size-4" aria-hidden />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{document.title}</p>
+                              <p className="mt-1 truncate text-xs text-muted-foreground">
+                                {document.original_file_name}
+                              </p>
+                            </div>
+                            <StatusBadge
+                              label={documentStatus.label}
+                              tone={documentStatus.tone}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              disabled={openingDocument === document.document_id}
+                              onClick={() =>
+                                void onOpenDocument(document.document_id, document.file_path)
+                              }
+                              aria-label={`Abrir ${document.title}`}
+                            >
+                              {openingDocument === document.document_id ? (
+                                <Loader2 className="size-4 animate-spin" aria-hidden />
+                              ) : (
+                                <Download className="size-4" aria-hidden />
+                              )}
+                            </Button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </section>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
+    </li>
+  );
+}
 
 function AccessCards({ accesses }: { accesses: ClientPortalSessionRow[] }) {
   return (
