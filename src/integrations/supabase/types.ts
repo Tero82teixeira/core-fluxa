@@ -4197,8 +4197,11 @@ export type Database = {
         Args: never
         Returns: {
           access_id: string
+          category: string
           created_at: string
+          current_version: number
           document_id: string
+          document_type_name: string | null
           expiration_date: string
           file_extension: string
           file_path: string
@@ -4209,6 +4212,17 @@ export type Database = {
           process_code: string
           status: string
           title: string
+        }[]
+      }
+      client_portal_document_versions: {
+        Args: { _document_id: string }
+        Returns: {
+          created_at: string
+          file_size: number
+          mime_type: string
+          original_file_name: string
+          version_id: string
+          version_number: number
         }[]
       }
       client_portal_communication_entries: {

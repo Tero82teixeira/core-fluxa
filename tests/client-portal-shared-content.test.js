@@ -68,7 +68,7 @@ describe("conteúdo compartilhado do Portal do Cliente", () => {
     );
     assert.match(
       hook,
-      /\.from\("organization-documents"\)[\s\S]*\.createSignedUrl\(filePath, 60\)/,
+      /\.from\("organization-documents"\)[\s\S]*\.createSignedUrl\(filePath, 60,/,
     );
   });
 

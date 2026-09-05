@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
-import type { DocumentStatus } from "@/lib/documents";
+import type { DocumentCategory, DocumentStatus } from "@/lib/documents";
 import type { ProcessStage } from "@/lib/domain";
 
 export type ClientPortalShareItem = {
@@ -40,6 +40,18 @@ export type ClientPortalDocument = {
   created_at: string;
   process_id: string | null;
   process_code: string | null;
+  current_version: number;
+  document_type_name: string | null;
+  category: DocumentCategory;
+};
+
+export type ClientPortalDocumentVersion = {
+  version_id: string;
+  version_number: number;
+  original_file_name: string;
+  file_size: number;
+  mime_type: string;
+  created_at: string;
 };
 
 export type ClientPortalProcessMovement = {
@@ -202,10 +214,29 @@ export function useClientPortalDocuments(enabled: boolean, identityScope: string
   });
 }
 
-export async function createClientPortalDocumentUrl(filePath: string) {
+export function useClientPortalDocumentVersions(
+  documentId: string | null,
+  enabled: boolean,
+  identityScope: string | null,
+) {
+  return useQuery({
+    enabled: enabled && Boolean(identityScope && documentId),
+    queryKey: ["client-portal-document-versions", identityScope, documentId],
+    queryFn: async (): Promise<ClientPortalDocumentVersion[]> => {
+      if (!documentId) return [];
+      const { data, error } = await supabase.rpc("client_portal_document_versions", {
+        _document_id: documentId,
+      });
+      if (error) throw error;
+      return (data ?? []) as ClientPortalDocumentVersion[];
+    },
+  });
+}
+
+export async function createClientPortalDocumentUrl(filePath: string, downloadName?: string) {
   const { data, error } = await supabase.storage
     .from("organization-documents")
-    .createSignedUrl(filePath, 60);
+    .createSignedUrl(filePath, 60, downloadName ? { download: downloadName } : undefined);
   if (error) throw error;
   return data.signedUrl;
 }
