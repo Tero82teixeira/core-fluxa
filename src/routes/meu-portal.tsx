@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Circle,
   Download,
+  Eye,
   FileText,
   FolderKanban,
   Home,
@@ -19,18 +20,20 @@ import {
   LogOut,
   MessageSquare,
   Paperclip,
+  Search,
   Send,
   ShieldCheck,
   Upload,
   UserRound,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -52,6 +55,7 @@ import {
 } from "@/hooks/use-portal-chat";
 import {
   createClientPortalDocumentUrl,
+  useClientPortalDocumentVersions,
   useClientPortalDocuments,
   useClientPortalProcessTimeline,
   useClientPortalProcesses,
@@ -77,7 +81,15 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import type { CommunicationStatus } from "@/lib/communication";
-import { ACCEPT_ATTRIBUTE, DOCUMENT_STATUS, formatFileSize, validateFile } from "@/lib/documents";
+import {
+  ACCEPT_ATTRIBUTE,
+  DOCUMENT_CATEGORY,
+  DOCUMENT_STATUS,
+  formatFileSize,
+  validateFile,
+  type DocumentCategory,
+  type DocumentStatus,
+} from "@/lib/documents";
 import { PIPELINE_STAGES, PROCESS_STAGE } from "@/lib/domain";
 import { describeError } from "@/lib/errors";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -124,6 +136,15 @@ function MyClientPortal() {
   const uploadChatAttachment = useUploadPortalChatAttachment(user?.id ?? null);
   const submitDocument = useSubmitClientPortalDocument(user?.id ?? null);
   const [openingDocument, setOpeningDocument] = useState<string | null>(null);
+  const [downloadingDocument, setDownloadingDocument] = useState<string | null>(null);
+  const [documentSearch, setDocumentSearch] = useState("");
+  const [documentStatusFilter, setDocumentStatusFilter] = useState<DocumentPortalStatusFilter>(
+    "todos",
+  );
+  const [documentProcessFilter, setDocumentProcessFilter] = useState("todos");
+  const [documentCategoryFilter, setDocumentCategoryFilter] = useState<
+    DocumentCategory | "todas"
+  >("todas");
   const [uploadingRequest, setUploadingRequest] = useState<string | null>(null);
   const [selectedCommunicationId, setSelectedCommunicationId] = useState<string | null>(
     null,
@@ -178,6 +199,79 @@ function MyClientPortal() {
   ]
     .sort((left, right) => left.dueDate.localeCompare(right.dueDate))
     .slice(0, 4);
+  const documentProcessOptions = useMemo(() => {
+    const options = new Map<string, string>();
+    for (const document of documents.data ?? []) {
+      if (document.process_id && document.process_code) {
+        options.set(document.process_id, document.process_code);
+      }
+    }
+    return [...options.entries()].sort((left, right) => left[1].localeCompare(right[1], "pt-BR"));
+  }, [documents.data]);
+  const documentCategoryOptions = useMemo(
+    () =>
+      [...new Set((documents.data ?? []).map((document) => document.category))].sort((left, right) =>
+        DOCUMENT_CATEGORY[left].label.localeCompare(DOCUMENT_CATEGORY[right].label, "pt-BR"),
+      ),
+    [documents.data],
+  );
+  const filteredDocumentGroups = useMemo(() => {
+    const search = documentSearch.trim().toLocaleLowerCase("pt-BR");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const warningLimit = new Date(today);
+    warningLimit.setDate(warningLimit.getDate() + 30);
+    const matches = (documents.data ?? []).filter((document) => {
+      const searchText = [
+        document.title,
+        document.original_file_name,
+        document.process_code,
+        document.document_type_name,
+        DOCUMENT_CATEGORY[document.category].label,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase("pt-BR");
+      const expiration = document.expiration_date
+        ? new Date(`${document.expiration_date}T00:00:00`)
+        : null;
+      const matchesStatus =
+        documentStatusFilter === "todos" ||
+        (documentStatusFilter === "vencendo"
+          ? Boolean(expiration && expiration >= today && expiration <= warningLimit)
+          : document.status === documentStatusFilter);
+      const matchesProcess =
+        documentProcessFilter === "todos" ||
+        (documentProcessFilter === "sem_processo"
+          ? !document.process_id
+          : document.process_id === documentProcessFilter);
+      return (
+        (!search || searchText.includes(search)) &&
+        matchesStatus &&
+        matchesProcess &&
+        (documentCategoryFilter === "todas" || document.category === documentCategoryFilter)
+      );
+    });
+    const groups = new Map<string, { label: string; documents: ClientPortalDocument[] }>();
+    for (const document of matches) {
+      const key = document.process_id
+        ? `${document.access_id}:${document.process_id}`
+        : `${document.access_id}:general`;
+      const current = groups.get(key) ?? {
+        label: document.process_code ? `Processo ${document.process_code}` : "Documentos gerais",
+        documents: [],
+      };
+      current.documents.push(document);
+      groups.set(key, current);
+    }
+    return [...groups.entries()].map(([key, value]) => ({ key, ...value }));
+  }, [
+    documentCategoryFilter,
+    documentProcessFilter,
+    documentSearch,
+    documentStatusFilter,
+    documents.data,
+  ]);
   usePortalChatRealtime({
     topic: user?.id ? `portal-user:${user.id}` : null,
     enabled: contentEnabled,
@@ -267,6 +361,21 @@ function MyClientPortal() {
       toast.error(describeError(error, "documento"));
     } finally {
       setOpeningDocument(null);
+    }
+  }
+
+  async function downloadDocument(document: ClientPortalDocument) {
+    setDownloadingDocument(document.document_id);
+    try {
+      const url = await createClientPortalDocumentUrl(
+        document.file_path,
+        document.original_file_name,
+      );
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error(describeError(error, "documento"));
+    } finally {
+      setDownloadingDocument(null);
     }
   }
 
@@ -795,12 +904,19 @@ function MyClientPortal() {
 
             <TabsContent value="documentos">
               <Card className={PORTAL_PANEL_CLASS}>
-                <CardContent className="space-y-4 p-4 sm:p-6">
-                  <div>
-                    <h2 className="font-semibold">Documentos compartilhados</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Abra ou baixe com segurança os arquivos liberados pela empresa.
-                    </p>
+                <CardContent className="space-y-5 p-4 sm:p-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <h2 className="font-semibold">Central de documentos</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Localize, visualize e baixe com segurança os arquivos liberados.
+                      </p>
+                    </div>
+                    {!documents.isLoading && (
+                      <p className="text-xs text-muted-foreground">
+                        {documents.data?.length ?? 0} documento(s) compartilhado(s)
+                      </p>
+                    )}
                   </div>
                   {documents.isLoading ? (
                     <LoadingRows />
@@ -813,65 +929,109 @@ function MyClientPortal() {
                       description="Quando a empresa liberar um documento, ele aparecerá aqui."
                     />
                   ) : (
-                    <ul className="space-y-3">
-                      {documents.data?.map((document) => {
-                        const access = activeAccesses.find(
-                          (item) => item.access_id === document.access_id,
-                        );
-                        const documentStatus = DOCUMENT_STATUS[document.status];
-                        return (
-                          <li
-                            id={portalEntityElementId("document", document.document_id)}
-                            key={`${document.access_id}-${document.document_id}`}
-                            className={
-                              "flex flex-col gap-4 rounded-xl border bg-background p-4 transition-shadow sm:flex-row sm:items-center " +
-                              (highlightedEntity === `document:${document.document_id}`
-                                ? "ring-2 ring-primary ring-offset-2"
-                                : "")
-                            }
-                          >
-                            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                              <FileText className="size-5" aria-hidden />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="truncate font-semibold">{document.title}</h3>
-                                <StatusBadge
-                                  label={documentStatus?.label ?? document.status}
-                                  tone={documentStatus?.tone ?? "neutral"}
-                                />
+                    <>
+                      <div className="grid gap-3 rounded-2xl border bg-muted/20 p-3 md:grid-cols-2 xl:grid-cols-4">
+                        <div className="relative md:col-span-2 xl:col-span-1">
+                          <Search
+                            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                            aria-hidden
+                          />
+                          <Input
+                            value={documentSearch}
+                            onChange={(event) => setDocumentSearch(event.target.value)}
+                            className="pl-9"
+                            placeholder="Buscar documento…"
+                            aria-label="Buscar documentos"
+                          />
+                        </div>
+                        <Select
+                          value={documentStatusFilter}
+                          onValueChange={(value) =>
+                            setDocumentStatusFilter(value as DocumentPortalStatusFilter)
+                          }
+                        >
+                          <SelectTrigger aria-label="Filtrar por situação"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos">Todas as situações</SelectItem>
+                            <SelectItem value="vencendo">Vencendo em 30 dias</SelectItem>
+                            {(Object.entries(DOCUMENT_STATUS) as [DocumentStatus, { label: string }][]).map(
+                              ([value, meta]) => (
+                                <SelectItem key={value} value={value}>{meta.label}</SelectItem>
+                              ),
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <Select value={documentProcessFilter} onValueChange={setDocumentProcessFilter}>
+                          <SelectTrigger aria-label="Filtrar por processo"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos">Todos os processos</SelectItem>
+                            <SelectItem value="sem_processo">Documentos gerais</SelectItem>
+                            {documentProcessOptions.map(([value, label]) => (
+                              <SelectItem key={value} value={value}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={documentCategoryFilter}
+                          onValueChange={(value) =>
+                            setDocumentCategoryFilter(value as DocumentCategory | "todas")
+                          }
+                        >
+                          <SelectTrigger aria-label="Filtrar por categoria"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todas">Todas as categorias</SelectItem>
+                            {documentCategoryOptions.map((category) => (
+                              <SelectItem key={category} value={category}>
+                                {DOCUMENT_CATEGORY[category].label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {filteredDocumentGroups.length === 0 ? (
+                        <EmptyContent
+                          icon={Search}
+                          title="Nenhum documento encontrado"
+                          description="Ajuste a busca ou os filtros para ver outros documentos."
+                        />
+                      ) : (
+                        <div className="space-y-6">
+                          {filteredDocumentGroups.map((group) => (
+                            <section key={group.key}>
+                              <div className="mb-3 flex items-center gap-2">
+                                <FolderKanban className="size-4 text-primary" aria-hidden />
+                                <h3 className="text-sm font-semibold">{group.label}</h3>
+                                <span className="text-xs text-muted-foreground">
+                                  ({group.documents.length})
+                                </span>
                               </div>
-                              <p className="mt-1 truncate text-xs text-muted-foreground">
-                                {document.original_file_name} · {formatFileSize(document.file_size)}
-                                {document.process_code ? ` · ${document.process_code}` : ""}
-                              </p>
-                              {document.expiration_date && (
-                                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                                  <CalendarDays className="size-3.5" aria-hidden /> Validade:{" "}
-                                  {formatDate(document.expiration_date)}
-                                </p>
-                              )}
-                              {access && <AccessLabel access={access} />}
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={openingDocument === document.document_id}
-                              onClick={() =>
-                                void openDocument(document.document_id, document.file_path)
-                              }
-                            >
-                              {openingDocument === document.document_id ? (
-                                <Loader2 className="size-4 animate-spin" aria-hidden />
-                              ) : (
-                                <Download className="size-4" aria-hidden />
-                              )}{" "}
-                              Abrir
-                            </Button>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                              <ul className="grid gap-3 xl:grid-cols-2">
+                                {group.documents.map((document) => (
+                                  <PortalDocumentCard
+                                    key={`${document.access_id}-${document.document_id}`}
+                                    document={document}
+                                    access={activeAccesses.find(
+                                      (item) => item.access_id === document.access_id,
+                                    )}
+                                    identityScope={user?.id ?? null}
+                                    highlighted={
+                                      highlightedEntity === `document:${document.document_id}`
+                                    }
+                                    opening={openingDocument === document.document_id}
+                                    downloading={downloadingDocument === document.document_id}
+                                    onPreview={() =>
+                                      openDocument(document.document_id, document.file_path)
+                                    }
+                                    onDownload={() => downloadDocument(document)}
+                                  />
+                                ))}
+                              </ul>
+                            </section>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -1638,6 +1798,8 @@ type PortalDeadline = {
   dueDate: string;
 };
 
+type DocumentPortalStatusFilter = "todos" | "vencendo" | DocumentStatus;
+
 const PORTAL_TAB_CLASS =
   "gap-2 rounded-xl py-2.5 text-xs transition-all sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md";
 const PORTAL_PANEL_CLASS =
@@ -1670,6 +1832,171 @@ const PORTAL_COMMUNICATION_STATUS: Record<
   resolvida: { label: "Resolvida", tone: "success" },
   arquivada: { label: "Arquivada", tone: "neutral" },
 };
+
+function PortalDocumentCard({
+  document,
+  access,
+  identityScope,
+  highlighted,
+  opening,
+  downloading,
+  onPreview,
+  onDownload,
+}: {
+  document: ClientPortalDocument;
+  access?: ClientPortalSessionRow;
+  identityScope: string | null;
+  highlighted: boolean;
+  opening: boolean;
+  downloading: boolean;
+  onPreview: () => Promise<void>;
+  onDownload: () => Promise<void>;
+}) {
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const versions = useClientPortalDocumentVersions(
+    document.document_id,
+    historyOpen,
+    identityScope,
+  );
+  const documentStatus = DOCUMENT_STATUS[document.status];
+  const expiration = portalDocumentExpiration(document.expiration_date);
+
+  return (
+    <li
+      id={portalEntityElementId("document", document.document_id)}
+      className={
+        "rounded-2xl border bg-background p-4 transition-all hover:border-primary/25 hover:shadow-md " +
+        (highlighted ? "ring-2 ring-primary ring-offset-2" : "")
+      }
+    >
+      <div className="flex items-start gap-3">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <FileText className="size-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="min-w-0 truncate font-semibold">{document.title}</h4>
+            <StatusBadge label={documentStatus.label} tone={documentStatus.tone} />
+            {expiration && <StatusBadge label={expiration.label} tone={expiration.tone} />}
+          </div>
+          <p className="mt-1 truncate text-xs text-muted-foreground">
+            {document.original_file_name} · {formatFileSize(document.file_size)}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span className="rounded-full bg-muted px-2 py-1">
+              {DOCUMENT_CATEGORY[document.category].label}
+            </span>
+            {document.document_type_name && (
+              <span className="rounded-full bg-muted px-2 py-1">
+                {document.document_type_name}
+              </span>
+            )}
+            <span className="rounded-full bg-muted px-2 py-1">
+              Versão atual: v{document.current_version}
+            </span>
+          </div>
+          {document.expiration_date && (
+            <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+              <CalendarDays className="size-3.5" aria-hidden /> Validade:{" "}
+              {formatDate(document.expiration_date)}
+            </p>
+          )}
+          {access && <AccessLabel access={access} />}
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={opening}
+          onClick={() => void onPreview()}
+        >
+          {opening ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <Eye className="size-4" aria-hidden />
+          )}
+          Visualizar
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={downloading}
+          onClick={() => void onDownload()}
+        >
+          {downloading ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <Download className="size-4" aria-hidden />
+          )}
+          Baixar
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="col-span-2"
+          onClick={() => setHistoryOpen(true)}
+        >
+          <History className="size-4" aria-hidden />
+          Histórico de versões
+        </Button>
+      </div>
+
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Histórico de versões</DialogTitle>
+            <DialogDescription>
+              Registro seguro das versões de {document.title}. O arquivo oficial é sempre a versão
+              atual compartilhada.
+            </DialogDescription>
+          </DialogHeader>
+          {versions.isLoading ? (
+            <LoadingRows />
+          ) : versions.isError ? (
+            <ContentError retry={() => void versions.refetch()} />
+          ) : (versions.data?.length ?? 0) === 0 ? (
+            <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+              Nenhuma versão registrada.
+            </p>
+          ) : (
+            <ol className="divide-y divide-border rounded-xl border">
+              {versions.data?.map((version) => (
+                <li key={version.version_id} className="flex items-center gap-3 p-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
+                    v{version.version_number}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{version.original_file_name}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatDateTime(version.created_at)} · {formatFileSize(version.file_size)}
+                    </p>
+                  </div>
+                  {version.version_number === document.current_version && (
+                    <StatusBadge label="Atual" tone="success" />
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </DialogContent>
+      </Dialog>
+    </li>
+  );
+}
+
+function portalDocumentExpiration(expirationDate: string | null) {
+  if (!expirationDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiration = new Date(`${expirationDate}T00:00:00`);
+  const days = Math.ceil((expiration.getTime() - today.getTime()) / 86_400_000);
+  if (days < 0) return { label: "Vencido", tone: "danger" as const };
+  if (days === 0) return { label: "Vence hoje", tone: "danger" as const };
+  if (days <= 30) return { label: `Vence em ${days} dias`, tone: "warning" as const };
+  return null;
+}
 
 function PortalProcessCard({
   process,
