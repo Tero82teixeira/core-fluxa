@@ -152,7 +152,7 @@ function MyClientPortal() {
       setSelectedCommunicationId(threadId);
       toast.success("Conversa iniciada com a empresa.");
     } catch (error) {
-      toast.error(describeError(error, "mensagem"));
+      toast.error(describeError(error, "salvar"));
     }
   }
 
@@ -166,7 +166,7 @@ function MyClientPortal() {
       setCommunicationReply("");
       toast.success("Mensagem enviada.");
     } catch (error) {
-      toast.error(describeError(error, "mensagem"));
+      toast.error(describeError(error, "salvar"));
     }
   }
 
