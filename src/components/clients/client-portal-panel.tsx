@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   Check,
   Copy,
@@ -8,6 +9,7 @@ import {
   Loader2,
   ListTodo,
   LockKeyhole,
+  MessageSquare,
   ShieldCheck,
   UserRoundCheck,
 } from "lucide-react";
@@ -25,6 +27,11 @@ import {
   type ClientPortalShareItem,
 } from "@/hooks/use-client-portal-content";
 import {
+  useClientPortalCommunicationManagement,
+  useSetClientPortalCommunicationShared,
+  type ClientPortalCommunicationManagementRow,
+} from "@/hooks/use-client-portal-communication";
+import {
   useCreateClientPortalDocumentRequest,
   useManageClientPortalDocumentRequests,
   useSetClientPortalDocumentRequestStatus,
@@ -32,6 +39,7 @@ import {
   type ClientPortalRequestStatus,
 } from "@/hooks/use-client-portal-requests";
 import { describeClientPortalError, effectivePortalInvitationStatus } from "@/lib/client-portal";
+import type { CommunicationStatus } from "@/lib/communication";
 import { PROCESS_STAGE, type ProcessStage } from "@/lib/domain";
 import { DOCUMENT_STATUS, type DocumentStatus } from "@/lib/documents";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -59,6 +67,17 @@ const REQUEST_STATUS: Record<ClientPortalRequestStatus, { label: string; tone: "
   cancelled: { label: "Cancelada", tone: "neutral" },
 };
 
+const COMMUNICATION_STATUS: Record<
+  CommunicationStatus,
+  { label: string; tone: "warning" | "info" | "success" | "neutral" }
+> = {
+  aberta: { label: "Aberta", tone: "info" },
+  aguardando_cliente: { label: "Aguardando cliente", tone: "warning" },
+  aguardando_equipe: { label: "Aguardando equipe", tone: "warning" },
+  resolvida: { label: "Resolvida", tone: "success" },
+  arquivada: { label: "Arquivada", tone: "neutral" },
+};
+
 export function ClientPortalPanel({
   organizationId,
   clientId,
@@ -74,6 +93,11 @@ export function ClientPortalPanel({
   const setAccessActive = useSetClientPortalAccessActive(organizationId, clientId);
   const shares = useClientPortalShareManagement(organizationId, clientId);
   const setItemShared = useSetClientPortalItemShared(organizationId, clientId);
+  const communication = useClientPortalCommunicationManagement(organizationId, clientId);
+  const setCommunicationShared = useSetClientPortalCommunicationShared(
+    organizationId,
+    clientId,
+  );
   const requests = useManageClientPortalDocumentRequests(organizationId, clientId);
   const createRequest = useCreateClientPortalDocumentRequest(organizationId, clientId);
   const setRequestStatus = useSetClientPortalDocumentRequestStatus(organizationId, clientId);
@@ -164,6 +188,20 @@ export function ClientPortalPanel({
     try {
       await setRequestStatus.mutateAsync({ requestId: request.request_id, status });
       toast.success(status === "completed" ? "Solicitação concluída." : "Solicitação cancelada.");
+    } catch (error) {
+      toast.error(describeClientPortalError(error));
+    }
+  }
+
+  async function toggleCommunication(
+    thread: ClientPortalCommunicationManagementRow,
+    shared: boolean,
+  ) {
+    try {
+      await setCommunicationShared.mutateAsync({ threadId: thread.thread_id, shared });
+      toast.success(
+        shared ? "Conversa liberada no portal." : "Conversa removida do portal.",
+      );
     } catch (error) {
       toast.error(describeClientPortalError(error));
     }
@@ -438,6 +476,83 @@ export function ClientPortalPanel({
                   </div>
                 </li>
               ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-5 p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <MessageSquare className="size-5" aria-hidden />
+              </span>
+              <div>
+                <h2 className="font-semibold">Conversas visíveis no portal</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Libere somente conversas adequadas ao cliente. Notas internas nunca aparecem.
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" asChild>
+              <Link to="/comunicacao">
+                <MessageSquare className="size-4" aria-hidden />
+                Abrir Comunicação
+              </Link>
+            </Button>
+          </div>
+
+          {communication.isLoading ? (
+            <Skeleton className="h-32 w-full" />
+          ) : communication.isError ? (
+            <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-4 text-sm text-destructive">
+              Não foi possível carregar as conversas deste cliente.
+            </div>
+          ) : (communication.data?.length ?? 0) === 0 ? (
+            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              Nenhuma conversa interna foi criada para este cliente. Crie uma na Central de
+              Comunicação ou aguarde o cliente iniciar pelo portal.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border rounded-lg border">
+              {communication.data?.map((thread) => {
+                const status = COMMUNICATION_STATUS[thread.status];
+                return (
+                  <li key={thread.thread_id} className="flex items-center gap-4 p-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-medium">{thread.subject}</p>
+                        <StatusBadge label={status.label} tone={status.tone} />
+                        {thread.opened_by_client && (
+                          <StatusBadge label="Iniciada pelo cliente" tone="info" />
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Atualizada em {formatDateTime(thread.updated_at)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="hidden text-xs text-muted-foreground sm:inline">
+                        {thread.is_shared ? "Visível" : "Privada"}
+                      </span>
+                      <Switch
+                        checked={thread.is_shared}
+                        disabled={setCommunicationShared.isPending}
+                        aria-label={
+                          (thread.is_shared ? "Remover " : "Liberar ") +
+                          "conversa " +
+                          thread.subject +
+                          " no portal"
+                        }
+                        onCheckedChange={(shared) =>
+                          void toggleCommunication(thread, shared)
+                        }
+                      />
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </CardContent>

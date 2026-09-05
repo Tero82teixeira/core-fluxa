@@ -482,6 +482,73 @@ export type Database = {
           },
         ]
       }
+      client_portal_communication_shares: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          is_shared: boolean
+          opened_by_client: boolean
+          organization_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          shared_at: string | null
+          shared_by: string | null
+          thread_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          opened_by_client?: boolean
+          organization_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          thread_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_shared?: boolean
+          opened_by_client?: boolean
+          organization_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          thread_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_communication_shares_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_communication_shares_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_communication_shares_thread_fkey"
+            columns: ["organization_id", "client_id", "thread_id"]
+            isOneToOne: true
+            referencedRelation: "communication_threads"
+            referencedColumns: ["organization_id", "client_id", "id"]
+          },
+        ]
+      }
       client_portal_document_shares: {
         Row: {
           client_id: string
@@ -3727,6 +3794,10 @@ export type Database = {
         }
         Returns: string
       }
+      add_client_portal_communication_entry: {
+        Args: { _content: string; _thread_id: string }
+        Returns: string
+      }
       add_monitoring_note: {
         Args: {
           _alert_kind: string
@@ -3910,6 +3981,41 @@ export type Database = {
           title: string
         }[]
       }
+      client_portal_communication_entries: {
+        Args: { _thread_id: string }
+        Returns: {
+          author_kind: string
+          content: string
+          entry_id: string
+          occurred_at: string
+        }[]
+      }
+      client_portal_communication_management: {
+        Args: { _client_id: string; _organization_id: string }
+        Returns: {
+          is_shared: boolean
+          last_public_message_at: string
+          opened_by_client: boolean
+          status: string
+          subject: string
+          thread_id: string
+          updated_at: string
+        }[]
+      }
+      client_portal_communication_threads: {
+        Args: never
+        Returns: {
+          access_id: string
+          client_name: string
+          last_message: string
+          last_message_at: string
+          organization_name: string
+          status: string
+          subject: string
+          thread_id: string
+          updated_at: string
+        }[]
+      }
       client_portal_document_requests: {
         Args: never
         Returns: {
@@ -4036,6 +4142,10 @@ export type Database = {
           invitation_id: string
           token: string
         }[]
+      }
+      create_client_portal_communication_thread: {
+        Args: { _access_id: string; _content: string; _subject: string }
+        Returns: string
       }
       create_client_portal_document_request: {
         Args: {
@@ -4509,6 +4619,15 @@ export type Database = {
           _item_type: string
           _organization_id: string
           _shared: boolean
+        }
+        Returns: undefined
+      }
+      set_client_portal_communication_shared: {
+        Args: {
+          _client_id: string
+          _organization_id: string
+          _shared: boolean
+          _thread_id: string
         }
         Returns: undefined
       }

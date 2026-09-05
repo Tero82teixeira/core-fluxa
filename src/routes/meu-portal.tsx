@@ -12,6 +12,7 @@ import {
   LockKeyhole,
   LogOut,
   MessageSquare,
+  Send,
   ShieldCheck,
   Upload,
   UserRound,
@@ -22,7 +23,17 @@ import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  useAddClientPortalCommunicationEntry,
+  useClientPortalCommunicationEntries,
+  useClientPortalCommunicationThreads,
+  useCreateClientPortalCommunicationThread,
+} from "@/hooks/use-client-portal-communication";
 import {
   createClientPortalDocumentUrl,
   useClientPortalDocuments,
@@ -39,6 +50,7 @@ import {
 } from "@/hooks/use-client-portal-session";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import type { CommunicationStatus } from "@/lib/communication";
 import { ACCEPT_ATTRIBUTE, DOCUMENT_STATUS, formatFileSize, validateFile } from "@/lib/documents";
 import { PROCESS_STAGE } from "@/lib/domain";
 import { describeError } from "@/lib/errors";
@@ -68,9 +80,30 @@ function MyClientPortal() {
   const processes = useClientPortalProcesses(contentEnabled, user?.id ?? null);
   const documents = useClientPortalDocuments(contentEnabled, user?.id ?? null);
   const requests = useClientPortalDocumentRequests(contentEnabled, user?.id ?? null);
+  const communicationThreads = useClientPortalCommunicationThreads(
+    contentEnabled,
+    user?.id ?? null,
+  );
+  const createCommunication = useCreateClientPortalCommunicationThread(user?.id ?? null);
+  const addCommunicationEntry = useAddClientPortalCommunicationEntry(user?.id ?? null);
   const submitDocument = useSubmitClientPortalDocument(user?.id ?? null);
   const [openingDocument, setOpeningDocument] = useState<string | null>(null);
   const [uploadingRequest, setUploadingRequest] = useState<string | null>(null);
+  const [selectedCommunicationId, setSelectedCommunicationId] = useState<string | null>(
+    null,
+  );
+  const communicationEntries = useClientPortalCommunicationEntries(
+    selectedCommunicationId,
+    user?.id ?? null,
+  );
+  const [communicationAccessId, setCommunicationAccessId] = useState("");
+  const [communicationSubject, setCommunicationSubject] = useState("");
+  const [communicationContent, setCommunicationContent] = useState("");
+  const [communicationReply, setCommunicationReply] = useState("");
+  const selectedCommunication =
+    communicationThreads.data?.find(
+      (thread) => thread.thread_id === selectedCommunicationId,
+    ) ?? null;
 
   useEffect(() => {
     if (status === "unauthenticated") navigate({ to: "/entrar", replace: true });
@@ -102,6 +135,38 @@ function MyClientPortal() {
       toast.error(describeError(error, "documento"));
     } finally {
       setUploadingRequest(null);
+    }
+  }
+
+  async function createConversation() {
+    const accessId = communicationAccessId || activeAccesses[0]?.access_id;
+    if (!accessId || !communicationSubject.trim() || !communicationContent.trim()) return;
+    try {
+      const threadId = await createCommunication.mutateAsync({
+        accessId,
+        subject: communicationSubject.trim(),
+        content: communicationContent.trim(),
+      });
+      setCommunicationSubject("");
+      setCommunicationContent("");
+      setSelectedCommunicationId(threadId);
+      toast.success("Conversa iniciada com a empresa.");
+    } catch (error) {
+      toast.error(describeError(error, "salvar"));
+    }
+  }
+
+  async function sendCommunicationReply() {
+    if (!selectedCommunicationId || !communicationReply.trim()) return;
+    try {
+      await addCommunicationEntry.mutateAsync({
+        threadId: selectedCommunicationId,
+        content: communicationReply.trim(),
+      });
+      setCommunicationReply("");
+      toast.success("Mensagem enviada.");
+    } catch (error) {
+      toast.error(describeError(error, "salvar"));
     }
   }
 
@@ -181,7 +246,7 @@ function MyClientPortal() {
               <TabsTrigger value="pendencias" className="gap-2 py-2.5">
                 <ListTodo className="size-4" aria-hidden /> Pendências
               </TabsTrigger>
-              <TabsTrigger value="comunicacao" className="gap-2 py-2.5" disabled>
+              <TabsTrigger value="comunicacao" className="gap-2 py-2.5">
                 <MessageSquare className="size-4" aria-hidden /> Comunicação
               </TabsTrigger>
               <TabsTrigger value="notificacoes" className="gap-2 py-2.5" disabled>
@@ -191,7 +256,7 @@ function MyClientPortal() {
 
             <TabsContent value="inicio" className="space-y-6">
               <AccessCards accesses={session.data ?? []} />
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <SummaryCard
                   icon={FolderKanban}
                   label="Processos compartilhados"
@@ -210,9 +275,15 @@ function MyClientPortal() {
                   value={(requests.data ?? []).filter((request) => request.status === "pending").length}
                   loading={requests.isLoading}
                 />
+                <SummaryCard
+                  icon={MessageSquare}
+                  label="Conversas com a empresa"
+                  value={communicationThreads.data?.length ?? 0}
+                  loading={communicationThreads.isLoading}
+                />
               </div>
               <div className="rounded-lg border border-dashed bg-background p-4 text-sm text-muted-foreground">
-                Comunicação e notificações serão adicionadas nas próximas etapas.
+                Notificações serão adicionadas na próxima etapa.
               </div>
             </TabsContent>
 
@@ -442,6 +513,232 @@ function MyClientPortal() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="comunicacao" className="space-y-4">
+              <Card>
+                <CardContent className="space-y-4 p-4 sm:p-6">
+                  <div>
+                    <h2 className="font-semibold">Iniciar uma conversa</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Envie uma dúvida ou informação diretamente para a empresa.
+                    </p>
+                  </div>
+                  {activeAccesses.length > 1 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="portal-communication-access">Empresa e cliente</Label>
+                      <Select
+                        value={communicationAccessId || activeAccesses[0]?.access_id}
+                        onValueChange={setCommunicationAccessId}
+                      >
+                        <SelectTrigger id="portal-communication-access">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {activeAccesses.map((access) => (
+                            <SelectItem key={access.access_id} value={access.access_id}>
+                              {access.client_name} · {access.organization_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="portal-communication-subject">Assunto</Label>
+                    <Input
+                      id="portal-communication-subject"
+                      value={communicationSubject}
+                      maxLength={160}
+                      placeholder="Ex.: Dúvida sobre meu processo"
+                      onChange={(event) => setCommunicationSubject(event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="portal-communication-content">Mensagem</Label>
+                    <Textarea
+                      id="portal-communication-content"
+                      value={communicationContent}
+                      maxLength={5000}
+                      rows={4}
+                      placeholder="Escreva sua mensagem para a empresa."
+                      onChange={(event) => setCommunicationContent(event.target.value)}
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      disabled={
+                        !communicationSubject.trim() ||
+                        !communicationContent.trim() ||
+                        createCommunication.isPending
+                      }
+                      onClick={() => void createConversation()}
+                    >
+                      {createCommunication.isPending ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                      ) : (
+                        <Send className="size-4" aria-hidden />
+                      )}
+                      Iniciar conversa
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)]">
+                <Card>
+                  <CardContent className="space-y-4 p-4 sm:p-6">
+                    <h2 className="font-semibold">Minhas conversas</h2>
+                    {communicationThreads.isLoading ? (
+                      <LoadingRows />
+                    ) : communicationThreads.isError ? (
+                      <ContentError retry={() => void communicationThreads.refetch()} />
+                    ) : (communicationThreads.data?.length ?? 0) === 0 ? (
+                      <EmptyContent
+                        icon={MessageSquare}
+                        title="Nenhuma conversa"
+                        description="Inicie uma conversa ou aguarde a empresa liberar uma para você."
+                      />
+                    ) : (
+                      <ul className="space-y-2">
+                        {communicationThreads.data?.map((thread) => {
+                          const threadStatus = PORTAL_COMMUNICATION_STATUS[thread.status];
+                          return (
+                            <li key={thread.thread_id}>
+                              <button
+                                type="button"
+                                className={
+                                  "w-full rounded-lg border p-3 text-left transition-colors " +
+                                  (selectedCommunicationId === thread.thread_id
+                                    ? "border-primary bg-primary/5"
+                                    : "hover:bg-muted/60")
+                                }
+                                onClick={() => setSelectedCommunicationId(thread.thread_id)}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="min-w-0 truncate text-sm font-medium">
+                                    {thread.subject}
+                                  </p>
+                                  <StatusBadge
+                                    label={threadStatus.label}
+                                    tone={threadStatus.tone}
+                                  />
+                                </div>
+                                {thread.last_message && (
+                                  <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+                                    {thread.last_message}
+                                  </p>
+                                )}
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                  {thread.client_name} · {thread.organization_name}
+                                </p>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="space-y-4 p-4 sm:p-6">
+                    {!selectedCommunication ? (
+                      <EmptyContent
+                        icon={MessageSquare}
+                        title="Selecione uma conversa"
+                        description="Escolha uma conversa para visualizar e responder."
+                      />
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-4">
+                          <div>
+                            <h2 className="font-semibold">{selectedCommunication.subject}</h2>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {selectedCommunication.client_name} ·{" "}
+                              {selectedCommunication.organization_name}
+                            </p>
+                          </div>
+                          <StatusBadge
+                            label={
+                              PORTAL_COMMUNICATION_STATUS[selectedCommunication.status].label
+                            }
+                            tone={
+                              PORTAL_COMMUNICATION_STATUS[selectedCommunication.status].tone
+                            }
+                          />
+                        </div>
+
+                        {communicationEntries.isLoading ? (
+                          <LoadingRows />
+                        ) : communicationEntries.isError ? (
+                          <ContentError retry={() => void communicationEntries.refetch()} />
+                        ) : (
+                          <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
+                            {communicationEntries.data?.map((entry) => (
+                              <article
+                                key={entry.entry_id}
+                                className={
+                                  "max-w-[88%] rounded-xl p-3 " +
+                                  (entry.author_kind === "client"
+                                    ? "ml-auto bg-primary text-primary-foreground"
+                                    : "border bg-muted/40")
+                                }
+                              >
+                                <p className="whitespace-pre-wrap text-sm">{entry.content}</p>
+                                <p
+                                  className={
+                                    "mt-2 text-xs " +
+                                    (entry.author_kind === "client"
+                                      ? "text-primary-foreground/75"
+                                      : "text-muted-foreground")
+                                  }
+                                >
+                                  {entry.author_kind === "client" ? "Você" : "Empresa"} ·{" "}
+                                  {formatDateTime(entry.occurred_at)}
+                                </p>
+                              </article>
+                            ))}
+                          </div>
+                        )}
+
+                        {selectedCommunication.status === "resolvida" ||
+                        selectedCommunication.status === "arquivada" ? (
+                          <p className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+                            Esta conversa foi encerrada e está disponível somente para leitura.
+                          </p>
+                        ) : (
+                          <div className="space-y-3 border-t pt-4">
+                            <Textarea
+                              value={communicationReply}
+                              maxLength={5000}
+                              rows={3}
+                              placeholder="Escreva uma resposta."
+                              onChange={(event) => setCommunicationReply(event.target.value)}
+                            />
+                            <div className="flex justify-end">
+                              <Button
+                                disabled={
+                                  !communicationReply.trim() ||
+                                  addCommunicationEntry.isPending
+                                }
+                                onClick={() => void sendCommunicationReply()}
+                              >
+                                {addCommunicationEntry.isPending ? (
+                                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                                ) : (
+                                  <Send className="size-4" aria-hidden />
+                                )}
+                                Enviar mensagem
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
           </Tabs>
         )}
 
@@ -467,6 +764,17 @@ const PORTAL_REQUEST_STATUS: Record<
   submitted: { label: "Enviado", tone: "info" },
   completed: { label: "Concluído", tone: "success" },
   cancelled: { label: "Cancelado", tone: "neutral" },
+};
+
+const PORTAL_COMMUNICATION_STATUS: Record<
+  CommunicationStatus,
+  { label: string; tone: "warning" | "info" | "success" | "neutral" }
+> = {
+  aberta: { label: "Aberta", tone: "info" },
+  aguardando_cliente: { label: "Aguardando você", tone: "warning" },
+  aguardando_equipe: { label: "Aguardando empresa", tone: "warning" },
+  resolvida: { label: "Resolvida", tone: "success" },
+  arquivada: { label: "Arquivada", tone: "neutral" },
 };
 
 function AccessCards({ accesses }: { accesses: ClientPortalSessionRow[] }) {
