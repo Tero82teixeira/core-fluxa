@@ -55,7 +55,7 @@ describe("solicitações de documentos no Meu Portal", () => {
     assert.match(management, /Solicitações de documentos/);
     assert.match(management, /Criar solicitação/);
     assert.match(management, /Aguardando cliente/);
-    assert.match(management, /Documento recebido/);
+    assert.match(management, /Aguardando análise/);
   });
 
   test("Meu Portal ativa Pendências e oferece envio do arquivo", () => {

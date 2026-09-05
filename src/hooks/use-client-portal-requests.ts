@@ -3,7 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DOCUMENTS_BUCKET } from "@/lib/documents";
 
-export type ClientPortalRequestStatus = "pending" | "submitted" | "completed" | "cancelled";
+export type ClientPortalRequestStatus =
+  | "pending"
+  | "submitted"
+  | "revision_requested"
+  | "completed"
+  | "cancelled";
 
 export type ClientPortalDocumentRequest = {
   access_id?: string;
@@ -19,6 +24,10 @@ export type ClientPortalDocumentRequest = {
   submitted_document_id: string | null;
   submitted_file_name: string | null;
   submitted_at: string | null;
+  company_feedback: string | null;
+  feedback_at: string | null;
+  submission_count: number;
+  updated_at: string;
   created_at: string;
 };
 
@@ -95,6 +104,31 @@ export function useSetClientPortalDocumentRequestStatus(
   });
 }
 
+export function useReviewClientPortalDocumentRequest(
+  organizationId: string | null,
+  clientId: string,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      requestId: string;
+      decision: "completed" | "revision_requested";
+      feedback: string | null;
+    }) => {
+      const { error } = await supabase.rpc("review_client_portal_document_request", {
+        _request_id: input.requestId,
+        _decision: input.decision,
+        _feedback: input.feedback ?? undefined,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: managementKey(organizationId, clientId) }),
+      queryClient.invalidateQueries({ queryKey: ["client-portal-shares", organizationId, clientId] }),
+    ]),
+  });
+}
+
 export function useClientPortalDocumentRequests(enabled: boolean, identityScope: string | null) {
   return useQuery({
     enabled: enabled && Boolean(identityScope),
@@ -110,16 +144,24 @@ export function useClientPortalDocumentRequests(enabled: boolean, identityScope:
 export function useSubmitClientPortalDocument(identityScope: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ requestId, file }: { requestId: string; file: File }) => {
-      const { data: prepared, error: prepareError } = await supabase.rpc(
-        "prepare_client_portal_document_upload",
-        {
-          _request_id: requestId,
-          _original_file_name: file.name,
-          _mime_type: file.type,
-          _file_size: file.size,
-        },
-      );
+    mutationFn: async ({
+      requestId,
+      file,
+      status,
+    }: {
+      requestId: string;
+      file: File;
+      status: ClientPortalRequestStatus;
+    }) => {
+      const prepareArgs = {
+        _request_id: requestId,
+        _original_file_name: file.name,
+        _mime_type: file.type,
+        _file_size: file.size,
+      };
+      const { data: prepared, error: prepareError } = status === "revision_requested"
+        ? await supabase.rpc("prepare_client_portal_document_resubmission", prepareArgs)
+        : await supabase.rpc("prepare_client_portal_document_upload", prepareArgs);
       if (prepareError) throw prepareError;
       const intent = prepared?.[0];
       if (!intent) throw new Error("Não foi possível preparar o envio.");

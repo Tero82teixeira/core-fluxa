@@ -675,16 +675,20 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           client_id: string
+          company_feedback: string | null
           completed_at: string | null
           completed_by: string | null
           created_at: string
           created_by: string
           description: string | null
           due_date: string | null
+          feedback_at: string | null
+          feedback_by: string | null
           id: string
           organization_id: string
           process_id: string | null
           status: string
+          submission_count: number
           submitted_at: string | null
           submitted_document_id: string | null
           title: string
@@ -694,16 +698,20 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           client_id: string
+          company_feedback?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
           created_by: string
           description?: string | null
           due_date?: string | null
+          feedback_at?: string | null
+          feedback_by?: string | null
           id?: string
           organization_id: string
           process_id?: string | null
           status?: string
+          submission_count?: number
           submitted_at?: string | null
           submitted_document_id?: string | null
           title: string
@@ -713,16 +721,20 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           client_id?: string
+          company_feedback?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
           due_date?: string | null
+          feedback_at?: string | null
+          feedback_by?: string | null
           id?: string
           organization_id?: string
           process_id?: string | null
           status?: string
+          submission_count?: number
           submitted_at?: string | null
           submitted_document_id?: string | null
           title?: string
@@ -4287,17 +4299,22 @@ export type Database = {
         Returns: {
           access_id: string
           client_name: string
+          company_feedback: string
           created_at: string
           description: string
           due_date: string
+          feedback_at: string
           organization_name: string
           process_code: string
+          process_id: string
           request_id: string
           status: string
+          submission_count: number
           submitted_at: string
           submitted_document_id: string
           submitted_file_name: string
           title: string
+          updated_at: string
         }[]
       }
       client_portal_processes: {
@@ -4564,18 +4581,42 @@ export type Database = {
       manage_client_portal_document_requests: {
         Args: { _client_id: string; _organization_id: string }
         Returns: {
+          company_feedback: string
           created_at: string
           description: string
           due_date: string
+          feedback_at: string
           process_code: string
           process_id: string
           request_id: string
           status: string
+          submission_count: number
           submitted_at: string
           submitted_document_id: string
           submitted_file_name: string
           title: string
+          updated_at: string
         }[]
+      }
+      prepare_client_portal_document_resubmission: {
+        Args: {
+          _file_size: number
+          _mime_type: string
+          _original_file_name: string
+          _request_id: string
+        }
+        Returns: {
+          file_path: string
+          upload_intent_id: string
+        }[]
+      }
+      review_client_portal_document_request: {
+        Args: {
+          _decision: string
+          _feedback?: string
+          _request_id: string
+        }
+        Returns: undefined
       }
       financial_audit: {
         Args: {

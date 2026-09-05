@@ -145,6 +145,10 @@ function MyClientPortal() {
   const [documentCategoryFilter, setDocumentCategoryFilter] = useState<
     DocumentCategory | "todas"
   >("todas");
+  const [requestSearch, setRequestSearch] = useState("");
+  const [requestStatusFilter, setRequestStatusFilter] = useState<RequestPortalStatusFilter>(
+    "todos",
+  );
   const [uploadingRequest, setUploadingRequest] = useState<string | null>(null);
   const [selectedCommunicationId, setSelectedCommunicationId] = useState<string | null>(
     null,
@@ -179,7 +183,11 @@ function MyClientPortal() {
   ).length;
   const portalDeadlines: PortalDeadline[] = [
     ...(requests.data ?? [])
-      .filter((request) => request.status === "pending" && request.due_date)
+      .filter(
+        (request) =>
+          (request.status === "pending" || request.status === "revision_requested") &&
+          request.due_date,
+      )
       .map((request) => ({
         id: request.request_id,
         entityType: "document_request" as const,
@@ -272,6 +280,36 @@ function MyClientPortal() {
     documentStatusFilter,
     documents.data,
   ]);
+  const requestSummary = useMemo(() => {
+    const summary: Record<ClientPortalRequestStatus, number> = {
+      pending: 0,
+      submitted: 0,
+      revision_requested: 0,
+      completed: 0,
+      cancelled: 0,
+    };
+    for (const request of requests.data ?? []) summary[request.status] += 1;
+    return summary;
+  }, [requests.data]);
+  const filteredRequests = useMemo(() => {
+    const search = requestSearch.trim().toLocaleLowerCase("pt-BR");
+    return (requests.data ?? []).filter((request) => {
+      const searchText = [
+        request.title,
+        request.description,
+        request.process_code,
+        request.submitted_file_name,
+        request.company_feedback,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase("pt-BR");
+      return (
+        (!search || searchText.includes(search)) &&
+        (requestStatusFilter === "todos" || request.status === requestStatusFilter)
+      );
+    });
+  }, [requestSearch, requestStatusFilter, requests.data]);
   usePortalChatRealtime({
     topic: user?.id ? `portal-user:${user.id}` : null,
     enabled: contentEnabled,
@@ -379,7 +417,11 @@ function MyClientPortal() {
     }
   }
 
-  async function uploadRequestedDocument(requestId: string, file: File) {
+  async function uploadRequestedDocument(
+    requestId: string,
+    requestStatus: ClientPortalRequestStatus,
+    file: File,
+  ) {
     const validationError = validateFile(file);
     if (validationError) {
       toast.error(validationError);
@@ -387,8 +429,12 @@ function MyClientPortal() {
     }
     setUploadingRequest(requestId);
     try {
-      await submitDocument.mutateAsync({ requestId, file });
-      toast.success("Documento enviado com segurança.");
+      await submitDocument.mutateAsync({ requestId, file, status: requestStatus });
+      toast.success(
+        requestStatus === "revision_requested"
+          ? "Documento corrigido e reenviado com segurança."
+          : "Documento enviado com segurança.",
+      );
     } catch (error) {
       toast.error(describeError(error, "documento"));
     } finally {
@@ -676,8 +722,8 @@ function MyClientPortal() {
                 />
                 <SummaryCard
                   icon={ListTodo}
-                  label="Pendências aguardando envio"
-                  value={(requests.data ?? []).filter((request) => request.status === "pending").length}
+                  label="Pendências para você"
+                  value={requestSummary.pending + requestSummary.revision_requested}
                   loading={requests.isLoading}
                 />
                 <SummaryCard
@@ -1039,13 +1085,70 @@ function MyClientPortal() {
 
             <TabsContent value="pendencias">
               <Card className={PORTAL_PANEL_CLASS}>
-                <CardContent className="space-y-4 p-4 sm:p-6">
-                  <div>
-                    <h2 className="font-semibold">Documentos solicitados</h2>
+                <CardContent className="space-y-5 p-4 sm:p-6">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <h2 className="font-semibold">Central de pendências</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Acompanhe solicitações, prazos, análises e eventuais correções.
+                      </p>
+                    </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Consulte as solicitações da empresa e envie o arquivo correspondente.
+                      {requests.data?.length ?? 0} solicitação(ões)
                     </p>
                   </div>
+
+                  {!requests.isLoading && !requests.isError && (
+                    <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
+                      {PORTAL_REQUEST_SUMMARY.map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          className={
+                            "rounded-xl border p-3 text-left transition-colors hover:border-primary/40 " +
+                            (requestStatusFilter === status
+                              ? "border-primary bg-primary/5"
+                              : "bg-background")
+                          }
+                          onClick={() =>
+                            setRequestStatusFilter((current) => current === status ? "todos" : status)
+                          }
+                        >
+                          <span className="text-2xl font-semibold">{requestSummary[status]}</span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            {PORTAL_REQUEST_STATUS[status].label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="grid gap-2 rounded-xl border bg-muted/20 p-3 md:grid-cols-[minmax(0,1fr)_220px]">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                      <Input
+                        className="pl-9"
+                        placeholder="Buscar pendência"
+                        value={requestSearch}
+                        onChange={(event) => setRequestSearch(event.target.value)}
+                      />
+                    </div>
+                    <Select
+                      value={requestStatusFilter}
+                      onValueChange={(value) => setRequestStatusFilter(value as RequestPortalStatusFilter)}
+                    >
+                      <SelectTrigger aria-label="Filtrar pendências por situação"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todas as situações</SelectItem>
+                        {PORTAL_REQUEST_SUMMARY.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {PORTAL_REQUEST_STATUS[status].label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {requests.isLoading ? (
                     <LoadingRows />
                   ) : requests.isError ? (
@@ -1056,11 +1159,18 @@ function MyClientPortal() {
                       title="Nenhuma pendência"
                       description="Quando a empresa solicitar um documento, ele aparecerá aqui."
                     />
+                  ) : filteredRequests.length === 0 ? (
+                    <EmptyContent
+                      icon={Search}
+                      title="Nenhuma solicitação encontrada"
+                      description="Ajuste a busca ou selecione outra situação."
+                    />
                   ) : (
                     <ul className="space-y-3">
-                      {requests.data?.map((request) => {
+                      {filteredRequests.map((request) => {
                         const requestStatus = PORTAL_REQUEST_STATUS[request.status];
-                        const overdue = request.status === "pending" && request.due_date && request.due_date < new Date().toISOString().slice(0, 10);
+                        const deadline = portalRequestDeadline(request.due_date, request.status);
+                        const canUpload = request.status === "pending" || request.status === "revision_requested";
                         return (
                           <li
                             id={portalEntityElementId("document_request", request.request_id)}
@@ -1080,7 +1190,7 @@ function MyClientPortal() {
                                 <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="font-semibold">{request.title}</h3>
                                   <StatusBadge label={requestStatus.label} tone={requestStatus.tone} />
-                                  {overdue && <StatusBadge label="Prazo vencido" tone="danger" />}
+                                  {deadline && <StatusBadge label={deadline.label} tone={deadline.tone} />}
                                 </div>
                                 {request.description && (
                                   <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{request.description}</p>
@@ -1089,12 +1199,24 @@ function MyClientPortal() {
                                   {request.process_code && <span>Processo {request.process_code}</span>}
                                   <span>{request.due_date ? `Prazo: ${formatDate(request.due_date)}` : "Sem prazo definido"}</span>
                                   {request.submitted_file_name && <span>Enviado: {request.submitted_file_name}</span>}
+                                  {request.submission_count > 0 && <span>{request.submission_count} envio(s)</span>}
                                 </p>
+                                {request.company_feedback && (
+                                  <div className="mt-3 rounded-lg border border-warning/30 bg-warning/5 p-3">
+                                    <p className="text-xs font-semibold">Retorno da empresa</p>
+                                    <p className="mt-1 whitespace-pre-wrap text-sm">{request.company_feedback}</p>
+                                    {request.feedback_at && (
+                                      <p className="mt-1 text-xs text-muted-foreground">
+                                        Atualizado em {formatDateTime(request.feedback_at)}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
                                 {request.organization_name && request.client_name && (
                                   <p className="mt-2 text-xs text-muted-foreground">{request.client_name} · {request.organization_name}</p>
                                 )}
                               </div>
-                              {request.status === "pending" && (
+                              {canUpload && (
                                 <label className="shrink-0">
                                   <input
                                     type="file"
@@ -1104,12 +1226,16 @@ function MyClientPortal() {
                                     onChange={(event) => {
                                       const file = event.currentTarget.files?.[0];
                                       event.currentTarget.value = "";
-                                      if (file) void uploadRequestedDocument(request.request_id, file);
+                                      if (file) void uploadRequestedDocument(request.request_id, request.status, file);
                                     }}
                                   />
                                   <span className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 aria-disabled:pointer-events-none aria-disabled:opacity-50" aria-disabled={uploadingRequest !== null}>
                                     {uploadingRequest === request.request_id ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Upload className="size-4" aria-hidden />}
-                                    {uploadingRequest === request.request_id ? "Enviando…" : "Enviar arquivo"}
+                                    {uploadingRequest === request.request_id
+                                      ? "Enviando…"
+                                      : request.status === "revision_requested"
+                                        ? "Reenviar arquivo"
+                                        : "Enviar arquivo"}
                                   </span>
                                 </label>
                               )}
@@ -1774,13 +1900,22 @@ function MyClientPortal() {
 
 const PORTAL_REQUEST_STATUS: Record<
   ClientPortalRequestStatus,
-  { label: string; tone: "warning" | "info" | "success" | "neutral" }
+  { label: string; tone: "warning" | "info" | "success" | "neutral" | "danger" }
 > = {
-  pending: { label: "Aguardando envio", tone: "warning" },
-  submitted: { label: "Enviado", tone: "info" },
-  completed: { label: "Concluído", tone: "success" },
+  pending: { label: "Pendente", tone: "warning" },
+  submitted: { label: "Em análise", tone: "info" },
+  revision_requested: { label: "Correção solicitada", tone: "danger" },
+  completed: { label: "Aprovado", tone: "success" },
   cancelled: { label: "Cancelado", tone: "neutral" },
 };
+
+const PORTAL_REQUEST_SUMMARY: ClientPortalRequestStatus[] = [
+  "pending",
+  "revision_requested",
+  "submitted",
+  "completed",
+  "cancelled",
+];
 
 type PortalTab =
   | "inicio"
@@ -1799,6 +1934,22 @@ type PortalDeadline = {
 };
 
 type DocumentPortalStatusFilter = "todos" | "vencendo" | DocumentStatus;
+type RequestPortalStatusFilter = "todos" | ClientPortalRequestStatus;
+
+function portalRequestDeadline(
+  dueDate: string | null,
+  status: ClientPortalRequestStatus,
+): { label: string; tone: "warning" | "danger" } | null {
+  if (!dueDate || (status !== "pending" && status !== "revision_requested")) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(`${dueDate}T00:00:00`);
+  const days = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+  if (days < 0) return { label: `Atrasado há ${Math.abs(days)} dia(s)`, tone: "danger" };
+  if (days === 0) return { label: "Vence hoje", tone: "danger" };
+  if (days <= 7) return { label: `Vence em ${days} dia(s)`, tone: "warning" };
+  return null;
+}
 
 const PORTAL_TAB_CLASS =
   "gap-2 rounded-xl py-2.5 text-xs transition-all sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md";
