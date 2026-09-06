@@ -385,3 +385,23 @@ por semana e destinatário. A preferência **Relatório semanal de produtividade
 em **Configurações > Notificações**, permite desativar somente esse relatório.
 O processamento reutiliza `run_temporal_automation_cycle()` e não cria outro
 relógio.
+
+## Alertas de SLA do Portal do Cliente
+
+Conversas compartilhadas no Portal do Cliente entram no acompanhamento de SLA
+somente quando a última mensagem pública foi enviada pelo cliente e o status é
+**Aguardando equipe**. Os limites seguem a prioridade da conversa: duas horas
+para urgente, quatro para alta, 24 para normal e 48 para baixa.
+
+Ao atingir 75% do prazo, o responsável ativo recebe um aviso preventivo. Quando
+não há responsável, a gestão recebe esse primeiro aviso. Depois do vencimento,
+o alerta é enviado ao responsável e escalado para superadministradores,
+proprietários, administradores e gestores ativos. Uma resposta da empresa ou a
+mudança do status encerra a espera e impede novos avisos daquele episódio.
+
+A deduplicação combina conversa, horário da última mensagem do cliente, etapa e
+destinatário. Assim, o relógio de 15 minutos pode executar várias vezes sem
+repetir notificações. A preferência **SLA do Portal do Cliente**, em
+**Configurações > Notificações**, permite desativar somente essa categoria. O
+processamento cria apenas notificações internas, não envia mensagens ao cliente
+e não cria outro cron.
