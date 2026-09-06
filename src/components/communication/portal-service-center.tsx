@@ -40,6 +40,9 @@ import { describeError } from "@/lib/errors";
 import { formatDate, formatDateTime } from "@/lib/format";
 import {
   filterPortalServiceCenter,
+  formatServiceDuration,
+  portalServiceSla,
+  prioritizePortalServiceCenter,
   summarizePortalServiceCenter,
   type PortalServiceCenterFilters,
   type PortalServiceCenterItem,
@@ -89,10 +92,20 @@ export function PortalServiceCenter({
   const team = useTeamMembers(organizationId);
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const items = center.data ?? [];
-  const summary = useMemo(() => summarizePortalServiceCenter(items), [items]);
+  const now = useMemo(
+    () => new Date(center.dataUpdatedAt || Date.now()),
+    [center.dataUpdatedAt],
+  );
+  const summary = useMemo(
+    () => summarizePortalServiceCenter(items, undefined, now),
+    [items, now],
+  );
   const filtered = useMemo(
-    () => filterPortalServiceCenter(items, filters, user?.id ?? null),
-    [filters, items, user?.id],
+    () => prioritizePortalServiceCenter(
+      filterPortalServiceCenter(items, filters, user?.id ?? null, undefined, now),
+      now,
+    ),
+    [filters, items, now, user?.id],
   );
   const memberNames = useMemo(
     () => new Map((team.data ?? []).map((member) => [member.user_id, member.full_name || member.email || "Membro"])),
@@ -161,7 +174,7 @@ export function PortalServiceCenter({
       </header>
 
       <div className="space-y-4 p-4 sm:p-5">
-        <div className={`grid grid-cols-2 gap-3 ${canReviewDocuments ? "lg:grid-cols-4" : "lg:max-w-2xl"}`}>
+        <div className={`grid grid-cols-2 gap-3 ${canReviewDocuments ? "lg:grid-cols-3" : "lg:max-w-4xl lg:grid-cols-4"}`}>
           <CenterMetric
             icon={MessageSquare}
             label="Aguardando resposta"
@@ -180,6 +193,26 @@ export function PortalServiceCenter({
             onClick={() => preset(
               { kind: "communication", queue: "unread" },
               filters.kind === "communication" && filters.queue === "unread",
+            )}
+          />
+          <CenterMetric
+            icon={Clock3}
+            label="SLA em risco"
+            value={summary.slaAtRisk}
+            active={filters.kind === "communication" && filters.queue === "sla_at_risk"}
+            onClick={() => preset(
+              { kind: "communication", queue: "sla_at_risk" },
+              filters.kind === "communication" && filters.queue === "sla_at_risk",
+            )}
+          />
+          <CenterMetric
+            icon={CircleAlert}
+            label="SLA atrasado"
+            value={summary.slaOverdue}
+            active={filters.kind === "communication" && filters.queue === "sla_overdue"}
+            onClick={() => preset(
+              { kind: "communication", queue: "sla_overdue" },
+              filters.kind === "communication" && filters.queue === "sla_overdue",
             )}
           />
           {canReviewDocuments && (
@@ -276,6 +309,7 @@ export function PortalServiceCenter({
                   team={(team.data ?? []).filter((member) => member.is_active)}
                   canAssign={canAssign}
                   pending={changeStatus.isPending || assign.isPending || updateThread.isPending}
+                  now={now}
                   onOpenCommunication={openCommunication}
                   onStatusChange={(status) => triage(
                     () => changeStatus.mutateAsync({ threadId: item.item_id, status }),
@@ -352,6 +386,7 @@ function ServiceItem({
   team,
   canAssign,
   pending,
+  now,
   onOpenCommunication,
   onStatusChange,
   onPriorityChange,
@@ -362,12 +397,14 @@ function ServiceItem({
   team: TeamMember[];
   canAssign: boolean;
   pending: boolean;
+  now: Date;
   onOpenCommunication: (threadId: string) => void;
   onStatusChange: (status: CommunicationStatus) => Promise<void>;
   onPriorityChange: (priority: CommunicationPriority) => Promise<void>;
   onAssigneeChange: (assignedTo: string | null) => Promise<void>;
 }) {
   const status = STATUS[item.status] ?? { label: item.status, tone: "neutral" as const };
+  const sla = portalServiceSla(item, now);
   const content = (
     <>
       <div className="flex items-start gap-3">
@@ -393,7 +430,23 @@ function ServiceItem({
           {PRIORITY_LABEL[item.priority]}
         </Badge>
         {item.opened_by_client && <Badge variant="outline">Iniciada pelo cliente</Badge>}
+        {sla.state !== "not_applicable" && (
+          <Badge
+            variant={sla.state === "overdue" ? "destructive" : "outline"}
+            className={sla.state === "at_risk" ? "border-amber-400 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200" : undefined}
+          >
+            <Clock3 className="mr-1 size-3" aria-hidden />
+            {sla.state === "overdue"
+              ? `SLA atrasado há ${formatServiceDuration(sla.remainingMinutes)}`
+              : `SLA vence em ${formatServiceDuration(sla.remainingMinutes)}`}
+          </Badge>
+        )}
       </div>
+      {sla.state !== "not_applicable" && (
+        <p className="mt-2 text-xs font-medium text-muted-foreground">
+          Cliente aguardando há {formatServiceDuration(sla.elapsedMinutes)} · limite de {sla.limitHours}h
+        </p>
+      )}
       <p className="mt-3 text-xs text-muted-foreground">
         {item.item_kind === "communication"
           ? assigneeName || "Sem responsável"
