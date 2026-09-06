@@ -23,6 +23,7 @@ const route = readFileSync("src/routes/_authenticated/comunicacao.tsx", "utf8");
 const clientRoute = readFileSync("src/routes/_authenticated/clientes.$clientId.tsx", "utf8");
 const realtime = readFileSync("src/hooks/use-portal-chat.ts", "utf8");
 const inboxHook = readFileSync("src/hooks/use-staff-portal-inbox.ts", "utf8");
+const communicationHook = readFileSync("src/hooks/use-communication.ts", "utf8");
 const types = readFileSync("src/integrations/supabase/types.ts", "utf8");
 
 const base = {
@@ -98,6 +99,17 @@ describe("Central de Atendimento do Portal", () => {
     assert.match(component, /search=\{\{ tab: "portal" \}\}/);
     assert.match(route, /<PortalServiceCenter onOpenCommunication=\{openPortalConversation\}/);
     assert.match(clientRoute, /search\.tab === "portal"/);
+  });
+
+  test("triagem altera status, prioridade e responsável sem sair da central", () => {
+    assert.match(component, /useChangeCommunicationStatus/);
+    assert.match(component, /useUpdateCommunicationThread/);
+    assert.match(component, /useAssignCommunicationThread/);
+    assert.match(component, /COMMUNICATION_STATUSES/);
+    assert.match(component, /COMMUNICATION_PRIORITIES/);
+    assert.match(component, /Sem responsável/);
+    assert.match(communicationHook, /_priority: priority \?\? null/);
+    assert.match(communicationHook, /staff-client-portal-service-center/);
   });
 
   test("fila atualiza por polling e pelos eventos privados já existentes", () => {
