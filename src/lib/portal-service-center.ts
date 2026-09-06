@@ -94,6 +94,12 @@ export function summarizePortalServiceCenter(
     waitingTeam: items.filter(
       (item) => item.item_kind === "communication" && item.status === "aguardando_equipe",
     ).length,
+    unassigned: items.filter(
+      (item) =>
+        item.item_kind === "communication" &&
+        item.assigned_to === null &&
+        item.status !== "resolvida",
+    ).length,
     unread: items.reduce((total, item) => total + item.unread_count, 0),
     submitted: items.filter(
       (item) => item.item_kind === "document_request" && item.status === "submitted",
@@ -150,9 +156,10 @@ export function prioritizePortalServiceCenter(
     const sla = portalServiceSla(item, now).state;
     if (sla === "overdue") return 0;
     if (sla === "at_risk") return 1;
-    if (item.requires_action) return 2;
-    if (item.unread_count > 0) return 3;
-    return 4;
+    if (item.item_kind === "communication" && item.assigned_to === null) return 2;
+    if (item.requires_action) return 3;
+    if (item.unread_count > 0) return 4;
+    return 5;
   };
   return [...items].sort((left, right) =>
     rank(left) - rank(right) ||

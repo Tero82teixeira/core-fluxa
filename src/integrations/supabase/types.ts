@@ -4143,6 +4143,10 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      claim_portal_communication_thread: {
+        Args: { _thread_id: string }
+        Returns: undefined
+      }
       cancel_financial_transaction: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string

@@ -10,6 +10,7 @@ import {
   MessageSquare,
   RefreshCw,
   Search,
+  UserCheck,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ import { useMarkStaffPortalCommunicationRead } from "@/hooks/use-staff-portal-in
 import {
   useAssignCommunicationThread,
   useChangeCommunicationStatus,
+  useClaimPortalCommunicationThread,
   useUpdateCommunicationThread,
 } from "@/hooks/use-communication";
 import { useTeamMembers, type TeamMember } from "@/hooks/use-team";
@@ -88,6 +90,7 @@ export function PortalServiceCenter({
   const markRead = useMarkStaffPortalCommunicationRead(organizationId);
   const changeStatus = useChangeCommunicationStatus(organizationId);
   const assign = useAssignCommunicationThread(organizationId);
+  const claim = useClaimPortalCommunicationThread(organizationId);
   const updateThread = useUpdateCommunicationThread(organizationId);
   const team = useTeamMembers(organizationId);
   const [filters, setFilters] = useState(INITIAL_FILTERS);
@@ -174,7 +177,7 @@ export function PortalServiceCenter({
       </header>
 
       <div className="space-y-4 p-4 sm:p-5">
-        <div className={`grid grid-cols-2 gap-3 ${canReviewDocuments ? "lg:grid-cols-3" : "lg:max-w-4xl lg:grid-cols-4"}`}>
+        <div className={`grid grid-cols-2 gap-3 ${canReviewDocuments ? "lg:grid-cols-3" : "lg:grid-cols-5"}`}>
           <CenterMetric
             icon={MessageSquare}
             label="Aguardando resposta"
@@ -183,6 +186,16 @@ export function PortalServiceCenter({
             onClick={() => preset(
               { kind: "communication", status: "aguardando_equipe" },
               filters.kind === "communication" && filters.status === "aguardando_equipe",
+            )}
+          />
+          <CenterMetric
+            icon={UserCheck}
+            label="Triagem pendente"
+            value={summary.unassigned}
+            active={filters.kind === "communication" && filters.assignee === "unassigned"}
+            onClick={() => preset(
+              { kind: "communication", assignee: "unassigned" },
+              filters.kind === "communication" && filters.assignee === "unassigned",
             )}
           />
           <CenterMetric
@@ -308,7 +321,8 @@ export function PortalServiceCenter({
                   assigneeName={item.assigned_to ? memberNames.get(item.assigned_to) : null}
                   team={(team.data ?? []).filter((member) => member.is_active)}
                   canAssign={canAssign}
-                  pending={changeStatus.isPending || assign.isPending || updateThread.isPending}
+                  canClaim={Boolean(user?.id)}
+                  pending={changeStatus.isPending || assign.isPending || claim.isPending || updateThread.isPending}
                   now={now}
                   onOpenCommunication={openCommunication}
                   onStatusChange={(status) => triage(
@@ -322,6 +336,10 @@ export function PortalServiceCenter({
                   onAssigneeChange={(assignedTo) => triage(
                     () => assign.mutateAsync({ threadId: item.item_id, assignedTo }),
                     "Responsável atualizado.",
+                  )}
+                  onClaim={() => triage(
+                    () => claim.mutateAsync(item.item_id),
+                    "Atendimento assumido. Ele agora está na sua fila.",
                   )}
                 />
               </li>
@@ -385,23 +403,27 @@ function ServiceItem({
   assigneeName,
   team,
   canAssign,
+  canClaim,
   pending,
   now,
   onOpenCommunication,
   onStatusChange,
   onPriorityChange,
   onAssigneeChange,
+  onClaim,
 }: {
   item: PortalServiceCenterItem;
   assigneeName?: string | null;
   team: TeamMember[];
   canAssign: boolean;
+  canClaim: boolean;
   pending: boolean;
   now: Date;
   onOpenCommunication: (threadId: string) => void;
   onStatusChange: (status: CommunicationStatus) => Promise<void>;
   onPriorityChange: (priority: CommunicationPriority) => Promise<void>;
   onAssigneeChange: (assignedTo: string | null) => Promise<void>;
+  onClaim: () => Promise<void>;
 }) {
   const status = STATUS[item.status] ?? { label: item.status, tone: "neutral" as const };
   const sla = portalServiceSla(item, now);
@@ -467,7 +489,7 @@ function ServiceItem({
         >
           {content}
         </button>
-        <div className="grid gap-2 border-t bg-muted/20 p-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-2 border-t bg-muted/20 p-3 sm:grid-cols-2 xl:grid-cols-4">
           <Select
             value={item.status}
             disabled={pending}
@@ -508,6 +530,12 @@ function ServiceItem({
                 ))}
               </SelectContent>
             </Select>
+          )}
+          {canClaim && item.assigned_to === null && (
+            <Button disabled={pending} onClick={() => void onClaim()}>
+              <UserCheck className="size-4" aria-hidden />
+              Assumir atendimento
+            </Button>
           )}
         </div>
       </article>

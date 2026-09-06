@@ -343,62 +343,35 @@ function TeamPage() {
       <div className="space-y-3">
         {filtered.map((member) => (
           <Card key={member.id}>
-            <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-[minmax(180px,1.5fr)_repeat(6,1fr)_auto] lg:items-center">
-              <div>
-                <p className="font-medium">{member.full_name || "Sem nome"}</p>
-                <p className="text-sm text-muted-foreground">
-                  {member.email || "E-mail indisponível"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Entrada: {date(member.created_at)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Função</p>
-                <p className="text-sm">{ROLE[member.role].label}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Status</p>
-                <p className="text-sm">{member.is_active ? "Ativo" : "Inativo"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Tarefas / processos</p>
-                <p className="text-sm">
-                  {member.openTasks} / {member.openProcesses}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Monitoramentos</p>
-                <p className="text-sm">{member.monitoringItems}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Distribuição automática</p>
-                <p className="text-sm">
-                  {member.receives_automatic_tasks
-                    ? `${member.distribution_sector} · ${member.distribution_function}`
-                    : "Desativada"}
-                </p>
-                {member.receives_automatic_tasks && (
-                  <p className="text-xs text-muted-foreground">
-                    {member.openTasks}/{member.automatic_task_capacity} tarefas
+            <CardContent className="space-y-4 p-4 sm:p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="break-words font-semibold">
+                      {member.full_name || "Sem nome"}
+                    </p>
+                    <span className="rounded-full border bg-muted/40 px-2 py-0.5 text-xs">
+                      {ROLE[member.role].label}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        member.is_active
+                          ? "bg-success/10 text-success"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {member.is_active ? "Ativo" : "Inativo"}
+                    </span>
+                  </div>
+                  <p className="mt-1 break-all text-sm text-muted-foreground">
+                    {member.email || "E-mail indisponível"}
                   </p>
-                )}
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Atendimentos do portal</p>
-                <p className="text-sm">
-                  {!member.is_active
-                    ? "Membro inativo"
-                    : member.receives_portal_communications
-                      ? "Disponível"
-                      : "Pausado"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {member.openCommunications}/{member.portal_communication_capacity} conversas
-                </p>
-              </div>
-              {permissions.canManageTeam && (
-                <div className="flex flex-wrap gap-2">
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Entrada: {date(member.created_at)}
+                  </p>
+                </div>
+                {permissions.canManageTeam && (
+                  <div className="flex shrink-0 flex-wrap gap-2">
                   <Button size="sm" variant="secondary" onClick={() => openDistribution(member)}>
                     Configurar distribuição
                   </Button>
@@ -411,10 +384,58 @@ function TeamPage() {
                       Configurar atendimento
                     </Button>
                   )}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <div className="rounded-xl border bg-muted/20 p-3">
+                  <p className="text-xs text-muted-foreground">Tarefas abertas</p>
+                  <p className="mt-1 text-lg font-semibold">{member.openTasks}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {member.lateTasks} atrasada(s)
+                  </p>
                 </div>
-              )}
+                <div className="rounded-xl border bg-muted/20 p-3">
+                  <p className="text-xs text-muted-foreground">Processos</p>
+                  <p className="mt-1 text-lg font-semibold">{member.openProcesses}</p>
+                  <p className="text-xs text-muted-foreground">em acompanhamento</p>
+                </div>
+                <div className="rounded-xl border bg-muted/20 p-3">
+                  <p className="text-xs text-muted-foreground">Monitoramentos</p>
+                  <p className="mt-1 text-lg font-semibold">{member.monitoringItems}</p>
+                  <p className="text-xs text-muted-foreground">itens ativos</p>
+                </div>
+                <div className="rounded-xl border bg-muted/20 p-3">
+                  <p className="text-xs text-muted-foreground">Distribuição de tarefas</p>
+                  <p className="mt-1 break-words text-sm font-medium">
+                    {member.receives_automatic_tasks
+                      ? `${member.distribution_sector} · ${member.distribution_function}`
+                      : "Desativada"}
+                  </p>
+                  {member.receives_automatic_tasks && (
+                    <p className="text-xs text-muted-foreground">
+                      {member.openTasks}/{member.automatic_task_capacity} tarefas
+                    </p>
+                  )}
+                </div>
+                <div className="rounded-xl border bg-muted/20 p-3">
+                  <p className="text-xs text-muted-foreground">Atendimentos do portal</p>
+                  <p className="mt-1 text-sm font-medium">
+                    {!member.is_active
+                      ? "Membro inativo"
+                      : member.receives_portal_communications
+                        ? "Disponível"
+                        : "Pausado"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {member.openCommunications}/{member.portal_communication_capacity} conversas
+                  </p>
+                </div>
+              </div>
+
               {permissions.canManageTeam && member.user_id !== user?.id && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 border-t pt-4">
                   <select
                     aria-label={`Alterar função de ${member.full_name}`}
                     className="h-9 rounded-md border bg-background px-2 text-xs"
