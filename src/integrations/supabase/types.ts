@@ -2682,8 +2682,11 @@ export type Database = {
           id: string
           is_active: boolean
           last_automatic_task_at: string | null
+          last_portal_communication_assigned_at: string | null
           organization_id: string
+          portal_communication_capacity: number
           receives_automatic_tasks: boolean
+          receives_portal_communications: boolean
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
           user_id: string
@@ -2696,8 +2699,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_automatic_task_at?: string | null
+          last_portal_communication_assigned_at?: string | null
           organization_id: string
+          portal_communication_capacity?: number
           receives_automatic_tasks?: boolean
+          receives_portal_communications?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id: string
@@ -2710,8 +2716,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_automatic_task_at?: string | null
+          last_portal_communication_assigned_at?: string | null
           organization_id?: string
+          portal_communication_capacity?: number
           receives_automatic_tasks?: boolean
+          receives_portal_communications?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id?: string
@@ -4965,6 +4974,14 @@ export type Database = {
           _member: string
           _receives_automatic_tasks: boolean
           _sector: string
+        }
+        Returns: undefined
+      }
+      update_member_portal_communication_distribution: {
+        Args: {
+          _capacity: number
+          _member: string
+          _receives_portal_communications: boolean
         }
         Returns: undefined
       }
