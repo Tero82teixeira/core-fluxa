@@ -5061,6 +5061,26 @@ export type Database = {
           updated_at: string
         }[]
       }
+      staff_client_portal_service_center: {
+        Args: { _organization_id: string }
+        Returns: {
+          assigned_to: string
+          client_id: string
+          client_name: string
+          due_date: string
+          item_id: string
+          item_kind: string
+          last_activity_at: string
+          opened_by_client: boolean
+          priority: string
+          process_code: string
+          requires_action: boolean
+          status: string
+          submitted_file_name: string
+          title: string
+          unread_count: number
+        }[]
+      }
       can_access_client_portal_document: {
         Args: { _file_path: string }
         Returns: boolean

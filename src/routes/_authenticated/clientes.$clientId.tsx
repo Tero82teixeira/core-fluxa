@@ -30,7 +30,11 @@ import {
   relativeTime,
 } from "@/lib/format";
 
+type ClientDetailSearch = { tab?: "portal" };
+
 export const Route = createFileRoute("/_authenticated/clientes/$clientId")({
+  validateSearch: (search: Record<string, unknown>): ClientDetailSearch =>
+    search.tab === "portal" ? { tab: "portal" } : {},
   head: () => ({
     meta: [
       { title: "Ficha do cliente — FLUXA" },
@@ -59,6 +63,7 @@ const CLOSED = ["finalizado", "arquivado", "cancelado"];
 
 function ClientDetail() {
   const { clientId } = Route.useParams();
+  const search = Route.useSearch();
   const navigate = useNavigate();
   const { organizationId, role } = useWorkspace();
   const permissions = usePermissions();
@@ -237,7 +242,7 @@ function ClientDetail() {
         ))}
       </section>
 
-      <Tabs defaultValue="visao">
+      <Tabs defaultValue={canManageClientPortal && search.tab === "portal" ? "portal" : "visao"}>
         <TabsList className="h-auto flex-wrap gap-1.5 p-1.5">
           <TabsTrigger value="visao" className="px-4 py-2 text-sm">
             Visão geral

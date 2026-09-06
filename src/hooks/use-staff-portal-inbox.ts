@@ -74,6 +74,10 @@ export function useMarkStaffPortalCommunicationRead(organizationId: string | nul
       if (error) throw error;
     },
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["staff-client-portal-entries"] }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["staff-client-portal-entries"] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-client-portal-inbox"] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-client-portal-service-center"] }),
+      ]),
   });
 }
