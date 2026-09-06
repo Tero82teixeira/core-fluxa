@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Circle,
+  CircleAlert,
   Download,
   Eye,
   FileText,
@@ -92,7 +93,7 @@ import {
 } from "@/lib/documents";
 import { PIPELINE_STAGES, PROCESS_STAGE } from "@/lib/domain";
 import { describeError } from "@/lib/errors";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { civilDateKey, formatDate, formatDateTime } from "@/lib/format";
 
 export const Route = createFileRoute("/meu-portal")({
   ssr: false,
@@ -310,6 +311,59 @@ function MyClientPortal() {
       );
     });
   }, [requestSearch, requestStatusFilter, requests.data]);
+  const portalAttentionItems = useMemo(() => {
+    const today = civilDateKey();
+    const items: PortalAttentionItem[] = [];
+    for (const request of requests.data ?? []) {
+      if (request.status !== "pending" && request.status !== "revision_requested") continue;
+      const overdue = Boolean(request.due_date && request.due_date < today);
+      items.push({
+        id: `request:${request.request_id}`,
+        entityType: "document_request",
+        entityId: request.request_id,
+        title: request.title,
+        detail:
+          request.status === "revision_requested"
+            ? "A empresa pediu uma correção neste documento."
+            : overdue
+              ? `Prazo vencido em ${formatDate(request.due_date)}.`
+              : request.due_date
+                ? `Envie até ${formatDate(request.due_date)}.`
+                : "Documento aguardando seu envio.",
+        label: request.status === "revision_requested" ? "Corrigir agora" : "Enviar documento",
+        priority: request.status === "revision_requested" ? 0 : overdue ? 1 : 2,
+        tone: request.status === "revision_requested" || overdue ? "danger" : "warning",
+        sortDate: request.due_date ?? request.created_at,
+      });
+    }
+
+    const seenThreads = new Set<string>();
+    for (const notification of notifications.data ?? []) {
+      if (
+        notification.read_at ||
+        notification.kind !== "communication" ||
+        notification.entity_type !== "communication" ||
+        !notification.entity_id ||
+        seenThreads.has(notification.entity_id)
+      ) continue;
+      seenThreads.add(notification.entity_id);
+      items.push({
+        id: `message:${notification.entity_id}`,
+        entityType: "communication",
+        entityId: notification.entity_id,
+        title: notification.title,
+        detail: notification.body ?? "Você recebeu uma nova mensagem da empresa.",
+        label: "Ler mensagem",
+        priority: 3,
+        tone: "info",
+        sortDate: notification.created_at,
+      });
+    }
+
+    return items
+      .sort((left, right) => left.priority - right.priority || left.sortDate.localeCompare(right.sortDate))
+      .slice(0, 5);
+  }, [notifications.data, requests.data]);
   usePortalChatRealtime({
     topic: user?.id ? `portal-user:${user.id}` : null,
     enabled: contentEnabled,
@@ -740,24 +794,71 @@ function MyClientPortal() {
                 />
               </div>
 
-              <section className="flex flex-col gap-4 rounded-2xl border border-primary/10 bg-background/85 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="font-semibold">O que você precisa fazer?</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Acesse rapidamente as ações mais importantes do seu atendimento.
-                  </p>
+              <section className="overflow-hidden rounded-2xl border border-primary/10 bg-background/90 shadow-lg shadow-primary/5">
+                <div className="flex flex-col gap-4 border-b bg-gradient-to-r from-primary/8 via-background to-background p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={
+                        "grid size-10 shrink-0 place-items-center rounded-xl " +
+                        (portalAttentionItems.length > 0
+                          ? "bg-warning/15 text-warning"
+                          : "bg-success/15 text-success")
+                      }
+                    >
+                      {portalAttentionItems.length > 0 ? (
+                        <CircleAlert className="size-5" aria-hidden />
+                      ) : (
+                        <CheckCircle2 className="size-5" aria-hidden />
+                      )}
+                    </span>
+                    <div>
+                      <h2 className="font-semibold">
+                        {portalAttentionItems.length > 0 ? "Atenção agora" : "Tudo em dia"}
+                      </h2>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {portalAttentionItems.length > 0
+                          ? portalAttentionItems.length === 1
+                            ? "1 item prioritário para você."
+                            : `${portalAttentionItems.length} itens prioritários para você.`
+                          : "Nenhuma ação urgente ou mensagem não lida no momento."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setActiveTab("processos")}>
+                      <FolderKanban className="size-4" aria-hidden /> Ver processos
+                    </Button>
+                    <Button size="sm" onClick={() => setQuickChatOpen(true)}>
+                      <MessageSquare className="size-4" aria-hidden /> Falar com a empresa
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setActiveTab("pendencias")}>
-                    <Upload className="size-4" aria-hidden /> Enviar documento
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setActiveTab("processos")}>
-                    <FolderKanban className="size-4" aria-hidden /> Ver processos
-                  </Button>
-                  <Button size="sm" onClick={() => setQuickChatOpen(true)}>
-                    <MessageSquare className="size-4" aria-hidden /> Falar com a empresa
-                  </Button>
-                </div>
+
+                {portalAttentionItems.length > 0 && (
+                  <ul className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+                    {portalAttentionItems.map((item) => (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          className={
+                            "flex h-full w-full flex-col rounded-xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md " +
+                            PORTAL_ATTENTION_TONE[item.tone]
+                          }
+                          onClick={() => focusPortalEntity(item.entityType, item.entityId)}
+                        >
+                          <span className="text-xs font-semibold uppercase tracking-wide opacity-75">
+                            {item.entityType === "communication" ? "Nova mensagem" : "Pendência"}
+                          </span>
+                          <span className="mt-2 line-clamp-1 font-semibold">{item.title}</span>
+                          <span className="mt-1 line-clamp-2 text-sm opacity-80">{item.detail}</span>
+                          <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold">
+                            {item.label} <ArrowRight className="size-3.5" aria-hidden />
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
 
               <div className="grid gap-4 lg:grid-cols-3">
@@ -779,7 +880,7 @@ function MyClientPortal() {
                     ) : (
                       <ul className="space-y-2">
                         {portalDeadlines.map((deadline) => {
-                          const overdue = deadline.dueDate < new Date().toISOString().slice(0, 10);
+                          const overdue = deadline.dueDate < civilDateKey();
                           return (
                             <li key={`${deadline.entityType}-${deadline.id}`}>
                               <button
@@ -1931,6 +2032,24 @@ type PortalDeadline = {
   title: string;
   label: string;
   dueDate: string;
+};
+
+type PortalAttentionItem = {
+  id: string;
+  entityType: "document_request" | "communication";
+  entityId: string;
+  title: string;
+  detail: string;
+  label: string;
+  priority: number;
+  tone: "danger" | "warning" | "info";
+  sortDate: string;
+};
+
+const PORTAL_ATTENTION_TONE: Record<PortalAttentionItem["tone"], string> = {
+  danger: "border-destructive/30 bg-destructive/5 text-destructive",
+  warning: "border-warning/30 bg-warning/5 text-foreground",
+  info: "border-primary/25 bg-primary/5 text-foreground",
 };
 
 type DocumentPortalStatusFilter = "todos" | "vencendo" | DocumentStatus;

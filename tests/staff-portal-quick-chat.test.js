@@ -48,7 +48,8 @@ describe("atendimento rápido do Meu Portal para a equipe", () => {
   });
 
   test("início do cliente reúne prioridades, mensagens, atividades e atalhos", () => {
-    assert.match(portal, /O que você precisa fazer\?/);
+    assert.match(portal, /Atenção agora/);
+    assert.match(portal, /portalAttentionItems/);
     assert.match(portal, /Próximos prazos/);
     assert.match(portal, /Últimas mensagens/);
     assert.match(portal, /Atividade recente/);

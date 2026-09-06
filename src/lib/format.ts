@@ -2,6 +2,18 @@
 
 export const TIMEZONE = "America/Sao_Paulo";
 
+/** Retorna a data civil YYYY-MM-DD no fuso oficial da aplicação. */
+export function civilDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 const onlyDigits = (value: string) => value.replace(/\D+/g, "");
 
 export const digits = onlyDigits;
