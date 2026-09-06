@@ -2729,6 +2729,7 @@ export type Database = {
       organization_settings: {
         Row: {
           allow_overdue_task_without_reason: boolean | null
+          auto_assign_portal_communications: boolean
           business_hours_end: string | null
           business_hours_start: string | null
           city: string | null
@@ -2785,6 +2786,7 @@ export type Database = {
         }
         Insert: {
           allow_overdue_task_without_reason?: boolean | null
+          auto_assign_portal_communications?: boolean
           business_hours_end?: string | null
           business_hours_start?: string | null
           city?: string | null
@@ -2841,6 +2843,7 @@ export type Database = {
         }
         Update: {
           allow_overdue_task_without_reason?: boolean | null
+          auto_assign_portal_communications?: boolean
           business_hours_end?: string | null
           business_hours_start?: string | null
           city?: string | null
@@ -4664,6 +4667,10 @@ export type Database = {
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
+      select_portal_communication_assignee: {
+        Args: { _organization_id: string }
+        Returns: string
+      }
       mark_all_notifications_read: {
         Args: { _organization: string }
         Returns: number

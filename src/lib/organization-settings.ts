@@ -20,6 +20,7 @@ export const ORGANIZATION_SETTINGS_DEFAULTS = {
   default_communication_priority: "normal" as CommunicationPriority,
   default_follow_up_hours: 24,
   highlight_internal_notes: true,
+  auto_assign_portal_communications: false,
   financial_alert_days: 7,
   monitoring_financial_high_threshold: 10000,
   monitoring_financial_critical_threshold: 50000,

@@ -497,6 +497,12 @@ function SettingsPage() {
               disabled={!canEdit}
               onChange={(v) => set("highlight_internal_notes", v)}
             />
+            <Toggle
+              label="Distribuir automaticamente atendimentos do portal"
+              checked={d.auto_assign_portal_communications}
+              disabled={!canEdit}
+              onChange={(v) => set("auto_assign_portal_communications", v)}
+            />
           </Section>
         </TabsContent>
         <TabsContent value="monitoramento">
