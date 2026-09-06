@@ -4052,10 +4052,6 @@ export type Database = {
         }
         Returns: string
       }
-      assign_client_portal_communication_on_message: {
-        Args: never
-        Returns: unknown
-      }
       apply_kiwify_subscription_event: {
         Args: {
           _access_until?: string
