@@ -62,6 +62,7 @@ export function useUploadPortalChatAttachment(identityScope: string | null) {
         queryClient.invalidateQueries({ queryKey: ["client-portal-communication-entries"] }),
         queryClient.invalidateQueries({ queryKey: ["staff-client-portal-inbox"] }),
         queryClient.invalidateQueries({ queryKey: ["staff-client-portal-entries"] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-client-portal-service-center"] }),
         queryClient.invalidateQueries({ queryKey: ["communication-entries", threadId] }),
       ]),
   });
@@ -98,6 +99,7 @@ export function usePortalChatRealtime({
           void queryClient.invalidateQueries({ queryKey: ["client-portal-notifications"] });
           void queryClient.invalidateQueries({ queryKey: ["staff-client-portal-inbox"] });
           void queryClient.invalidateQueries({ queryKey: ["staff-client-portal-entries"] });
+          void queryClient.invalidateQueries({ queryKey: ["staff-client-portal-service-center"] });
         })
         .subscribe();
     })();
