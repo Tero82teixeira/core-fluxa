@@ -4492,6 +4492,10 @@ export type Database = {
         Args: never
         Returns: number
       }
+      create_portal_sla_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       create_scheduled_automation: {
         Args: {
           _action_config: Json

@@ -33,6 +33,7 @@ export const ORGANIZATION_SETTINGS_DEFAULTS = {
     stale_tasks: true,
     stale_processes: true,
     overdue_communications: true,
+    portal_sla_alerts: true,
     overdue_accounts: true,
     expiring_documents: true,
     critical_monitoring: true,
