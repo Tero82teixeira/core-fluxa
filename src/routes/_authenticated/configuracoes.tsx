@@ -549,6 +549,7 @@ function SettingsPage() {
               ["stale_tasks", "Tarefas sem movimentação"],
               ["stale_processes", "Processos sem movimentação"],
               ["overdue_communications", "Retornos vencidos"],
+              ["portal_sla_alerts", "SLA do Portal do Cliente"],
               ["overdue_accounts", "Contas vencidas"],
               ["expiring_documents", "Documentos vencendo"],
               ["critical_monitoring", "Alertas críticos"],
