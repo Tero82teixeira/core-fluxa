@@ -75,7 +75,7 @@ function DetailCard({
 }) {
   return (
     <Card>
-      <CardContent className="flex gap-3 p-4">
+      <CardContent className="flex flex-col items-start gap-3 p-4 sm:flex-row">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
           <Icon className="size-5" aria-hidden />
         </span>
@@ -83,7 +83,9 @@ function DetailCard({
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {label}
           </p>
-          <p className="mt-1 break-words font-semibold">{value}</p>
+          <p className="mt-1 break-normal font-semibold [overflow-wrap:normal] [word-break:normal]">
+            {value}
+          </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
         </div>
       </CardContent>
@@ -121,7 +123,7 @@ function SubscriptionPage() {
       <div className="mx-auto w-full max-w-6xl space-y-4 p-4 sm:p-6">
         <Skeleton className="h-12 w-72" />
         <Skeleton className="h-40 w-full" />
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
           {Array.from({ length: 4 }, (_, index) => (
             <Skeleton key={index} className="h-36" />
           ))}
@@ -200,7 +202,7 @@ function SubscriptionPage() {
       </Card>
 
       <section
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+        className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4"
         aria-label="Resumo da assinatura"
       >
         <DetailCard

@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const NAV_ICON_TONE: Record<string, string> = {
+  "/meu-dia": "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",
   "/central": "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
   "/clientes": "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300",
   "/processos": "bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300",
@@ -59,7 +60,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="px-3 py-4">
         <Link
-          to="/central"
+          to="/meu-dia"
           onClick={closeOnMobile}
           className="flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
         >

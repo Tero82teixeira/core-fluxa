@@ -424,7 +424,7 @@ function Central() {
                     </p>
                     <strong
                       className={cn(
-                        "mt-1 block text-3xl leading-none font-semibold tabular-nums",
+                        "mt-1 block text-2xl leading-none font-semibold tabular-nums",
                         value === 0 ? "text-emerald-700 dark:text-emerald-300" : levelValue[level],
                       )}
                     >
@@ -726,9 +726,9 @@ function Central() {
         <CardHeader className="border-b pb-3">
           <CardTitle className="text-base">Atalhos rápidos</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-2 pt-4 sm:grid-cols-2 lg:grid-cols-5">
+        <CardContent className="grid grid-cols-1 gap-2 pt-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           {can("clients.create") && (
-            <Button className="min-h-11 w-full justify-start" asChild>
+            <Button className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
               <Link to="/clientes/novo">
                 <Plus aria-hidden />
                 Novo cliente
@@ -736,28 +736,28 @@ function Central() {
             </Button>
           )}
           {can("processes.create") && (
-            <Button className="min-h-11 w-full justify-start" asChild>
+            <Button className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
               <Link to="/processos/novo">
                 <Plus aria-hidden />
                 Novo processo
               </Link>
             </Button>
           )}
-          <Button variant="outline" className="min-h-11 w-full justify-start" asChild>
+          <Button variant="outline" className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
             <Link to="/tarefas">
               <Plus aria-hidden />
               Nova tarefa
             </Link>
           </Button>
           {canFinance && (
-            <Button variant="outline" className="min-h-11 w-full justify-start" asChild>
+            <Button variant="outline" className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
               <Link to="/financeiro">
                 <Plus aria-hidden />
                 Novo lançamento
               </Link>
             </Button>
           )}
-          <Button variant="outline" className="min-h-11 w-full justify-start" asChild>
+          <Button variant="outline" className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
             <Link to="/comunicacao">
               <Plus aria-hidden />
               Nova conversa

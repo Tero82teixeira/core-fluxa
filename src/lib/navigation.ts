@@ -5,6 +5,7 @@ import {
   CreditCard,
   FileStack,
   Gauge,
+  ListTodo,
   LayoutDashboard,
   LifeBuoy,
   ListChecks,
@@ -30,6 +31,7 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
+  { to: "/meu-dia", label: "Meu Dia", icon: ListTodo, description: "Prioridades pessoais", ready: true, group: "operacao" },
   { to: "/central", label: "Central de Comando", icon: LayoutDashboard, description: "Pulso da operação", ready: true, group: "operacao" },
   { to: "/clientes", label: "Clientes", icon: Users, description: "Carteira e relacionamento", ready: true, group: "operacao" },
   { to: "/processos", label: "Processos", icon: FileStack, description: "Etapas, prazos e protocolos", ready: true, group: "operacao" },

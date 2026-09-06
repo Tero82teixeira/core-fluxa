@@ -113,7 +113,7 @@ function InvitationPage() {
         queryClient.invalidateQueries({ queryKey: ["monitoring", accepted.organization_id] }),
       ]);
       toast.success(`Convite aceito. Você entrou na empresa como ${ROLE[accepted.role].label}.`);
-      await navigate({ to: "/central", replace: true });
+      await navigate({ to: "/meu-dia", replace: true });
     } catch (e) {
       const raw =
         e instanceof Error ? e.message : String((e as { message?: string })?.message ?? "");

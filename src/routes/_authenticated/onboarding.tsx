@@ -220,8 +220,8 @@ function Onboarding() {
       if (step === 3) {
         await updateOnboarding({ step: 3, complete: true });
         await refreshWorkspace();
-        toast.success("Empresa configurada. Bem-vindo à Central de Comando.");
-        navigate({ to: "/central" });
+        toast.success("Empresa configurada. Bem-vindo ao Meu Dia.");
+        navigate({ to: "/meu-dia" });
         return;
       }
       toast.success("Progresso salvo.");
