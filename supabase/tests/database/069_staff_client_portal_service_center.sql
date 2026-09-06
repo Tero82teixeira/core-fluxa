@@ -64,7 +64,7 @@ INSERT INTO public.client_portal_communication_shares(
   organization_id, client_id, thread_id, is_shared, opened_by_client, shared_at
 ) VALUES (
   '29400000-0000-0000-0000-000000000001',
-  '39400000-0000-0000-000000000001',
+  '39400000-0000-0000-0000-000000000001',
   '49400000-0000-0000-0000-000000000001',
   true,
   true,
