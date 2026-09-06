@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 42891)
-Total output lines: 5507
-
 export type Json =
   | string
   | number
@@ -2515,7 +2512,340 @@ export type Database = {
           ignored_at?: string | null
           monitoring_status?: string
           notes?: string | null
-          organiza…2891 tokens truncated…g | null
+          organization_id?: string
+          priority_override?: string | null
+          resolved_at?: string | null
+          source_id?: string
+          source_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_states_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          action_url: string | null
+          archived_at: string | null
+          body: string | null
+          created_at: string
+          dedupe_key: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          kind: string
+          organization_id: string
+          read_at: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          action_url?: string | null
+          archived_at?: string | null
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind?: string
+          organization_id: string
+          read_at?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          action_url?: string | null
+          archived_at?: string | null
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind?: string
+          organization_id?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_counters: {
+        Row: {
+          created_at: string
+          organization_id: string
+          process_seq: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          organization_id: string
+          process_seq?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          organization_id?: string
+          process_seq?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          cancelled_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          invited_by_name: string | null
+          organization_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          invited_by_name?: string | null
+          organization_id: string
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          invited_by_name?: string | null
+          organization_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          automatic_task_capacity: number
+          created_at: string
+          distribution_function: string | null
+          distribution_sector: string | null
+          id: string
+          is_active: boolean
+          last_automatic_task_at: string | null
+          organization_id: string
+          receives_automatic_tasks: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          automatic_task_capacity?: number
+          created_at?: string
+          distribution_function?: string | null
+          distribution_sector?: string | null
+          id?: string
+          is_active?: boolean
+          last_automatic_task_at?: string | null
+          organization_id: string
+          receives_automatic_tasks?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          automatic_task_capacity?: number
+          created_at?: string
+          distribution_function?: string | null
+          distribution_sector?: string | null
+          id?: string
+          is_active?: boolean
+          last_automatic_task_at?: string | null
+          organization_id?: string
+          receives_automatic_tasks?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_settings: {
+        Row: {
+          allow_overdue_task_without_reason: boolean | null
+          auto_assign_portal_communications: boolean
+          business_hours_end: string | null
+          business_hours_start: string | null
+          city: string | null
+          clients_range: string | null
+          complement: string | null
+          created_at: string
+          currency: string | null
+          current_control: string | null
+          date_format: string | null
+          default_communication_channel:
+            | Database["public"]["Enums"]["communication_channel"]
+            | null
+          default_communication_priority:
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
+          default_expense_category_id: string | null
+          default_financial_account_id: string | null
+          default_follow_up_hours: number | null
+          default_income_category_id: string | null
+          default_responsible_id: string | null
+          default_task_due_days: number | null
+          default_task_priority:
+            | Database["public"]["Enums"]["priority_level"]
+            | null
+          district: string | null
+          employees_range: string | null
+          financial_alert_days: number | null
+          highlight_internal_notes: boolean | null
+          locale: string | null
+          logo_url: string | null
+          main_services: string | null
+          monitoring_document_expiration_days: number | null
+          monitoring_financial_critical_threshold: number | null
+          monitoring_financial_high_threshold: number | null
+          monitoring_show_communication: boolean | null
+          monitoring_show_documents: boolean | null
+          monitoring_show_financial: boolean | null
+          monitoring_upcoming_days: number | null
+          notification_preferences: Json | null
+          number: string | null
+          organization_id: string
+          portal_name: string | null
+          primary_color: string | null
+          stale_process_days: number | null
+          stale_task_days: number | null
+          state: string | null
+          street: string | null
+          theme_preference: string
+          timezone: string | null
+          updated_at: string
+          updated_by: string | null
+          week_starts_on: number | null
+          zip_code: string | null
+        }
+        Insert: {
+          allow_overdue_task_without_reason?: boolean | null
+          auto_assign_portal_communications?: boolean
+          business_hours_end?: string | null
+          business_hours_start?: string | null
+          city?: string | null
+          clients_range?: string | null
+          complement?: string | null
+          created_at?: string
+          currency?: string | null
+          current_control?: string | null
+          date_format?: string | null
+          default_communication_channel?:
+            | Database["public"]["Enums"]["communication_channel"]
+            | null
+          default_communication_priority?:
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
+          default_expense_category_id?: string | null
+          default_financial_account_id?: string | null
+          default_follow_up_hours?: number | null
+          default_income_category_id?: string | null
+          default_responsible_id?: string | null
+          default_task_due_days?: number | null
+          default_task_priority?:
+            | Database["public"]["Enums"]["priority_level"]
+            | null
+          district?: string | null
+          employees_range?: string | null
+          financial_alert_days?: number | null
+          highlight_internal_notes?: boolean | null
+          locale?: string | null
+          logo_url?: string | null
+          main_services?: string | null
+          monitoring_document_expiration_days?: number | null
+          monitoring_financial_critical_threshold?: number | null
+          monitoring_financial_high_threshold?: number | null
+          monitoring_show_communication?: boolean | null
+          monitoring_show_documents?: boolean | null
+          monitoring_show_financial?: boolean | null
+          monitoring_upcoming_days?: number | null
+          notification_preferences?: Json | null
+          number?: string | null
+          organization_id: string
+          portal_name?: string | null
+          primary_color?: string | null
+          stale_process_days?: number | null
+          stale_task_days?: number | null
+          state?: string | null
+          street?: string | null
+          theme_preference?: string
+          timezone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          week_starts_on?: number | null
+          zip_code?: string | null
+        }
+        Update: {
+          allow_overdue_task_without_reason?: boolean | null
+          auto_assign_portal_communications?: boolean
+          business_hours_end?: string | null
+          business_hours_start?: string | null
           city?: string | null
           clients_range?: string | null
           complement?: string | null
