@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import {
+  civilDateKey,
   formatDateOnly,
   isValidCNPJ,
   isValidCPF,
@@ -9,6 +10,13 @@ import {
   maskDocument,
   maskPhone,
 } from "../src/lib/format.ts";
+
+describe("civilDateKey", () => {
+  test("considera a virada do dia no fuso de São Paulo", () => {
+    assert.equal(civilDateKey(new Date("2026-09-07T01:30:00Z")), "2026-09-06");
+    assert.equal(civilDateKey(new Date("2026-09-07T03:30:00Z")), "2026-09-07");
+  });
+});
 
 describe("documentos e contatos brasileiros", () => {
   test("formata CPF, CNPJ e telefone durante a digitação", () => {
