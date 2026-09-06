@@ -4,6 +4,9 @@ import { describe, test } from "node:test";
 
 import {
   filterPortalServiceCenter,
+  formatServiceDuration,
+  portalServiceSla,
+  prioritizePortalServiceCenter,
   summarizePortalServiceCenter,
 } from "../src/lib/portal-service-center.ts";
 
@@ -58,7 +61,26 @@ describe("Central de Atendimento do Portal", () => {
       { ...base, item_id: "item-2", item_kind: "document_request", status: "submitted", requires_action: true },
       { ...base, item_id: "item-3", item_kind: "document_request", status: "pending", due_date: "2026-09-05" },
     ], "2026-09-06");
-    assert.deepEqual(summary, { waitingTeam: 1, unread: 2, submitted: 1, overdue: 1 });
+    assert.deepEqual(summary, { waitingTeam: 1, unread: 2, submitted: 1, overdue: 1, slaAtRisk: 0, slaOverdue: 0 });
+  });
+
+  test("calcula SLA por prioridade somente enquanto a empresa deve responder", () => {
+    const now = new Date("2026-09-06T12:00:00Z");
+    const urgent = { ...base, item_kind: "communication", status: "aguardando_equipe", priority: "urgente", last_activity_at: "2026-09-06T10:15:00Z" };
+    assert.equal(portalServiceSla(urgent, now).state, "at_risk");
+    assert.equal(portalServiceSla({ ...urgent, last_activity_at: "2026-09-06T09:00:00Z" }, now).state, "overdue");
+    assert.equal(portalServiceSla({ ...urgent, status: "aguardando_cliente" }, now).state, "not_applicable");
+    assert.equal(portalServiceSla({ ...urgent, item_kind: "document_request" }, now).state, "not_applicable");
+  });
+
+  test("formata espera, filtra alertas e prioriza SLA vencido", () => {
+    const now = new Date("2026-09-06T12:00:00Z");
+    const overdue = { ...base, item_id: "overdue", item_kind: "communication", status: "aguardando_equipe", priority: "urgente", last_activity_at: "2026-09-06T09:00:00Z", requires_action: true };
+    const risk = { ...overdue, item_id: "risk", last_activity_at: "2026-09-06T10:15:00Z" };
+    assert.equal(formatServiceDuration(90), "1h 30min");
+    assert.equal(filterPortalServiceCenter([risk, overdue], { ...filters, queue: "sla_at_risk" }, null, "2026-09-06", now).length, 1);
+    assert.equal(filterPortalServiceCenter([risk, overdue], { ...filters, queue: "sla_overdue" }, null, "2026-09-06", now).length, 1);
+    assert.deepEqual(prioritizePortalServiceCenter([risk, overdue], now).map((item) => item.item_id), ["overdue", "risk"]);
   });
 
   test("filtra busca, fila, situação, prioridade e responsável", () => {
@@ -110,6 +132,13 @@ describe("Central de Atendimento do Portal", () => {
     assert.match(component, /Sem responsável/);
     assert.match(communicationHook, /_priority: priority \?\? null/);
     assert.match(communicationHook, /staff-client-portal-service-center/);
+  });
+
+  test("interface mostra tempo de espera e alertas de SLA", () => {
+    assert.match(component, /SLA em risco/);
+    assert.match(component, /SLA atrasado/);
+    assert.match(component, /Cliente aguardando há/);
+    assert.match(component, /prioritizePortalServiceCenter/);
   });
 
   test("fila atualiza por polling e pelos eventos privados já existentes", () => {
