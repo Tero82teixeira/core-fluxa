@@ -54,11 +54,13 @@ VALUES (
   'Portal Assignment Tenant',
   '19600000-0000-0000-0000-000000000001'
 );
-INSERT INTO public.organization_members(organization_id, user_id, role, is_active)
+INSERT INTO public.organization_members(
+  organization_id, user_id, role, is_active, receives_portal_communications
+)
 VALUES
-  ('29600000-0000-0000-0000-000000000001', '19600000-0000-0000-0000-000000000001', 'proprietario', true),
-  ('29600000-0000-0000-0000-000000000001', '19600000-0000-0000-0000-000000000002', 'operacional', true),
-  ('29600000-0000-0000-0000-000000000001', '19600000-0000-0000-0000-000000000003', 'gestor', true);
+  ('29600000-0000-0000-0000-000000000001', '19600000-0000-0000-0000-000000000001', 'proprietario', true, true),
+  ('29600000-0000-0000-0000-000000000001', '19600000-0000-0000-0000-000000000002', 'operacional', true, true),
+  ('29600000-0000-0000-0000-000000000001', '19600000-0000-0000-0000-000000000003', 'gestor', true, true);
 INSERT INTO public.organization_settings(
   organization_id, auto_assign_portal_communications
 ) VALUES (
