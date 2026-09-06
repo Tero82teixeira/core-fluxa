@@ -12,6 +12,7 @@ import {
   Search,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +22,21 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStaffPortalServiceCenter } from "@/hooks/use-staff-portal-service-center";
 import { useMarkStaffPortalCommunicationRead } from "@/hooks/use-staff-portal-inbox";
-import { useTeamMembers } from "@/hooks/use-team";
-import { canWriteCommunication } from "@/lib/communication";
+import {
+  useAssignCommunicationThread,
+  useChangeCommunicationStatus,
+  useUpdateCommunicationThread,
+} from "@/hooks/use-communication";
+import { useTeamMembers, type TeamMember } from "@/hooks/use-team";
+import {
+  COMMUNICATION_PRIORITIES,
+  COMMUNICATION_STATUSES,
+  canAdminCommunication,
+  canWriteCommunication,
+  type CommunicationPriority,
+  type CommunicationStatus,
+} from "@/lib/communication";
+import { describeError } from "@/lib/errors";
 import { formatDate, formatDateTime } from "@/lib/format";
 import {
   filterPortalServiceCenter,
@@ -65,9 +79,13 @@ export function PortalServiceCenter({
 }) {
   const { organizationId, role, user } = useWorkspace();
   const allowed = canWriteCommunication(role);
+  const canAssign = canAdminCommunication(role);
   const canReviewDocuments = role === "proprietario" || role === "administrador";
   const center = useStaffPortalServiceCenter(organizationId, allowed);
   const markRead = useMarkStaffPortalCommunicationRead(organizationId);
+  const changeStatus = useChangeCommunicationStatus(organizationId);
+  const assign = useAssignCommunicationThread(organizationId);
+  const updateThread = useUpdateCommunicationThread(organizationId);
   const team = useTeamMembers(organizationId);
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const items = center.data ?? [];
@@ -104,6 +122,18 @@ export function PortalServiceCenter({
   function openCommunication(threadId: string) {
     onOpenCommunication(threadId);
     markRead.mutate(threadId);
+  }
+
+  async function triage(
+    action: () => Promise<unknown>,
+    successMessage: string,
+  ) {
+    try {
+      await action();
+      toast.success(successMessage);
+    } catch (error) {
+      toast.error(describeError(error));
+    }
   }
 
   return (
@@ -243,7 +273,22 @@ export function PortalServiceCenter({
                 <ServiceItem
                   item={item}
                   assigneeName={item.assigned_to ? memberNames.get(item.assigned_to) : null}
+                  team={(team.data ?? []).filter((member) => member.is_active)}
+                  canAssign={canAssign}
+                  pending={changeStatus.isPending || assign.isPending || updateThread.isPending}
                   onOpenCommunication={openCommunication}
+                  onStatusChange={(status) => triage(
+                    () => changeStatus.mutateAsync({ threadId: item.item_id, status }),
+                    "Status atualizado.",
+                  )}
+                  onPriorityChange={(priority) => triage(
+                    () => updateThread.mutateAsync({ threadId: item.item_id, priority }),
+                    "Prioridade atualizada.",
+                  )}
+                  onAssigneeChange={(assignedTo) => triage(
+                    () => assign.mutateAsync({ threadId: item.item_id, assignedTo }),
+                    "Responsável atualizado.",
+                  )}
                 />
               </li>
             ))}
@@ -304,11 +349,23 @@ function CenterSelect({
 function ServiceItem({
   item,
   assigneeName,
+  team,
+  canAssign,
+  pending,
   onOpenCommunication,
+  onStatusChange,
+  onPriorityChange,
+  onAssigneeChange,
 }: {
   item: PortalServiceCenterItem;
   assigneeName?: string | null;
+  team: TeamMember[];
+  canAssign: boolean;
+  pending: boolean;
   onOpenCommunication: (threadId: string) => void;
+  onStatusChange: (status: CommunicationStatus) => Promise<void>;
+  onPriorityChange: (priority: CommunicationPriority) => Promise<void>;
+  onAssigneeChange: (assignedTo: string | null) => Promise<void>;
 }) {
   const status = STATUS[item.status] ?? { label: item.status, tone: "neutral" as const };
   const content = (
@@ -348,7 +405,60 @@ function ServiceItem({
 
   const className = "block w-full rounded-xl border bg-background p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md";
   if (item.item_kind === "communication") {
-    return <button type="button" className={className} onClick={() => onOpenCommunication(item.item_id)}>{content}</button>;
+    return (
+      <article className="overflow-hidden rounded-xl border bg-background transition-all hover:border-primary/30 hover:shadow-md">
+        <button
+          type="button"
+          className="block w-full p-4 text-left"
+          onClick={() => onOpenCommunication(item.item_id)}
+        >
+          {content}
+        </button>
+        <div className="grid gap-2 border-t bg-muted/20 p-3 sm:grid-cols-2 xl:grid-cols-3">
+          <Select
+            value={item.status}
+            disabled={pending}
+            onValueChange={(value) => void onStatusChange(value as CommunicationStatus)}
+          >
+            <SelectTrigger aria-label={`Status de ${item.title}`}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {COMMUNICATION_STATUSES.filter((value) => value !== "arquivada").map((value) => (
+                <SelectItem key={value} value={value}>{STATUS[value]?.label ?? value}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={item.priority}
+            disabled={pending}
+            onValueChange={(value) => void onPriorityChange(value as CommunicationPriority)}
+          >
+            <SelectTrigger aria-label={`Prioridade de ${item.title}`}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {COMMUNICATION_PRIORITIES.map((value) => (
+                <SelectItem key={value} value={value}>{PRIORITY_LABEL[value]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {canAssign && (
+            <Select
+              value={item.assigned_to ?? "none"}
+              disabled={pending}
+              onValueChange={(value) => void onAssigneeChange(value === "none" ? null : value)}
+            >
+              <SelectTrigger aria-label={`Responsável por ${item.title}`}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem responsável</SelectItem>
+                {team.map((member) => (
+                  <SelectItem key={member.user_id} value={member.user_id}>
+                    {member.full_name || member.email || "Membro"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      </article>
+    );
   }
   return (
     <Link
