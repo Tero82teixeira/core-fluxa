@@ -20,10 +20,14 @@ export type TeamMember = {
   automatic_task_capacity: number;
   receives_automatic_tasks: boolean;
   last_automatic_task_at: string | null;
+  receives_portal_communications: boolean;
+  portal_communication_capacity: number;
+  last_portal_communication_assigned_at: string | null;
   openTasks: number;
   lateTasks: number;
   openProcesses: number;
   monitoringItems: number;
+  openCommunications: number;
 };
 
 /** Membros da empresa com carga de trabalho real. */
@@ -34,15 +38,15 @@ export function useTeamMembers(organizationId: string | null) {
     queryFn: async (): Promise<TeamMember[]> => {
       const { data, error } = await db()
         .from("organization_members")
-        .select("id, user_id, role, is_active, created_at, distribution_sector, distribution_function, automatic_task_capacity, receives_automatic_tasks, last_automatic_task_at")
+        .select("id, user_id, role, is_active, created_at, distribution_sector, distribution_function, automatic_task_capacity, receives_automatic_tasks, last_automatic_task_at, receives_portal_communications, portal_communication_capacity, last_portal_communication_assigned_at")
         .eq("organization_id", organizationId)
         .order("created_at");
       if (error) throw error;
-      const rows = (data ?? []) as Omit<TeamMember, "full_name" | "email" | "openTasks" | "lateTasks" | "openProcesses">[];
+      const rows = (data ?? []) as Omit<TeamMember, "full_name" | "email" | "openTasks" | "lateTasks" | "openProcesses" | "monitoringItems" | "openCommunications">[];
       if (rows.length === 0) return [];
 
       const ids = rows.map((row) => row.user_id);
-      const [{ data: profiles }, { data: tasks }, { data: processes }, { data: monitoring }] = await Promise.all([
+      const [{ data: profiles }, { data: tasks }, { data: processes }, { data: monitoring }, { data: communications }] = await Promise.all([
         db().from("profiles").select("id, full_name, email").in("id", ids),
         db()
           .from("tasks")
@@ -57,6 +61,12 @@ export function useTeamMembers(organizationId: string | null) {
           .eq("organization_id", organizationId)
           .is("archived_at", null),
         db().from("monitoring_items").select("responsible_user_id").eq("organization_id", organizationId).is("archived_at", null),
+        db()
+          .from("communication_threads")
+          .select("assigned_to")
+          .eq("organization_id", organizationId)
+          .is("archived_at", null)
+          .in("status", ["aberta", "aguardando_cliente", "aguardando_equipe"]),
       ]);
 
       const profileMap = new Map<string, { full_name: string | null; email: string | null }>(
@@ -73,6 +83,7 @@ export function useTeamMembers(organizationId: string | null) {
           lateTasks: own.filter((task: any) => task.due_at && new Date(task.due_at).getTime() < now).length,
           openProcesses: (processes ?? []).filter((process: any) => process.owner_id === row.user_id).length,
           monitoringItems: (monitoring ?? []).filter((item: any) => item.responsible_user_id === row.user_id).length,
+          openCommunications: (communications ?? []).filter((thread: any) => thread.assigned_to === row.user_id).length,
         };
       });
     },
@@ -215,6 +226,29 @@ export function useUpdateMemberTaskDistribution(organizationId: string | null) {
         _function: operationalFunction,
         _capacity: capacity,
         _receives_automatic_tasks: enabled,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => invalidateTeam(queryClient, organizationId),
+  });
+}
+
+export function useUpdateMemberPortalCommunicationDistribution(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      memberId,
+      capacity,
+      enabled,
+    }: {
+      memberId: string;
+      capacity: number;
+      enabled: boolean;
+    }) => {
+      const { error } = await db().rpc("update_member_portal_communication_distribution", {
+        _member: memberId,
+        _capacity: capacity,
+        _receives_portal_communications: enabled,
       });
       if (error) throw error;
     },

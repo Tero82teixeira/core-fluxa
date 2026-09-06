@@ -35,6 +35,7 @@ import {
   useSetMemberActive,
   useTeamMembers,
   useTransferResponsibilities,
+  useUpdateMemberPortalCommunicationDistribution,
   useUpdateMemberTaskDistribution,
   type TeamMember,
 } from "@/hooks/use-team";
@@ -62,11 +63,15 @@ function TeamPage() {
   const setActive = useSetMemberActive(organizationId);
   const transferResponsibilities = useTransferResponsibilities(organizationId);
   const updateDistribution = useUpdateMemberTaskDistribution(organizationId);
+  const updatePortalDistribution = useUpdateMemberPortalCommunicationDistribution(organizationId);
   const [distributionMember, setDistributionMember] = useState<TeamMember | null>(null);
   const [distributionSector, setDistributionSector] = useState("");
   const [distributionFunction, setDistributionFunction] = useState("");
   const [distributionCapacity, setDistributionCapacity] = useState(20);
   const [distributionEnabled, setDistributionEnabled] = useState(false);
+  const [portalDistributionMember, setPortalDistributionMember] = useState<TeamMember | null>(null);
+  const [portalDistributionCapacity, setPortalDistributionCapacity] = useState(20);
+  const [portalDistributionEnabled, setPortalDistributionEnabled] = useState(false);
   const [transferFrom, setTransferFrom] = useState<TeamMember | null>(null);
   const [transferToUserId, setTransferToUserId] = useState("");
   const [query, setQuery] = useState("");
@@ -135,6 +140,27 @@ function TeamPage() {
       setDistributionMember(null);
     } catch {
       toast.error("Não foi possível atualizar a distribuição automática.");
+    }
+  }
+
+  function openPortalDistribution(member: TeamMember) {
+    setPortalDistributionMember(member);
+    setPortalDistributionCapacity(member.portal_communication_capacity);
+    setPortalDistributionEnabled(member.receives_portal_communications);
+  }
+
+  async function savePortalDistribution() {
+    if (!portalDistributionMember) return;
+    try {
+      await updatePortalDistribution.mutateAsync({
+        memberId: portalDistributionMember.id,
+        capacity: portalDistributionCapacity,
+        enabled: portalDistributionEnabled,
+      });
+      toast.success("Disponibilidade para atendimentos atualizada.");
+      setPortalDistributionMember(null);
+    } catch {
+      toast.error("Não foi possível atualizar a disponibilidade para atendimentos.");
     }
   }
 
@@ -317,7 +343,7 @@ function TeamPage() {
       <div className="space-y-3">
         {filtered.map((member) => (
           <Card key={member.id}>
-            <CardContent className="grid gap-4 p-4 md:grid-cols-[minmax(180px,1.5fr)_repeat(5,1fr)_auto] md:items-center">
+            <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-[minmax(180px,1.5fr)_repeat(6,1fr)_auto] lg:items-center">
               <div>
                 <p className="font-medium">{member.full_name || "Sem nome"}</p>
                 <p className="text-sm text-muted-foreground">
@@ -358,10 +384,34 @@ function TeamPage() {
                   </p>
                 )}
               </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Atendimentos do portal</p>
+                <p className="text-sm">
+                  {!member.is_active
+                    ? "Membro inativo"
+                    : member.receives_portal_communications
+                      ? "Disponível"
+                      : "Pausado"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {member.openCommunications}/{member.portal_communication_capacity} conversas
+                </p>
+              </div>
               {permissions.canManageTeam && (
-                <Button size="sm" variant="secondary" onClick={() => openDistribution(member)}>
-                  Configurar distribuição
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => openDistribution(member)}>
+                    Configurar distribuição
+                  </Button>
+                  {member.role !== "visualizador" && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => openPortalDistribution(member)}
+                    >
+                      Configurar atendimento
+                    </Button>
+                  )}
+                </div>
               )}
               {permissions.canManageTeam && member.user_id !== user?.id && (
                 <div className="flex flex-wrap gap-2">
@@ -506,6 +556,82 @@ function TeamPage() {
               }
             >
               Salvar configuração
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={Boolean(portalDistributionMember)}
+        onOpenChange={(open) => {
+          if (!open && !updatePortalDistribution.isPending) setPortalDistributionMember(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Distribuição de atendimentos do portal</DialogTitle>
+            <DialogDescription>
+              Pause o recebimento automático em ausências ou defina quantas conversas abertas
+              este membro pode atender. Conversas já atribuídas não serão alteradas.
+            </DialogDescription>
+          </DialogHeader>
+          {portalDistributionMember && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="font-medium">
+                  {portalDistributionMember.full_name ||
+                    portalDistributionMember.email ||
+                    "Sem nome"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Carga atual: {portalDistributionMember.openCommunications} conversas abertas
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="portal-distribution-capacity">
+                  Limite de conversas abertas
+                </Label>
+                <Input
+                  id="portal-distribution-capacity"
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={portalDistributionCapacity}
+                  onChange={(event) => setPortalDistributionCapacity(Number(event.target.value))}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={portalDistributionEnabled}
+                  onChange={(event) => setPortalDistributionEnabled(event.target.checked)}
+                />
+                Receber novas conversas do portal automaticamente
+              </label>
+              {!portalDistributionEnabled && (
+                <p className="text-sm text-muted-foreground">
+                  O membro ficará pausado somente para novas distribuições automáticas.
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPortalDistributionMember(null)}
+              disabled={updatePortalDistribution.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={savePortalDistribution}
+              disabled={
+                updatePortalDistribution.isPending ||
+                !Number.isInteger(portalDistributionCapacity) ||
+                portalDistributionCapacity < 1 ||
+                portalDistributionCapacity > 500
+              }
+            >
+              Salvar atendimento
             </Button>
           </DialogFooter>
         </DialogContent>
