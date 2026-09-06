@@ -42,7 +42,7 @@ function OnboardingGate() {
     if (!commercialAccess) return;
     if (platformAdmin && onPlatformArea) return;
     if (!onboardingCompleted && !onOnboarding) navigate({ to: "/onboarding", replace: true });
-    if (onboardingCompleted && onOnboarding) navigate({ to: "/central", replace: true });
+    if (onboardingCompleted && onOnboarding) navigate({ to: "/meu-dia", replace: true });
   }, [
     status,
     onboardingCompleted,
@@ -115,7 +115,7 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
         <AppSidebar onSignOut={onSignOut} />
         <SidebarInset className="min-w-0">
           <AppHeader onSignOut={onSignOut} />
-          <main className="min-w-0 flex-1">
+          <main className="min-w-0 flex-1 pb-24 sm:pb-28">
             <Outlet />
           </main>
         </SidebarInset>

@@ -46,6 +46,7 @@ describe("status dos módulos na navegação lateral", () => {
     assert.deepEqual(
       items.filter(({ label }) => !["Configurações", "Ajuda e suporte"].includes(label)),
       [
+        { to: "/meu-dia", label: "Meu Dia", ready: true, group: "operacao" },
         { to: "/central", label: "Central de Comando", ready: true, group: "operacao" },
         { to: "/clientes", label: "Clientes", ready: true, group: "operacao" },
         { to: "/processos", label: "Processos", ready: true, group: "operacao" },

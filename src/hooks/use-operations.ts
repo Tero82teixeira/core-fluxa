@@ -76,6 +76,7 @@ export type TaskRow = {
   status: TaskStatus;
   priority: PriorityLevel;
   due_at: string | null;
+  assignee_id: string | null;
   assignee_name: string | null;
   completed_at: string | null;
   client_id: string | null;
