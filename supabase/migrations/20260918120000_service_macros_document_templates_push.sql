@@ -382,7 +382,10 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog, public, pg_temp
 AS $function$
-DECLARE thread_row public.communication_threads%ROWTYPE; selected_user_id uuid;
+DECLARE
+  thread_row public.communication_threads%ROWTYPE;
+  selected_user_id uuid;
+  was_auto_assigned boolean := false;
 BEGIN
   IF NEW.entry_type::text <> 'mensagem' OR NEW.is_internal
      OR NEW.metadata->>'source' <> 'client_portal' THEN RETURN NEW; END IF;
@@ -397,6 +400,7 @@ BEGIN
       UPDATE public.communication_threads SET assigned_to = selected_user_id, updated_at = now()
        WHERE id = thread_row.id AND organization_id = thread_row.organization_id AND assigned_to IS NULL;
       IF FOUND THEN
+        was_auto_assigned := true;
         INSERT INTO public.audit_logs(organization_id, actor_id, action, entity, entity_id, metadata)
         VALUES (thread_row.organization_id, NULL, 'communication.assignee.auto_assigned',
                 'communication_thread', thread_row.id,
@@ -411,7 +415,10 @@ BEGIN
     ) VALUES (
       thread_row.organization_id, selected_user_id, 'Nova mensagem de cliente',
       thread_row.subject, 'communication', 'comunicacao', thread_row.id, '/comunicacao',
-      'portal-message:' || NEW.id::text || ':' || selected_user_id::text
+      CASE WHEN was_auto_assigned
+        THEN 'portal-auto-assignment:' || thread_row.id::text || ':' || selected_user_id::text
+        ELSE 'portal-message:' || NEW.id::text || ':' || selected_user_id::text
+      END
     ) ON CONFLICT DO NOTHING;
   END IF;
   RETURN NEW;
