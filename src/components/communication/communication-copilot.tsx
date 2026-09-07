@@ -12,12 +12,14 @@ export function CommunicationCopilot({
   onUseSuggestion,
   currentPriority,
   onApplyPriority,
+  compact = false,
 }: {
   threadId: string;
   draft: string;
   onUseSuggestion: (value: string) => void;
   currentPriority: "baixa" | "normal" | "alta" | "urgente";
   onApplyPriority: (value: "baixa" | "normal" | "alta" | "urgente") => Promise<void>;
+  compact?: boolean;
 }) {
   const copilot = useCommunicationCopilot();
   const response = copilot.data;
@@ -81,18 +83,22 @@ export function CommunicationCopilot({
       </div>
 
       {result && (
-        <div className="grid gap-3 border-t pt-3 text-sm lg:grid-cols-2">
+        <div
+          className={`grid min-w-0 gap-3 border-t pt-3 text-sm ${compact ? "grid-cols-1" : "xl:grid-cols-2"}`}
+        >
           <div className="space-y-3">
             <div>
               <p className="field-label mb-1">Resumo</p>
-              <p className="whitespace-pre-wrap leading-relaxed">{result.summary}</p>
+              <p className="break-words whitespace-pre-wrap leading-relaxed">{result.summary}</p>
             </div>
             {result.next_steps.length > 0 && (
               <div>
                 <p className="field-label mb-1">Próximos passos sugeridos</p>
                 <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
                   {result.next_steps.map((step, index) => (
-                    <li key={`${index}-${step}`}>{step}</li>
+                    <li className="break-words" key={`${index}-${step}`}>
+                      {step}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -108,8 +114,8 @@ export function CommunicationCopilot({
                   Prioridade {result.triage.suggested_priority}
                 </Badge>
               </div>
-              <p className="mt-2 text-sm">{result.triage.reason}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-2 break-words text-sm">{result.triage.reason}</p>
+              <p className="mt-1 break-words text-xs text-muted-foreground">
                 Próxima ação: {result.triage.recommended_action}
               </p>
               {currentPriority !== result.triage.suggested_priority && (
@@ -137,11 +143,15 @@ export function CommunicationCopilot({
                 {COPILOT_PRIVACY_LABELS[result.privacy.level]}
               </Badge>
             </div>
-            <p className="whitespace-pre-wrap leading-relaxed">{result.suggested_reply}</p>
+            <p className="break-words whitespace-pre-wrap leading-relaxed">
+              {result.suggested_reply}
+            </p>
             {result.privacy.warnings.length > 0 && (
               <ul className="list-disc space-y-1 pl-5 text-xs text-amber-700 dark:text-amber-300">
                 {result.privacy.warnings.map((warning, index) => (
-                  <li key={`${index}-${warning}`}>{warning}</li>
+                  <li className="break-words" key={`${index}-${warning}`}>
+                    {warning}
+                  </li>
                 ))}
               </ul>
             )}
@@ -154,7 +164,7 @@ export function CommunicationCopilot({
               Usar como rascunho
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground lg:col-span-2">
+          <p className={`text-xs text-muted-foreground ${compact ? "" : "xl:col-span-2"}`}>
             Revise fatos, tom e dados pessoais antes de enviar. Modelo: {response.model}.
           </p>
         </div>
