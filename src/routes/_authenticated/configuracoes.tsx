@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { QuickRepliesSettings } from "@/components/communication/quick-replies-settings";
 import { canAdminCommunication } from "@/lib/communication";
+import { CommunicationCopilotSettings } from "@/components/communication/communication-copilot-settings";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -506,6 +507,7 @@ function SettingsPage() {
               onChange={(v) => set("auto_assign_portal_communications", v)}
             />
           </Section>
+          <CommunicationCopilotSettings organizationId={organizationId} canManage={canEdit} />
           <div className="mt-4">
             <QuickRepliesSettings
               organizationId={organizationId}

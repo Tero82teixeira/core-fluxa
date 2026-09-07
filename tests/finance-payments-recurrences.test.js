@@ -203,7 +203,7 @@ describe("recorrências financeiras", () => {
   test("não há Edge Function financeira nem escrita financeira direta no frontend", () => {
     const functionsUrl = new URL("../supabase/functions", import.meta.url);
     const functions = existsSync(functionsUrl) ? readdirSync(functionsUrl) : [];
-    assert.deepEqual(functions, ["kiwify-webhook"]);
+    assert.deepEqual(functions, ["communication-copilot", "kiwify-webhook"]);
     assert.doesNotMatch(
       route + hook,
       /\.from\(["']financial_(?:transaction_payments|account_movements|recurrences)["']\)\.(?:insert|update|upsert|delete)/,

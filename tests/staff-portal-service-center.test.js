@@ -60,7 +60,7 @@ describe("Central de Atendimento do Portal", () => {
       { ...base, item_kind: "communication", status: "aguardando_equipe", unread_count: 2, requires_action: true },
       { ...base, item_id: "item-2", item_kind: "document_request", status: "submitted", requires_action: true },
       { ...base, item_id: "item-3", item_kind: "document_request", status: "pending", due_date: "2026-09-05" },
-    ], "2026-09-06");
+    ], "2026-09-06", new Date("2026-09-06T12:00:00Z"));
     assert.deepEqual(summary, { waitingTeam: 1, unassigned: 1, unread: 2, submitted: 1, overdue: 1, slaAtRisk: 0, slaOverdue: 0 });
   });
 

@@ -2790,6 +2790,7 @@ export type Database = {
           business_hours_start: string | null
           city: string | null
           clients_range: string | null
+          communication_ai_enabled: boolean
           complement: string | null
           created_at: string
           currency: string | null
@@ -2847,6 +2848,7 @@ export type Database = {
           business_hours_start?: string | null
           city?: string | null
           clients_range?: string | null
+          communication_ai_enabled?: boolean
           complement?: string | null
           created_at?: string
           currency?: string | null
@@ -2904,6 +2906,7 @@ export type Database = {
           business_hours_start?: string | null
           city?: string | null
           clients_range?: string | null
+          communication_ai_enabled?: boolean
           complement?: string | null
           created_at?: string
           currency?: string | null
@@ -4677,6 +4680,10 @@ export type Database = {
           upload_intent_id: string
         }[]
       }
+      prepare_communication_copilot: {
+        Args: { _mode: string; _thread_id: string }
+        Returns: Json
+      }
       review_client_portal_document_request: {
         Args: {
           _decision: string
@@ -4700,6 +4707,10 @@ export type Database = {
         Returns: number
       }
       get_organization_settings: {
+        Args: { _organization_id: string }
+        Returns: Json
+      }
+      get_communication_copilot_settings: {
         Args: { _organization_id: string }
         Returns: Json
       }
@@ -5216,6 +5227,10 @@ export type Database = {
       }
       update_organization_settings: {
         Args: { _changes: Json; _organization_id: string }
+        Returns: Json
+      }
+      update_communication_copilot_settings: {
+        Args: { _enabled: boolean; _organization_id: string }
         Returns: Json
       }
       update_scheduled_automation: {
