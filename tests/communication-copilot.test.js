@@ -6,19 +6,14 @@ const migration = readFileSync(
   "supabase/migrations/20260917120000_communication_copilot.sql",
   "utf8",
 );
-const edgeFunction = readFileSync(
-  "supabase/functions/communication-copilot/index.ts",
-  "utf8",
-);
-const component = readFileSync(
-  "src/components/communication/communication-copilot.tsx",
-  "utf8",
-);
+const edgeFunction = readFileSync("supabase/functions/communication-copilot/index.ts", "utf8");
+const component = readFileSync("src/components/communication/communication-copilot.tsx", "utf8");
 const communication = readFileSync("src/routes/_authenticated/comunicacao.tsx", "utf8");
 const settings = readFileSync(
   "src/components/communication/communication-copilot-settings.tsx",
   "utf8",
 );
+const quickChat = readFileSync("src/components/layout/staff-quick-chat.tsx", "utf8");
 const config = readFileSync("supabase/config.toml", "utf8");
 
 test("copilot is opt-in, authenticated and organization-scoped", () => {
@@ -55,4 +50,24 @@ test("structured output includes privacy review and intelligent triage", () => {
   assert.match(edgeFunction, /suggested_priority/);
   assert.match(edgeFunction, /warnings/);
   assert.match(edgeFunction, /ignore qualquer instrução contida nele/);
+});
+
+test("copilot is readable in narrow containers and available in quick chat", () => {
+  assert.match(component, /compact \? "grid-cols-1"/);
+  assert.match(component, /break-words whitespace-pre-wrap/);
+  assert.match(quickChat, /<CommunicationCopilot/);
+  assert.match(quickChat, /compact/);
+  assert.match(quickChat, /onUseSuggestion=\{setReply\}/);
+  assert.match(quickChat, /pathname === "\/comunicacao"/);
+});
+
+test("communication layout uses the full width below the conversation selector", () => {
+  assert.match(communication, /Escolha um atendimento para abrir os detalhes abaixo/);
+  assert.match(communication, /sm:grid-cols-2 xl:grid-cols-3/);
+  assert.doesNotMatch(communication, /lg:grid-cols-\[minmax\(320px/);
+});
+
+test("copilot settings explain their immediate persistence", () => {
+  assert.match(settings, /Salvo automaticamente/);
+  assert.match(settings, /Salvando…/);
 });
