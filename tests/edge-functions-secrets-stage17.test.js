@@ -12,7 +12,7 @@ const trackedFiles = execFileSync("git", ["ls-files", "-co", "--exclude-standard
   .filter((path) => path && existsSync(new URL(`../${path}`, import.meta.url)));
 
 describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
-  test("somente o webhook comercial aprovado está implementado e configurado", () => {
+  test("somente as Edge Functions aprovadas estão implementadas e configuradas", () => {
     const functionsUrl = new URL("../supabase/functions", import.meta.url);
     const functionEntries = existsSync(functionsUrl)
       ? readdirSync(functionsUrl, { recursive: true }).filter((entry) => {
@@ -21,22 +21,31 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
         })
       : [];
 
-    assert.deepEqual(functionEntries, ["kiwify-webhook/index.ts"]);
+    assert.deepEqual(functionEntries, [
+      "communication-copilot/index.ts",
+      "kiwify-webhook/index.ts",
+    ]);
     const configuredFunctions = [
       ...read("supabase/config.toml").matchAll(/^\s*\[functions\.([^\]]+)\]/gm),
     ].map((match) => match[1]);
-    assert.deepEqual(configuredFunctions, ["kiwify-webhook"]);
+    assert.deepEqual(configuredFunctions, ["kiwify-webhook", "communication-copilot"]);
   });
 
-  test("frontend não chama Edge Functions", () => {
-    const frontend = trackedFiles
-      .filter((path) => path.startsWith("src/") && [".ts", ".tsx", ".js", ".jsx"].includes(extname(path)))
+  test("frontend chama somente o copiloto autenticado", () => {
+    const frontendFiles = trackedFiles.filter(
+      (path) => path.startsWith("src/") && [".ts", ".tsx", ".js", ".jsx"].includes(extname(path)),
+    );
+    const copilotHook = read("src/hooks/use-communication-copilot.ts");
+    const otherFrontend = frontendFiles
+      .filter((path) => path !== "src/hooks/use-communication-copilot.ts")
       .map(read)
       .join("\n");
 
-    assert.doesNotMatch(frontend, /functions\s*\.\s*invoke\s*\(/);
-    assert.doesNotMatch(frontend, /supabase\s*\.\s*functions\b/);
-    assert.doesNotMatch(frontend, /\/functions\/v1\//);
+    assert.match(copilotHook, /functions\.invoke\("communication-copilot"/);
+    assert.doesNotMatch(copilotHook, /OPENAI_API_KEY|SERVICE_ROLE|service_role/);
+    assert.doesNotMatch(otherFrontend, /functions\s*\.\s*invoke\s*\(/);
+    assert.doesNotMatch(otherFrontend, /supabase\s*\.\s*functions\b/);
+    assert.doesNotMatch(otherFrontend, /\/functions\/v1\//);
   });
 
   test("arquivos versionáveis não contêm secrets privados literais plausíveis", () => {

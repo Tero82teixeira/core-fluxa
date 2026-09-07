@@ -6,3 +6,6 @@ enable_confirmations = true
 
 [functions.kiwify-webhook]
 verify_jwt = false
+
+[functions.communication-copilot]
+verify_jwt = true
