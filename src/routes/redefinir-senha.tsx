@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { describeAuthError } from "@/lib/errors";
+import { cleanPasswordRecoveryUrl, readPasswordRecoveryCredentials } from "@/lib/password-recovery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,9 +16,15 @@ export const Route = createFileRoute("/redefinir-senha")({
   head: () => ({
     meta: [
       { title: "Redefinir senha — FLUXA" },
-      { name: "description", content: "Defina uma nova senha para acessar sua central de operações." },
+      {
+        name: "description",
+        content: "Defina uma nova senha para acessar sua central de operações.",
+      },
       { property: "og:title", content: "Redefinir senha — FLUXA" },
-      { property: "og:description", content: "Defina uma nova senha para acessar sua central de operações." },
+      {
+        property: "og:description",
+        content: "Defina uma nova senha para acessar sua central de operações.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -28,6 +35,7 @@ export const Route = createFileRoute("/redefinir-senha")({
 function ResetPassword() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [show, setShow] = useState(false);
@@ -35,12 +43,62 @@ function ResetPassword() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // O link de recuperação cria uma sessão temporária no retorno do e-mail.
-    supabase.auth.getSession().then(({ data }) => setReady(Boolean(data.session)));
+    let active = true;
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" || session) setReady(true);
+      if (!active || (event !== "PASSWORD_RECOVERY" && !session)) return;
+      setReady(true);
+      setChecking(false);
+      setError(null);
     });
-    return () => sub.subscription.unsubscribe();
+
+    async function prepareRecoverySession() {
+      try {
+        const credentials = readPasswordRecoveryCredentials(window.location.href);
+        if (credentials.kind === "error") throw new Error(credentials.message);
+
+        if (credentials.kind === "pkce") {
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(
+            credentials.code,
+          );
+          if (exchangeError) throw exchangeError;
+          if (!data.session) throw new Error("Invalid token: recovery session was not created.");
+        } else if (credentials.kind === "implicit") {
+          const { data, error: sessionError } = await supabase.auth.setSession({
+            access_token: credentials.accessToken,
+            refresh_token: credentials.refreshToken,
+          });
+          if (sessionError) throw sessionError;
+          if (!data.session) throw new Error("Invalid token: recovery session was not created.");
+        }
+
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!data.session) {
+          throw new Error("Invalid token: recovery session is missing.");
+        }
+
+        if (!active) return;
+        setReady(true);
+        setError(null);
+        window.history.replaceState(
+          window.history.state,
+          document.title,
+          cleanPasswordRecoveryUrl(window.location.href),
+        );
+      } catch (caught) {
+        if (!active) return;
+        setReady(false);
+        setError(describeAuthError(caught));
+      } finally {
+        if (active) setChecking(false);
+      }
+    }
+
+    void prepareRecoverySession();
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const submit = async (event: React.FormEvent) => {
@@ -83,13 +141,18 @@ function ResetPassword() {
           </div>
           <h1 className="mt-4 font-display text-2xl font-semibold">Definir nova senha</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {ready
-              ? "Escolha uma senha nova para continuar acessando sua conta."
-              : "Abra esta página pelo link enviado ao seu e-mail para redefinir a senha."}
+            {checking
+              ? "Validando seu link seguro… Você já pode digitar a nova senha."
+              : ready
+                ? "Escolha uma senha nova para continuar acessando sua conta."
+                : "Abra esta página pelo link enviado ao seu e-mail para redefinir a senha."}
           </p>
 
           {error && (
-            <p role="alert" className="mt-5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+            <p
+              role="alert"
+              className="mt-5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+            >
               {error}
             </p>
           )}
@@ -104,12 +167,13 @@ function ResetPassword() {
                   value={password}
                   autoComplete="new-password"
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={!ready}
+                  disabled={saving}
                   className="h-11 pr-11"
                 />
                 <button
                   type="button"
                   onClick={() => setShow((v) => !v)}
+                  disabled={saving}
                   aria-label={show ? "Ocultar senha" : "Mostrar senha"}
                   className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-md text-muted-foreground hover:text-foreground"
                 >
@@ -126,14 +190,19 @@ function ResetPassword() {
                 value={confirm}
                 autoComplete="new-password"
                 onChange={(e) => setConfirm(e.target.value)}
-                disabled={!ready}
+                disabled={saving}
                 className="h-11"
               />
             </div>
 
-            <Button type="submit" disabled={!ready || saving} aria-busy={saving} className="h-11 w-full">
-              {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
-              {saving ? "Salvando…" : "Salvar nova senha"}
+            <Button
+              type="submit"
+              disabled={!ready || checking || saving}
+              aria-busy={checking || saving}
+              className="h-11 w-full"
+            >
+              {(checking || saving) && <Loader2 className="size-4 animate-spin" aria-hidden />}
+              {checking ? "Validando link…" : saving ? "Salvando…" : "Salvar nova senha"}
             </Button>
           </form>
 
