@@ -5,9 +5,17 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { QuickReplyPicker } from "@/components/communication/quick-reply-picker";
 import { useAddCommunicationEntry } from "@/hooks/use-communication";
+import { useCommunicationQuickReplies } from "@/hooks/use-quick-replies";
 import {
   openPortalChatAttachment,
   usePortalChatRealtime,
@@ -21,6 +29,7 @@ import {
 import { canWriteCommunication } from "@/lib/communication";
 import { describeError } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
+import { applyQuickReply } from "@/lib/quick-replies";
 import { useWorkspace } from "@/lib/workspace";
 
 const STATUS_LABELS = {
@@ -33,8 +42,7 @@ const STATUS_LABELS = {
 
 export function StaffQuickChat() {
   const { organizationId, role, status, onboardingCompleted } = useWorkspace();
-  const allowed =
-    status === "ready" && onboardingCompleted && canWriteCommunication(role);
+  const allowed = status === "ready" && onboardingCompleted && canWriteCommunication(role);
   const inbox = useStaffPortalInbox(organizationId, allowed);
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -44,6 +52,7 @@ export function StaffQuickChat() {
   const selected = inbox.data?.find((thread) => thread.thread_id === selectedId) ?? null;
   const entries = useStaffPortalEntries(organizationId, selectedId);
   const addEntry = useAddCommunicationEntry(organizationId);
+  const quickReplies = useCommunicationQuickReplies(organizationId, allowed);
   const uploadAttachment = useUploadPortalChatAttachment(organizationId);
   const markRead = useMarkStaffPortalCommunicationRead(organizationId);
   const publicEntries = entries.data ?? [];
@@ -76,7 +85,8 @@ export function StaffQuickChat() {
       !selectedId ||
       markRead.isPending ||
       !publicEntries.some((entry) => entry.author_kind === "client" && !entry.read_at)
-    ) return;
+    )
+      return;
     void markRead.mutateAsync(selectedId);
   }, [open, selectedId, publicEntries, markRead.isPending]);
 
@@ -168,7 +178,12 @@ export function StaffQuickChat() {
           ) : inbox.isError ? (
             <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm">
               <p>Não foi possível carregar os atendimentos.</p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => void inbox.refetch()}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => void inbox.refetch()}
+              >
                 Tentar novamente
               </Button>
             </div>
@@ -269,53 +284,61 @@ export function StaffQuickChat() {
                   Esta conversa está resolvida. Reabra na Central de Comunicação para responder.
                 </p>
               ) : (
-                <div className="flex items-end gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) void sendAttachment(file);
-                      event.target.value = "";
-                    }}
+                <div className="space-y-2">
+                  <QuickReplyPicker
+                    replies={quickReplies.data ?? []}
+                    loading={quickReplies.isLoading}
+                    disabled={addEntry.isPending}
+                    onSelect={(content) => setReply((current) => applyQuickReply(current, content))}
                   />
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="shrink-0"
-                    disabled={uploadAttachment.isPending}
-                    onClick={() => fileInputRef.current?.click()}
-                    aria-label="Anexar arquivo"
-                  >
-                    {uploadAttachment.isPending ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : (
-                      <Paperclip className="size-4" aria-hidden />
-                    )}
-                  </Button>
-                  <Textarea
-                    value={reply}
-                    maxLength={5000}
-                    rows={2}
-                    className="min-h-16 resize-none"
-                    placeholder="Responder ao cliente…"
-                    onChange={(event) => setReply(event.target.value)}
-                  />
-                  <Button
-                    size="icon"
-                    className="shrink-0"
-                    disabled={!reply.trim() || addEntry.isPending}
-                    onClick={() => void sendReply()}
-                    aria-label="Enviar resposta ao cliente"
-                  >
-                    {addEntry.isPending ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : (
-                      <Send className="size-4" aria-hidden />
-                    )}
-                  </Button>
+                  <div className="flex items-end gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) void sendAttachment(file);
+                        event.target.value = "";
+                      }}
+                    />
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="shrink-0"
+                      disabled={uploadAttachment.isPending}
+                      onClick={() => fileInputRef.current?.click()}
+                      aria-label="Anexar arquivo"
+                    >
+                      {uploadAttachment.isPending ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                      ) : (
+                        <Paperclip className="size-4" aria-hidden />
+                      )}
+                    </Button>
+                    <Textarea
+                      value={reply}
+                      maxLength={5000}
+                      rows={2}
+                      className="min-h-16 resize-none"
+                      placeholder="Responder ao cliente…"
+                      onChange={(event) => setReply(event.target.value)}
+                    />
+                    <Button
+                      size="icon"
+                      className="shrink-0"
+                      disabled={!reply.trim() || addEntry.isPending}
+                      onClick={() => void sendReply()}
+                      aria-label="Enviar resposta ao cliente"
+                    >
+                      {addEntry.isPending ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                      ) : (
+                        <Send className="size-4" aria-hidden />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
 

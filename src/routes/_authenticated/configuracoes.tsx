@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { QuickRepliesSettings } from "@/components/communication/quick-replies-settings";
+import { canAdminCommunication } from "@/lib/communication";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -504,6 +506,12 @@ function SettingsPage() {
               onChange={(v) => set("auto_assign_portal_communications", v)}
             />
           </Section>
+          <div className="mt-4">
+            <QuickRepliesSettings
+              organizationId={organizationId}
+              canManage={canAdminCommunication(role)}
+            />
+          </div>
         </TabsContent>
         <TabsContent value="monitoramento">
           <Section title="Janelas e alertas">

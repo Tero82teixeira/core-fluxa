@@ -1265,6 +1265,53 @@ export type Database = {
           },
         ]
       }
+      communication_quick_replies: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          organization_id: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          organization_id: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          organization_id?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_quick_replies_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_thread_reads: {
         Row: {
           last_read_at: string
@@ -5053,6 +5100,29 @@ export type Database = {
       mark_staff_portal_communication_read: {
         Args: { _organization_id: string; _thread_id: string }
         Returns: undefined
+      }
+      list_communication_quick_replies: {
+        Args: { _organization_id: string }
+        Returns: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }[]
+      }
+      save_communication_quick_reply: {
+        Args: {
+          _category?: string
+          _content: string
+          _is_active?: boolean
+          _organization_id: string
+          _reply_id: string | null
+          _title: string
+        }
+        Returns: string
       }
       can_access_communication_attachment: {
         Args: { _file_path: string }
