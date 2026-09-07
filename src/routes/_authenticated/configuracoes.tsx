@@ -28,6 +28,8 @@ import { Badge } from "@/components/ui/badge";
 import { QuickRepliesSettings } from "@/components/communication/quick-replies-settings";
 import { canAdminCommunication } from "@/lib/communication";
 import { CommunicationCopilotSettings } from "@/components/communication/communication-copilot-settings";
+import { CommunicationMacrosSettings } from "@/components/communication/communication-macros-settings";
+import { DocumentRequestTemplatesSettings } from "@/components/communication/document-request-templates-settings";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -513,6 +515,15 @@ function SettingsPage() {
               organizationId={organizationId}
               canManage={canAdminCommunication(role)}
             />
+          </div>
+          <div className="mt-4">
+            <CommunicationMacrosSettings
+              organizationId={organizationId}
+              canManage={canAdminCommunication(role)}
+            />
+          </div>
+          <div className="mt-4">
+            <DocumentRequestTemplatesSettings organizationId={organizationId} canManage={canEdit} />
           </div>
         </TabsContent>
         <TabsContent value="monitoramento">

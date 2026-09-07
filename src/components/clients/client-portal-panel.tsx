@@ -44,6 +44,10 @@ import {
   type ClientPortalDocumentRequest,
   type ClientPortalRequestStatus,
 } from "@/hooks/use-client-portal-requests";
+import {
+  useApplyDocumentRequestTemplate,
+  useDocumentRequestTemplates,
+} from "@/hooks/use-document-request-templates";
 import { describeClientPortalError, effectivePortalInvitationStatus } from "@/lib/client-portal";
 import type { CommunicationStatus } from "@/lib/communication";
 import { PROCESS_STAGE, type ProcessStage } from "@/lib/domain";
@@ -52,10 +56,23 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -68,7 +85,10 @@ const STATUS = {
   cancelled: { label: "Cancelado", tone: "neutral" as const },
 };
 
-const REQUEST_STATUS: Record<ClientPortalRequestStatus, { label: string; tone: "warning" | "info" | "success" | "neutral" | "danger" }> = {
+const REQUEST_STATUS: Record<
+  ClientPortalRequestStatus,
+  { label: string; tone: "warning" | "info" | "success" | "neutral" | "danger" }
+> = {
   pending: { label: "Aguardando cliente", tone: "warning" },
   submitted: { label: "Aguardando análise", tone: "info" },
   revision_requested: { label: "Correção solicitada", tone: "danger" },
@@ -103,14 +123,13 @@ export function ClientPortalPanel({
   const shares = useClientPortalShareManagement(organizationId, clientId);
   const setItemShared = useSetClientPortalItemShared(organizationId, clientId);
   const communication = useClientPortalCommunicationManagement(organizationId, clientId);
-  const setCommunicationShared = useSetClientPortalCommunicationShared(
-    organizationId,
-    clientId,
-  );
+  const setCommunicationShared = useSetClientPortalCommunicationShared(organizationId, clientId);
   const requests = useManageClientPortalDocumentRequests(organizationId, clientId);
   const createRequest = useCreateClientPortalDocumentRequest(organizationId, clientId);
   const setRequestStatus = useSetClientPortalDocumentRequestStatus(organizationId, clientId);
   const reviewRequest = useReviewClientPortalDocumentRequest(organizationId, clientId);
+  const requestTemplates = useDocumentRequestTemplates(organizationId);
+  const applyRequestTemplate = useApplyDocumentRequestTemplate(organizationId, clientId);
   const [email, setEmail] = useState(clientEmail ?? "");
   const [freshLink, setFreshLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -118,7 +137,10 @@ export function ClientPortalPanel({
   const [requestDescription, setRequestDescription] = useState("");
   const [requestDueDate, setRequestDueDate] = useState("");
   const [requestProcessId, setRequestProcessId] = useState("none");
-  const [correctionRequest, setCorrectionRequest] = useState<ClientPortalDocumentRequest | null>(null);
+  const [requestTemplateId, setRequestTemplateId] = useState("none");
+  const [correctionRequest, setCorrectionRequest] = useState<ClientPortalDocumentRequest | null>(
+    null,
+  );
   const [correctionFeedback, setCorrectionFeedback] = useState("");
 
   async function create() {
@@ -193,6 +215,23 @@ export function ClientPortalPanel({
     }
   }
 
+  async function submitRequestTemplate() {
+    if (requestTemplateId === "none") return;
+    try {
+      const count = await applyRequestTemplate.mutateAsync({
+        templateId: requestTemplateId,
+        processId: requestProcessId === "none" ? null : requestProcessId,
+        dueDate: requestDueDate || null,
+      });
+      setRequestTemplateId("none");
+      toast.success(
+        `${count} ${count === 1 ? "solicitação criada" : "solicitações criadas"} no Meu Portal.`,
+      );
+    } catch (error) {
+      toast.error(describeClientPortalError(error));
+    }
+  }
+
   async function changeRequestStatus(
     request: ClientPortalDocumentRequest,
     status: "completed" | "cancelled",
@@ -240,9 +279,7 @@ export function ClientPortalPanel({
   ) {
     try {
       await setCommunicationShared.mutateAsync({ threadId: thread.thread_id, shared });
-      toast.success(
-        shared ? "Conversa liberada no portal." : "Conversa removida do portal.",
-      );
+      toast.success(shared ? "Conversa liberada no portal." : "Conversa removida do portal.");
     } catch (error) {
       toast.error(describeClientPortalError(error));
     }
@@ -420,12 +457,53 @@ export function ClientPortalPanel({
             <div>
               <h2 className="font-semibold">Solicitações de documentos</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Peça um arquivo ao cliente. Ele verá a pendência e poderá enviá-lo pelo portal seguro.
+                Peça um arquivo ao cliente. Ele verá a pendência e poderá enviá-lo pelo portal
+                seguro.
               </p>
             </div>
           </div>
 
           <div className="grid gap-4 rounded-xl border bg-muted/20 p-4 sm:grid-cols-2">
+            {(requestTemplates.data?.some((template) => template.is_active) ?? false) && (
+              <div className="space-y-2 rounded-lg border bg-background p-3 sm:col-span-2">
+                <Label htmlFor="portal-request-template">
+                  Criar várias solicitações por modelo
+                </Label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Select value={requestTemplateId} onValueChange={setRequestTemplateId}>
+                    <SelectTrigger id="portal-request-template" className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Escolha um modelo</SelectItem>
+                      {requestTemplates.data
+                        ?.filter((template) => template.is_active)
+                        .map((template) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.title} · {template.items.length} itens
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={requestTemplateId === "none" || applyRequestTemplate.isPending}
+                    onClick={() => void submitRequestTemplate()}
+                  >
+                    {applyRequestTemplate.isPending ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <ListTodo className="size-4" />
+                    )}
+                    Criar pelo modelo
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  O processo e o prazo selecionados abaixo também serão aplicados ao modelo.
+                </p>
+              </div>
+            )}
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="portal-request-title">Documento solicitado</Label>
               <Input
@@ -449,14 +527,18 @@ export function ClientPortalPanel({
             <div className="space-y-2">
               <Label htmlFor="portal-request-process">Processo (opcional)</Label>
               <Select value={requestProcessId} onValueChange={setRequestProcessId}>
-                <SelectTrigger id="portal-request-process"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="portal-request-process">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Sem processo</SelectItem>
-                  {(shares.data ?? []).filter((item) => item.item_type === "process").map((item) => (
-                    <SelectItem key={item.item_id} value={item.item_id}>
-                      {item.subtitle} · {item.title}
-                    </SelectItem>
-                  ))}
+                  {(shares.data ?? [])
+                    .filter((item) => item.item_type === "process")
+                    .map((item) => (
+                      <SelectItem key={item.item_id} value={item.item_id}>
+                        {item.subtitle} · {item.title}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -474,7 +556,11 @@ export function ClientPortalPanel({
                 onClick={() => void submitRequest()}
                 disabled={!requestTitle.trim() || createRequest.isPending}
               >
-                {createRequest.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <ListTodo className="size-4" aria-hidden />}
+                {createRequest.isPending ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : (
+                  <ListTodo className="size-4" aria-hidden />
+                )}
                 Criar solicitação
               </Button>
             </div>
@@ -493,17 +579,25 @@ export function ClientPortalPanel({
           ) : (
             <ul className="divide-y divide-border rounded-lg border">
               {requests.data?.map((request) => (
-                <li key={request.request_id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                <li
+                  key={request.request_id}
+                  className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center"
+                >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{request.title}</p>
-                      <StatusBadge label={REQUEST_STATUS[request.status].label} tone={REQUEST_STATUS[request.status].tone} />
+                      <StatusBadge
+                        label={REQUEST_STATUS[request.status].label}
+                        tone={REQUEST_STATUS[request.status].tone}
+                      />
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {request.process_code ? `${request.process_code} · ` : ""}
                       {request.due_date ? `Prazo: ${formatDate(request.due_date)}` : "Sem prazo"}
                       {request.submitted_file_name ? ` · ${request.submitted_file_name}` : ""}
-                      {request.submission_count > 0 ? ` · ${request.submission_count} envio(s)` : ""}
+                      {request.submission_count > 0
+                        ? ` · ${request.submission_count} envio(s)`
+                        : ""}
                     </p>
                     {request.company_feedback && (
                       <div className="mt-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm">
@@ -514,7 +608,14 @@ export function ClientPortalPanel({
                   </div>
                   <div className="flex shrink-0 gap-2">
                     {request.status === "pending" && (
-                      <Button variant="outline" size="sm" disabled={setRequestStatus.isPending} onClick={() => void changeRequestStatus(request, "cancelled")}>Cancelar</Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={setRequestStatus.isPending}
+                        onClick={() => void changeRequestStatus(request, "cancelled")}
+                      >
+                        Cancelar
+                      </Button>
                     )}
                     {request.status === "submitted" && (
                       <>
@@ -529,7 +630,11 @@ export function ClientPortalPanel({
                         >
                           <RotateCcw className="size-4" aria-hidden /> Pedir correção
                         </Button>
-                        <Button size="sm" disabled={reviewRequest.isPending} onClick={() => void approveRequest(request)}>
+                        <Button
+                          size="sm"
+                          disabled={reviewRequest.isPending}
+                          onClick={() => void approveRequest(request)}
+                        >
                           <Check className="size-4" aria-hidden /> Aprovar
                         </Button>
                       </>
@@ -659,9 +764,7 @@ export function ClientPortalPanel({
                           thread.subject +
                           " no portal"
                         }
-                        onCheckedChange={(shared) =>
-                          void toggleCommunication(thread, shared)
-                        }
+                        onCheckedChange={(shared) => void toggleCommunication(thread, shared)}
                       />
                     </div>
                   </li>
@@ -681,8 +784,8 @@ export function ClientPortalPanel({
             <div>
               <h2 className="font-semibold">Conteúdo visível no portal</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Tudo começa privado. Libere somente os processos, documentos e atualizações que
-                este cliente pode acompanhar.
+                Tudo começa privado. Libere somente os processos, documentos e atualizações que este
+                cliente pode acompanhar.
               </p>
             </div>
           </div>
@@ -872,9 +975,7 @@ function ProcessHistorySharing({
                   checked={movement.is_shared}
                   disabled={setMovementShared.isPending}
                   aria-label={`${movement.is_shared ? "Remover" : "Liberar"} atualização no portal`}
-                  onCheckedChange={(shared) =>
-                    void toggleMovement(movement.movement_id, shared)
-                  }
+                  onCheckedChange={(shared) => void toggleMovement(movement.movement_id, shared)}
                 />
               </li>
             ))}

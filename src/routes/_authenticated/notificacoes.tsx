@@ -23,6 +23,7 @@ import {
   useMarkNotificationRead,
   useNotifications,
 } from "@/hooks/use-notifications";
+import { PushNotificationSettings } from "@/components/notifications/push-notification-settings";
 
 export const Route = createFileRoute("/_authenticated/notificacoes")({
   component: NotificationsPage,
@@ -87,6 +88,7 @@ function NotificationsPage() {
           </Button>
         </div>
       </header>
+      <PushNotificationSettings organizationId={organizationId} />
       <Select value={filter} onValueChange={setFilter}>
         <SelectTrigger className="w-full sm:w-60" aria-label="Filtrar notificações">
           <SelectValue />
