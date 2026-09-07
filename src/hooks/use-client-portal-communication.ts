@@ -140,7 +140,12 @@ export function useCreateClientPortalCommunicationThread(identityScope: string |
       if (error) throw error;
       return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: threadsKey(identityScope) }),
+    onSuccess: (threadId) => {
+      void supabase.functions.invoke("communication-push", {
+        body: { mode: "dispatch", threadId },
+      });
+      return queryClient.invalidateQueries({ queryKey: threadsKey(identityScope) });
+    },
   });
 }
 
@@ -154,13 +159,17 @@ export function useAddClientPortalCommunicationEntry(identityScope: string | nul
       });
       if (error) throw error;
     },
-    onSuccess: (_, input) =>
-      Promise.all([
+    onSuccess: (_, input) => {
+      void supabase.functions.invoke("communication-push", {
+        body: { mode: "dispatch", threadId: input.threadId },
+      });
+      return Promise.all([
         queryClient.invalidateQueries({ queryKey: threadsKey(identityScope) }),
         queryClient.invalidateQueries({
           queryKey: ["client-portal-communication-entries", identityScope, input.threadId],
         }),
-      ]),
+      ]);
+    },
   });
 }
 

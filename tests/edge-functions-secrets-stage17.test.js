@@ -23,26 +23,46 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
 
     assert.deepEqual(functionEntries, [
       "communication-copilot/index.ts",
+      "communication-push/index.ts",
       "kiwify-webhook/index.ts",
     ]);
     const configuredFunctions = [
       ...read("supabase/config.toml").matchAll(/^\s*\[functions\.([^\]]+)\]/gm),
     ].map((match) => match[1]);
-    assert.deepEqual(configuredFunctions, ["kiwify-webhook", "communication-copilot"]);
+    assert.deepEqual(configuredFunctions, [
+      "kiwify-webhook",
+      "communication-copilot",
+      "communication-push",
+    ]);
   });
 
-  test("frontend chama somente o copiloto autenticado", () => {
+  test("frontend chama somente as Edge Functions autenticadas aprovadas", () => {
     const frontendFiles = trackedFiles.filter(
       (path) => path.startsWith("src/") && [".ts", ".tsx", ".js", ".jsx"].includes(extname(path)),
     );
     const copilotHook = read("src/hooks/use-communication-copilot.ts");
+    const pushHook = read("src/hooks/use-push-notifications.ts");
+    const portalCommunicationHook = read("src/hooks/use-client-portal-communication.ts");
     const otherFrontend = frontendFiles
-      .filter((path) => path !== "src/hooks/use-communication-copilot.ts")
+      .filter(
+        (path) =>
+          ![
+            "src/hooks/use-communication-copilot.ts",
+            "src/hooks/use-push-notifications.ts",
+            "src/hooks/use-client-portal-communication.ts",
+          ].includes(path),
+      )
       .map(read)
       .join("\n");
 
     assert.match(copilotHook, /functions\.invoke\("communication-copilot"/);
+    assert.match(pushHook, /functions\.invoke\("communication-push"/);
+    assert.match(portalCommunicationHook, /functions\.invoke\("communication-push"/);
     assert.doesNotMatch(copilotHook, /OPENAI_API_KEY|SERVICE_ROLE|service_role/);
+    assert.doesNotMatch(
+      pushHook + portalCommunicationHook,
+      /VAPID_PRIVATE_KEY|SERVICE_ROLE|service_role/,
+    );
     assert.doesNotMatch(otherFrontend, /functions\s*\.\s*invoke\s*\(/);
     assert.doesNotMatch(otherFrontend, /supabase\s*\.\s*functions\b/);
     assert.doesNotMatch(otherFrontend, /\/functions\/v1\//);
