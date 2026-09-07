@@ -463,14 +463,14 @@ export type Database = {
             foreignKeyName: "client_portal_access_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "clients_secure"
+            referencedRelation: "clients"
             referencedColumns: ["organization_id", "id"]
           },
           {
             foreignKeyName: "client_portal_access_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "clients_secure"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -530,14 +530,14 @@ export type Database = {
             foreignKeyName: "client_portal_communication_shares_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "clients_secure"
+            referencedRelation: "clients"
             referencedColumns: ["organization_id", "id"]
           },
           {
             foreignKeyName: "client_portal_communication_shares_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "clients_secure"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -545,127 +545,6 @@ export type Database = {
             columns: ["organization_id", "client_id", "thread_id"]
             isOneToOne: true
             referencedRelation: "communication_threads"
-            referencedColumns: ["organization_id", "client_id", "id"]
-          },
-        ]
-      }
-      client_portal_notifications: {
-        Row: {
-          body: string | null
-          client_id: string
-          created_at: string
-          dedupe_key: string | null
-          entity_id: string | null
-          entity_type: string | null
-          id: string
-          kind: string
-          organization_id: string
-          read_at: string | null
-          title: string
-        }
-        Insert: {
-          body?: string | null
-          client_id: string
-          created_at?: string
-          dedupe_key?: string | null
-          entity_id?: string | null
-          entity_type?: string | null
-          id?: string
-          kind: string
-          organization_id: string
-          read_at?: string | null
-          title: string
-        }
-        Update: {
-          body?: string | null
-          client_id?: string
-          created_at?: string
-          dedupe_key?: string | null
-          entity_id?: string | null
-          entity_type?: string | null
-          id?: string
-          kind?: string
-          organization_id?: string
-          read_at?: string | null
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "client_portal_notifications_client_fkey"
-            columns: ["organization_id", "client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "client_portal_notifications_client_fkey"
-            columns: ["organization_id", "client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["organization_id", "id"]
-          },
-        ]
-      }
-      client_portal_document_shares: {
-        Row: {
-          client_id: string
-          created_at: string
-          document_id: string
-          id: string
-          is_shared: boolean
-          organization_id: string
-          revoked_at: string | null
-          revoked_by: string | null
-          shared_at: string | null
-          shared_by: string | null
-          updated_at: string
-        }
-        Insert: {
-          client_id: string
-          created_at?: string
-          document_id: string
-          id?: string
-          is_shared?: boolean
-          organization_id: string
-          revoked_at?: string | null
-          revoked_by?: string | null
-          shared_at?: string | null
-          shared_by?: string | null
-          updated_at?: string
-        }
-        Update: {
-          client_id?: string
-          created_at?: string
-          document_id?: string
-          id?: string
-          is_shared?: boolean
-          organization_id?: string
-          revoked_at?: string | null
-          revoked_by?: string | null
-          shared_at?: string | null
-          shared_by?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "client_portal_document_shares_client_fkey"
-            columns: ["organization_id", "client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "client_portal_document_shares_client_fkey"
-            columns: ["organization_id", "client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "client_portal_document_shares_document_fkey"
-            columns: ["organization_id", "client_id", "document_id"]
-            isOneToOne: true
-            referencedRelation: "documents"
             referencedColumns: ["organization_id", "client_id", "id"]
           },
         ]
@@ -745,28 +624,102 @@ export type Database = {
             foreignKeyName: "client_portal_document_requests_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "clients_secure"
+            referencedRelation: "clients"
             referencedColumns: ["organization_id", "id"]
           },
           {
             foreignKeyName: "client_portal_document_requests_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "clients_secure"
             referencedColumns: ["organization_id", "id"]
           },
           {
             foreignKeyName: "client_portal_document_requests_document_fkey"
-            columns: ["organization_id", "client_id", "process_id", "submitted_document_id"]
+            columns: [
+              "organization_id",
+              "client_id",
+              "process_id",
+              "submitted_document_id",
+            ]
             isOneToOne: false
             referencedRelation: "documents"
-            referencedColumns: ["organization_id", "client_id", "process_id", "id"]
+            referencedColumns: [
+              "organization_id",
+              "client_id",
+              "process_id",
+              "id",
+            ]
           },
           {
             foreignKeyName: "client_portal_document_requests_process_fkey"
             columns: ["organization_id", "client_id", "process_id"]
             isOneToOne: false
             referencedRelation: "processes"
+            referencedColumns: ["organization_id", "client_id", "id"]
+          },
+        ]
+      }
+      client_portal_document_shares: {
+        Row: {
+          client_id: string
+          created_at: string
+          document_id: string
+          id: string
+          is_shared: boolean
+          organization_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          shared_at: string | null
+          shared_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          document_id: string
+          id?: string
+          is_shared?: boolean
+          organization_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          is_shared?: boolean
+          organization_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_document_shares_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_document_shares_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_document_shares_document_fkey"
+            columns: ["organization_id", "client_id", "document_id"]
+            isOneToOne: true
+            referencedRelation: "documents"
             referencedColumns: ["organization_id", "client_id", "id"]
           },
         ]
@@ -822,14 +775,14 @@ export type Database = {
             foreignKeyName: "client_portal_invitations_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "clients_secure"
+            referencedRelation: "clients"
             referencedColumns: ["organization_id", "id"]
           },
           {
             foreignKeyName: "client_portal_invitations_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "clients_secure"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -838,6 +791,63 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_notifications: {
+        Row: {
+          body: string | null
+          client_id: string
+          created_at: string
+          dedupe_key: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          kind: string
+          organization_id: string
+          read_at: string | null
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          client_id: string
+          created_at?: string
+          dedupe_key?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind: string
+          organization_id: string
+          read_at?: string | null
+          title: string
+        }
+        Update: {
+          body?: string | null
+          client_id?: string
+          created_at?: string
+          dedupe_key?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind?: string
+          organization_id?: string
+          read_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_notifications_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_notifications_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
           },
         ]
       }
@@ -946,14 +956,14 @@ export type Database = {
             foreignKeyName: "client_portal_process_shares_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "clients_secure"
+            referencedRelation: "clients"
             referencedColumns: ["organization_id", "id"]
           },
           {
             foreignKeyName: "client_portal_process_shares_client_fkey"
             columns: ["organization_id", "client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "clients_secure"
             referencedColumns: ["organization_id", "id"]
           },
           {
@@ -1274,9 +1284,13 @@ export type Database = {
           id: string
           is_active: boolean
           organization_id: string
-          priority_after: Database["public"]["Enums"]["communication_priority"] | null
+          priority_after:
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           reply_content: string | null
-          status_after: Database["public"]["Enums"]["communication_status"] | null
+          status_after:
+            | Database["public"]["Enums"]["communication_status"]
+            | null
           title: string
           updated_at: string
           updated_by: string | null
@@ -1289,9 +1303,13 @@ export type Database = {
           id?: string
           is_active?: boolean
           organization_id: string
-          priority_after?: Database["public"]["Enums"]["communication_priority"] | null
+          priority_after?:
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           reply_content?: string | null
-          status_after?: Database["public"]["Enums"]["communication_status"] | null
+          status_after?:
+            | Database["public"]["Enums"]["communication_status"]
+            | null
           title: string
           updated_at?: string
           updated_by?: string | null
@@ -1304,9 +1322,13 @@ export type Database = {
           id?: string
           is_active?: boolean
           organization_id?: string
-          priority_after?: Database["public"]["Enums"]["communication_priority"] | null
+          priority_after?:
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           reply_content?: string | null
-          status_after?: Database["public"]["Enums"]["communication_status"] | null
+          status_after?:
+            | Database["public"]["Enums"]["communication_status"]
+            | null
           title?: string
           updated_at?: string
           updated_by?: string | null
@@ -1497,6 +1519,32 @@ export type Database = {
           },
         ]
       }
+      document_code_counters: {
+        Row: {
+          code_year: number
+          last_value: number
+          organization_id: string
+        }
+        Insert: {
+          code_year: number
+          last_value?: number
+          organization_id: string
+        }
+        Update: {
+          code_year?: number
+          last_value?: number
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_code_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_request_templates: {
         Row: {
           created_at: string
@@ -1534,32 +1582,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "document_request_templates_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      document_code_counters: {
-        Row: {
-          code_year: number
-          last_value: number
-          organization_id: string
-        }
-        Insert: {
-          code_year: number
-          last_value?: number
-          organization_id: string
-        }
-        Update: {
-          code_year?: number
-          last_value?: number
-          organization_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_code_counters_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -2676,89 +2698,6 @@ export type Database = {
           },
         ]
       }
-      push_delivery_claims: {
-        Row: {
-          claimed_at: string
-          entry_id: string
-          subscription_id: string
-        }
-        Insert: {
-          claimed_at?: string
-          entry_id: string
-          subscription_id: string
-        }
-        Update: {
-          claimed_at?: string
-          entry_id?: string
-          subscription_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "push_delivery_claims_entry_id_fkey"
-            columns: ["entry_id"]
-            isOneToOne: false
-            referencedRelation: "communication_entries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "push_delivery_claims_subscription_id_fkey"
-            columns: ["subscription_id"]
-            isOneToOne: false
-            referencedRelation: "push_subscriptions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      push_subscriptions: {
-        Row: {
-          auth_key: string
-          created_at: string
-          endpoint: string
-          id: string
-          is_active: boolean
-          last_used_at: string | null
-          organization_id: string
-          p256dh: string
-          updated_at: string
-          user_agent: string | null
-          user_id: string
-        }
-        Insert: {
-          auth_key: string
-          created_at?: string
-          endpoint: string
-          id?: string
-          is_active?: boolean
-          last_used_at?: string | null
-          organization_id: string
-          p256dh: string
-          updated_at?: string
-          user_agent?: string | null
-          user_id: string
-        }
-        Update: {
-          auth_key?: string
-          created_at?: string
-          endpoint?: string
-          id?: string
-          is_active?: boolean
-          last_used_at?: string | null
-          organization_id?: string
-          p256dh?: string
-          updated_at?: string
-          user_agent?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "push_subscriptions_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       notifications: {
         Row: {
           action_url: string | null
@@ -3615,6 +3554,89 @@ export type Database = {
         }
         Relationships: []
       }
+      push_delivery_claims: {
+        Row: {
+          claimed_at: string
+          entry_id: string
+          subscription_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          entry_id: string
+          subscription_id: string
+        }
+        Update: {
+          claimed_at?: string
+          entry_id?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_delivery_claims_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "communication_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_delivery_claims_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "push_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string
+          endpoint: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          organization_id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          organization_id: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          organization_id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           permission_key: string
@@ -4249,95 +4271,6 @@ export type Database = {
       }
     }
     Functions: {
-      create_document_requests_from_template: {
-        Args: {
-          _client_id: string
-          _due_date?: string
-          _organization_id: string
-          _process_id?: string
-          _template_id: string
-        }
-        Returns: number
-      }
-      list_communication_macros: {
-        Args: { _organization_id: string }
-        Returns: {
-          assign_to_self: boolean
-          follow_up_hours: number
-          id: string
-          is_active: boolean
-          priority_after: string
-          reply_content: string
-          status_after: string
-          title: string
-        }[]
-      }
-      list_document_request_templates: {
-        Args: { _organization_id: string }
-        Returns: { id: string; is_active: boolean; items: Json; title: string }[]
-      }
-      prepare_communication_push: {
-        Args: { _actor_id: string; _thread_id: string }
-        Returns: {
-          action_url: string
-          auth_key: string
-          body: string
-          endpoint: string
-          p256dh: string
-          subscription_id: string
-          title: string
-        }[]
-      }
-      prepare_push_test: {
-        Args: { _actor_id: string; _organization_id: string }
-        Returns: {
-          action_url: string
-          auth_key: string
-          body: string
-          endpoint: string
-          p256dh: string
-          subscription_id: string
-          title: string
-        }[]
-      }
-      register_push_subscription: {
-        Args: {
-          _auth_key: string
-          _endpoint: string
-          _organization_id: string
-          _p256dh: string
-          _user_agent?: string
-        }
-        Returns: string
-      }
-      remove_push_subscription: {
-        Args: { _endpoint: string; _organization_id: string }
-        Returns: undefined
-      }
-      save_communication_macro: {
-        Args: {
-          _assign_to_self?: boolean
-          _follow_up_hours?: number
-          _is_active?: boolean
-          _macro_id: string
-          _organization_id: string
-          _priority_after?: Database["public"]["Enums"]["communication_priority"]
-          _reply_content?: string
-          _status_after?: Database["public"]["Enums"]["communication_status"]
-          _title: string
-        }
-        Returns: string
-      }
-      save_document_request_template: {
-        Args: {
-          _is_active?: boolean
-          _items: Json
-          _organization_id: string
-          _template_id: string
-          _title: string
-        }
-        Returns: string
-      }
       accept_client_portal_invitation: {
         Args: { _token: string }
         Returns: {
@@ -4357,6 +4290,10 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      add_client_portal_communication_entry: {
+        Args: { _content: string; _thread_id: string }
+        Returns: string
+      }
       add_communication_entry: {
         Args: {
           _contact_made?: boolean
@@ -4367,10 +4304,6 @@ export type Database = {
           _occurred_at?: string
           _thread_id: string
         }
-        Returns: string
-      }
-      add_client_portal_communication_entry: {
-        Args: { _content: string; _thread_id: string }
         Returns: string
       }
       add_monitoring_note: {
@@ -4389,8 +4322,8 @@ export type Database = {
           _event_at?: string
           _event_key: string
           _event_type: string
-          _organization: string
           _next_payment_at?: string
+          _organization: string
           _provider_order_id?: string
           _provider_subscription_id?: string
           _subscription_status: string
@@ -4465,17 +4398,29 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
-      claim_portal_communication_thread: {
-        Args: { _thread_id: string }
+      can_access_client_portal_document: {
+        Args: { _file_path: string }
+        Returns: boolean
+      }
+      can_access_communication_attachment: {
+        Args: { _file_path: string }
+        Returns: boolean
+      }
+      can_upload_client_portal_document: {
+        Args: { _file_path: string }
+        Returns: boolean
+      }
+      can_upload_communication_attachment: {
+        Args: { _file_path: string }
+        Returns: boolean
+      }
+      cancel_client_portal_invitation: {
+        Args: { _invitation_id: string }
         Returns: undefined
       }
       cancel_financial_transaction: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
-      }
-      cancel_client_portal_invitation: {
-        Args: { _invitation_id: string }
-        Returns: undefined
       }
       cancel_invitation: { Args: { _invitation: string }; Returns: undefined }
       change_communication_thread_status: {
@@ -4502,78 +4447,9 @@ export type Database = {
         }
         Returns: string
       }
-      client_sensitive: {
-        Args: { _client: string }
-        Returns: {
-          birth_date: string
-          complement: string
-          district: string
-          document: string
-          document_digits: string
-          email: string
-          legal_rep_name: string
-          notes: string
-          number: string
-          phone: string
-          street: string
-          whatsapp: string
-          zip_code: string
-        }[]
-      }
-      client_portal_invitation_preview: {
-        Args: { _token: string }
-        Returns: {
-          client_name: string
-          email: string
-          expires_at: string
-          organization_name: string
-          status: string
-        }[]
-      }
-      client_portal_session: {
-        Args: never
-        Returns: {
-          accepted_at: string
-          access_id: string
-          client_id: string
-          client_name: string
-          email: string
-          is_active: boolean
-          organization_id: string
-          organization_name: string
-        }[]
-      }
-      client_portal_documents: {
-        Args: never
-        Returns: {
-          access_id: string
-          category: string
-          created_at: string
-          current_version: number
-          document_id: string
-          document_type_name: string
-          expiration_date: string
-          file_extension: string
-          file_path: string
-          file_size: number
-          mime_type: string
-          original_file_name: string
-          process_id: string
-          process_code: string
-          status: string
-          title: string
-        }[]
-      }
-      client_portal_document_versions: {
-        Args: { _document_id: string }
-        Returns: {
-          created_at: string
-          file_size: number
-          mime_type: string
-          original_file_name: string
-          version_id: string
-          version_number: number
-        }[]
+      claim_portal_communication_thread: {
+        Args: { _thread_id: string }
+        Returns: undefined
       }
       client_portal_communication_entries: {
         Args: { _thread_id: string }
@@ -4616,22 +4492,6 @@ export type Database = {
           updated_at: string
         }[]
       }
-      client_portal_notifications: {
-        Args: never
-        Returns: {
-          access_id: string
-          body: string
-          client_name: string
-          created_at: string
-          entity_id: string
-          entity_type: string
-          kind: string
-          notification_id: string
-          organization_name: string
-          read_at: string
-          title: string
-        }[]
-      }
       client_portal_document_requests: {
         Args: never
         Returns: {
@@ -4655,18 +4515,62 @@ export type Database = {
           updated_at: string
         }[]
       }
-      client_portal_processes: {
+      client_portal_document_versions: {
+        Args: { _document_id: string }
+        Returns: {
+          created_at: string
+          file_size: number
+          mime_type: string
+          original_file_name: string
+          version_id: string
+          version_number: number
+        }[]
+      }
+      client_portal_documents: {
         Args: never
         Returns: {
           access_id: string
-          code: string
-          due_date: string
-          opened_at: string
+          category: string
+          created_at: string
+          current_version: number
+          document_id: string
+          document_type_name: string
+          expiration_date: string
+          file_extension: string
+          file_path: string
+          file_size: number
+          mime_type: string
+          original_file_name: string
+          process_code: string
           process_id: string
-          protocol: string
-          stage: string
+          status: string
           title: string
-          updated_at: string
+        }[]
+      }
+      client_portal_invitation_preview: {
+        Args: { _token: string }
+        Returns: {
+          client_name: string
+          email: string
+          expires_at: string
+          organization_name: string
+          status: string
+        }[]
+      }
+      client_portal_notifications: {
+        Args: never
+        Returns: {
+          access_id: string
+          body: string
+          client_name: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          kind: string
+          notification_id: string
+          organization_name: string
+          read_at: string
+          title: string
         }[]
       }
       client_portal_process_timeline: {
@@ -4694,6 +4598,33 @@ export type Database = {
           to_stage: string
         }[]
       }
+      client_portal_processes: {
+        Args: never
+        Returns: {
+          access_id: string
+          code: string
+          due_date: string
+          opened_at: string
+          process_id: string
+          protocol: string
+          stage: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      client_portal_session: {
+        Args: never
+        Returns: {
+          accepted_at: string
+          access_id: string
+          client_id: string
+          client_name: string
+          email: string
+          is_active: boolean
+          organization_id: string
+          organization_name: string
+        }[]
+      }
       client_portal_share_management: {
         Args: { _client_id: string; _organization_id: string }
         Returns: {
@@ -4704,6 +4635,24 @@ export type Database = {
           subtitle: string
           title: string
           updated_at: string
+        }[]
+      }
+      client_sensitive: {
+        Args: { _client: string }
+        Returns: {
+          birth_date: string
+          complement: string
+          district: string
+          document: string
+          document_digits: string
+          email: string
+          legal_rep_name: string
+          notes: string
+          number: string
+          phone: string
+          street: string
+          whatsapp: string
+          zip_code: string
         }[]
       }
       communication_assert_role: {
@@ -4727,6 +4676,29 @@ export type Database = {
         Args: { _as_of?: string }
         Returns: number
       }
+      create_client_portal_communication_thread: {
+        Args: { _access_id: string; _content: string; _subject: string }
+        Returns: string
+      }
+      create_client_portal_document_request: {
+        Args: {
+          _client_id: string
+          _description?: string
+          _due_date?: string
+          _organization_id: string
+          _process_id?: string
+          _title?: string
+        }
+        Returns: string
+      }
+      create_client_portal_invitation: {
+        Args: { _client_id: string; _email: string; _organization_id: string }
+        Returns: {
+          expires_at: string
+          invitation_id: string
+          token: string
+        }[]
+      }
       create_communication_thread: {
         Args: {
           _assigned_to?: string
@@ -4748,6 +4720,16 @@ export type Database = {
         Returns: number
       }
       create_deadline_reminder_notifications: { Args: never; Returns: number }
+      create_document_requests_from_template: {
+        Args: {
+          _client_id: string
+          _due_date?: string
+          _organization_id: string
+          _process_id?: string
+          _template_id: string
+        }
+        Returns: number
+      }
       create_expired_document_notifications: { Args: never; Returns: number }
       create_financial_account: {
         Args: { _organization_id: string; _payload: Json }
@@ -4776,33 +4758,6 @@ export type Database = {
           invitation_id: string
           token: string
         }[]
-      }
-      create_client_portal_invitation: {
-        Args: {
-          _client_id: string
-          _email: string
-          _organization_id: string
-        }
-        Returns: {
-          expires_at: string
-          invitation_id: string
-          token: string
-        }[]
-      }
-      create_client_portal_communication_thread: {
-        Args: { _access_id: string; _content: string; _subject: string }
-        Returns: string
-      }
-      create_client_portal_document_request: {
-        Args: {
-          _client_id: string
-          _description?: string
-          _due_date?: string
-          _organization_id: string
-          _process_id?: string
-          _title?: string
-        }
-        Returns: string
       }
       create_operational_close_for_organization: {
         Args: {
@@ -4915,10 +4870,102 @@ export type Database = {
         }
         Returns: undefined
       }
-      financial_assert_editor: { Args: { _org: string }; Returns: undefined }
       finalize_client_portal_document_upload: {
         Args: { _upload_intent_id: string }
         Returns: string
+      }
+      finalize_communication_attachment_upload: {
+        Args: { _attachment_id: string; _content?: string }
+        Returns: string
+      }
+      financial_assert_editor: { Args: { _org: string }; Returns: undefined }
+      financial_audit: {
+        Args: {
+          _action: string
+          _entity: string
+          _id: string
+          _meta?: Json
+          _org: string
+        }
+        Returns: undefined
+      }
+      generate_recurrence_transactions: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: number
+      }
+      get_communication_copilot_settings: {
+        Args: { _organization_id: string }
+        Returns: Json
+      }
+      get_organization_settings: {
+        Args: { _organization_id: string }
+        Returns: Json
+      }
+      has_client_portal_access: {
+        Args: { _client_id: string; _organization_id: string }
+        Returns: boolean
+      }
+      has_org_membership: { Args: { _org: string }; Returns: boolean }
+      has_org_role: {
+        Args: {
+          _org: string
+          _roles: Database["public"]["Enums"]["app_role"][]
+        }
+        Returns: boolean
+      }
+      invitation_preview: {
+        Args: { _token: string }
+        Returns: {
+          email: string
+          expires_at: string
+          organization_name: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+        }[]
+      }
+      is_client_portal_upload_context: {
+        Args: {
+          _client_id: string
+          _file_path: string
+          _organization_id: string
+        }
+        Returns: boolean
+      }
+      is_org_member: { Args: { _org: string }; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
+      list_communication_macros: {
+        Args: { _organization_id: string }
+        Returns: {
+          assign_to_self: boolean
+          follow_up_hours: number
+          id: string
+          is_active: boolean
+          priority_after: string
+          reply_content: string
+          status_after: string
+          title: string
+        }[]
+      }
+      list_communication_quick_replies: {
+        Args: { _organization_id: string }
+        Returns: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }[]
+      }
+      list_document_request_templates: {
+        Args: { _organization_id: string }
+        Returns: {
+          id: string
+          is_active: boolean
+          items: Json
+          title: string
+        }[]
       }
       manage_client_portal_document_requests: {
         Args: { _client_id: string; _organization_id: string }
@@ -4940,87 +4987,17 @@ export type Database = {
           updated_at: string
         }[]
       }
-      prepare_client_portal_document_resubmission: {
-        Args: {
-          _file_size: number
-          _mime_type: string
-          _original_file_name: string
-          _request_id: string
-        }
-        Returns: {
-          file_path: string
-          upload_intent_id: string
-        }[]
-      }
-      prepare_communication_copilot: {
-        Args: { _mode: string; _thread_id: string }
-        Returns: Json
-      }
-      review_client_portal_document_request: {
-        Args: {
-          _decision: string
-          _feedback?: string
-          _request_id: string
-        }
-        Returns: undefined
-      }
-      financial_audit: {
-        Args: {
-          _action: string
-          _entity: string
-          _id: string
-          _meta?: Json
-          _org: string
-        }
-        Returns: undefined
-      }
-      generate_recurrence_transactions: {
-        Args: { _organization_id: string; _payload: Json }
+      mark_all_client_portal_notifications_read: {
+        Args: never
         Returns: number
-      }
-      get_organization_settings: {
-        Args: { _organization_id: string }
-        Returns: Json
-      }
-      get_communication_copilot_settings: {
-        Args: { _organization_id: string }
-        Returns: Json
-      }
-      has_org_membership: { Args: { _org: string }; Returns: boolean }
-      has_client_portal_access: {
-        Args: { _client_id: string; _organization_id: string }
-        Returns: boolean
-      }
-      has_org_role: {
-        Args: {
-          _org: string
-          _roles: Database["public"]["Enums"]["app_role"][]
-        }
-        Returns: boolean
-      }
-      invitation_preview: {
-        Args: { _token: string }
-        Returns: {
-          email: string
-          expires_at: string
-          organization_name: string
-          role: Database["public"]["Enums"]["app_role"]
-          status: string
-        }[]
-      }
-      is_org_member: { Args: { _org: string }; Returns: boolean }
-      is_platform_admin: { Args: never; Returns: boolean }
-      select_portal_communication_assignee: {
-        Args: { _organization_id: string }
-        Returns: string
       }
       mark_all_notifications_read: {
         Args: { _organization: string }
         Returns: number
       }
-      mark_all_client_portal_notifications_read: {
-        Args: never
-        Returns: number
+      mark_client_portal_communication_read: {
+        Args: { _thread_id: string }
+        Returns: undefined
       }
       mark_client_portal_notification_read: {
         Args: { _notification_id: string }
@@ -5039,6 +5016,10 @@ export type Database = {
         Args: { _notification: string }
         Returns: undefined
       }
+      mark_staff_portal_communication_read: {
+        Args: { _organization_id: string; _thread_id: string }
+        Returns: undefined
+      }
       monitoring_assert_admin: { Args: { _org: string }; Returns: undefined }
       monitoring_assert_source: {
         Args: { _id: string; _org: string; _type: string }
@@ -5048,6 +5029,19 @@ export type Database = {
       organization_has_commercial_access: {
         Args: { _org: string }
         Returns: boolean
+      }
+      platform_kiwify_event_health: {
+        Args: { _limit?: number }
+        Returns: {
+          diagnostic_code: string
+          event_key: string
+          event_type: string
+          organization_id: string
+          organization_name: string
+          outcome: string
+          processed_at: string
+          received_at: string
+        }[]
       }
       platform_organizations: {
         Args: never
@@ -5065,19 +5059,6 @@ export type Database = {
           trade_name: string
           trial_ends_at: string
           trial_started_at: string
-        }[]
-      }
-      platform_kiwify_event_health: {
-        Args: { _limit?: number }
-        Returns: {
-          diagnostic_code: string
-          event_key: string
-          event_type: string
-          organization_id: string
-          organization_name: string
-          outcome: string
-          processed_at: string
-          received_at: string
         }[]
       }
       platform_support_open_count: { Args: never; Returns: number }
@@ -5104,9 +5085,17 @@ export type Database = {
           updated_at: string
         }[]
       }
-      prepare_kiwify_checkout: {
-        Args: { _organization: string }
-        Returns: undefined
+      prepare_client_portal_document_resubmission: {
+        Args: {
+          _file_size: number
+          _mime_type: string
+          _original_file_name: string
+          _request_id: string
+        }
+        Returns: {
+          file_path: string
+          upload_intent_id: string
+        }[]
       }
       prepare_client_portal_document_upload: {
         Args: {
@@ -5118,6 +5107,50 @@ export type Database = {
         Returns: {
           file_path: string
           upload_intent_id: string
+        }[]
+      }
+      prepare_communication_attachment_upload: {
+        Args: {
+          _file_size: number
+          _mime_type: string
+          _original_file_name: string
+          _thread_id: string
+        }
+        Returns: {
+          attachment_id: string
+          file_path: string
+        }[]
+      }
+      prepare_communication_copilot: {
+        Args: { _mode: string; _thread_id: string }
+        Returns: Json
+      }
+      prepare_communication_push: {
+        Args: { _actor_id: string; _thread_id: string }
+        Returns: {
+          action_url: string
+          auth_key: string
+          body: string
+          endpoint: string
+          p256dh: string
+          subscription_id: string
+          title: string
+        }[]
+      }
+      prepare_kiwify_checkout: {
+        Args: { _organization: string }
+        Returns: undefined
+      }
+      prepare_push_test: {
+        Args: { _actor_id: string; _organization_id: string }
+        Returns: {
+          action_url: string
+          auth_key: string
+          body: string
+          endpoint: string
+          p256dh: string
+          subscription_id: string
+          title: string
         }[]
       }
       process_automation_event: {
@@ -5180,9 +5213,28 @@ export type Database = {
         }
         Returns: string
       }
+      register_push_subscription: {
+        Args: {
+          _auth_key: string
+          _endpoint: string
+          _organization_id: string
+          _p256dh: string
+          _user_agent?: string
+        }
+        Returns: string
+      }
+      remove_push_subscription: {
+        Args: { _endpoint: string; _organization_id: string }
+        Returns: undefined
+      }
       reply_support_request: {
         Args: { _message: string; _next_status?: string; _request_id: string }
         Returns: string
+      }
+      resolve_authenticated_home: { Args: never; Returns: string }
+      resolve_kiwify_webhook_failure: {
+        Args: { _event_key: string }
+        Returns: undefined
       }
       restore_financial_account: {
         Args: { _organization_id: string; _payload: Json }
@@ -5200,14 +5252,53 @@ export type Database = {
         Args: { _notes: string; _organization_id: string; _payment_id: string }
         Returns: string
       }
-      resolve_kiwify_webhook_failure: {
-        Args: { _event_key: string }
+      review_client_portal_document_request: {
+        Args: { _decision: string; _feedback?: string; _request_id: string }
         Returns: undefined
       }
       run_temporal_automation_cycle: { Args: never; Returns: Json }
+      save_communication_macro: {
+        Args: {
+          _assign_to_self?: boolean
+          _follow_up_hours?: number
+          _is_active?: boolean
+          _macro_id: string
+          _organization_id: string
+          _priority_after?: Database["public"]["Enums"]["communication_priority"]
+          _reply_content?: string
+          _status_after?: Database["public"]["Enums"]["communication_status"]
+          _title: string
+        }
+        Returns: string
+      }
+      save_communication_quick_reply: {
+        Args: {
+          _category?: string
+          _content: string
+          _is_active?: boolean
+          _organization_id: string
+          _reply_id: string
+          _title: string
+        }
+        Returns: string
+      }
+      save_document_request_template: {
+        Args: {
+          _is_active?: boolean
+          _items: Json
+          _organization_id: string
+          _template_id: string
+          _title: string
+        }
+        Returns: string
+      }
       seed_default_document_types: {
         Args: { _org: string }
         Returns: undefined
+      }
+      select_portal_communication_assignee: {
+        Args: { _organization_id: string }
+        Returns: string
       }
       select_task_distribution_assignee: {
         Args: { _function: string; _organization_id: string; _sector: string }
@@ -5217,114 +5308,21 @@ export type Database = {
         Args: { _is_active: boolean; _rule_id: string }
         Returns: undefined
       }
-      set_financial_account_active: {
-        Args: { _organization_id: string; _payload: Json }
-        Returns: string
-      }
-      set_financial_category_active: {
-        Args: { _organization_id: string; _payload: Json }
-        Returns: string
-      }
-      set_member_active: {
-        Args: { _active: boolean; _member: string }
+      set_client_portal_access_active: {
+        Args: { _access_id: string; _active: boolean }
         Returns: undefined
       }
-      set_scheduled_automation_active: {
-        Args: { _is_active: boolean; _rule_id: string }
-        Returns: undefined
-      }
-      storage_path_org: { Args: { _name: string }; Returns: string }
-      support_assert_admin: { Args: { _org: string }; Returns: undefined }
-      support_request_thread: {
-        Args: { _request_id: string }
-        Returns: {
-          author_kind: string
-          author_name: string
-          created_at: string
-          id: string
-          message: string
-        }[]
-      }
-      suspend_expired_kiwify_subscriptions: {
-        Args: { _limit?: number; _now?: string }
-        Returns: number
-      }
-      transfer_member_responsibilities: {
-        Args: { _from: string; _org: string; _to: string }
-        Returns: {
-          monitoring_moved: number
-          processes_moved: number
-          tasks_moved: number
-        }[]
-      }
-      update_automation_rule: {
+      set_client_portal_communication_shared: {
         Args: {
-          _rule_id: string
-          action_config: Json
-          action_type: string
-          conditions: Json
-          description: string
-          is_active: boolean
-          name: string
-          trigger_type: string
-        }
-        Returns: undefined
-      }
-      update_communication_thread: {
-        Args: {
-          _channel?: Database["public"]["Enums"]["communication_channel"]
-          _clear_follow_up?: boolean
-          _follow_up_at?: string
-          _priority?: Database["public"]["Enums"]["communication_priority"]
-          _process_id?: string
-          _process_id_provided?: boolean
-          _subject?: string
-          _task_id?: string
-          _task_id_provided?: boolean
+          _client_id: string
+          _organization_id: string
+          _shared: boolean
           _thread_id: string
         }
         Returns: undefined
       }
-      update_financial_account: {
-        Args: { _organization_id: string; _payload: Json }
-        Returns: string
-      }
-      update_financial_category: {
-        Args: { _organization_id: string; _payload: Json }
-        Returns: string
-      }
-      update_financial_recurrence: {
-        Args: { _organization_id: string; _payload: Json }
-        Returns: string
-      }
-      update_financial_transaction: {
-        Args: { _organization_id: string; _payload: Json }
-        Returns: string
-      }
-      update_member_task_distribution: {
-        Args: {
-          _capacity: number
-          _function: string
-          _member: string
-          _receives_automatic_tasks: boolean
-          _sector: string
-        }
-        Returns: undefined
-      }
-      update_member_portal_communication_distribution: {
-        Args: {
-          _capacity: number
-          _member: string
-          _receives_portal_communications: boolean
-        }
-        Returns: undefined
-      }
-      set_platform_organization_archived: {
-        Args: { _archived: boolean; _organization_id: string }
-        Returns: undefined
-      }
-      set_client_portal_access_active: {
-        Args: { _access_id: string; _active: boolean }
+      set_client_portal_document_request_status: {
+        Args: { _request_id: string; _status: string }
         Returns: undefined
       }
       set_client_portal_item_shared: {
@@ -5347,73 +5345,25 @@ export type Database = {
         }
         Returns: undefined
       }
-      set_client_portal_communication_shared: {
-        Args: {
-          _client_id: string
-          _organization_id: string
-          _shared: boolean
-          _thread_id: string
-        }
-        Returns: undefined
-      }
-      set_client_portal_document_request_status: {
-        Args: { _request_id: string; _status: string }
-        Returns: undefined
-      }
-      prepare_communication_attachment_upload: {
-        Args: {
-          _file_size: number
-          _mime_type: string
-          _original_file_name: string
-          _thread_id: string
-        }
-        Returns: {
-          attachment_id: string
-          file_path: string
-        }[]
-      }
-      finalize_communication_attachment_upload: {
-        Args: { _attachment_id: string; _content?: string }
+      set_financial_account_active: {
+        Args: { _organization_id: string; _payload: Json }
         Returns: string
       }
-      mark_client_portal_communication_read: {
-        Args: { _thread_id: string }
-        Returns: undefined
-      }
-      mark_staff_portal_communication_read: {
-        Args: { _organization_id: string; _thread_id: string }
-        Returns: undefined
-      }
-      list_communication_quick_replies: {
-        Args: { _organization_id: string }
-        Returns: {
-          category: string
-          content: string
-          created_at: string
-          id: string
-          is_active: boolean
-          title: string
-          updated_at: string
-        }[]
-      }
-      save_communication_quick_reply: {
-        Args: {
-          _category?: string
-          _content: string
-          _is_active?: boolean
-          _organization_id: string
-          _reply_id: string
-          _title: string
-        }
+      set_financial_category_active: {
+        Args: { _organization_id: string; _payload: Json }
         Returns: string
       }
-      can_access_communication_attachment: {
-        Args: { _file_path: string }
-        Returns: boolean
+      set_member_active: {
+        Args: { _active: boolean; _member: string }
+        Returns: undefined
       }
-      can_upload_communication_attachment: {
-        Args: { _file_path: string }
-        Returns: boolean
+      set_platform_organization_archived: {
+        Args: { _archived: boolean; _organization_id: string }
+        Returns: undefined
+      }
+      set_scheduled_automation_active: {
+        Args: { _is_active: boolean; _rule_id: string }
+        Returns: undefined
       }
       staff_client_portal_communication_entries: {
         Args: { _organization_id: string; _thread_id: string }
@@ -5466,23 +5416,96 @@ export type Database = {
           unread_count: number
         }[]
       }
-      can_access_client_portal_document: {
-        Args: { _file_path: string }
-        Returns: boolean
+      storage_path_org: { Args: { _name: string }; Returns: string }
+      support_assert_admin: { Args: { _org: string }; Returns: undefined }
+      support_request_thread: {
+        Args: { _request_id: string }
+        Returns: {
+          author_kind: string
+          author_name: string
+          created_at: string
+          id: string
+          message: string
+        }[]
       }
-      can_upload_client_portal_document: {
-        Args: { _file_path: string }
-        Returns: boolean
+      suspend_expired_kiwify_subscriptions: {
+        Args: { _limit?: number; _now?: string }
+        Returns: number
       }
-      is_client_portal_upload_context: {
+      transfer_member_responsibilities: {
+        Args: { _from: string; _org: string; _to: string }
+        Returns: {
+          monitoring_moved: number
+          processes_moved: number
+          tasks_moved: number
+        }[]
+      }
+      update_automation_rule: {
         Args: {
-          _client_id: string
-          _file_path: string
-          _organization_id: string
+          _rule_id: string
+          action_config: Json
+          action_type: string
+          conditions: Json
+          description: string
+          is_active: boolean
+          name: string
+          trigger_type: string
         }
-        Returns: boolean
+        Returns: undefined
       }
-      resolve_authenticated_home: { Args: never; Returns: string }
+      update_communication_copilot_settings: {
+        Args: { _enabled: boolean; _organization_id: string }
+        Returns: Json
+      }
+      update_communication_thread: {
+        Args: {
+          _channel?: Database["public"]["Enums"]["communication_channel"]
+          _clear_follow_up?: boolean
+          _follow_up_at?: string
+          _priority?: Database["public"]["Enums"]["communication_priority"]
+          _process_id?: string
+          _process_id_provided?: boolean
+          _subject?: string
+          _task_id?: string
+          _task_id_provided?: boolean
+          _thread_id: string
+        }
+        Returns: undefined
+      }
+      update_financial_account: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      update_financial_category: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      update_financial_recurrence: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      update_financial_transaction: {
+        Args: { _organization_id: string; _payload: Json }
+        Returns: string
+      }
+      update_member_portal_communication_distribution: {
+        Args: {
+          _capacity: number
+          _member: string
+          _receives_portal_communications: boolean
+        }
+        Returns: undefined
+      }
+      update_member_task_distribution: {
+        Args: {
+          _capacity: number
+          _function: string
+          _member: string
+          _receives_automatic_tasks: boolean
+          _sector: string
+        }
+        Returns: undefined
+      }
       update_organization_commercial_status: {
         Args: { _action: string; _days?: number; _organization_id: string }
         Returns: undefined
@@ -5499,10 +5522,6 @@ export type Database = {
       }
       update_organization_settings: {
         Args: { _changes: Json; _organization_id: string }
-        Returns: Json
-      }
-      update_communication_copilot_settings: {
-        Args: { _enabled: boolean; _organization_id: string }
         Returns: Json
       }
       update_scheduled_automation: {
@@ -5657,12 +5676,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5686,11 +5705,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5711,11 +5730,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5736,11 +5755,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5753,11 +5772,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
