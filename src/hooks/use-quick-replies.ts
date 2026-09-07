@@ -42,7 +42,9 @@ export function useSaveCommunicationQuickReply(organizationId: string | null) {
       if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
       const { data, error } = await supabase.rpc("save_communication_quick_reply", {
         _organization_id: organizationId,
-        _reply_id: input.id ?? null,
+        // O gerador do Supabase tipa argumentos UUID de RPC como string,
+        // embora o PostgreSQL aceite NULL para distinguir uma criação.
+        _reply_id: input.id ?? (null as unknown as string),
         _title: input.title.trim(),
         _content: input.content.trim(),
         _category: input.category.trim(),

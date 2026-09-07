@@ -5119,7 +5119,7 @@ export type Database = {
           _content: string
           _is_active?: boolean
           _organization_id: string
-          _reply_id: string | null
+          _reply_id: string
           _title: string
         }
         Returns: string
