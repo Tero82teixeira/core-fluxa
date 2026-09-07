@@ -92,7 +92,7 @@ INSERT INTO public.client_portal_document_requests(
   '29400000-0000-0000-0000-000000000001',
   '39400000-0000-0000-0000-000000000001',
   'Comprovante atualizado',
-  CURRENT_DATE - 1,
+  (now() AT TIME ZONE 'America/Sao_Paulo')::date - 1,
   'pending',
   '19400000-0000-0000-0000-000000000001'
 );
