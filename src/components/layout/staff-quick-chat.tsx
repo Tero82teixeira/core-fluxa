@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Download, Loader2, MessageSquare, Paperclip, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { QuickReplyPicker } from "@/components/communication/quick-reply-picker";
-import { useAddCommunicationEntry } from "@/hooks/use-communication";
+import { CommunicationCopilot } from "@/components/communication/communication-copilot";
+import { useCommunicationCopilotSettings } from "@/hooks/use-communication-copilot";
+import { useAddCommunicationEntry, useUpdateCommunicationThread } from "@/hooks/use-communication";
 import { useCommunicationQuickReplies } from "@/hooks/use-quick-replies";
 import {
   openPortalChatAttachment,
@@ -41,6 +43,7 @@ const STATUS_LABELS = {
 };
 
 export function StaffQuickChat() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { organizationId, role, status, onboardingCompleted } = useWorkspace();
   const allowed = status === "ready" && onboardingCompleted && canWriteCommunication(role);
   const inbox = useStaffPortalInbox(organizationId, allowed);
@@ -52,7 +55,9 @@ export function StaffQuickChat() {
   const selected = inbox.data?.find((thread) => thread.thread_id === selectedId) ?? null;
   const entries = useStaffPortalEntries(organizationId, selectedId);
   const addEntry = useAddCommunicationEntry(organizationId);
+  const updateThread = useUpdateCommunicationThread(organizationId);
   const quickReplies = useCommunicationQuickReplies(organizationId, allowed);
+  const copilotSettings = useCommunicationCopilotSettings(organizationId);
   const uploadAttachment = useUploadPortalChatAttachment(organizationId);
   const markRead = useMarkStaffPortalCommunicationRead(organizationId);
   const publicEntries = entries.data ?? [];
@@ -90,7 +95,7 @@ export function StaffQuickChat() {
     void markRead.mutateAsync(selectedId);
   }, [open, selectedId, publicEntries, markRead.isPending]);
 
-  if (!allowed) return null;
+  if (!allowed || pathname === "/comunicacao") return null;
 
   async function sendReply() {
     if (!selectedId || !reply.trim()) return;
@@ -150,7 +155,7 @@ export function StaffQuickChat() {
         side="top"
         align="end"
         sideOffset={12}
-        className="w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-2xl border-primary/15 p-0 shadow-2xl"
+        className="max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-2xl border-primary/15 p-0 shadow-2xl"
       >
         <div className="bg-gradient-to-br from-primary to-primary/80 p-4 text-primary-foreground">
           <div className="flex items-center justify-between gap-3">
@@ -170,7 +175,7 @@ export function StaffQuickChat() {
           </div>
         </div>
 
-        <div className="space-y-3 p-4">
+        <div className="max-h-[calc(100vh-8rem)] space-y-3 overflow-y-auto p-4">
           {inbox.isLoading ? (
             <div className="grid min-h-40 place-items-center text-sm text-muted-foreground">
               <Loader2 className="size-5 animate-spin" aria-hidden />
@@ -291,6 +296,27 @@ export function StaffQuickChat() {
                     disabled={addEntry.isPending}
                     onSelect={(content) => setReply((current) => applyQuickReply(current, content))}
                   />
+                  {copilotSettings.data && selected && (
+                    <CommunicationCopilot
+                      compact
+                      threadId={selected.thread_id}
+                      draft={reply}
+                      currentPriority={selected.priority}
+                      onUseSuggestion={setReply}
+                      onApplyPriority={async (priority) => {
+                        try {
+                          await updateThread.mutateAsync({
+                            threadId: selected.thread_id,
+                            priority,
+                          });
+                          await inbox.refetch();
+                          toast.success(`Prioridade ${priority} aplicada.`);
+                        } catch (error) {
+                          toast.error(describeError(error));
+                        }
+                      }}
+                    />
+                  )}
                   <div className="flex items-end gap-2">
                     <input
                       ref={fileInputRef}
