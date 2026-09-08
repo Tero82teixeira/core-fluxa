@@ -5014,7 +5014,7 @@ export type Database = {
         Returns: {
           active_device_count: number
           ever_registered: boolean
-          last_activated_at: string | null
+          last_activated_at: string
           user_id: string
         }[]
       }
