@@ -388,13 +388,14 @@ relógio.
 
 ## Alertas de SLA do Portal do Cliente
 
-Conversas compartilhadas no Portal do Cliente entram no acompanhamento de SLA
+Conversas compartilhadas no Portal do Cliente entram no acompanhamento de resposta
 somente quando a última mensagem pública foi enviada pelo cliente e o status é
-**Aguardando equipe**. Os limites seguem a prioridade da conversa: duas horas
-para urgente, quatro para alta, 24 para normal e 48 para baixa.
+**Aguardando equipe**. A empresa define dois prazos em **Configurações >
+Notificações**: o primeiro lembrete, inicialmente em 15 minutos, e o aviso à
+gestão, inicialmente em 30 minutos.
 
-Ao atingir 75% do prazo, o responsável ativo recebe um aviso preventivo. Quando
-não há responsável, a gestão recebe esse primeiro aviso. Depois do vencimento,
+Ao atingir o primeiro prazo, o responsável ativo recebe um lembrete. Quando
+não há responsável, a gestão recebe esse aviso. Ao atingir o segundo prazo,
 o alerta é enviado ao responsável e escalado para superadministradores,
 proprietários, administradores e gestores ativos. Uma resposta da empresa ou a
 mudança do status encerra a espera e impede novos avisos daquele episódio.
@@ -404,4 +405,6 @@ destinatário. Assim, o relógio de 15 minutos pode executar várias vezes sem
 repetir notificações. A preferência **SLA do Portal do Cliente**, em
 **Configurações > Notificações**, permite desativar somente essa categoria. O
 processamento cria apenas notificações internas, não envia mensagens ao cliente
-e não cria outro cron.
+e não cria outro cron. Na tela **Equipe**, proprietários e administradores veem
+somente a quantidade e a situação dos aparelhos de cada membro, nunca endereços,
+chaves ou detalhes técnicos, e podem enviar um lembrete interno de ativação.
