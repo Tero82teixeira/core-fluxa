@@ -46,6 +46,7 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
   { id: "relatorios", title: "Relatórios", subtitle: "Navegação", keywords: ["relatorio", "indicadores"], route: "/relatorios" },
   { id: "equipe", title: "Equipe", subtitle: "Navegação", keywords: ["usuários", "permissões"], route: "/equipe" },
   { id: "automacoes", title: "Automações", subtitle: "Navegação", keywords: ["automacao", "regras"], route: "/automacoes" },
+  { id: "notificacoes", title: "Notificações", subtitle: "Navegação", keywords: ["alertas", "avisos", "sineta", "celular"], route: "/notificacoes" },
   { id: "configuracoes", title: "Configurações", subtitle: "Navegação", keywords: ["configuração", "preferências", "workspace"], route: "/configuracoes" },
   { id: "ajuda", title: "Ajuda e Suporte", subtitle: "Navegação", keywords: ["ajuda", "suporte", "documentação"], route: "/ajuda" },
   { id: "novidades", title: "Novidades", subtitle: "Navegação", keywords: ["novidade", "melhorias", "lançamentos"], route: "/novidades" },

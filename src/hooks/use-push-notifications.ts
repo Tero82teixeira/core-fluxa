@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 
 const db = () => supabase as any;
+const PUSH_STATE_EVENT = "fluxa:push-subscription-changed";
 function decodePublicKey(value: string) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const raw = atob((value + padding).replace(/-/g, "+").replace(/_/g, "/"));
@@ -19,9 +20,30 @@ function supported() {
 
 export function usePushNotifications(organizationId: string | null) {
   const [busy, setBusy] = useState(false);
+  const [active, setActive] = useState<boolean | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>(() =>
     typeof Notification === "undefined" ? "default" : Notification.permission,
   );
+  const refresh = useCallback(async () => {
+    if (!supported()) {
+      setActive(false);
+      return;
+    }
+    setPermission(Notification.permission);
+    try {
+      const registration = await navigator.serviceWorker.getRegistration("/");
+      setActive(Boolean(await registration?.pushManager.getSubscription()));
+    } catch {
+      setActive(false);
+    }
+  }, []);
+  useEffect(() => {
+    setActive(null);
+    void refresh();
+    const handleChange = () => void refresh();
+    window.addEventListener(PUSH_STATE_EVENT, handleChange);
+    return () => window.removeEventListener(PUSH_STATE_EVENT, handleChange);
+  }, [organizationId, refresh]);
   const enable = async () => {
     if (!organizationId || !supported()) throw new Error("PUSH_NOT_SUPPORTED");
     setBusy(true);
@@ -53,6 +75,8 @@ export function usePushNotifications(organizationId: string | null) {
         _user_agent: navigator.userAgent,
       });
       if (registerError) throw registerError;
+      setActive(true);
+      window.dispatchEvent(new Event(PUSH_STATE_EVENT));
     } finally {
       setBusy(false);
     }
@@ -61,7 +85,7 @@ export function usePushNotifications(organizationId: string | null) {
     if (!organizationId || !supported()) return;
     setBusy(true);
     try {
-      const registration = await navigator.serviceWorker.getRegistration("/push-sw.js");
+      const registration = await navigator.serviceWorker.getRegistration("/");
       const subscription = await registration?.pushManager.getSubscription();
       if (subscription) {
         const { error } = await db().rpc("remove_push_subscription", {
@@ -71,6 +95,8 @@ export function usePushNotifications(organizationId: string | null) {
         if (error) throw error;
         await subscription.unsubscribe();
       }
+      setActive(false);
+      window.dispatchEvent(new Event(PUSH_STATE_EVENT));
     } finally {
       setBusy(false);
     }
@@ -83,5 +109,15 @@ export function usePushNotifications(organizationId: string | null) {
     if (error) throw error;
     return Number(data?.delivered ?? 0);
   };
-  return { supported: supported(), permission, busy, enable, disable, test };
+  return {
+    supported: supported(),
+    permission,
+    active,
+    checking: active === null,
+    busy,
+    enable,
+    disable,
+    test,
+    refresh,
+  };
 }
