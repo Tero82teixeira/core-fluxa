@@ -10,13 +10,23 @@ export function PushNotificationSettings({ organizationId }: { organizationId: s
   const enable = async () => {
     try {
       await push.enable();
-      toast.success("Alertas ativados neste aparelho.");
     } catch (error) {
       toast.error(
         error instanceof Error && error.message === "PUSH_PERMISSION_DENIED"
           ? "A permissão foi bloqueada no navegador. Libere as notificações nas configurações do site."
           : "Não foi possível ativar os alertas neste aparelho.",
       );
+      return;
+    }
+    try {
+      const delivered = await push.test();
+      toast.success(
+        delivered > 0
+          ? "Alertas ativados e teste enviado para este aparelho."
+          : "Alertas ativados. Use o botão Testar para confirmar o recebimento.",
+      );
+    } catch {
+      toast.warning("Alertas ativados. Use o botão Testar para confirmar o recebimento.");
     }
   };
   const disable = async () => {

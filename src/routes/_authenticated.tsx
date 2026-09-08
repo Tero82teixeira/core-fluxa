@@ -13,6 +13,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
 import { StaffQuickChat } from "@/components/layout/staff-quick-chat";
+import { PushNotificationOnboarding } from "@/components/notifications/push-notification-onboarding";
 import { CommercialAccessBlocked } from "@/components/commercial-access-blocked";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 import { useAuth } from "@/lib/auth";
@@ -94,7 +95,8 @@ function WorkspaceRecovery() {
 }
 
 function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
-  const { status, commercialAccess, platformAdmin } = useWorkspace();
+  const { status, commercialAccess, platformAdmin, organizationId, onboardingCompleted } =
+    useWorkspace();
   const pathname = useLocation({ select: (location) => location.pathname });
   if (status === "error") return <WorkspaceRecovery />;
   if (
@@ -120,6 +122,10 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
           </main>
         </SidebarInset>
         <StaffQuickChat />
+        <PushNotificationOnboarding
+          organizationId={organizationId}
+          enabled={status === "ready" && commercialAccess && onboardingCompleted}
+        />
       </div>
     </SidebarProvider>
   );

@@ -1,4 +1,5 @@
 import {
+  Bell,
   Bot,
   Building2,
   CalendarClock,
@@ -43,6 +44,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/relatorios", label: "Relatórios", icon: PieChart, description: "Indicadores e exportações", ready: true, group: "gestao" },
   { to: "/equipe", label: "Equipe", icon: CalendarClock, description: "Usuários e permissões", ready: true, group: "gestao" },
   { to: "/automacoes", label: "Automações", icon: Bot, description: "Regras e disparos", ready: true, group: "gestao" },
+  { to: "/notificacoes", label: "Notificações", icon: Bell, description: "Avisos e alertas no aparelho", ready: true, group: "sistema" },
   { to: "/configuracoes", label: "Configurações", icon: Settings, description: "Workspace e preferências", ready: true, group: "sistema" },
   { to: "/assinatura", label: "Minha assinatura", icon: CreditCard, description: "Plano, cobrança e acesso", ready: true, group: "sistema" },
   { to: "/ajuda", label: "Ajuda e suporte", icon: LifeBuoy, description: "Documentação e atendimento", ready: true, group: "sistema" },

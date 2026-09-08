@@ -58,6 +58,7 @@ describe("status dos módulos na navegação lateral", () => {
         { to: "/relatorios", label: "Relatórios", ready: true, group: "gestao" },
         { to: "/equipe", label: "Equipe", ready: true, group: "gestao" },
         { to: "/automacoes", label: "Automações", ready: true, group: "gestao" },
+        { to: "/notificacoes", label: "Notificações", ready: true, group: "sistema" },
         { to: "/assinatura", label: "Minha assinatura", ready: true, group: "sistema" },
         { to: "/novidades", label: "Novidades", ready: true, group: "sistema" },
       ],
