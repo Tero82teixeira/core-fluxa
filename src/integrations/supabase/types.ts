@@ -1343,6 +1343,41 @@ export type Database = {
           },
         ]
       }
+      communication_response_alert_settings: {
+        Row: {
+          created_at: string
+          escalation_minutes: number
+          first_reminder_minutes: number
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          escalation_minutes?: number
+          first_reminder_minutes?: number
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          escalation_minutes?: number
+          first_reminder_minutes?: number
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_response_alert_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_quick_replies: {
         Row: {
           category: string
@@ -4897,6 +4932,13 @@ export type Database = {
         Args: { _organization_id: string }
         Returns: Json
       }
+      get_communication_response_alert_settings: {
+        Args: { _organization_id: string }
+        Returns: {
+          escalation_minutes: number
+          first_reminder_minutes: number
+        }[]
+      }
       get_organization_settings: {
         Args: { _organization_id: string }
         Returns: Json
@@ -4965,6 +5007,15 @@ export type Database = {
           is_active: boolean
           items: Json
           title: string
+        }[]
+      }
+      list_team_push_status: {
+        Args: { _organization_id: string }
+        Returns: {
+          active_device_count: number
+          ever_registered: boolean
+          last_activated_at: string
+          user_id: string
         }[]
       }
       manage_client_portal_document_requests: {
@@ -5227,6 +5278,10 @@ export type Database = {
         Args: { _endpoint: string; _organization_id: string }
         Returns: undefined
       }
+      remind_member_push_activation: {
+        Args: { _member_user_id: string; _organization_id: string }
+        Returns: boolean
+      }
       reply_support_request: {
         Args: { _message: string; _next_status?: string; _request_id: string }
         Returns: string
@@ -5456,6 +5511,17 @@ export type Database = {
       update_communication_copilot_settings: {
         Args: { _enabled: boolean; _organization_id: string }
         Returns: Json
+      }
+      update_communication_response_alert_settings: {
+        Args: {
+          _escalation_minutes: number
+          _first_reminder_minutes: number
+          _organization_id: string
+        }
+        Returns: {
+          escalation_minutes: number
+          first_reminder_minutes: number
+        }[]
       }
       update_communication_thread: {
         Args: {

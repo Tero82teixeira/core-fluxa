@@ -30,6 +30,45 @@ export type TeamMember = {
   openCommunications: number;
 };
 
+export type TeamPushStatus = {
+  user_id: string;
+  active_device_count: number;
+  ever_registered: boolean;
+  last_activated_at: string | null;
+};
+
+export function useTeamPushStatus(organizationId: string | null, enabled: boolean) {
+  return useQuery({
+    enabled: Boolean(organizationId) && enabled,
+    queryKey: ["team-push-status", organizationId],
+    queryFn: async (): Promise<TeamPushStatus[]> => {
+      const { data, error } = await db().rpc("list_team_push_status", {
+        _organization_id: organizationId,
+      });
+      if (error) throw error;
+      return ((data ?? []) as Array<Omit<TeamPushStatus, "active_device_count"> & { active_device_count: number | string }>).map(
+        (row) => ({ ...row, active_device_count: Number(row.active_device_count) || 0 }),
+      );
+    },
+  });
+}
+
+export function useRemindMemberPushActivation(organizationId: string | null) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (memberUserId: string) => {
+      if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
+      const { data, error } = await db().rpc("remind_member_push_activation", {
+        _organization_id: organizationId,
+        _member_user_id: memberUserId,
+      });
+      if (error) throw error;
+      return Boolean(data);
+    },
+    onSuccess: () => client.invalidateQueries({ queryKey: ["notifications", organizationId] }),
+  });
+}
+
 /** Membros da empresa com carga de trabalho real. */
 export function useTeamMembers(organizationId: string | null) {
   return useQuery({

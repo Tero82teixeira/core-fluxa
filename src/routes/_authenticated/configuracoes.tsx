@@ -30,6 +30,7 @@ import { canAdminCommunication } from "@/lib/communication";
 import { CommunicationCopilotSettings } from "@/components/communication/communication-copilot-settings";
 import { CommunicationMacrosSettings } from "@/components/communication/communication-macros-settings";
 import { DocumentRequestTemplatesSettings } from "@/components/communication/document-request-templates-settings";
+import { CommunicationResponseAlertSettings } from "@/components/notifications/communication-response-alert-settings";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -569,7 +570,7 @@ function SettingsPage() {
             />
           </Section>
         </TabsContent>
-        <TabsContent value="notificacoes">
+        <TabsContent value="notificacoes" className="space-y-4">
           <Section title="Notificações internas">
             {[
               ["overdue_tasks", "Tarefas atrasadas"],
@@ -596,6 +597,7 @@ function SettingsPage() {
               />
             ))}
           </Section>
+          <CommunicationResponseAlertSettings organizationId={organizationId} canEdit={canEdit} />
         </TabsContent>
         <TabsContent value="seguranca">
           <Section title="Acesso e auditoria">

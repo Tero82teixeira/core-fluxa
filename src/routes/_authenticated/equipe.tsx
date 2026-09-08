@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Copy, MailPlus, Search, ShieldCheck, UsersRound } from "lucide-react";
+import { BellOff, BellRing, Copy, MailPlus, Search, ShieldCheck, Smartphone, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ import {
   useCreateInvitation,
   useInvitations,
   useSetMemberActive,
+  useTeamPushStatus,
+  useRemindMemberPushActivation,
   useTeamMembers,
   useTransferResponsibilities,
   useUpdateMemberPortalCommunicationDistribution,
@@ -64,6 +66,8 @@ function TeamPage() {
   const transferResponsibilities = useTransferResponsibilities(organizationId);
   const updateDistribution = useUpdateMemberTaskDistribution(organizationId);
   const updatePortalDistribution = useUpdateMemberPortalCommunicationDistribution(organizationId);
+  const pushStatus = useTeamPushStatus(organizationId, permissions.canManageTeam);
+  const remindPushActivation = useRemindMemberPushActivation(organizationId);
   const [distributionMember, setDistributionMember] = useState<TeamMember | null>(null);
   const [distributionSector, setDistributionSector] = useState("");
   const [distributionFunction, setDistributionFunction] = useState("");
@@ -81,6 +85,10 @@ function TeamPage() {
   const [inviteRole, setInviteRole] = useState<AppRole>("operacional");
   const [lastLink, setLastLink] = useState("");
   const rows = members.data ?? [];
+  const pushStatusByUser = useMemo(
+    () => new Map((pushStatus.data ?? []).map((item) => [item.user_id, item])),
+    [pushStatus.data],
+  );
   const pending = (invitations.data ?? []).filter(
     (item) => item.status === "pending" && new Date(item.expires_at) > new Date(),
   );
@@ -388,7 +396,7 @@ function TeamPage() {
                 )}
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                 <div className="rounded-xl border bg-muted/20 p-3">
                   <p className="text-xs text-muted-foreground">Tarefas abertas</p>
                   <p className="mt-1 text-lg font-semibold">{member.openTasks}</p>
@@ -432,6 +440,60 @@ function TeamPage() {
                     {member.openCommunications}/{member.portal_communication_capacity} conversas
                   </p>
                 </div>
+                {permissions.canManageTeam && (() => {
+                  const alertStatus = pushStatusByUser.get(member.user_id);
+                  const activeDevices = alertStatus?.active_device_count ?? 0;
+                  const statusLabel = pushStatus.isLoading
+                    ? "Verificando…"
+                    : pushStatus.isError
+                      ? "Indisponível"
+                      : activeDevices > 0
+                        ? `${activeDevices} aparelho(s) ativo(s)`
+                        : alertStatus?.ever_registered
+                          ? "Sem aparelho ativo"
+                          : "Não configurado";
+                  return (
+                    <div className="rounded-xl border bg-muted/20 p-3">
+                      <p className="text-xs text-muted-foreground">Alertas no aparelho</p>
+                      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium">
+                        {activeDevices > 0 ? (
+                          <BellRing className="size-4 text-success" />
+                        ) : (
+                          <BellOff className="size-4 text-muted-foreground" />
+                        )}
+                        {statusLabel}
+                      </p>
+                      {alertStatus?.last_activated_at && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Atualizado em {new Date(alertStatus.last_activated_at).toLocaleDateString("pt-BR")}
+                        </p>
+                      )}
+                      {member.is_active && activeDevices === 0 && !pushStatus.isLoading && !pushStatus.isError && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="mt-2 h-7 px-2 text-xs"
+                          disabled={remindPushActivation.isPending}
+                          onClick={async () => {
+                            try {
+                              const created = await remindPushActivation.mutateAsync(member.user_id);
+                              toast.success(
+                                created
+                                  ? "Lembrete enviado dentro do sistema."
+                                  : "Este membro já recebeu um lembrete hoje.",
+                              );
+                            } catch {
+                              toast.error("Não foi possível enviar o lembrete.");
+                            }
+                          }}
+                        >
+                          <Smartphone className="size-3.5" />
+                          Lembrar de ativar
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {permissions.canManageTeam && member.user_id !== user?.id && (
