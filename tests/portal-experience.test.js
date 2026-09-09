@@ -3,6 +3,10 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const migration = readFileSync("supabase/migrations/20260923120000_portal_experience.sql", "utf8");
+const ratingDetailsMigration = readFileSync(
+  "supabase/migrations/20260924120000_staff_portal_rating_details.sql",
+  "utf8",
+);
 const portal = readFileSync("src/components/client-portal/portal-experience.tsx", "utf8");
 const experienceHook = readFileSync("src/hooks/use-client-portal-experience.ts", "utf8");
 const staff = readFileSync("src/components/communication/callback-requests-panel.tsx", "utf8");
@@ -50,6 +54,16 @@ test("experience metrics combine ratings and callbacks in the service report", (
   assert.match(report, /Retornos concluídos/);
 });
 
+test("management can inspect and filter rating details before opening the conversation", () => {
+  assert.match(ratingDetailsMigration, /communication_assert_role\(_organization_id, true\)/);
+  assert.match(ratingDetailsMigration, /rating_row\.organization_id = _organization_id/);
+  assert.match(ratingDetailsMigration, /client_name text/);
+  assert.match(ratingDetailsMigration, /subject text/);
+  assert.match(report, /Avaliações dos clientes/);
+  assert.match(report, /Todas as notas/);
+  assert.match(report, /search=\{\{ conversa: item\.thread_id \}\}/);
+});
+
 test("generated contracts expose every portal experience RPC", () => {
   for (const rpc of [
     "register_client_portal_push_subscription",
@@ -59,7 +73,9 @@ test("generated contracts expose every portal experience RPC", () => {
     "list_client_portal_callback_requests",
     "cancel_client_portal_callback_request",
     "list_staff_client_portal_callback_requests",
+    "list_staff_client_portal_communication_ratings",
     "update_staff_client_portal_callback_request",
     "communication_experience_metrics",
-  ]) assert.match(types, new RegExp(`${rpc}:`));
+  ])
+    assert.match(types, new RegExp(`${rpc}:`));
 });
