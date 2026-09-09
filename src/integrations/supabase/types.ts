@@ -5179,6 +5179,20 @@ export type Database = {
           thread_id: string
         }[]
       }
+      list_staff_client_portal_communication_ratings: {
+        Args: { _from: string; _organization_id: string; _to: string }
+        Returns: {
+          client_id: string
+          client_name: string
+          comment: string
+          created_at: string
+          rating: number
+          rating_id: string
+          subject: string
+          thread_id: string
+          updated_at: string
+        }[]
+      }
       register_client_portal_push_subscription: {
         Args: {
           _auth_key: string
