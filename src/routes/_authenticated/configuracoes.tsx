@@ -32,7 +32,6 @@ import { CommunicationMacrosSettings } from "@/components/communication/communic
 import { DocumentRequestTemplatesSettings } from "@/components/communication/document-request-templates-settings";
 import { CommunicationResponseAlertSettings } from "@/components/notifications/communication-response-alert-settings";
 import { ClientPortalFaqSettings } from "@/components/communication/client-portal-faq-settings";
-import { ChannelConnectionsSettings } from "@/components/communication/channel-connections-settings";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -457,25 +456,6 @@ function SettingsPage() {
         <TabsContent value="comunicacao">
           <Section title="Preferências internas de comunicação">
             <SettingSelect
-              label="Canal padrão"
-              value={d.default_communication_channel}
-              options={[
-                ["interno", "Interno"],
-                ["whatsapp", "WhatsApp"],
-                ["telefone", "Telefone"],
-                ["email", "E-mail"],
-                ["presencial", "Presencial"],
-                ["outro", "Outro"],
-              ]}
-              disabled={!canEdit}
-              onChange={(v) =>
-                set(
-                  "default_communication_channel",
-                  v as OrganizationSettings["default_communication_channel"],
-                )
-              }
-            />
-            <SettingSelect
               label="Prioridade padrão"
               value={d.default_communication_priority}
               options={[
@@ -513,9 +493,6 @@ function SettingsPage() {
             />
           </Section>
           <CommunicationCopilotSettings organizationId={organizationId} canManage={canEdit} />
-          <div className="mt-4">
-            <ChannelConnectionsSettings organizationId={organizationId} canManage={canEdit} />
-          </div>
           <div className="mt-4">
             <ClientPortalFaqSettings organizationId={organizationId} canManage={canEdit} />
           </div>

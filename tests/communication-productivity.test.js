@@ -34,15 +34,17 @@ test("bulk actions require an explicit selection and reuse protected mutations",
   assert.match(bulkActions, /canAssign/);
 });
 
-test("the selected conversation shows an actionable client overview", () => {
+test("the selected conversation keeps the client overview inside the FLUXA chat", () => {
   assert.match(communication, /<ClientQuickView/);
   assert.match(clientQuickView, /Visão rápida do cliente/);
   assert.match(clientQuickView, /Processos ativos/);
   assert.match(clientQuickView, /Tarefas abertas/);
   assert.match(clientQuickView, /Conversas abertas/);
-  assert.match(clientQuickView, /https:\/\/wa\.me/);
-  assert.match(clientQuickView, /mailto:/);
-  assert.match(clientQuickView, /tel:/);
+  assert.match(clientQuickView, /Responder no FLUXA/);
+  assert.match(clientQuickView, /onReply/);
+  assert.doesNotMatch(clientQuickView, /https:\/\/wa\.me|mailto:|tel:/);
+  assert.doesNotMatch(communication, /<CommunicationChannelInbox/);
+  assert.match(communication, /Escreva uma mensagem para o cliente/);
   assert.match(clientsHook, /const CLIENTS_SOURCE = "clients_secure"/);
 });
 

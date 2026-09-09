@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, ExternalLink, Mail, MessageCircle, Phone } from "lucide-react";
+import { Building2, ExternalLink, MessageSquare } from "lucide-react";
 
 import type { CommunicationThread } from "@/hooks/use-communication";
 import type { ClientRow, ProcessRow } from "@/hooks/use-operations";
 import type { TaskRow } from "@/hooks/use-tasks";
-import { digits, formatDate } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -22,11 +22,13 @@ export function ClientQuickView({
   processes,
   tasks,
   threads,
+  onReply,
 }: {
   client: ClientRow | undefined;
   processes: ProcessRow[];
   tasks: TaskRow[];
   threads: CommunicationThread[];
+  onReply?: () => void;
 }) {
   if (!client) return null;
 
@@ -43,9 +45,6 @@ export function ClientQuickView({
     (thread) =>
       thread.client_id === client.id && !["resolvida", "arquivada"].includes(thread.status),
   ).length;
-  const whatsapp = digits(client.whatsapp || client.phone || "");
-  const whatsappRecipient = whatsapp.startsWith("55") ? whatsapp : `55${whatsapp}`;
-
   return (
     <section className="rounded-xl border bg-muted/20 p-3 sm:p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -83,37 +82,17 @@ export function ClientQuickView({
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        {client.phone && (
-          <Button asChild variant="outline" size="sm">
-            <a href={`tel:${digits(client.phone)}`}>
-              <Phone className="mr-2 size-4" />
-              Ligar
-            </a>
+      {onReply && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Button type="button" size="sm" onClick={onReply}>
+            <MessageSquare className="mr-2 size-4" />
+            Responder no FLUXA
           </Button>
-        )}
-        {whatsapp && (
-          <Button asChild variant="outline" size="sm">
-            <a href={`https://wa.me/${whatsappRecipient}`} target="_blank" rel="noreferrer">
-              <MessageCircle className="mr-2 size-4" />
-              WhatsApp
-            </a>
-          </Button>
-        )}
-        {client.email && (
-          <Button asChild variant="outline" size="sm">
-            <a href={`mailto:${client.email}`}>
-              <Mail className="mr-2 size-4" />
-              E-mail
-            </a>
-          </Button>
-        )}
-        {!client.phone && !whatsapp && !client.email && (
           <span className="text-xs text-muted-foreground">
-            Nenhum canal de contato disponível para o seu perfil.
+            Continue o atendimento pelo chat seguro do Portal do Cliente.
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
