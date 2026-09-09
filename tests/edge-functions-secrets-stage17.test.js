@@ -22,6 +22,8 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
       : [];
 
     assert.deepEqual(functionEntries, [
+      "communication-channel-send/index.ts",
+      "communication-channel-webhook/index.ts",
       "communication-copilot/index.ts",
       "communication-push/index.ts",
       "kiwify-webhook/index.ts",
@@ -33,6 +35,8 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
       "kiwify-webhook",
       "communication-copilot",
       "communication-push",
+      "communication-channel-send",
+      "communication-channel-webhook",
     ]);
   });
 
@@ -43,6 +47,7 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
     const copilotHook = read("src/hooks/use-communication-copilot.ts");
     const pushHook = read("src/hooks/use-push-notifications.ts");
     const portalCommunicationHook = read("src/hooks/use-client-portal-communication.ts");
+    const channelHook = read("src/hooks/use-communication-channels.ts");
     const otherFrontend = frontendFiles
       .filter(
         (path) =>
@@ -50,6 +55,7 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
             "src/hooks/use-communication-copilot.ts",
             "src/hooks/use-push-notifications.ts",
             "src/hooks/use-client-portal-communication.ts",
+            "src/hooks/use-communication-channels.ts",
           ].includes(path),
       )
       .map(read)
@@ -58,11 +64,13 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
     assert.match(copilotHook, /functions\.invoke\("communication-copilot"/);
     assert.match(pushHook, /functions\.invoke\("communication-push"/);
     assert.match(portalCommunicationHook, /functions\.invoke\("communication-push"/);
+    assert.match(channelHook, /functions\.invoke\("communication-channel-send"/);
     assert.doesNotMatch(copilotHook, /OPENAI_API_KEY|SERVICE_ROLE|service_role/);
     assert.doesNotMatch(
       pushHook + portalCommunicationHook,
       /VAPID_PRIVATE_KEY|SERVICE_ROLE|service_role/,
     );
+    assert.doesNotMatch(channelHook, /META_WHATSAPP|RESEND_API_KEY|SERVICE_ROLE|service_role/);
     assert.doesNotMatch(otherFrontend, /functions\s*\.\s*invoke\s*\(/);
     assert.doesNotMatch(otherFrontend, /supabase\s*\.\s*functions\b/);
     assert.doesNotMatch(otherFrontend, /\/functions\/v1\//);

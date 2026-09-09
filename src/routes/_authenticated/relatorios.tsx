@@ -11,6 +11,8 @@ import { useReportData } from "@/hooks/use-reports";
 import { permissionsForRole } from "@/lib/access-control";
 import { useWorkspace } from "@/lib/workspace";
 import type { MonitoringAlert } from "@/lib/monitoring";
+import { CommunicationServiceReport } from "@/components/communication/communication-service-report";
+import { canAdminCommunication } from "@/lib/communication";
 import { clientProcessSummary, downloadCsv, filterMonitoringReport, filterReportRows, groupCount, isOverdue, monitoringBuckets, monitoringExportRows, monitoringReportMetrics, periodRange, type PeriodPreset } from "@/lib/reports";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
@@ -28,6 +30,8 @@ function ReportsPage() {
   const { organizationId, membership } = useWorkspace();
   const organizationName = membership?.organizations?.trade_name || membership?.organizations?.legal_name || "Organização";
   const canExportReports = permissionsForRole(membership?.role ?? null).canExportReports;
+  const canViewServiceReport = canAdminCommunication(membership?.role ?? null);
+  const reportTabs = [["overview","Visão geral"],["service","Atendimento"],["tasks","Tarefas"],["processes","Processos"],["clients","Clientes"],["documents","Documentos"],["monitoring","Monitoramentos"],["team","Equipe"]].filter(([value]) => value !== "service" || canViewServiceReport);
   const report = useReportData(organizationId);
   const [tab, setTab] = useState("overview");
   const [period, setPeriod] = useState<PeriodPreset>("30d");
@@ -79,13 +83,14 @@ function ReportsPage() {
       <Filter label="Status" value={status} set={setStatus} options={Object.entries(labels)} />
       <Filter label="Prioridade" value={priority} set={setPriority} options={[["baixa","Baixa"],["media","Média"],["alta","Alta"],["critica","Crítica"]]} />
       <Filter label="Processo" value={processId} set={setProcessId} options={(data?.processes ?? []).map((x: AnyRow) => [x.id, x.code])} />
-      <label className="grid gap-1 text-xs">Tipo de relatório<select className={selectClass} value={tab} onChange={(e) => setTab(e.target.value)}>{[["overview","Visão geral"],["tasks","Tarefas"],["processes","Processos"],["clients","Clientes"],["documents","Documentos"],["monitoring","Monitoramentos"],["team","Equipe"]].map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+      <label className="grid gap-1 text-xs">Tipo de relatório<select className={selectClass} value={tab} onChange={(e) => setTab(e.target.value)}>{reportTabs.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
       <Button variant="ghost" className="self-end" onClick={clear}><RefreshCw /> Limpar filtros</Button>
     </CardContent></Card>
     {report.isLoading && <div className="panel p-8 text-center text-muted-foreground">Carregando dados reais…</div>}
     {report.isError && <div role="alert" className="panel p-6 text-destructive"><AlertTriangle className="mr-2 inline" />Não foi possível carregar o relatório. <Button variant="outline" onClick={() => report.refetch()}>Tentar novamente</Button></div>}
-    {filtered && <Tabs value={tab} onValueChange={(value) => { setTab(value); setPage(0); }}><TabsList className="no-print flex h-auto flex-wrap justify-start">{[["overview","Visão geral"],["tasks","Tarefas"],["processes","Processos"],["clients","Clientes"],["documents","Documentos"],["monitoring","Monitoramentos"],["team","Equipe"]].map(([v,l]) => <TabsTrigger key={v} value={v}>{l}</TabsTrigger>)}</TabsList>
+    {filtered && <Tabs value={tab} onValueChange={(value) => { setTab(value); setPage(0); }}><TabsList className="no-print flex h-auto flex-wrap justify-start">{reportTabs.map(([v,l]) => <TabsTrigger key={v} value={v}>{l}</TabsTrigger>)}</TabsList>
       <TabsContent value="overview" className="space-y-5"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{metrics.map(([label,value]) => <Card key={label}><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader><CardContent className="metric-value">{value.toLocaleString("pt-BR")}</CardContent></Card>)}</div><div className="grid gap-4 lg:grid-cols-2"><ReportChart title="Tarefas por status" data={taskStatus} pie /><ReportChart title="Processos por etapa" data={processStage} /></div></TabsContent>
+      {canViewServiceReport && <TabsContent value="service"><CommunicationServiceReport organizationId={organizationId} from={range.from} to={range.to} /></TabsContent>}
       <TabsContent value="tasks"><Section title="Relatório de tarefas" summary={`Média de ${(filtered.tasks.length / Math.max(filtered.members.filter((x: AnyRow)=>x.is_active).length,1)).toLocaleString("pt-BR",{maximumFractionDigits:1})} tarefas por usuário.`} chart={<ReportChart title="Tarefas por prioridade" data={taskPriority} pie />}><DataTable kind="tarefas" rows={filtered.tasks} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} canExportReports={canExportReports} /></Section></TabsContent>
       <TabsContent value="processes"><Section title="Relatório de processos" summary={`${filtered.processes.filter((x: AnyRow) => x.last_movement_at && new Date(x.last_movement_at).getTime() < Date.now()-30*86400000).length} sem movimentação há mais de 30 dias.`} chart={<ReportChart title="Processos por etapa" data={processStage} />}><DataTable kind="processos" rows={filtered.processes} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} canExportReports={canExportReports} /></Section></TabsContent>
       <TabsContent value="clients"><Section title="Relatório de clientes" summary={`${clientSummary?.withProcesses ?? 0} clientes com processos; ${clientSummary?.withoutProcesses ?? 0} sem processos.`}><DataTable kind="clientes" rows={filtered.clients} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} canExportReports={canExportReports} /></Section></TabsContent>

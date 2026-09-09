@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Bell,
   Building2,
+  BookOpenText,
   CalendarDays,
   CheckCheck,
   CheckCircle2,
@@ -94,6 +95,8 @@ import {
 import { PIPELINE_STAGES, PROCESS_STAGE } from "@/lib/domain";
 import { describeError } from "@/lib/errors";
 import { civilDateKey, formatDate, formatDateTime } from "@/lib/format";
+import { PortalFaq } from "@/components/client-portal/portal-faq";
+import type { ClientPortalFaqArticle } from "@/hooks/use-client-portal-faq";
 
 export const Route = createFileRoute("/meu-portal")({
   ssr: false,
@@ -514,6 +517,18 @@ function MyClientPortal() {
     }
   }
 
+  function openFaqEscalation(access: ClientPortalSessionRow, article: ClientPortalFaqArticle) {
+    setCommunicationAccessId(access.access_id);
+    setCommunicationSubject(`Dúvida: ${article.title}`.slice(0, 160));
+    setCommunicationContent(
+      article.id
+        ? `Consultei a resposta “${article.title}”, mas ainda preciso de ajuda.`
+        : `Não encontrei uma resposta para: ${article.title}`,
+    );
+    setActiveTab("comunicacao");
+    window.setTimeout(() => document.getElementById("portal-communication-content")?.focus(), 0);
+  }
+
   async function sendCommunicationReply() {
     if (!selectedCommunicationId || !communicationReply.trim()) return;
     try {
@@ -733,7 +748,7 @@ function MyClientPortal() {
               setHighlightedEntity(null);
             }}
           >
-            <TabsList className="sticky top-[73px] z-30 grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-primary/10 bg-background/90 p-2 shadow-lg shadow-primary/5 backdrop-blur-xl sm:grid-cols-3 lg:grid-cols-6">
+            <TabsList className="sticky top-[73px] z-30 grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-primary/10 bg-background/90 p-2 shadow-lg shadow-primary/5 backdrop-blur-xl sm:grid-cols-4 lg:grid-cols-7">
               <TabsTrigger value="inicio" className={PORTAL_TAB_CLASS}>
                 <Home className="size-4" aria-hidden /> Início
               </TabsTrigger>
@@ -748,6 +763,9 @@ function MyClientPortal() {
               </TabsTrigger>
               <TabsTrigger value="comunicacao" className={PORTAL_TAB_CLASS}>
                 <MessageSquare className="size-4" aria-hidden /> Comunicação
+              </TabsTrigger>
+              <TabsTrigger value="ajuda" className={PORTAL_TAB_CLASS}>
+                <BookOpenText className="size-4" aria-hidden /> Ajuda
               </TabsTrigger>
               <TabsTrigger value="notificacoes" className={PORTAL_TAB_CLASS}>
                 <Bell className="size-4" aria-hidden /> Notificações
@@ -1626,6 +1644,10 @@ function MyClientPortal() {
               </div>
             </TabsContent>
 
+            <TabsContent value="ajuda" className="space-y-4">
+              <PortalFaq accesses={activeAccesses} onEscalate={openFaqEscalation} />
+            </TabsContent>
+
             <TabsContent value="notificacoes">
               <Card className={PORTAL_PANEL_CLASS}>
                 <CardContent className="space-y-4 p-4 sm:p-6">
@@ -2024,6 +2046,7 @@ type PortalTab =
   | "documentos"
   | "pendencias"
   | "comunicacao"
+  | "ajuda"
   | "notificacoes";
 
 type PortalDeadline = {

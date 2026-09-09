@@ -31,6 +31,8 @@ import { CommunicationCopilotSettings } from "@/components/communication/communi
 import { CommunicationMacrosSettings } from "@/components/communication/communication-macros-settings";
 import { DocumentRequestTemplatesSettings } from "@/components/communication/document-request-templates-settings";
 import { CommunicationResponseAlertSettings } from "@/components/notifications/communication-response-alert-settings";
+import { ClientPortalFaqSettings } from "@/components/communication/client-portal-faq-settings";
+import { ChannelConnectionsSettings } from "@/components/communication/channel-connections-settings";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -511,6 +513,12 @@ function SettingsPage() {
             />
           </Section>
           <CommunicationCopilotSettings organizationId={organizationId} canManage={canEdit} />
+          <div className="mt-4">
+            <ChannelConnectionsSettings organizationId={organizationId} canManage={canEdit} />
+          </div>
+          <div className="mt-4">
+            <ClientPortalFaqSettings organizationId={organizationId} canManage={canEdit} />
+          </div>
           <div className="mt-4">
             <QuickRepliesSettings
               organizationId={organizationId}
