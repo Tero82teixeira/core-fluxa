@@ -14,6 +14,7 @@ SELECT ok(
 SELECT ok(
   has_function_privilege('authenticated', 'public.submit_client_portal_communication_rating(uuid,smallint,text)', 'EXECUTE')
   AND has_function_privilege('authenticated', 'public.create_client_portal_callback_request(uuid,uuid,timestamp with time zone,text)', 'EXECUTE')
+  AND has_function_privilege('authenticated', 'public.list_staff_client_portal_communication_ratings(uuid,timestamp with time zone,timestamp with time zone)', 'EXECUTE')
   AND NOT has_function_privilege('authenticated', 'public.prepare_communication_push(uuid,uuid)', 'EXECUTE'),
   'browser RPCs require authentication and push dispatch remains service-only'
 );
@@ -56,6 +57,13 @@ SELECT throws_ok(
  $$SELECT public.submit_client_portal_communication_rating('49900000-0000-0000-0000-000000000001',1::smallint,NULL)$$,
  '42501','RATING_NOT_ALLOWED','an unrelated identity cannot rate the conversation'
 );
+SELECT throws_ok(
+ $$SELECT * FROM public.list_staff_client_portal_communication_ratings(
+   '29900000-0000-0000-0000-000000000001', now()-interval '1 day', now()
+ )$$,
+ 'COMMUNICATION_ADMIN_PERMISSION_DENIED',
+ 'a non-member cannot inspect company rating details'
+);
 
 SELECT set_config('request.jwt.claim.sub','19900000-0000-0000-0000-000000000001',true);
 SELECT is(
@@ -72,6 +80,21 @@ SELECT is(
  (public.communication_experience_metrics('29900000-0000-0000-0000-000000000001',now()-interval '1 day',now())->>'rating_count')::integer,
  1,
  'management report counts client ratings'
+);
+SELECT is(
+ (SELECT count(*) FROM public.list_staff_client_portal_communication_ratings(
+   '29900000-0000-0000-0000-000000000001', now()-interval '1 day', now()
+ )),
+ 1::bigint,
+ 'company owner sees detailed client ratings'
+);
+SELECT is(
+ (SELECT client_name || '|' || subject || '|' || rating::text || '|' || comment
+    FROM public.list_staff_client_portal_communication_ratings(
+      '29900000-0000-0000-0000-000000000001', now()-interval '1 day', now()
+    ) LIMIT 1),
+ 'Cliente Experiência|Atendimento concluído|5|Ótimo atendimento',
+ 'rating details include the client, conversation, score and comment'
 );
 
 RESET ROLE;

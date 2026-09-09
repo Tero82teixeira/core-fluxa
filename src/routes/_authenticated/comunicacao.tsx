@@ -34,20 +34,24 @@ import { useCommunicationMacros, type CommunicationMacro } from "@/hooks/use-com
 import { useSession } from "@/hooks/use-session";
 import { CallbackRequestsPanel } from "@/components/communication/callback-requests-panel";
 
-export const Route = createFileRoute("/_authenticated/comunicacao")({ head: () => ({ meta: [{ title: "Comunicação — FLUXA" }, { name: "description", content: "Central interna de relacionamento e acompanhamento de contatos." }] }), component: CommunicationPage });
+type CommunicationSearch = { conversa?: string };
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+export const Route = createFileRoute("/_authenticated/comunicacao")({ validateSearch: (search: Record<string, unknown>): CommunicationSearch => ({ conversa: typeof search.conversa === "string" && UUID_PATTERN.test(search.conversa) ? search.conversa : undefined }), head: () => ({ meta: [{ title: "Comunicação — FLUXA" }, { name: "description", content: "Central interna de relacionamento e acompanhamento de contatos." }] }), component: CommunicationPage });
 const labels = { aberta: "Aberta", aguardando_cliente: "Aguardando cliente", aguardando_equipe: "Aguardando equipe", resolvida: "Resolvida", arquivada: "Arquivada", baixa: "Baixa", normal: "Normal", alta: "Alta", urgente: "Urgente", whatsapp: "WhatsApp", telefone: "Telefone", email: "E-mail", presencial: "Presencial", interno: "Interno", outro: "Outro", mensagem: "Mensagem", nota_interna: "Nota interna", ligacao: "Ligação", reuniao: "Reunião", status: "Status", lembrete: "Lembrete", anexo: "Anexo" } as Record<string,string>;
 const blank: NewCommunicationThread = { clientId: "", subject: "", channel: "interno", assignedTo: "", priority: "normal", processId: "", taskId: "", firstContent: "", followUpAt: "" };
 
 function CommunicationPage() {
+ const { conversa: requestedThreadId } = Route.useSearch();
  const { organizationId, role } = useWorkspace();
  const query = useCommunicationThreads(organizationId); const searchIndex = useCommunicationSearchIndex(organizationId); const clients = useClients(organizationId); const processes = useProcesses(organizationId); const tasks = useTaskList(organizationId); const team = useTeamMembers(organizationId);
- const create = useCreateCommunicationThread(organizationId); const [selectedId,setSelectedId]=useState<string|null>(null); const [selectedIds,setSelectedIds]=useState<Set<string>>(()=>new Set()); const [creating,setCreating]=useState(false); const [form,setForm]=useState(blank);
+ const create = useCreateCommunicationThread(organizationId); const [selectedId,setSelectedId]=useState<string|null>(requestedThreadId??null); const [selectedIds,setSelectedIds]=useState<Set<string>>(()=>new Set()); const [creating,setCreating]=useState(false); const [form,setForm]=useState(blank);
  const [search,setSearch]=useState(""); const [status,setStatus]=useState<CommunicationStatus|"all">("all"); const [priority,setPriority]=useState<CommunicationPriority|"all">("all"); const [channel,setChannel]=useState<CommunicationChannel|"all">("all"); const [client,setClient]=useState("all"); const [assignee,setAssignee]=useState("all"); const [followUp,setFollowUp]=useState<"all"|"today"|"overdue"|"future">("all");
  const memberNames = useMemo(()=>new Map((team.data??[]).map(m=>[m.user_id,m.full_name||m.email||"Sem nome"])),[team.data]);
  const summaries = useMemo(()=>(query.data??[]).map(row=>({...row,client_name:row.clients?.name??"Cliente",assigned_name:row.assigned_to?memberNames.get(row.assigned_to)??"Responsável":"Sem responsável",searchable_content:searchIndex.data?.get(row.id)??""})),[query.data,memberNames,searchIndex.data]);
  const currentFilters=useMemo<CommunicationFilterPreset>(()=>({search,status,priority,channel,client,assignee,followUp}),[search,status,priority,channel,client,assignee,followUp]);
  const rows=useMemo(()=>filterCommunication(summaries,currentFilters),[summaries,currentFilters]); const indicators=communicationIndicators(summaries); const selected=rows.find(r=>r.id===selectedId)??null;
- useEffect(()=>setSelectedId(current=>syncCommunicationSelection(current,rows)),[rows]);
+ useEffect(()=>{if(!query.isLoading)setSelectedId(current=>syncCommunicationSelection(current,rows));},[query.isLoading,rows]);
+ useEffect(()=>{if(requestedThreadId){setSearch("");setStatus("all");setPriority("all");setChannel("all");setClient("all");setAssignee("all");setFollowUp("all");setSelectedId(requestedThreadId);}},[requestedThreadId]);
  useEffect(()=>setSelectedIds(current=>new Set([...current].filter(id=>rows.some(row=>row.id===id)))),[rows]);
  const applyFilters=(filters:CommunicationFilterPreset)=>{setSearch(filters.search);setStatus(filters.status);setPriority(filters.priority);setChannel(filters.channel);setClient(filters.client);setAssignee(filters.assignee);setFollowUp(filters.followUp);};
  const toggleSelected=(id:string)=>setSelectedIds(current=>{const next=new Set(current);if(next.has(id))next.delete(id);else next.add(id);return next;});
