@@ -635,7 +635,7 @@ export type Database = {
           {
             foreignKeyName: "client_portal_communication_ratings_thread_fkey"
             columns: ["organization_id", "client_id", "thread_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "communication_threads"
             referencedColumns: ["organization_id", "client_id", "id"]
           },
