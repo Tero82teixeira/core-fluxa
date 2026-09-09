@@ -65,7 +65,7 @@ SELECT is(
 );
 SELECT lives_ok(
  format($$SELECT public.update_staff_client_portal_callback_request('29900000-0000-0000-0000-000000000001','%s','completed','Retorno realizado')$$,
-   (SELECT id FROM public.client_portal_callback_requests LIMIT 1)),
+   (SELECT request_id FROM public.list_staff_client_portal_callback_requests('29900000-0000-0000-0000-000000000001') LIMIT 1)),
  'company owner can complete the callback request'
 );
 SELECT is(
