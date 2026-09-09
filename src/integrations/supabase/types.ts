@@ -724,6 +724,121 @@ export type Database = {
           },
         ]
       }
+      client_portal_faq_articles: {
+        Row: {
+          answer: string
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_published: boolean
+          keywords: string[]
+          organization_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          answer: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          keywords?: string[]
+          organization_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          answer?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_published?: boolean
+          keywords?: string[]
+          organization_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_faq_articles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_faq_events: {
+        Row: {
+          article_id: string | null
+          client_id: string
+          created_at: string
+          event_type: string
+          id: string
+          organization_id: string
+          search_term: string | null
+          user_id: string
+        }
+        Insert: {
+          article_id?: string | null
+          client_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          organization_id: string
+          search_term?: string | null
+          user_id: string
+        }
+        Update: {
+          article_id?: string | null
+          client_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          organization_id?: string
+          search_term?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_faq_events_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_faq_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_faq_events_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_faq_events_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_faq_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_portal_invitations: {
         Row: {
           accepted_at: string | null
@@ -1145,273 +1260,6 @@ export type Database = {
           },
         ]
       }
-      client_portal_faq_articles: {
-        Row: {
-          answer: string;
-          category: string;
-          created_at: string;
-          created_by: string | null;
-          id: string;
-          is_published: boolean;
-          keywords: string[];
-          organization_id: string;
-          sort_order: number;
-          title: string;
-          updated_at: string;
-          updated_by: string | null;
-        };
-        Insert: {
-          answer: string;
-          category?: string;
-          created_at?: string;
-          created_by?: string | null;
-          id?: string;
-          is_published?: boolean;
-          keywords?: string[];
-          organization_id: string;
-          sort_order?: number;
-          title: string;
-          updated_at?: string;
-          updated_by?: string | null;
-        };
-        Update: {
-          answer?: string;
-          category?: string;
-          created_at?: string;
-          created_by?: string | null;
-          id?: string;
-          is_published?: boolean;
-          keywords?: string[];
-          organization_id?: string;
-          sort_order?: number;
-          title?: string;
-          updated_at?: string;
-          updated_by?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "client_portal_faq_articles_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      client_portal_faq_events: {
-        Row: {
-          article_id: string | null;
-          client_id: string;
-          created_at: string;
-          event_type: string;
-          id: string;
-          organization_id: string;
-          search_term: string | null;
-          user_id: string;
-        };
-        Insert: {
-          article_id?: string | null;
-          client_id: string;
-          created_at?: string;
-          event_type: string;
-          id?: string;
-          organization_id: string;
-          search_term?: string | null;
-          user_id: string;
-        };
-        Update: {
-          article_id?: string | null;
-          client_id?: string;
-          created_at?: string;
-          event_type?: string;
-          id?: string;
-          organization_id?: string;
-          search_term?: string | null;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "client_portal_faq_events_article_id_fkey";
-            columns: ["article_id"];
-            isOneToOne: false;
-            referencedRelation: "client_portal_faq_articles";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "client_portal_faq_events_client_fkey";
-            columns: ["organization_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["organization_id", "id"];
-          },
-          {
-            foreignKeyName: "client_portal_faq_events_client_fkey";
-            columns: ["organization_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients_secure";
-            referencedColumns: ["organization_id", "id"];
-          },
-          {
-            foreignKeyName: "client_portal_faq_events_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      communication_channel_connections: {
-        Row: {
-          channel: Database["public"]["Enums"]["communication_channel"];
-          created_at: string;
-          created_by: string | null;
-          display_name: string;
-          id: string;
-          is_enabled: boolean;
-          last_error_code: string | null;
-          last_inbound_at: string | null;
-          last_outbound_at: string | null;
-          organization_id: string;
-          provider: string;
-          sender_identifier: string;
-          status: string;
-          updated_at: string;
-          updated_by: string | null;
-        };
-        Insert: {
-          channel: Database["public"]["Enums"]["communication_channel"];
-          created_at?: string;
-          created_by?: string | null;
-          display_name: string;
-          id?: string;
-          is_enabled?: boolean;
-          last_error_code?: string | null;
-          last_inbound_at?: string | null;
-          last_outbound_at?: string | null;
-          organization_id: string;
-          provider: string;
-          sender_identifier: string;
-          status?: string;
-          updated_at?: string;
-          updated_by?: string | null;
-        };
-        Update: {
-          channel?: Database["public"]["Enums"]["communication_channel"];
-          created_at?: string;
-          created_by?: string | null;
-          display_name?: string;
-          id?: string;
-          is_enabled?: boolean;
-          last_error_code?: string | null;
-          last_inbound_at?: string | null;
-          last_outbound_at?: string | null;
-          organization_id?: string;
-          provider?: string;
-          sender_identifier?: string;
-          status?: string;
-          updated_at?: string;
-          updated_by?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "communication_channel_connections_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      communication_channel_messages: {
-        Row: {
-          client_id: string | null;
-          connection_id: string;
-          content: string;
-          created_at: string;
-          direction: string;
-          error_code: string | null;
-          external_message_id: string;
-          external_recipient: string;
-          external_sender: string;
-          id: string;
-          occurred_at: string;
-          organization_id: string;
-          status: string;
-          subject: string | null;
-          thread_id: string | null;
-        };
-        Insert: {
-          client_id?: string | null;
-          connection_id: string;
-          content: string;
-          created_at?: string;
-          direction: string;
-          error_code?: string | null;
-          external_message_id: string;
-          external_recipient: string;
-          external_sender: string;
-          id?: string;
-          occurred_at?: string;
-          organization_id: string;
-          status: string;
-          subject?: string | null;
-          thread_id?: string | null;
-        };
-        Update: {
-          client_id?: string | null;
-          connection_id?: string;
-          content?: string;
-          created_at?: string;
-          direction?: string;
-          error_code?: string | null;
-          external_message_id?: string;
-          external_recipient?: string;
-          external_sender?: string;
-          id?: string;
-          occurred_at?: string;
-          organization_id?: string;
-          status?: string;
-          subject?: string | null;
-          thread_id?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "communication_channel_messages_client_fkey";
-            columns: ["organization_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["organization_id", "id"];
-          },
-          {
-            foreignKeyName: "communication_channel_messages_client_fkey";
-            columns: ["organization_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients_secure";
-            referencedColumns: ["organization_id", "id"];
-          },
-          {
-            foreignKeyName: "communication_channel_messages_connection_id_fkey";
-            columns: ["connection_id"];
-            isOneToOne: false;
-            referencedRelation: "communication_channel_connections";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "communication_channel_messages_organization_id_fkey";
-            columns: ["organization_id"];
-            isOneToOne: false;
-            referencedRelation: "organizations";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "communication_channel_messages_thread_id_fkey";
-            columns: ["thread_id"];
-            isOneToOne: false;
-            referencedRelation: "communication_threads";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       communication_attachments: {
         Row: {
           client_id: string
@@ -1482,6 +1330,158 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "communication_threads"
             referencedColumns: ["organization_id", "client_id", "id"]
+          },
+        ]
+      }
+      communication_channel_connections: {
+        Row: {
+          channel: Database["public"]["Enums"]["communication_channel"]
+          created_at: string
+          created_by: string | null
+          display_name: string
+          id: string
+          is_enabled: boolean
+          last_error_code: string | null
+          last_inbound_at: string | null
+          last_outbound_at: string | null
+          organization_id: string
+          provider: string
+          sender_identifier: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["communication_channel"]
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          id?: string
+          is_enabled?: boolean
+          last_error_code?: string | null
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
+          organization_id: string
+          provider: string
+          sender_identifier: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["communication_channel"]
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          id?: string
+          is_enabled?: boolean
+          last_error_code?: string | null
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
+          organization_id?: string
+          provider?: string
+          sender_identifier?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_channel_connections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_channel_messages: {
+        Row: {
+          client_id: string | null
+          connection_id: string
+          content: string
+          created_at: string
+          direction: string
+          error_code: string | null
+          external_message_id: string
+          external_recipient: string
+          external_sender: string
+          id: string
+          occurred_at: string
+          organization_id: string
+          status: string
+          subject: string | null
+          thread_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          connection_id: string
+          content: string
+          created_at?: string
+          direction: string
+          error_code?: string | null
+          external_message_id: string
+          external_recipient: string
+          external_sender: string
+          id?: string
+          occurred_at?: string
+          organization_id: string
+          status: string
+          subject?: string | null
+          thread_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          connection_id?: string
+          content?: string
+          created_at?: string
+          direction?: string
+          error_code?: string | null
+          external_message_id?: string
+          external_recipient?: string
+          external_sender?: string
+          id?: string
+          occurred_at?: string
+          organization_id?: string
+          status?: string
+          subject?: string | null
+          thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_channel_messages_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "communication_channel_messages_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "communication_channel_messages_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "communication_channel_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_channel_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_channel_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1610,41 +1610,6 @@ export type Database = {
           },
         ]
       }
-      communication_response_alert_settings: {
-        Row: {
-          created_at: string
-          escalation_minutes: number
-          first_reminder_minutes: number
-          organization_id: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          created_at?: string
-          escalation_minutes?: number
-          first_reminder_minutes?: number
-          organization_id: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          created_at?: string
-          escalation_minutes?: number
-          first_reminder_minutes?: number
-          organization_id?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "communication_response_alert_settings_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       communication_quick_replies: {
         Row: {
           category: string
@@ -1687,6 +1652,41 @@ export type Database = {
             foreignKeyName: "communication_quick_replies_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_response_alert_settings: {
+        Row: {
+          created_at: string
+          escalation_minutes: number
+          first_reminder_minutes: number
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          escalation_minutes?: number
+          first_reminder_minutes?: number
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          escalation_minutes?: number
+          first_reminder_minutes?: number
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_response_alert_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -4573,96 +4573,6 @@ export type Database = {
       }
     }
     Functions: {
-      communication_service_metrics: {
-        Args: { _from: string; _organization_id: string; _to: string };
-        Returns: Json;
-      };
-      complete_communication_channel_send: {
-        Args: {
-          _actor_id: string;
-          _connection_id: string;
-          _content: string;
-          _error_code?: string;
-          _provider_message_id: string;
-          _status: string;
-          _thread_id: string;
-        };
-        Returns: string;
-      };
-      ingest_communication_channel_message: {
-        Args: {
-          _channel: Database["public"]["Enums"]["communication_channel"];
-          _content: string;
-          _external_message_id: string;
-          _external_recipient: string;
-          _external_sender: string;
-          _occurred_at?: string;
-          _provider: string;
-          _sender_identifier: string;
-          _subject: string;
-        };
-        Returns: string;
-      };
-      list_client_portal_faq_articles: {
-        Args: { _organization_id: string };
-        Returns: Json;
-      };
-      list_communication_channel_connections: {
-        Args: { _organization_id: string };
-        Returns: Json;
-      };
-      list_my_client_portal_faq_articles: {
-        Args: { _access_id: string };
-        Returns: Json;
-      };
-      list_unmatched_communication_channel_messages: {
-        Args: { _organization_id: string };
-        Returns: Json;
-      };
-      match_communication_channel_message: {
-        Args: {
-          _client_id: string;
-          _message_id: string;
-          _organization_id: string;
-        };
-        Returns: string;
-      };
-      prepare_communication_channel_send: {
-        Args: { _actor_id: string; _content: string; _thread_id: string };
-        Returns: Json;
-      };
-      record_my_client_portal_faq_event: {
-        Args: {
-          _access_id: string;
-          _article_id: string;
-          _event_type: string;
-          _search_term?: string;
-        };
-        Returns: undefined;
-      };
-      save_client_portal_faq_article: {
-        Args: {
-          _answer: string;
-          _article_id: string;
-          _category?: string;
-          _is_published?: boolean;
-          _keywords?: string[];
-          _organization_id: string;
-          _sort_order?: number;
-          _title: string;
-        };
-        Returns: string;
-      };
-      save_communication_channel_connection: {
-        Args: {
-          _channel: Database["public"]["Enums"]["communication_channel"];
-          _display_name: string;
-          _is_enabled: boolean;
-          _organization_id: string;
-          _sender_identifier: string;
-        };
-        Returns: string;
-      };
       accept_client_portal_invitation: {
         Args: { _token: string }
         Returns: {
@@ -5051,6 +4961,22 @@ export type Database = {
         Args: { _administrative?: boolean; _org: string }
         Returns: undefined
       }
+      communication_service_metrics: {
+        Args: { _from: string; _organization_id: string; _to: string }
+        Returns: Json
+      }
+      complete_communication_channel_send: {
+        Args: {
+          _actor_id: string
+          _connection_id: string
+          _content: string
+          _error_code?: string
+          _provider_message_id: string
+          _status: string
+          _thread_id: string
+        }
+        Returns: string
+      }
       create_automation_rule: {
         Args: {
           _organization_id: string
@@ -5312,6 +5238,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      ingest_communication_channel_message: {
+        Args: {
+          _channel: Database["public"]["Enums"]["communication_channel"]
+          _content: string
+          _external_message_id: string
+          _external_recipient: string
+          _external_sender: string
+          _occurred_at?: string
+          _provider: string
+          _sender_identifier: string
+          _subject: string
+        }
+        Returns: string
+      }
       invitation_preview: {
         Args: { _token: string }
         Returns: {
@@ -5332,6 +5272,14 @@ export type Database = {
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
+      list_client_portal_faq_articles: {
+        Args: { _organization_id: string }
+        Returns: Json
+      }
+      list_communication_channel_connections: {
+        Args: { _organization_id: string }
+        Returns: Json
+      }
       list_communication_macros: {
         Args: { _organization_id: string }
         Returns: {
@@ -5366,6 +5314,10 @@ export type Database = {
           title: string
         }[]
       }
+      list_my_client_portal_faq_articles: {
+        Args: { _access_id: string }
+        Returns: Json
+      }
       list_team_push_status: {
         Args: { _organization_id: string }
         Returns: {
@@ -5374,6 +5326,10 @@ export type Database = {
           last_activated_at: string
           user_id: string
         }[]
+      }
+      list_unmatched_communication_channel_messages: {
+        Args: { _organization_id: string }
+        Returns: Json
       }
       manage_client_portal_document_requests: {
         Args: { _client_id: string; _organization_id: string }
@@ -5427,6 +5383,14 @@ export type Database = {
       mark_staff_portal_communication_read: {
         Args: { _organization_id: string; _thread_id: string }
         Returns: undefined
+      }
+      match_communication_channel_message: {
+        Args: {
+          _client_id: string
+          _message_id: string
+          _organization_id: string
+        }
+        Returns: string
       }
       monitoring_assert_admin: { Args: { _org: string }; Returns: undefined }
       monitoring_assert_source: {
@@ -5529,6 +5493,10 @@ export type Database = {
           file_path: string
         }[]
       }
+      prepare_communication_channel_send: {
+        Args: { _actor_id: string; _content: string; _thread_id: string }
+        Returns: Json
+      }
       prepare_communication_copilot: {
         Args: { _mode: string; _thread_id: string }
         Returns: Json
@@ -5600,6 +5568,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_my_client_portal_faq_event: {
+        Args: {
+          _access_id: string
+          _article_id: string
+          _event_type: string
+          _search_term?: string
+        }
+        Returns: undefined
+      }
       record_process_movement: {
         Args: {
           _description: string
@@ -5631,13 +5608,13 @@ export type Database = {
         }
         Returns: string
       }
-      remove_push_subscription: {
-        Args: { _endpoint: string; _organization_id: string }
-        Returns: undefined
-      }
       remind_member_push_activation: {
         Args: { _member_user_id: string; _organization_id: string }
         Returns: boolean
+      }
+      remove_push_subscription: {
+        Args: { _endpoint: string; _organization_id: string }
+        Returns: undefined
       }
       reply_support_request: {
         Args: { _message: string; _next_status?: string; _request_id: string }
@@ -5669,6 +5646,29 @@ export type Database = {
         Returns: undefined
       }
       run_temporal_automation_cycle: { Args: never; Returns: Json }
+      save_client_portal_faq_article: {
+        Args: {
+          _answer: string
+          _article_id: string
+          _category?: string
+          _is_published?: boolean
+          _keywords?: string[]
+          _organization_id: string
+          _sort_order?: number
+          _title: string
+        }
+        Returns: string
+      }
+      save_communication_channel_connection: {
+        Args: {
+          _channel: Database["public"]["Enums"]["communication_channel"]
+          _display_name: string
+          _is_enabled: boolean
+          _organization_id: string
+          _sender_identifier: string
+        }
+        Returns: string
+      }
       save_communication_macro: {
         Args: {
           _assign_to_self?: boolean
