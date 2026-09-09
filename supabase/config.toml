@@ -12,3 +12,9 @@ verify_jwt = true
 
 [functions.communication-push]
 verify_jwt = true
+
+[functions.communication-channel-send]
+verify_jwt = true
+
+[functions.communication-channel-webhook]
+verify_jwt = false
