@@ -96,6 +96,7 @@ import { PIPELINE_STAGES, PROCESS_STAGE } from "@/lib/domain";
 import { describeError } from "@/lib/errors";
 import { civilDateKey, formatDate, formatDateTime } from "@/lib/format";
 import { PortalFaq } from "@/components/client-portal/portal-faq";
+import { PortalCallbackCenter, PortalConversationRating, PortalPushPrompt } from "@/components/client-portal/portal-experience";
 import type { ClientPortalFaqArticle } from "@/hooks/use-client-portal-faq";
 
 export const Route = createFileRoute("/meu-portal")({
@@ -134,6 +135,7 @@ function MyClientPortal() {
     contentEnabled,
     user?.id ?? null,
   );
+  const requestedThreadId = useMemo(() => typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("thread"), []);
   const createCommunication = useCreateClientPortalCommunicationThread(user?.id ?? null);
   const addCommunicationEntry = useAddClientPortalCommunicationEntry(user?.id ?? null);
   const markCommunicationRead = useMarkClientPortalCommunicationRead(user?.id ?? null);
@@ -179,6 +181,12 @@ function MyClientPortal() {
     communicationThreads.data?.find(
       (thread) => thread.thread_id === selectedCommunicationId,
     ) ?? null;
+  useEffect(() => {
+    if (requestedThreadId && communicationThreads.data?.some((thread) => thread.thread_id === requestedThreadId)) {
+      setActiveTab("comunicacao");
+      setSelectedCommunicationId(requestedThreadId);
+    }
+  }, [communicationThreads.data, requestedThreadId]);
   const unreadNotifications = (notifications.data ?? []).filter(
     (notification) => !notification.read_at,
   ).length;
@@ -748,6 +756,7 @@ function MyClientPortal() {
               setHighlightedEntity(null);
             }}
           >
+            <PortalPushPrompt enabled={contentEnabled} />
             <TabsList className="sticky top-[73px] z-30 grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-primary/10 bg-background/90 p-2 shadow-lg shadow-primary/5 backdrop-blur-xl sm:grid-cols-4 lg:grid-cols-7">
               <TabsTrigger value="inicio" className={PORTAL_TAB_CLASS}>
                 <Home className="size-4" aria-hidden /> Início
@@ -1372,6 +1381,7 @@ function MyClientPortal() {
             </TabsContent>
 
             <TabsContent value="comunicacao" className="space-y-4">
+              <PortalCallbackCenter accesses={activeAccesses} threads={communicationThreads.data ?? []} identityScope={user?.id ?? null} />
               <Card className={PORTAL_PANEL_CLASS}>
                 <CardContent className="space-y-4 p-4 sm:p-6">
                   <div>
@@ -1584,9 +1594,12 @@ function MyClientPortal() {
 
                         {selectedCommunication.status === "resolvida" ||
                         selectedCommunication.status === "arquivada" ? (
-                          <p className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
-                            Esta conversa foi encerrada e está disponível somente para leitura.
-                          </p>
+                          <div className="space-y-3">
+                            <p className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+                              Esta conversa foi encerrada e está disponível somente para leitura.
+                            </p>
+                            <PortalConversationRating threadId={selectedCommunication.thread_id} identityScope={user?.id ?? null} />
+                          </div>
                         ) : (
                           <div className="space-y-3 border-t pt-4">
                             <input

@@ -47,6 +47,8 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
     const copilotHook = read("src/hooks/use-communication-copilot.ts");
     const pushHook = read("src/hooks/use-push-notifications.ts");
     const portalCommunicationHook = read("src/hooks/use-client-portal-communication.ts");
+    const portalExperienceHook = read("src/hooks/use-client-portal-experience.ts");
+    const communicationHook = read("src/hooks/use-communication.ts");
     const channelHook = read("src/hooks/use-communication-channels.ts");
     const otherFrontend = frontendFiles
       .filter(
@@ -55,6 +57,8 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
             "src/hooks/use-communication-copilot.ts",
             "src/hooks/use-push-notifications.ts",
             "src/hooks/use-client-portal-communication.ts",
+            "src/hooks/use-client-portal-experience.ts",
+            "src/hooks/use-communication.ts",
             "src/hooks/use-communication-channels.ts",
           ].includes(path),
       )
@@ -64,10 +68,12 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
     assert.match(copilotHook, /functions\.invoke\("communication-copilot"/);
     assert.match(pushHook, /functions\.invoke\("communication-push"/);
     assert.match(portalCommunicationHook, /functions\.invoke\("communication-push"/);
+    assert.match(portalExperienceHook, /functions\.invoke\("communication-push"/);
+    assert.match(communicationHook, /functions\.invoke\("communication-push"/);
     assert.match(channelHook, /functions\.invoke\("communication-channel-send"/);
     assert.doesNotMatch(copilotHook, /OPENAI_API_KEY|SERVICE_ROLE|service_role/);
     assert.doesNotMatch(
-      pushHook + portalCommunicationHook,
+      pushHook + portalCommunicationHook + portalExperienceHook + communicationHook,
       /VAPID_PRIVATE_KEY|SERVICE_ROLE|service_role/,
     );
     assert.doesNotMatch(channelHook, /META_WHATSAPP|RESEND_API_KEY|SERVICE_ROLE|service_role/);

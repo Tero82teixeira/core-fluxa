@@ -482,6 +482,165 @@ export type Database = {
           },
         ]
       }
+      client_portal_callback_requests: {
+        Row: {
+          access_id: string
+          assigned_to: string | null
+          client_id: string
+          created_at: string
+          id: string
+          organization_id: string
+          reason: string
+          requested_by: string
+          requested_for: string
+          staff_notes: string | null
+          status: string
+          task_id: string | null
+          thread_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_id: string
+          assigned_to?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          reason: string
+          requested_by: string
+          requested_for: string
+          staff_notes?: string | null
+          status?: string
+          task_id?: string | null
+          thread_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_id?: string
+          assigned_to?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          reason?: string
+          requested_by?: string
+          requested_for?: string
+          staff_notes?: string | null
+          status?: string
+          task_id?: string | null
+          thread_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_callback_requests_access_id_fkey"
+            columns: ["access_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_access"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_callback_requests_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_callback_requests_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_callback_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_callback_requests_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_callback_requests_thread_fkey"
+            columns: ["organization_id", "client_id", "thread_id"]
+            isOneToOne: false
+            referencedRelation: "communication_threads"
+            referencedColumns: ["organization_id", "client_id", "id"]
+          },
+        ]
+      }
+      client_portal_communication_ratings: {
+        Row: {
+          client_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          organization_id: string
+          rating: number
+          thread_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          organization_id: string
+          rating: number
+          thread_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+          rating?: number
+          thread_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_communication_ratings_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_communication_ratings_client_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "client_portal_communication_ratings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_communication_ratings_thread_fkey"
+            columns: ["organization_id", "client_id", "thread_id"]
+            isOneToOne: true
+            referencedRelation: "communication_threads"
+            referencedColumns: ["organization_id", "client_id", "id"]
+          },
+        ]
+      }
       client_portal_communication_shares: {
         Row: {
           client_id: string
@@ -4959,6 +5118,91 @@ export type Database = {
       }
       communication_assert_role: {
         Args: { _administrative?: boolean; _org: string }
+        Returns: undefined
+      }
+      cancel_client_portal_callback_request: {
+        Args: { _request_id: string }
+        Returns: undefined
+      }
+      client_portal_communication_ratings: {
+        Args: never
+        Returns: {
+          comment: string
+          created_at: string
+          rating: number
+          thread_id: string
+          updated_at: string
+        }[]
+      }
+      communication_experience_metrics: {
+        Args: { _from: string; _organization_id: string; _to: string }
+        Returns: Json
+      }
+      create_client_portal_callback_request: {
+        Args: {
+          _access_id: string
+          _reason: string
+          _requested_for: string
+          _thread_id: string
+        }
+        Returns: string
+      }
+      list_client_portal_callback_requests: {
+        Args: never
+        Returns: {
+          access_id: string
+          client_name: string
+          created_at: string
+          organization_name: string
+          reason: string
+          request_id: string
+          requested_for: string
+          staff_notes: string
+          status: string
+          thread_id: string
+        }[]
+      }
+      list_staff_client_portal_callback_requests: {
+        Args: { _organization_id: string }
+        Returns: {
+          assigned_name: string
+          assigned_to: string
+          client_id: string
+          client_name: string
+          created_at: string
+          reason: string
+          request_id: string
+          requested_for: string
+          staff_notes: string
+          status: string
+          task_id: string
+          thread_id: string
+        }[]
+      }
+      register_client_portal_push_subscription: {
+        Args: {
+          _auth_key: string
+          _endpoint: string
+          _p256dh: string
+          _user_agent?: string
+        }
+        Returns: number
+      }
+      remove_client_portal_push_subscription: {
+        Args: { _endpoint: string }
+        Returns: undefined
+      }
+      submit_client_portal_communication_rating: {
+        Args: { _comment?: string; _rating: number; _thread_id: string }
+        Returns: string
+      }
+      update_staff_client_portal_callback_request: {
+        Args: {
+          _organization_id: string
+          _request_id: string
+          _staff_notes?: string
+          _status: string
+        }
         Returns: undefined
       }
       communication_service_metrics: {
