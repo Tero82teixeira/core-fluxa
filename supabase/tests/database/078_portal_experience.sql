@@ -39,31 +39,21 @@ VALUES ('29900000-0000-0000-0000-000000000001','39900000-0000-0000-0000-00000000
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','19900000-0000-0000-0000-000000000002',true);
 SELECT lives_ok(
- $$SELECT public.submit_client_portal_communication_rating('49900000-0000-0000-0000-000000000001',5,'Ótimo atendimento')$$,
+ $$SELECT public.submit_client_portal_communication_rating('49900000-0000-0000-0000-000000000001',5::smallint,'Ótimo atendimento')$$,
  'linked portal client can rate a resolved shared conversation'
 );
 SELECT lives_ok(
  $$SELECT public.create_client_portal_callback_request('69900000-0000-0000-0000-000000000001','49900000-0000-0000-0000-000000000001',now()+interval '1 day','Quero revisar os próximos passos')$$,
  'linked portal client can request a scheduled callback'
 );
-SELECT is(
- (SELECT count(*) FROM public.tasks WHERE organization_id='29900000-0000-0000-0000-000000000001' AND client_id='39900000-0000-0000-0000-000000000001'),
- 1::bigint,
- 'callback request creates one linked task for the company'
-);
 SELECT lives_ok(
  $$SELECT public.register_client_portal_push_subscription('https://push.example.test/subscription-199','12345678901234567890','12345678','pgtap')$$,
  'portal client can register this device for reply alerts'
 );
-SELECT is(
- (SELECT count(*) FROM public.push_subscriptions WHERE user_id='19900000-0000-0000-0000-000000000002' AND is_active),
- 1::bigint,
- 'push subscription is scoped to the portal identity'
-);
 
 SELECT set_config('request.jwt.claim.sub','19900000-0000-0000-0000-000000000003',true);
 SELECT throws_ok(
- $$SELECT public.submit_client_portal_communication_rating('49900000-0000-0000-0000-000000000001',1,NULL)$$,
+ $$SELECT public.submit_client_portal_communication_rating('49900000-0000-0000-0000-000000000001',1::smallint,NULL)$$,
  '42501','RATING_NOT_ALLOWED','an unrelated identity cannot rate the conversation'
 );
 
@@ -85,5 +75,15 @@ SELECT is(
 );
 
 RESET ROLE;
+SELECT is(
+ (SELECT count(*) FROM public.tasks WHERE organization_id='29900000-0000-0000-0000-000000000001' AND client_id='39900000-0000-0000-0000-000000000001'),
+ 1::bigint,
+ 'callback request creates one linked task for the company'
+);
+SELECT is(
+ (SELECT count(*) FROM public.push_subscriptions WHERE user_id='19900000-0000-0000-0000-000000000002' AND is_active),
+ 1::bigint,
+ 'push subscription is scoped to the portal identity'
+);
 SELECT * FROM finish();
 ROLLBACK;
