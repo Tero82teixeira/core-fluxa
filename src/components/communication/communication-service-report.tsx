@@ -7,9 +7,19 @@ import {
   MessagesSquare,
   Star,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCommunicationServiceReport } from "@/hooks/use-communication-service-report";
 
 const channelLabels: Record<string, string> = {
@@ -30,8 +40,16 @@ export function CommunicationServiceReport({
   from: Date;
   to: Date;
 }) {
+  const [ratingFilter, setRatingFilter] = useState("all");
   const query = useCommunicationServiceReport(organizationId, from, to);
   const data = query.data;
+  const filteredRatings = useMemo(
+    () =>
+      (data?.ratings ?? []).filter(
+        (item) => ratingFilter === "all" || item.rating === Number(ratingFilter),
+      ),
+    [data?.ratings, ratingFilter],
+  );
   if (query.isLoading)
     return (
       <div className="panel p-8 text-center text-muted-foreground">
@@ -128,6 +146,71 @@ export function CommunicationServiceReport({
           </CardContent>
         </Card>
       </div>
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
+          <div>
+            <CardTitle>Avaliações dos clientes</CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Veja a nota, o comentário e a conversa avaliada no período selecionado.
+            </p>
+          </div>
+          <Select value={ratingFilter} onValueChange={setRatingFilter}>
+            <SelectTrigger className="w-44" aria-label="Filtrar avaliações por nota">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as notas</SelectItem>
+              {[5, 4, 3, 2, 1].map((rating) => (
+                <SelectItem key={rating} value={String(rating)}>
+                  {rating} estrelas
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardHeader>
+        <CardContent>
+          {!filteredRatings.length ? (
+            <Empty text="Nenhuma avaliação encontrada com os filtros aplicados." />
+          ) : (
+            <div className="space-y-3">
+              {filteredRatings.map((item) => (
+                <article key={item.rating_id} className="rounded-lg border p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold">{item.client_name}</p>
+                      <p className="truncate text-sm text-muted-foreground">{item.subject}</p>
+                    </div>
+                    <div className="text-right">
+                      <p
+                        className="font-semibold text-amber-500"
+                        aria-label={`${item.rating} de 5 estrelas`}
+                      >
+                        {"★".repeat(item.rating)}
+                        <span className="text-muted-foreground/30">
+                          {"★".repeat(5 - item.rating)}
+                        </span>
+                      </p>
+                      <time className="text-xs text-muted-foreground">
+                        {new Date(item.created_at).toLocaleDateString("pt-BR")}
+                      </time>
+                    </div>
+                  </div>
+                  <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">
+                    {item.comment?.trim() || "Cliente não deixou comentário."}
+                  </p>
+                  <div className="mt-3 flex justify-end">
+                    <Button asChild size="sm" variant="outline">
+                      <Link to="/comunicacao" search={{ conversa: item.thread_id }}>
+                        Abrir conversa
+                      </Link>
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
       {(data.channel_failed > 0 || data.channel_pending_match > 0) && (
         <Card className="border-amber-300/70">
           <CardContent className="flex flex-wrap gap-6 p-4 text-sm">
