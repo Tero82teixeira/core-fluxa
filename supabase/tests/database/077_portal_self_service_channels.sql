@@ -106,7 +106,7 @@ SELECT throws_ok(
   $$SELECT public.communication_service_metrics(
     '29770000-0000-0000-0000-000000000001', now() - interval '30 days', now()
   )$$,
-  'P0001', 'COMMUNICATION_WRITE_PERMISSION_DENIED',
+  'P0001', 'COMMUNICATION_ADMIN_PERMISSION_DENIED',
   'an outsider cannot read management analytics'
 );
 
