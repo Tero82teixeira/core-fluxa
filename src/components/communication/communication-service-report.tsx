@@ -1,4 +1,12 @@
-import { AlertTriangle, BookOpenCheck, Clock3, Inbox, MessagesSquare, Send } from "lucide-react";
+import {
+  AlertTriangle,
+  BookOpenCheck,
+  CalendarCheck,
+  Clock3,
+  Inbox,
+  MessagesSquare,
+  Star,
+} from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,8 +61,14 @@ export function CommunicationServiceReport({
       Icon: Clock3,
     },
     { label: "Aguardando equipe", value: data.waiting_team, Icon: Inbox },
-    { label: "Mensagens recebidas", value: data.channel_inbound, Icon: Inbox },
-    { label: "Mensagens enviadas", value: data.channel_outbound, Icon: Send },
+    {
+      label: "Satisfação média",
+      value: data.rating_count ? `${data.rating_average}/5` : "—",
+      Icon: Star,
+    },
+    { label: "Avaliações recebidas", value: data.rating_count, Icon: Star },
+    { label: "Retornos solicitados", value: data.callback_requested, Icon: CalendarCheck },
+    { label: "Retornos concluídos", value: data.callback_completed, Icon: CalendarCheck },
     { label: "Resolvido pelo FAQ", value: `${data.faq_deflection_rate}%`, Icon: BookOpenCheck },
     { label: "Clientes no FAQ", value: data.faq_clients, Icon: MessagesSquare },
   ];
@@ -63,7 +77,7 @@ export function CommunicationServiceReport({
       <div>
         <h2 className="section-title">Atendimento e autoatendimento</h2>
         <p className="page-subtitle">
-          Acompanhe resposta da equipe, canais conectados e dúvidas resolvidas no Meu Portal.
+          Acompanhe respostas, satisfação, retornos solicitados e dúvidas resolvidas no Meu Portal.
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

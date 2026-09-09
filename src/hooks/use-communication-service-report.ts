@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 
+const db = () => supabase as any;
+
 export type CommunicationServiceMetrics = {
   conversations: number;
   resolved: number;
@@ -18,6 +20,12 @@ export type CommunicationServiceMetrics = {
   channel_outbound: number;
   channel_failed: number;
   channel_pending_match: number;
+  rating_average: number;
+  rating_count: number;
+  rating_five_star: number;
+  callback_requested: number;
+  callback_pending: number;
+  callback_completed: number;
 };
 
 export function useCommunicationServiceReport(
@@ -36,13 +44,21 @@ export function useCommunicationServiceReport(
     ],
     queryFn: async () => {
       if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
-      const { data, error } = await supabase.rpc("communication_service_metrics", {
+      const parameters = {
         _organization_id: organizationId,
         _from: from.toISOString(),
         _to: to.toISOString(),
-      });
-      if (error) throw error;
-      return data as unknown as CommunicationServiceMetrics;
+      };
+      const [service, experience] = await Promise.all([
+        supabase.rpc("communication_service_metrics", parameters),
+        db().rpc("communication_experience_metrics", parameters),
+      ]);
+      if (service.error) throw service.error;
+      if (experience.error) throw experience.error;
+      return {
+        ...(service.data as object),
+        ...(experience.data as object),
+      } as CommunicationServiceMetrics;
     },
   });
 }
