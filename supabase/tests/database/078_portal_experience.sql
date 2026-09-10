@@ -120,12 +120,16 @@ SELECT is(
 SELECT lives_ok(
  format($$SELECT public.update_staff_client_portal_rating_recovery(
    '29900000-0000-0000-0000-000000000001','%s','resolvida','Cliente contatado'
- )$$, (SELECT id FROM public.client_portal_communication_ratings LIMIT 1)),
+ )$$, (SELECT rating_id FROM public.list_staff_client_portal_communication_ratings(
+   '29900000-0000-0000-0000-000000000001', now()-interval '1 day', now()
+ ) LIMIT 1)),
  'company owner resolves the rating recovery'
 );
 SELECT is(
  (SELECT recovery_status || '|' || recovery_notes
-    FROM public.client_portal_communication_ratings LIMIT 1),
+    FROM public.list_staff_client_portal_communication_ratings(
+      '29900000-0000-0000-0000-000000000001', now()-interval '1 day', now()
+    ) LIMIT 1),
  'resolvida|Cliente contatado',
  'recovery status and notes remain auditable'
 );
