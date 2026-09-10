@@ -66,6 +66,7 @@ import {
   downloadFinancialCsv,
   financialBuckets,
   matchesDisplayedFinancialStatus,
+  managerialIncomeStatement,
   monthlyCashFlow,
   profitabilityByDimension,
   type FinancialAccount,
@@ -73,6 +74,7 @@ import {
   type FinancialStatus,
   type FinancialType,
   type CashFlowForecastBucket,
+  type ManagerialIncomeStatement,
   type ProfitabilityDimension,
   type ProfitabilityRow,
 } from "@/lib/finance";
@@ -238,7 +240,19 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
     from,
     to,
   );
+  const dre = managerialIncomeStatement(data.transactions, data.categories, from, to);
   const exportRows = () => {
+    if (tab === "dre") {
+      downloadFinancialCsv(
+        "dre-gerencial",
+        dre.rows.map((item) => ({
+          Linha: item.label,
+          Valor: brl(item.amount),
+          "% da receita": item.percentageOfRevenue === null ? "—" : `${item.percentageOfRevenue.toFixed(1)}%`,
+        })),
+      );
+      return;
+    }
     if (tab === "profitability") {
       downloadFinancialCsv(
         `rentabilidade-${profitabilityDimension}`,
@@ -322,6 +336,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
             ["income", "Receitas"],
             ["expense", "Despesas"],
             ["profitability", "Rentabilidade"],
+            ["dre", "DRE gerencial"],
             ["cashflow", "Fluxo de caixa"],
             ["categories", "Categorias"],
             ["accounts", "Contas"],
@@ -419,6 +434,15 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
             historical={cashFlowChart}
           />
         </TabsContent>
+        <TabsContent value="dre">
+          <ManagerialIncomeStatementPanel
+            statement={dre}
+            from={from}
+            setFrom={setFrom}
+            to={to}
+            setTo={setTo}
+          />
+        </TabsContent>
         <TabsContent value="categories">
           <CategoriesManager
             rows={data.categories as FinancialCategory[]}
@@ -437,6 +461,77 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
           <Recurrences data={data} editable={editable} action={action} />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function ManagerialIncomeStatementPanel({
+  statement,
+  from,
+  setFrom,
+  to,
+  setTo,
+}: {
+  statement: ManagerialIncomeStatement;
+  from: string;
+  setFrom: (value: string) => void;
+  to: string;
+  setTo: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="section-title">DRE gerencial simplificada</h2>
+        <p className="page-subtitle">Entenda se a operação gerou lucro ou prejuízo no período.</p>
+      </div>
+      <Card className="no-print">
+        <CardContent className="grid gap-3 pt-6 sm:grid-cols-3">
+          <Label>
+            Competência inicial
+            <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+          </Label>
+          <Label>
+            Competência final
+            <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+          </Label>
+          <div className="flex items-end">
+            <Button variant="outline" className="w-full" onClick={() => { setFrom(""); setTo(""); }}>
+              Limpar período
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm">
+        <strong>DRE e fluxo de caixa são visões diferentes:</strong> esta DRE usa a competência do
+        lançamento para medir o resultado econômico. O fluxo de caixa usa vencimentos e pagamentos
+        para mostrar quando o dinheiro entra ou sai.
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard label="Receita operacional" value={statement.income} />
+        <MetricCard label="Despesas" value={statement.expense} />
+        <MetricCard label="Resultado" value={statement.result} />
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Margem do período</CardTitle></CardHeader>
+          <CardContent className={`text-2xl font-semibold ${statement.result < 0 ? "text-destructive" : ""}`}>
+            {statement.margin === null ? "—" : `${statement.margin.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
+          </CardContent>
+        </Card>
+      </div>
+      <Card>
+        <CardHeader><CardTitle>Demonstrativo por competência</CardTitle></CardHeader>
+        <CardContent className="overflow-x-auto px-3 sm:px-6">
+          <table className="w-full min-w-[580px] text-sm">
+            <thead><tr className="border-b bg-muted/40"><th className="p-3 text-left">Linha</th><th className="p-3 text-right">Valor</th><th className="p-3 text-right">% da receita</th></tr></thead>
+            <tbody>{statement.rows.map((row) => (
+              <tr key={row.id} className={row.kind === "result" ? "border-t-2 bg-primary/5 font-semibold" : row.kind === "total" ? "border-t font-semibold" : "border-b"}>
+                <td className={row.kind === "expense" ? "p-3 pl-7" : "p-3"}>{row.label}</td>
+                <td className={`p-3 text-right tabular-nums ${row.kind === "result" && row.amount < 0 ? "text-destructive" : ""}`}>{brl(row.amount)}</td>
+                <td className="p-3 text-right tabular-nums">{row.percentageOfRevenue === null ? "—" : `${row.percentageOfRevenue.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

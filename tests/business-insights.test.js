@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { businessAgenda, clientLossRisk, commercialFunnel, currentMonthPerformance, memberCapacityPerformance } from "../src/lib/reports.ts";
+import { businessAgenda, clientLossRisk, commercialFunnel, commercialPerformance, currentMonthPerformance, memberCapacityPerformance } from "../src/lib/reports.ts";
 
 const route = readFileSync("src/routes/_authenticated/relatorios.tsx", "utf8");
 const hook = readFileSync("src/hooks/use-reports.ts", "utf8");
@@ -20,6 +20,31 @@ test("commercial funnel reports only registered opportunities and values", () =>
     ["first_contact", 1, 1000], ["qualification", 0, 0], ["proposal", 1, 2500],
     ["negotiation", 0, 0], ["won", 1, 4000], ["lost", 0, 0],
   ]);
+});
+
+test("commercial performance uses closed deals and auditable stage durations", () => {
+  const metrics = commercialPerformance(
+    [
+      { id: "won", stage: "won", estimated_value: 2000, won_at: "2026-09-08T00:00:00Z" },
+      { id: "lost", stage: "lost", estimated_value: 500, lost_at: "2026-09-09T00:00:00Z", lost_reason: "Preço" },
+      { id: "open", stage: "proposal", estimated_value: 1000 },
+    ],
+    [
+      { opportunity_id: "won", to_stage: "first_contact", changed_at: "2026-09-01T00:00:00Z" },
+      { opportunity_id: "won", to_stage: "proposal", changed_at: "2026-09-03T00:00:00Z" },
+      { opportunity_id: "won", to_stage: "won", changed_at: "2026-09-08T00:00:00Z" },
+      { opportunity_id: "lost", to_stage: "first_contact", changed_at: "2026-09-02T00:00:00Z" },
+      { opportunity_id: "lost", to_stage: "lost", changed_at: "2026-09-09T00:00:00Z" },
+    ],
+    undefined,
+    new Date("2026-09-10T00:00:00Z"),
+  );
+  assert.deepEqual(
+    { won: metrics.won, lost: metrics.lost, closed: metrics.closed, winRate: metrics.winRate, averageWonTicket: metrics.averageWonTicket },
+    { won: 1, lost: 1, closed: 2, winRate: 50, averageWonTicket: 2000 },
+  );
+  assert.deepEqual(metrics.lostReasons, [{ reason: "Preço", count: 1 }]);
+  assert.equal(metrics.stageDurations.find((row) => row.stage === "proposal").averageDays, 5);
 });
 
 test("loss risk is explainable and prioritizes combined operational signals", () => {

@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 53221)
+Total output lines: 6868
+
 export type Json =
   | string
   | number
@@ -1910,6 +1913,51 @@ export type Database = {
           },
         ]
       }
+      commercial_opportunity_stage_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          from_stage: string | null
+          id: string
+          opportunity_id: string
+          organization_id: string
+          to_stage: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          from_stage?: string | null
+          id?: string
+          opportunity_id: string
+          organization_id: string
+          to_stage: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          from_stage?: string | null
+          id?: string
+          opportunity_id?: string
+          organization_id?: string
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_opportunity_stage_history_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_opportunity_stage_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_response_alert_settings: {
         Row: {
           created_at: string
@@ -3105,419 +3153,7 @@ export type Database = {
           responsible_user_id?: string | null
           status?: Database["public"]["Enums"]["monitoring_status"]
           title?: string
-          type?: Database["public"]["Enums"]["document_category"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "monitoring_items_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "monitoring_items_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "monitoring_items_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "monitoring_items_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "monitoring_items_process_id_fkey"
-            columns: ["process_id"]
-            isOneToOne: false
-            referencedRelation: "processes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      monitoring_state_history: {
-        Row: {
-          action: string
-          actor_id: string | null
-          created_at: string
-          details: Json
-          id: string
-          monitoring_state_id: string
-          note: string | null
-          organization_id: string
-        }
-        Insert: {
-          action: string
-          actor_id?: string | null
-          created_at?: string
-          details?: Json
-          id?: string
-          monitoring_state_id: string
-          note?: string | null
-          organization_id: string
-        }
-        Update: {
-          action?: string
-          actor_id?: string | null
-          created_at?: string
-          details?: Json
-          id?: string
-          monitoring_state_id?: string
-          note?: string | null
-          organization_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "monitoring_state_history_monitoring_state_id_fkey"
-            columns: ["monitoring_state_id"]
-            isOneToOne: false
-            referencedRelation: "monitoring_states"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "monitoring_state_history_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      monitoring_states: {
-        Row: {
-          alert_kind: string
-          assigned_to: string | null
-          created_at: string
-          created_by: string | null
-          id: string
-          ignored_at: string | null
-          monitoring_status: string
-          notes: string | null
-          organization_id: string
-          priority_override: string | null
-          resolved_at: string | null
-          source_id: string
-          source_type: string
-          updated_at: string
-        }
-        Insert: {
-          alert_kind: string
-          assigned_to?: string | null
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          ignored_at?: string | null
-          monitoring_status?: string
-          notes?: string | null
-          organization_id: string
-          priority_override?: string | null
-          resolved_at?: string | null
-          source_id: string
-          source_type: string
-          updated_at?: string
-        }
-        Update: {
-          alert_kind?: string
-          assigned_to?: string | null
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          ignored_at?: string | null
-          monitoring_status?: string
-          notes?: string | null
-          organization_id?: string
-          priority_override?: string | null
-          resolved_at?: string | null
-          source_id?: string
-          source_type?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "monitoring_states_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notifications: {
-        Row: {
-          action_url: string | null
-          archived_at: string | null
-          body: string | null
-          created_at: string
-          dedupe_key: string | null
-          entity_id: string | null
-          entity_type: string | null
-          id: string
-          kind: string
-          organization_id: string
-          read_at: string | null
-          title: string
-          user_id: string | null
-        }
-        Insert: {
-          action_url?: string | null
-          archived_at?: string | null
-          body?: string | null
-          created_at?: string
-          dedupe_key?: string | null
-          entity_id?: string | null
-          entity_type?: string | null
-          id?: string
-          kind?: string
-          organization_id: string
-          read_at?: string | null
-          title: string
-          user_id?: string | null
-        }
-        Update: {
-          action_url?: string | null
-          archived_at?: string | null
-          body?: string | null
-          created_at?: string
-          dedupe_key?: string | null
-          entity_id?: string | null
-          entity_type?: string | null
-          id?: string
-          kind?: string
-          organization_id?: string
-          read_at?: string | null
-          title?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_counters: {
-        Row: {
-          created_at: string
-          organization_id: string
-          process_seq: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          organization_id: string
-          process_seq?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          organization_id?: string
-          process_seq?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_counters_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_invitations: {
-        Row: {
-          accepted_at: string | null
-          accepted_by: string | null
-          cancelled_at: string | null
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          invited_by: string | null
-          invited_by_name: string | null
-          organization_id: string
-          role: Database["public"]["Enums"]["app_role"]
-          status: string
-          token_hash: string
-          updated_at: string
-        }
-        Insert: {
-          accepted_at?: string | null
-          accepted_by?: string | null
-          cancelled_at?: string | null
-          created_at?: string
-          email: string
-          expires_at?: string
-          id?: string
-          invited_by?: string | null
-          invited_by_name?: string | null
-          organization_id: string
-          role?: Database["public"]["Enums"]["app_role"]
-          status?: string
-          token_hash: string
-          updated_at?: string
-        }
-        Update: {
-          accepted_at?: string | null
-          accepted_by?: string | null
-          cancelled_at?: string | null
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          invited_by?: string | null
-          invited_by_name?: string | null
-          organization_id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          status?: string
-          token_hash?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_invitations_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_members: {
-        Row: {
-          automatic_task_capacity: number
-          created_at: string
-          distribution_function: string | null
-          distribution_sector: string | null
-          id: string
-          is_active: boolean
-          last_automatic_task_at: string | null
-          last_portal_communication_assigned_at: string | null
-          organization_id: string
-          portal_communication_capacity: number
-          receives_automatic_tasks: boolean
-          receives_portal_communications: boolean
-          role: Database["public"]["Enums"]["app_role"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          automatic_task_capacity?: number
-          created_at?: string
-          distribution_function?: string | null
-          distribution_sector?: string | null
-          id?: string
-          is_active?: boolean
-          last_automatic_task_at?: string | null
-          last_portal_communication_assigned_at?: string | null
-          organization_id: string
-          portal_communication_capacity?: number
-          receives_automatic_tasks?: boolean
-          receives_portal_communications?: boolean
-          role?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          automatic_task_capacity?: number
-          created_at?: string
-          distribution_function?: string | null
-          distribution_sector?: string | null
-          id?: string
-          is_active?: boolean
-          last_automatic_task_at?: string | null
-          last_portal_communication_assigned_at?: string | null
-          organization_id?: string
-          portal_communication_capacity?: number
-          receives_automatic_tasks?: boolean
-          receives_portal_communications?: boolean
-          role?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_members_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_performance_goals: {
-        Row: {
-          completed_processes_target: number
-          completed_tasks_target: number
-          created_at: string
-          created_by: string | null
-          goal_month: string
-          new_clients_target: number
-          organization_id: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          completed_processes_target?: number
-          completed_tasks_target?: number
-          created_at?: string
-          created_by?: string | null
-          goal_month: string
-          new_clients_target?: number
-          organization_id: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          completed_processes_target?: number
-          completed_tasks_target?: number
-          created_at?: string
-          created_by?: string | null
-          goal_month?: string
-          new_clients_target?: number
-          organization_id?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_performance_goals_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      member_performance_goals: {
-        Row: {
-          completed_processes_target: number
-          completed_tasks_target: number
-          created_at: string
-          created_by: string
-          goal_month: string
-          organization_id: string
-          updated_at: string
-          updated_by: string
-          user_id: string
-        }
-        Insert: {
-          completed_processes_target?: number
-          completed_tasks_target?: number
+          type?: Database["publi…3221 tokens truncated…er
           created_at?: string
           created_by: string
           goal_month: string
@@ -6094,6 +5730,10 @@ export type Database = {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
       }
+      create_commercial_next_action_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       reverse_financial_payment: {
         Args: { _notes: string; _organization_id: string; _payment_id: string }
         Returns: string
@@ -6103,6 +5743,10 @@ export type Database = {
         Returns: undefined
       }
       run_temporal_automation_cycle: { Args: never; Returns: Json }
+      run_temporal_automation_cycle_before_commercial_alerts: {
+        Args: never
+        Returns: Json
+      }
       save_client_portal_faq_article: {
         Args: {
           _answer: string

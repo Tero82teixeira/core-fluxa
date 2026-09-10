@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { CommercialOpportunityInput } from "@/hooks/use-reports";
-import { commercialStages, type CommercialFunnelStage, type MemberCapacityRow } from "@/lib/reports";
+import { commercialStages, type CommercialFunnelStage, type CommercialPerformance, type MemberCapacityRow } from "@/lib/reports";
 
 type Row = Record<string, any>;
 const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
@@ -19,8 +19,8 @@ const localDateTime = (value: string | null) => {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 };
 
-export function CommercialOpportunitiesPanel({ rows, funnel, clients, members, canEdit, canArchive, save, archive }: {
-  rows: Row[]; funnel: CommercialFunnelStage[]; clients: Row[]; members: Row[]; canEdit: boolean; canArchive: boolean; save: any; archive: any;
+export function CommercialOpportunitiesPanel({ rows, funnel, performance, clients, members, canEdit, canArchive, save, archive }: {
+  rows: Row[]; funnel: CommercialFunnelStage[]; performance: CommercialPerformance; clients: Row[]; members: Row[]; canEdit: boolean; canArchive: boolean; save: any; archive: any;
 }) {
   const empty: CommercialOpportunityInput = { title: "", stage: "first_contact", estimatedValue: 0, probability: 10, clientId: null, ownerId: null, nextActionAt: null, lostReason: null };
   const [form, setForm] = useState<CommercialOpportunityInput>(empty);
@@ -43,6 +43,18 @@ export function CommercialOpportunitiesPanel({ rows, funnel, clients, members, c
   return <div className="space-y-4">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="section-title">Funil comercial real</h2><p className="page-subtitle">Acompanhe cada oportunidade do primeiro contato ao ganho ou à perda.</p></div>{canEdit && <Button onClick={() => { setForm(empty); setEditing((value) => !value); }}><Plus /> Nova oportunidade</Button>}</div>
     <div className="grid gap-3 sm:grid-cols-3"><Metric icon={<TrendingUp />} label="Pipeline aberto" value={money(pipeline)} detail={`${active.length} oportunidade(s)`}/><Metric icon={<Target />} label="Previsão ponderada" value={money(weighted)} detail="Valor × probabilidade"/><Metric icon={<Users />} label="Ganhos registrados" value={money(won)} detail={`${rows.filter((row) => row.stage === "won").length} oportunidade(s)`}/></div>
+    <Card className="border-primary/20"><CardHeader><CardTitle className="text-base">Indicadores comerciais</CardTitle><p className="text-xs text-muted-foreground">Conversão e ticket usam negócios encerrados no período selecionado. O tempo por etapa considera todo o histórico registrado das oportunidades exibidas.</p></CardHeader><CardContent className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <CommercialIndicator label="Taxa de conversão" value={performance.winRate === null ? "—" : `${performance.winRate.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`} detail={`${performance.won} ganha(s) de ${performance.closed} encerrada(s)`}/>
+        <CommercialIndicator label="Ticket médio ganho" value={money(performance.averageWonTicket)} detail={`${performance.won} oportunidade(s) ganha(s)`}/>
+        <CommercialIndicator label="Negócios perdidos" value={String(performance.lost)} detail="Encerrados como perda"/>
+        <CommercialIndicator label="Negócios encerrados" value={String(performance.closed)} detail="Ganhos + perdidos"/>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border p-4"><h3 className="text-sm font-semibold">Tempo médio por etapa</h3><div className="mt-3 space-y-2">{performance.stageDurations.map((row) => <div key={row.stage} className="flex items-center justify-between gap-3 text-sm"><span>{row.label}</span><strong>{row.samples ? `${row.averageDays.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} dia(s)` : "Sem histórico"}</strong></div>)}</div></div>
+        <div className="rounded-xl border p-4"><h3 className="text-sm font-semibold">Motivos das perdas</h3>{performance.lostReasons.length ? <div className="mt-3 space-y-2">{performance.lostReasons.map((row) => <div key={row.reason} className="flex items-center justify-between gap-3 text-sm"><span className="min-w-0 truncate">{row.reason}</span><strong>{row.count}</strong></div>)}</div> : <p className="mt-3 text-sm text-muted-foreground">Nenhuma perda registrada no período.</p>}</div>
+      </div>
+    </CardContent></Card>
     {editing && <Card className="border-primary/30"><CardHeader><CardTitle className="text-base">{form.id ? "Editar oportunidade" : "Nova oportunidade"}</CardTitle></CardHeader><CardContent className="space-y-3"><div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
       <label className="grid gap-1 text-xs lg:col-span-2">Título<Input value={form.title} maxLength={180} onChange={(event) => setForm({ ...form, title: event.target.value })}/></label>
       <label className="grid gap-1 text-xs">Etapa<select className={selectClass} value={form.stage} onChange={(event) => setForm({ ...form, stage: event.target.value, probability: probabilityByStage[event.target.value] })}>{commercialStages.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></label>
@@ -55,6 +67,10 @@ export function CommercialOpportunitiesPanel({ rows, funnel, clients, members, c
     </div><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button><Button onClick={submit} disabled={save.isPending || form.title.trim().length < 3 || (form.stage === "lost" && (form.lostReason?.trim().length ?? 0) < 3)}>{save.isPending ? "Salvando…" : "Salvar oportunidade"}</Button></div></CardContent></Card>}
     <div className="grid gap-3 xl:grid-cols-3">{funnel.map((stage) => <Card key={stage.key}><CardHeader className="pb-2"><CardTitle className="flex items-center justify-between text-base"><span>{stage.label}</span><span className="rounded-full bg-primary/10 px-2 py-0.5 text-sm text-primary">{stage.value}</span></CardTitle><p className="text-xs text-muted-foreground">{money(stage.estimatedValue)}</p></CardHeader><CardContent className="space-y-2">{!stage.value ? <p className="py-5 text-center text-xs text-muted-foreground">Nenhuma oportunidade nesta etapa.</p> : rows.filter((row) => row.stage === stage.key).map((row) => <div key={row.id} className="rounded-lg border p-3"><button className="w-full text-left" onClick={() => canEdit && edit(row)}><strong className="block truncate text-sm">{row.title}</strong><span className="text-xs text-muted-foreground">{money(Number(row.estimated_value) || 0)} · {row.probability}%</span><span className="block text-xs text-muted-foreground">Próxima ação: {row.next_action_at ? new Date(row.next_action_at).toLocaleString("pt-BR") : "não definida"}</span></button>{canArchive && <div className="mt-2 flex justify-end"><Button size="sm" variant="ghost" aria-label={`Arquivar ${row.title}`} onClick={async () => { try { await archive.mutateAsync(row.id); toast.success("Oportunidade arquivada."); } catch { toast.error("Não foi possível arquivar."); } }}><Archive /></Button></div>}</div>)}</CardContent></Card>)}</div>
   </div>;
+}
+
+function CommercialIndicator({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return <div className="rounded-xl bg-muted/40 p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold">{value}</p><p className="text-xs text-muted-foreground">{detail}</p></div>;
 }
 
 export function TeamCapacityPanel({ rows, canEdit, save }: { rows: MemberCapacityRow[]; canEdit: boolean; save: any }) {

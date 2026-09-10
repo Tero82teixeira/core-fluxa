@@ -18,7 +18,7 @@ export function useReportData(organizationId: string | null) {
     staleTime: 60_000,
     queryFn: async () => {
       if (!organizationId) throw new Error("Selecione uma organização ativa para consultar relatórios.");
-      const [clients, tasks, processes, documents, monitoring, members, goals, movements, communications, opportunities, memberGoals] = await Promise.all([
+      const [clients, tasks, processes, documents, monitoring, members, goals, movements, communications, opportunities, opportunityMovements, memberGoals] = await Promise.all([
         rows("clients_secure", "id,name,status,city,state,owner_id,owner_name,last_interaction_at,created_at,archived_at", organizationId),
         rows("tasks", "id,title,status,priority,due_at,completed_at,created_at,assignee_id,assignee_name,client_id,process_id,archived_at,deleted_at", organizationId),
         rows("processes", "id,code,title,stage,priority,owner_id,owner_name,client_id,opened_at,due_date,last_movement_at,value,financial_status,updated_at,archived_at", organizationId),
@@ -29,6 +29,7 @@ export function useReportData(organizationId: string | null) {
         rows("process_movements", "id,process_id,to_stage,created_at", organizationId),
         rows("communication_threads", "id,client_id,process_id,subject,status,priority,assigned_to,follow_up_at,created_at,archived_at", organizationId),
         rows("commercial_opportunities", "id,client_id,title,stage,estimated_value,probability,owner_id,next_action_at,lost_reason,won_at,lost_at,created_at,updated_at,archived_at", organizationId),
+        rows("commercial_opportunity_stage_history", "id,opportunity_id,from_stage,to_stage,changed_by,changed_at", organizationId),
         rows("member_performance_goals", "user_id,goal_month,completed_tasks_target,completed_processes_target,updated_at", organizationId),
       ]);
       const memberIds = members.map((member: any) => member.user_id);
@@ -40,7 +41,25 @@ export function useReportData(organizationId: string | null) {
       const namedMembers = members.map((member: any) => ({ ...member, ...(profileMap.get(member.user_id) ?? {}) }));
       const memberNameMap = new Map(namedMembers.map((member: any) => [member.user_id, member.full_name || member.email || "Membro sem nome"]));
       const namedCommunications = communications.map((thread: any) => ({ ...thread, assigned_name: thread.assigned_to ? memberNameMap.get(thread.assigned_to) ?? null : null }));
-      return { clients, tasks, processes, documents, monitoring, members: namedMembers, goals, movements, communications: namedCommunications, opportunities, memberGoals };
+      const namedOpportunities = opportunities.map((opportunity: any) => ({ ...opportunity, owner_name: opportunity.owner_id ? memberNameMap.get(opportunity.owner_id) ?? null : null }));
+      return { clients, tasks, processes, documents, monitoring, members: namedMembers, goals, movements, communications: namedCommunications, opportunities: namedOpportunities, opportunityMovements, memberGoals };
+    },
+  });
+}
+
+export function useCommercialOpportunityAlerts(organizationId: string | null) {
+  return useQuery({
+    enabled: Boolean(organizationId),
+    queryKey: ["commercial-opportunity-alerts", organizationId],
+    staleTime: 60_000,
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const data = await rows(
+        "commercial_opportunities",
+        "id,title,stage,estimated_value,owner_id,next_action_at,archived_at",
+        organizationId,
+      );
+      return data.filter((row: any) => !row.archived_at && !["won", "lost"].includes(row.stage));
     },
   });
 }

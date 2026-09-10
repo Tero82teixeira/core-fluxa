@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   BellRing,
+  BriefcaseBusiness,
   CalendarClock,
   CheckCircle2,
   CheckSquare,
@@ -29,6 +30,7 @@ import { useFinance } from "@/hooks/use-finance";
 import { useCommunicationThreads } from "@/hooks/use-communication";
 import { useDocumentsSummary } from "@/hooks/use-documents";
 import { useGettingStarted } from "@/hooks/use-getting-started";
+import { useCommercialOpportunityAlerts } from "@/hooks/use-reports";
 import { monitoringAttention, financeSummary, communicationSummary } from "@/lib/command-center";
 import { effectivePriority } from "@/lib/monitoring";
 import { taskIndicators } from "@/lib/tasks";
@@ -254,6 +256,7 @@ function Central() {
   const documents = useDocumentsSummary(organizationId);
   const activity = useRecentActivity(canProcesses ? organizationId : null);
   const gettingStarted = useGettingStarted(organizationId, role === "proprietario");
+  const opportunities = useCommercialOpportunityAlerts(organizationId);
   const taskStats = taskIndicators(tasks.data ?? []);
   const openTasks = (tasks.data ?? []).filter((t) => t.status !== "concluida");
   const processRows = (processes.data ?? []).filter((p) => !closed.includes(p.stage));
@@ -263,6 +266,8 @@ function Central() {
   const alerts = (monitoring.data ?? []).filter(
     (a) => !["resolvido", "ignorado"].includes(a.monitoring_status),
   );
+  const opportunityRows = (opportunities.data ?? []).filter((row: any) => row.next_action_at);
+  const overdueOpportunities = opportunityRows.filter((row: any) => row.next_action_at.slice(0, 10) <= today());
   const org =
     membership?.organizations?.trade_name || membership?.organizations?.legal_name || "Organização";
   const metrics: Array<[string, number, string, LucideIcon, Level, VisualTone]> = [
@@ -276,6 +281,7 @@ function Central() {
       "amber",
     ],
     ["Retornos atrasados", cs.overdue, "/comunicacao", MessageCircle, "atencao", "cyan"],
+    ["Ações comerciais vencidas", overdueOpportunities.length, "/relatorios?tipo=commercial", BriefcaseBusiness, "atencao", "amber"],
     [
       "Documentos vencendo",
       documents.data?.expiring ?? 0,
@@ -325,7 +331,7 @@ function Central() {
         "emerald",
       ],
     );
-  const queries = [tasks, processes, monitoring, finance, communication, documents, activity];
+  const queries = [tasks, processes, monitoring, finance, communication, documents, activity, opportunities];
   const refreshing = queries.some((q) => q.isFetching);
   const refresh = () => queries.forEach((q) => void q.refetch());
   const updated = Math.max(
@@ -336,6 +342,7 @@ function Central() {
       finance.dataUpdatedAt,
       communication.dataUpdatedAt,
       documents.dataUpdatedAt,
+      opportunities.dataUpdatedAt,
     ].filter(Boolean),
   );
   return (
@@ -499,6 +506,31 @@ function Central() {
         </Block>
       )}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Block
+          title="Próximas ações comerciais"
+          icon={BriefcaseBusiness}
+          tone="amber"
+          href="/relatorios?tipo=commercial"
+          action="Abrir funil comercial"
+          loading={opportunities.isLoading}
+          error={opportunities.isError}
+          summary={<Stats items={[["Vencidas/hoje", overdueOpportunities.length], ["Agendadas", opportunityRows.length]]} />}
+        >
+          {opportunityRows.length ? (
+            <ul className="divide-y">
+              {[...opportunityRows].sort((a: any, b: any) => a.next_action_at.localeCompare(b.next_action_at)).slice(0, 5).map((opportunity: any) => (
+                <Row
+                  key={opportunity.id}
+                  title={opportunity.title}
+                  meta={opportunity.owner_id ? "Responsável definido" : "Sem responsável definido"}
+                  right={new Date(opportunity.next_action_at).toLocaleString("pt-BR")}
+                />
+              ))}
+            </ul>
+          ) : (
+            <Empty>Nenhuma próxima ação comercial cadastrada.</Empty>
+          )}
+        </Block>
         {canProcesses && (
           <Block
             title="Alertas do Monitoramento"
