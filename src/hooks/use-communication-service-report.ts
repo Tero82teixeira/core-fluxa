@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -36,6 +36,10 @@ export type CommunicationRatingDetail = {
   subject: string;
   rating: number;
   comment: string | null;
+  recovery_status: "nova" | "em_contato" | "resolvida" | "nao_necessaria";
+  recovery_notes: string | null;
+  recovery_handled_by: string | null;
+  recovery_handled_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -79,5 +83,31 @@ export function useCommunicationServiceReport(
         ratings: (ratings.data ?? []) as CommunicationRatingDetail[],
       } as CommunicationServiceReportData;
     },
+  });
+}
+
+export function useUpdateCommunicationRatingRecovery(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      ratingId,
+      status,
+      notes,
+    }: {
+      ratingId: string;
+      status: "nova" | "em_contato" | "resolvida";
+      notes?: string;
+    }) => {
+      if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
+      const { error } = await db().rpc("update_staff_client_portal_rating_recovery", {
+        _organization_id: organizationId,
+        _rating_id: ratingId,
+        _status: status,
+        _notes: notes ?? "",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["communication-service-report", organizationId] }),
   });
 }

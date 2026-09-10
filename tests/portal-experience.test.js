@@ -7,6 +7,10 @@ const ratingDetailsMigration = readFileSync(
   "supabase/migrations/20260924120000_staff_portal_rating_details.sql",
   "utf8",
 );
+const recoveryMigration = readFileSync(
+  "supabase/migrations/20260925120000_rating_recovery_workflow.sql",
+  "utf8",
+);
 const portal = readFileSync("src/components/client-portal/portal-experience.tsx", "utf8");
 const experienceHook = readFileSync("src/hooks/use-client-portal-experience.ts", "utf8");
 const staff = readFileSync("src/components/communication/callback-requests-panel.tsx", "utf8");
@@ -64,6 +68,16 @@ test("management can inspect and filter rating details before opening the conver
   assert.match(report, /search=\{\{ conversa: item\.thread_id \}\}/);
 });
 
+test("low ratings alert the team and remain tracked until recovery", () => {
+  assert.match(recoveryMigration, /NEW\.rating <= 2 THEN 'Avaliação baixa recebida'/);
+  assert.match(recoveryMigration, /member\.user_id = thread\.assigned_to/);
+  assert.match(recoveryMigration, /member\.role::text IN \('superadmin', 'proprietario', 'administrador', 'gestor'\)/);
+  assert.match(recoveryMigration, /update_staff_client_portal_rating_recovery/);
+  assert.match(report, /Precisam de contato/);
+  assert.match(report, /Recuperações concluídas/);
+  assert.match(report, /Recuperação do atendimento/);
+});
+
 test("generated contracts expose every portal experience RPC", () => {
   for (const rpc of [
     "register_client_portal_push_subscription",
@@ -75,6 +89,7 @@ test("generated contracts expose every portal experience RPC", () => {
     "list_staff_client_portal_callback_requests",
     "list_staff_client_portal_communication_ratings",
     "update_staff_client_portal_callback_request",
+    "update_staff_client_portal_rating_recovery",
     "communication_experience_metrics",
   ])
     assert.match(types, new RegExp(`${rpc}:`));

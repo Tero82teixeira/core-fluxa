@@ -15,7 +15,12 @@ import { CommunicationServiceReport } from "@/components/communication/communica
 import { canAdminCommunication } from "@/lib/communication";
 import { clientProcessSummary, downloadCsv, filterMonitoringReport, filterReportRows, groupCount, isOverdue, monitoringBuckets, monitoringExportRows, monitoringReportMetrics, periodRange, type PeriodPreset } from "@/lib/reports";
 
+type ReportSearch = { tipo?: string };
+const REPORT_TYPES = new Set(["overview", "service", "tasks", "processes", "clients", "documents", "monitoring", "team"]);
 export const Route = createFileRoute("/_authenticated/relatorios")({
+  validateSearch: (search: Record<string, unknown>): ReportSearch => ({
+    tipo: typeof search.tipo === "string" && REPORT_TYPES.has(search.tipo) ? search.tipo : undefined,
+  }),
   head: () => ({ meta: [{ title: "Relatórios — FLUXA" }, { name: "description", content: "Indicadores reais da operação." }] }),
   component: ReportsPage,
 });
@@ -27,13 +32,14 @@ const periods: [PeriodPreset, string][] = [["7d", "Últimos 7 dias"], ["30d", "�
 const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
 
 function ReportsPage() {
+  const { tipo: requestedReport } = Route.useSearch();
   const { organizationId, membership } = useWorkspace();
   const organizationName = membership?.organizations?.trade_name || membership?.organizations?.legal_name || "Organização";
   const canExportReports = permissionsForRole(membership?.role ?? null).canExportReports;
   const canViewServiceReport = canAdminCommunication(membership?.role ?? null);
   const reportTabs = [["overview","Visão geral"],["service","Atendimento"],["tasks","Tarefas"],["processes","Processos"],["clients","Clientes"],["documents","Documentos"],["monitoring","Monitoramentos"],["team","Equipe"]].filter(([value]) => value !== "service" || canViewServiceReport);
   const report = useReportData(organizationId);
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState(requestedReport && reportTabs.some(([value]) => value === requestedReport) ? requestedReport : "overview");
   const [period, setPeriod] = useState<PeriodPreset>("30d");
   const [from, setFrom] = useState(""); const [to, setTo] = useState("");
   const [client, setClient] = useState("all"); const [assignee, setAssignee] = useState("all");
@@ -88,7 +94,7 @@ function ReportsPage() {
     </CardContent></Card>
     {report.isLoading && <div className="panel p-8 text-center text-muted-foreground">Carregando dados reais…</div>}
     {report.isError && <div role="alert" className="panel p-6 text-destructive"><AlertTriangle className="mr-2 inline" />Não foi possível carregar o relatório. <Button variant="outline" onClick={() => report.refetch()}>Tentar novamente</Button></div>}
-    {filtered && <Tabs value={tab} onValueChange={(value) => { setTab(value); setPage(0); }}><TabsList className="no-print flex h-auto flex-wrap justify-start">{reportTabs.map(([v,l]) => <TabsTrigger key={v} value={v}>{l}</TabsTrigger>)}</TabsList>
+    {filtered && <Tabs value={tab} onValueChange={(value) => { setTab(value); setPage(0); }}><div className="no-print rounded-xl border border-primary/20 bg-primary/5 p-3 shadow-sm"><p className="mb-2 text-sm font-semibold text-foreground">Escolha o relatório que deseja visualizar</p><TabsList className="flex h-auto w-full flex-wrap justify-start gap-1.5 bg-background/80 p-1.5">{reportTabs.map(([v,l]) => <TabsTrigger className="px-4 py-2" key={v} value={v}>{l}</TabsTrigger>)}</TabsList></div>
       <TabsContent value="overview" className="space-y-5"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{metrics.map(([label,value]) => <Card key={label}><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader><CardContent className="metric-value">{value.toLocaleString("pt-BR")}</CardContent></Card>)}</div><div className="grid gap-4 lg:grid-cols-2"><ReportChart title="Tarefas por status" data={taskStatus} pie /><ReportChart title="Processos por etapa" data={processStage} /></div></TabsContent>
       {canViewServiceReport && <TabsContent value="service"><CommunicationServiceReport organizationId={organizationId} from={range.from} to={range.to} /></TabsContent>}
       <TabsContent value="tasks"><Section title="Relatório de tarefas" summary={`Média de ${(filtered.tasks.length / Math.max(filtered.members.filter((x: AnyRow)=>x.is_active).length,1)).toLocaleString("pt-BR",{maximumFractionDigits:1})} tarefas por usuário.`} chart={<ReportChart title="Tarefas por prioridade" data={taskPriority} pie />}><DataTable kind="tarefas" rows={filtered.tasks} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} canExportReports={canExportReports} /></Section></TabsContent>

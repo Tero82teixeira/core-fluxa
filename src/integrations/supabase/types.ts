@@ -584,6 +584,10 @@ export type Database = {
           id: string
           organization_id: string
           rating: number
+          recovery_handled_at: string | null
+          recovery_handled_by: string | null
+          recovery_notes: string | null
+          recovery_status: string
           thread_id: string
           updated_at: string
           user_id: string
@@ -595,6 +599,10 @@ export type Database = {
           id?: string
           organization_id: string
           rating: number
+          recovery_handled_at?: string | null
+          recovery_handled_by?: string | null
+          recovery_notes?: string | null
+          recovery_status?: string
           thread_id: string
           updated_at?: string
           user_id: string
@@ -606,6 +614,10 @@ export type Database = {
           id?: string
           organization_id?: string
           rating?: number
+          recovery_handled_at?: string | null
+          recovery_handled_by?: string | null
+          recovery_notes?: string | null
+          recovery_status?: string
           thread_id?: string
           updated_at?: string
           user_id?: string
@@ -5188,6 +5200,10 @@ export type Database = {
           created_at: string
           rating: number
           rating_id: string
+          recovery_handled_at: string
+          recovery_handled_by: string
+          recovery_notes: string
+          recovery_status: string
           subject: string
           thread_id: string
           updated_at: string
@@ -5215,6 +5231,15 @@ export type Database = {
           _organization_id: string
           _request_id: string
           _staff_notes?: string
+          _status: string
+        }
+        Returns: undefined
+      }
+      update_staff_client_portal_rating_recovery: {
+        Args: {
+          _notes?: string
+          _organization_id: string
+          _rating_id: string
           _status: string
         }
         Returns: undefined
