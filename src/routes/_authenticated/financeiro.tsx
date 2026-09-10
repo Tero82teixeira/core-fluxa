@@ -61,15 +61,20 @@ import {
   brl,
   canManageFinance,
   canReverseFinancialPayment,
+  cashFlowForecast,
   displayedFinancialStatus,
   downloadFinancialCsv,
   financialBuckets,
   matchesDisplayedFinancialStatus,
   monthlyCashFlow,
+  profitabilityByDimension,
   type FinancialAccount,
   type FinancialCategory,
   type FinancialStatus,
   type FinancialType,
+  type CashFlowForecastBucket,
+  type ProfitabilityDimension,
+  type ProfitabilityRow,
 } from "@/lib/finance";
 import { StatusBadge } from "@/components/shared/status-badge";
 import type { Tone } from "@/lib/domain";
@@ -147,6 +152,8 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
     [account, setAccount] = useState("all"),
     [from, setFrom] = useState(""),
     [to, setTo] = useState(""),
+    [profitabilityDimension, setProfitabilityDimension] =
+      useState<ProfitabilityDimension>("client"),
     [showArchived, setShowArchived] = useState(false),
     [page, setPage] = useState(0);
   const editable = canManageFinance(role);
@@ -207,7 +214,58 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
     cashFlowChart = monthlyCashFlow(data?.transactions ?? [], data?.payments ?? []),
     expenseCategories = byCategory(data, "expense"),
     incomeCategories = byCategory(data, "income");
-  const exportRows = () =>
+  const currentBalance = data.accounts
+    .filter((item: any) => !item.archived_at)
+    .reduce((total: number, item: any) => total + Number(item.current_balance), 0);
+  const forecast = cashFlowForecast(
+    data.transactions,
+    data.payments,
+    currentBalance,
+    now,
+  );
+  const profitabilityNames = new Map<string, string>(
+    (profitabilityDimension === "client" ? data.clients : data.processes).map((item: any) => [
+      item.id,
+      profitabilityDimension === "client"
+        ? item.name
+        : [item.code, item.title].filter(Boolean).join(" · "),
+    ]),
+  );
+  const profitability = profitabilityByDimension(
+    data.transactions,
+    profitabilityDimension,
+    profitabilityNames,
+    from,
+    to,
+  );
+  const exportRows = () => {
+    if (tab === "profitability") {
+      downloadFinancialCsv(
+        `rentabilidade-${profitabilityDimension}`,
+        profitability.map((item) => ({
+          [profitabilityDimension === "client" ? "Cliente" : "Processo"]: item.name,
+          Receitas: brl(item.income),
+          Despesas: brl(item.expense),
+          Resultado: brl(item.result),
+          Margem: item.margin === null ? "—" : `${item.margin.toFixed(1)}%`,
+          Lançamentos: item.transactionCount,
+        })),
+      );
+      return;
+    }
+    if (tab === "cashflow") {
+      downloadFinancialCsv(
+        "fluxo-caixa-previsto",
+        forecast.map((item) => ({
+          Período: item.label,
+          Entradas: brl(item.income),
+          Saídas: brl(item.expense),
+          Resultado: brl(item.net),
+          "Saldo projetado": brl(item.projectedBalance),
+        })),
+      );
+      return;
+    }
     downloadFinancialCsv(
       tab,
       rows.map((x: any) => ({
@@ -220,6 +278,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
         Saldo: brl(Number(x.amount) - paid(x.id)),
       })),
     );
+  };
   return (
     <div className="finance-page mx-auto w-full max-w-7xl space-y-5 p-4 sm:p-6">
       <header className="print-header flex flex-wrap justify-between gap-3">
@@ -262,6 +321,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
             ["payable", "Contas a pagar"],
             ["income", "Receitas"],
             ["expense", "Despesas"],
+            ["profitability", "Rentabilidade"],
             ["cashflow", "Fluxo de caixa"],
             ["categories", "Categorias"],
             ["accounts", "Contas"],
@@ -341,8 +401,23 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
             />
           </TabsContent>
         ))}
+        <TabsContent value="profitability">
+          <ProfitabilityPanel
+            rows={profitability}
+            dimension={profitabilityDimension}
+            setDimension={setProfitabilityDimension}
+            from={from}
+            setFrom={setFrom}
+            to={to}
+            setTo={setTo}
+          />
+        </TabsContent>
         <TabsContent value="cashflow">
-          <Chart title="Fluxo de caixa mensal" data={cashFlowChart} keys={["fluxo"]} />
+          <CashFlowForecastPanel
+            currentBalance={currentBalance}
+            forecast={forecast}
+            historical={cashFlowChart}
+          />
         </TabsContent>
         <TabsContent value="categories">
           <CategoriesManager
@@ -363,6 +438,206 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function ProfitabilityPanel({
+  rows,
+  dimension,
+  setDimension,
+  from,
+  setFrom,
+  to,
+  setTo,
+}: {
+  rows: ProfitabilityRow[];
+  dimension: ProfitabilityDimension;
+  setDimension: (value: ProfitabilityDimension) => void;
+  from: string;
+  setFrom: (value: string) => void;
+  to: string;
+  setTo: (value: string) => void;
+}) {
+  const totals = rows.reduce(
+    (sum, row) => ({
+      income: sum.income + row.income,
+      expense: sum.expense + row.expense,
+      result: sum.result + row.result,
+    }),
+    { income: 0, expense: 0, result: 0 },
+  );
+  const unclassified = rows.find((row) => row.unclassified);
+  const chartRows = rows
+    .filter((row) => !row.unclassified)
+    .slice(0, 10)
+    .map((row) => ({ month: row.name, resultado: row.result }));
+  return (
+    <div className="space-y-4">
+      <Card className="no-print">
+        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2 lg:grid-cols-4">
+          <Select
+            label="Analisar por"
+            value={dimension}
+            set={(value: ProfitabilityDimension) => setDimension(value)}
+            options={[
+              ["client", "Cliente"],
+              ["process", "Processo"],
+            ]}
+          />
+          <Label>
+            Competência inicial
+            <Input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+          </Label>
+          <Label>
+            Competência final
+            <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+          </Label>
+          <div className="flex items-end">
+            <Button variant="outline" className="w-full" onClick={() => { setFrom(""); setTo(""); }}>
+              Limpar período
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm">
+        <strong>Como o resultado é calculado:</strong> receitas menos despesas pela data de
+        competência do lançamento. Quando ela não estiver preenchida, será usado o vencimento.
+        Nenhum vínculo é presumido para lançamentos antigos.
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard label="Receitas no período" value={totals.income} />
+        <MetricCard label="Despesas no período" value={totals.expense} />
+        <MetricCard label="Resultado" value={totals.result} />
+        <MetricCard
+          label="Não classificados"
+          value={(unclassified?.income ?? 0) + (unclassified?.expense ?? 0)}
+        />
+      </div>
+      {chartRows.length > 0 && (
+        <Chart
+          title={`Resultado por ${dimension === "client" ? "cliente" : "processo"}`}
+          data={chartRows}
+          keys={["resultado"]}
+        />
+      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Rentabilidade por {dimension === "client" ? "cliente" : "processo"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="overflow-x-auto px-3 sm:px-6">
+          {!rows.length ? (
+            <p className="py-10 text-center text-muted-foreground">
+              Nenhum lançamento encontrado no período.
+            </p>
+          ) : (
+            <table className="w-full min-w-[720px] text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="p-3 text-left">{dimension === "client" ? "Cliente" : "Processo"}</th>
+                  <th className="p-3 text-right">Receitas</th>
+                  <th className="p-3 text-right">Despesas</th>
+                  <th className="p-3 text-right">Resultado</th>
+                  <th className="p-3 text-right">Margem</th>
+                  <th className="p-3 text-right">Lançamentos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id} className={row.unclassified ? "bg-amber-50/60 dark:bg-amber-950/15" : "border-b"}>
+                    <td className="p-3 font-medium">{row.name}</td>
+                    <td className="p-3 text-right tabular-nums">{brl(row.income)}</td>
+                    <td className="p-3 text-right tabular-nums">{brl(row.expense)}</td>
+                    <td className={`p-3 text-right font-semibold tabular-nums ${row.result < 0 ? "text-destructive" : "text-emerald-700 dark:text-emerald-400"}`}>
+                      {brl(row.result)}
+                    </td>
+                    <td className="p-3 text-right tabular-nums">
+                      {row.margin === null ? "—" : `${row.margin.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
+                    </td>
+                    <td className="p-3 text-right tabular-nums">{row.transactionCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function CashFlowForecastPanel({
+  currentBalance,
+  forecast,
+  historical,
+}: {
+  currentBalance: number;
+  forecast: CashFlowForecastBucket[];
+  historical: ReturnType<typeof monthlyCashFlow>;
+}) {
+  const balanceAt = (key: CashFlowForecastBucket["key"]) =>
+    forecast.find((bucket) => bucket.key === key)?.projectedBalance ?? currentBalance;
+  const overdue = forecast.find((bucket) => bucket.key === "overdue");
+  const chartRows = forecast.map((bucket) => ({
+    month: bucket.label,
+    entradas: bucket.income,
+    saidas: bucket.expense,
+  }));
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="section-title">Fluxo de caixa previsto</h2>
+        <p className="page-subtitle">Antecipe entradas, saídas e possíveis saldos negativos.</p>
+      </div>
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm">
+        <strong>Previsão baseada em dados reais:</strong> considera o saldo atual e os valores ainda
+        não pagos, organizados pela data de vencimento. A projeção não registra pagamentos nem
+        movimenta contas.
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard label="Saldo atual" value={currentBalance} />
+        <MetricCard label="Saldo projetado em 7 dias" value={balanceAt("days7")} />
+        <MetricCard label="Saldo projetado em 30 dias" value={balanceAt("days30")} />
+        <MetricCard label="Saldo projetado em 60 dias" value={balanceAt("days60")} />
+      </div>
+      {(overdue?.income || overdue?.expense) && (
+        <div className="rounded-xl border border-amber-300/70 bg-amber-50/60 p-4 text-sm dark:bg-amber-950/15">
+          Existem {brl(overdue.income)} a receber e {brl(overdue.expense)} a pagar vencidos ou com
+          vencimento hoje. Esses valores estão incluídos na projeção.
+        </div>
+      )}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Chart title="Entradas e saídas previstas" data={chartRows} keys={["entradas", "saidas"]} />
+        <Chart title="Fluxo de caixa realizado por mês" data={historical} keys={["fluxo"]} />
+      </div>
+      <Card>
+        <CardHeader><CardTitle>Detalhamento da previsão</CardTitle></CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {forecast.map((bucket) => (
+            <div key={bucket.key} className="rounded-xl border p-4">
+              <p className="font-medium">{bucket.label}</p>
+              <p className="mt-2 text-sm text-muted-foreground">Entradas: {brl(bucket.income)}</p>
+              <p className="text-sm text-muted-foreground">Saídas: {brl(bucket.expense)}</p>
+              <p className={`mt-2 font-semibold ${bucket.net < 0 ? "text-destructive" : "text-emerald-700 dark:text-emerald-400"}`}>
+                Resultado: {brl(bucket.net)}
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: number }) {
+  return (
+    <Card>
+      <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader>
+      <CardContent className={`text-2xl font-semibold ${value < 0 ? "text-destructive" : ""}`}>
+        {brl(value)}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -421,7 +696,7 @@ function Filters(p: any) {
     </Card>
   );
 }
-function Select({ label, value, set, options }: any) {
+function Select({ label, value, set, options, allLabel = "Todos" }: any) {
   return (
     <Label>
       {label}
@@ -430,7 +705,7 @@ function Select({ label, value, set, options }: any) {
         value={value}
         onChange={(e) => set(e.target.value)}
       >
-        <option value="all">Todos</option>
+        <option value="all">{allLabel}</option>
         {options.map((x: any) => (
           <option key={x[0]} value={x[0]}>
             {x[1]}
@@ -783,8 +1058,11 @@ function transactionForm(transaction?: any) {
     type: transaction?.type ?? "income",
     amount: transaction ? String(transaction.amount) : "",
     due_date: transaction?.due_date ?? new Date().toISOString().slice(0, 10),
+    competence_date: transaction?.competence_date ?? "",
     category_id: transaction?.category_id ?? "",
     account_id: transaction?.account_id ?? "",
+    client_id: transaction?.client_id ?? "",
+    process_id: transaction?.process_id ?? "",
     notes: transaction?.notes ?? "",
   };
 }
@@ -809,6 +1087,9 @@ function TransactionDialog({ data, onSave, transaction, paidTotal = 0 }: any) {
       currentAccount && !availableAccounts.some((item: any) => item.id === currentAccount.id)
         ? [...availableAccounts, currentAccount]
         : availableAccounts,
+    processes = data.processes.filter(
+      (item: any) => !form.client_id || item.client_id === form.client_id,
+    ),
     amount = Number(form.amount),
     invalidAmount = amount <= 0 || (editing && amount < paidTotal);
   return (
@@ -832,7 +1113,7 @@ function TransactionDialog({ data, onSave, transaction, paidTotal = 0 }: any) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editing ? "Editar lançamento" : "Novo lançamento"}</DialogTitle>
         </DialogHeader>
@@ -883,6 +1164,17 @@ function TransactionDialog({ data, onSave, transaction, paidTotal = 0 }: any) {
               onChange={(e) => setForm({ ...form, due_date: e.target.value })}
             />
           </Label>
+          <Label>
+            Data de competência
+            <Input
+              type="date"
+              value={form.competence_date}
+              onChange={(e) => setForm({ ...form, competence_date: e.target.value })}
+            />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Usada na rentabilidade. Se ficar vazia, será usado o vencimento.
+            </span>
+          </Label>
           <Select
             label="Categoria"
             value={form.category_id || "all"}
@@ -895,6 +1187,42 @@ function TransactionDialog({ data, onSave, transaction, paidTotal = 0 }: any) {
             set={(v: string) => setForm({ ...form, account_id: v === "all" ? "" : v })}
             options={accounts.map((x: any) => [x.id, x.name])}
           />
+          <Select
+            label="Cliente (rentabilidade)"
+            allLabel="Sem vínculo"
+            value={form.client_id || "all"}
+            set={(value: string) =>
+              setForm({
+                ...form,
+                client_id: value === "all" ? "" : value,
+                process_id:
+                  value !== "all" && data.processes.some(
+                    (item: any) => item.id === form.process_id && item.client_id === value,
+                  )
+                    ? form.process_id
+                    : "",
+              })
+            }
+            options={data.clients.map((item: any) => [item.id, item.name])}
+          />
+          <Select
+            label="Processo (rentabilidade)"
+            allLabel="Sem vínculo"
+            value={form.process_id || "all"}
+            set={(value: string) => {
+              const process = data.processes.find((item: any) => item.id === value);
+              setForm({
+                ...form,
+                process_id: value === "all" ? "" : value,
+                client_id: process?.client_id || form.client_id,
+              });
+            }}
+            options={processes.map((item: any) => [item.id, [item.code, item.title].filter(Boolean).join(" · ")])}
+          />
+          <p className="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
+            Lançamentos sem cliente ou processo continuarão disponíveis e aparecerão como “Não
+            classificados” nos relatórios.
+          </p>
           <Label>
             Observações
             <Textarea
@@ -915,6 +1243,9 @@ function TransactionDialog({ data, onSave, transaction, paidTotal = 0 }: any) {
                   amount: Number(form.amount),
                   category_id: form.category_id || null,
                   account_id: form.account_id || null,
+                  competence_date: form.competence_date || null,
+                  client_id: form.client_id || null,
+                  process_id: form.process_id || null,
                 });
                 setOpen(false);
               } catch (error) {

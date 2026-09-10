@@ -42,7 +42,7 @@ export function useFinance(organizationId: string | null) {
         query("financial_transaction_payments"),
         query("financial_account_movements"),
         query("clients_secure", "id,name"),
-        query("processes", "id,code,title"),
+        query("processes", "id,code,title,client_id"),
         query("tasks", "id,title"),
         query("documents", "id,title"),
         query("organization_members", "id,user_id,role,is_active"),

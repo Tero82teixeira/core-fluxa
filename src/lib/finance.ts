@@ -67,6 +67,141 @@ export type MonthlyCashFlow = {
   fluxo: number;
 };
 
+export type ProfitabilityDimension = "client" | "process";
+
+export type ProfitabilityRow = {
+  id: string;
+  name: string;
+  income: number;
+  expense: number;
+  result: number;
+  margin: number | null;
+  transactionCount: number;
+  unclassified: boolean;
+};
+
+type ProfitabilityTransaction = {
+  type: FinancialType;
+  amount: number;
+  status: FinancialStatus;
+  due_date: string;
+  competence_date?: string | null;
+  client_id?: string | null;
+  process_id?: string | null;
+  archived_at?: string | null;
+};
+
+/** Calculates accrual profitability without inventing links for legacy entries. */
+export function profitabilityByDimension(
+  transactions: ProfitabilityTransaction[],
+  dimension: ProfitabilityDimension,
+  names: Map<string, string>,
+  from?: string,
+  to?: string,
+): ProfitabilityRow[] {
+  const rows = new Map<string, Omit<ProfitabilityRow, "result" | "margin">>();
+  for (const transaction of transactions) {
+    if (transaction.archived_at || transaction.status === "cancelled") continue;
+    const date = (transaction.competence_date || transaction.due_date).slice(0, 10);
+    if ((from && date < from) || (to && date > to)) continue;
+    const linkedId = dimension === "client" ? transaction.client_id : transaction.process_id;
+    const id = linkedId || "unclassified";
+    const current = rows.get(id) ?? {
+      id,
+      name: linkedId ? names.get(linkedId) || "Cadastro não encontrado" : "Não classificados",
+      income: 0,
+      expense: 0,
+      transactionCount: 0,
+      unclassified: !linkedId,
+    };
+    const amount = Number(transaction.amount);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+    if (transaction.type === "income") current.income += amount;
+    else current.expense += amount;
+    current.transactionCount += 1;
+    rows.set(id, current);
+  }
+  return [...rows.values()]
+    .map((row) => {
+      const result = row.income - row.expense;
+      return {
+        ...row,
+        result,
+        margin: row.income > 0 ? (result / row.income) * 100 : null,
+      };
+    })
+    .sort((a, b) => Number(a.unclassified) - Number(b.unclassified) || b.result - a.result);
+}
+
+export type CashFlowForecastBucket = {
+  key: "overdue" | "days7" | "days30" | "days60";
+  label: string;
+  income: number;
+  expense: number;
+  net: number;
+  projectedBalance: number;
+};
+
+type ForecastTransaction = {
+  id: string;
+  type: FinancialType;
+  amount: number;
+  status: FinancialStatus;
+  due_date: string;
+  archived_at?: string | null;
+};
+
+/** Projects open balances by due date. Overdue amounts remain explicit instead of being hidden. */
+export function cashFlowForecast(
+  transactions: ForecastTransaction[],
+  payments: { transaction_id: string; amount: number; reversed_at?: string | null }[],
+  currentBalance: number,
+  today = new Date(),
+): CashFlowForecastBucket[] {
+  const start = new Date(today);
+  start.setHours(0, 0, 0, 0);
+  const paidByTransaction = new Map<string, number>();
+  payments
+    .filter((payment) => !payment.reversed_at)
+    .forEach((payment) =>
+      paidByTransaction.set(
+        payment.transaction_id,
+        (paidByTransaction.get(payment.transaction_id) ?? 0) + Number(payment.amount),
+      ),
+    );
+  const buckets: CashFlowForecastBucket[] = [
+    { key: "overdue", label: "Vencidos e hoje", income: 0, expense: 0, net: 0, projectedBalance: 0 },
+    { key: "days7", label: "Próximos 7 dias", income: 0, expense: 0, net: 0, projectedBalance: 0 },
+    { key: "days30", label: "De 8 a 30 dias", income: 0, expense: 0, net: 0, projectedBalance: 0 },
+    { key: "days60", label: "De 31 a 60 dias", income: 0, expense: 0, net: 0, projectedBalance: 0 },
+  ];
+  for (const transaction of transactions) {
+    if (
+      transaction.archived_at ||
+      ["paid", "cancelled"].includes(transaction.status)
+    ) continue;
+    const remaining = Math.max(
+      0,
+      Number(transaction.amount) - (paidByTransaction.get(transaction.id) ?? 0),
+    );
+    if (!Number.isFinite(remaining) || remaining <= 0) continue;
+    const due = new Date(`${transaction.due_date.slice(0, 10)}T00:00:00`);
+    const days = Math.round((due.getTime() - start.getTime()) / 86_400_000);
+    const bucket =
+      days <= 0 ? buckets[0] : days <= 7 ? buckets[1] : days <= 30 ? buckets[2] : days <= 60 ? buckets[3] : null;
+    if (!bucket) continue;
+    if (transaction.type === "income") bucket.income += remaining;
+    else bucket.expense += remaining;
+  }
+  let balance = Number(currentBalance) || 0;
+  return buckets.map((bucket) => {
+    bucket.net = bucket.income - bucket.expense;
+    balance += bucket.net;
+    bucket.projectedBalance = balance;
+    return bucket;
+  });
+}
+
 /** Groups realized payments and their reversals by the month in which cash actually moved. */
 export function monthlyCashFlow(
   transactions: CashFlowTransaction[],
