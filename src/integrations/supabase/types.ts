@@ -3377,6 +3377,50 @@ export type Database = {
           },
         ]
       }
+      organization_performance_goals: {
+        Row: {
+          completed_processes_target: number
+          completed_tasks_target: number
+          created_at: string
+          created_by: string | null
+          goal_month: string
+          new_clients_target: number
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          completed_processes_target?: number
+          completed_tasks_target?: number
+          created_at?: string
+          created_by?: string | null
+          goal_month: string
+          new_clients_target?: number
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          completed_processes_target?: number
+          completed_tasks_target?: number
+          created_at?: string
+          created_by?: string | null
+          goal_month?: string
+          new_clients_target?: number
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_performance_goals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_settings: {
         Row: {
           allow_overdue_task_without_reason: boolean | null
@@ -6055,6 +6099,16 @@ export type Database = {
       set_platform_organization_archived: {
         Args: { _archived: boolean; _organization_id: string }
         Returns: undefined
+      }
+      set_organization_performance_goals: {
+        Args: {
+          _completed_processes_target: number
+          _completed_tasks_target: number
+          _goal_month: string
+          _new_clients_target: number
+          _organization_id: string
+        }
+        Returns: Json
       }
       set_scheduled_automation_active: {
         Args: { _is_active: boolean; _rule_id: string }
