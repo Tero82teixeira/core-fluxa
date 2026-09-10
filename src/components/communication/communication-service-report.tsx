@@ -4,13 +4,16 @@ import {
   CalendarCheck,
   Clock3,
   Inbox,
+  Loader2,
   MessagesSquare,
   Star,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,7 +23,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCommunicationServiceReport } from "@/hooks/use-communication-service-report";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  useCommunicationServiceReport,
+  useUpdateCommunicationRatingRecovery,
+  type CommunicationRatingDetail,
+} from "@/hooks/use-communication-service-report";
+import { describeError } from "@/lib/errors";
 
 const channelLabels: Record<string, string> = {
   whatsapp: "WhatsApp",
@@ -41,14 +50,20 @@ export function CommunicationServiceReport({
   to: Date;
 }) {
   const [ratingFilter, setRatingFilter] = useState("all");
+  const [recoveryFilter, setRecoveryFilter] = useState("all");
   const query = useCommunicationServiceReport(organizationId, from, to);
   const data = query.data;
   const filteredRatings = useMemo(
     () =>
       (data?.ratings ?? []).filter(
-        (item) => ratingFilter === "all" || item.rating === Number(ratingFilter),
+        (item) =>
+          (ratingFilter === "all" || item.rating === Number(ratingFilter)) &&
+          (recoveryFilter === "all" ||
+            (recoveryFilter === "abertas"
+              ? item.recovery_status === "nova" || item.recovery_status === "em_contato"
+              : item.recovery_status === recoveryFilter)),
       ),
-    [data?.ratings, ratingFilter],
+    [data?.ratings, ratingFilter, recoveryFilter],
   );
   if (query.isLoading)
     return (
@@ -70,6 +85,16 @@ export function CommunicationServiceReport({
   const resolutionRate = data.conversations
     ? Math.round((data.resolved / data.conversations) * 100)
     : 0;
+  const recoveryOpen = data.ratings.filter(
+    (item) => item.recovery_status === "nova" || item.recovery_status === "em_contato",
+  ).length;
+  const recoveryResolved = data.ratings.filter(
+    (item) => item.recovery_status === "resolvida",
+  ).length;
+  const ratingDistribution = [1, 2, 3, 4, 5].map((rating) => ({
+    name: `${rating}★`,
+    value: data.ratings.filter((item) => item.rating === rating).length,
+  }));
   const cards = [
     { label: "Conversas no período", value: data.conversations, Icon: MessagesSquare },
     { label: "Taxa de resolução", value: `${resolutionRate}%`, Icon: BookOpenCheck },
@@ -154,21 +179,48 @@ export function CommunicationServiceReport({
               Veja a nota, o comentário e a conversa avaliada no período selecionado.
             </p>
           </div>
-          <Select value={ratingFilter} onValueChange={setRatingFilter}>
-            <SelectTrigger className="w-44" aria-label="Filtrar avaliações por nota">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as notas</SelectItem>
-              {[5, 4, 3, 2, 1].map((rating) => (
-                <SelectItem key={rating} value={String(rating)}>
-                  {rating} estrelas
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap gap-2">
+            <Select value={ratingFilter} onValueChange={setRatingFilter}>
+              <SelectTrigger className="w-44" aria-label="Filtrar avaliações por nota">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as notas</SelectItem>
+                {[5, 4, 3, 2, 1].map((rating) => (
+                  <SelectItem key={rating} value={String(rating)}>
+                    {rating} estrelas
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={recoveryFilter} onValueChange={setRecoveryFilter}>
+              <SelectTrigger className="w-48" aria-label="Filtrar avaliações por tratamento">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os tratamentos</SelectItem>
+                <SelectItem value="abertas">Precisam de contato</SelectItem>
+                <SelectItem value="resolvida">Recuperações resolvidas</SelectItem>
+                <SelectItem value="nao_necessaria">Sem ação necessária</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 grid gap-3 sm:grid-cols-3">
+            <Metric label="Precisam de contato" value={recoveryOpen} />
+            <Metric label="Recuperações concluídas" value={recoveryResolved} />
+            <div className="h-28 rounded-xl border bg-muted/20 p-2" role="img" aria-label="Distribuição das avaliações por estrelas">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={ratingDistribution} margin={{ top: 8, right: 4, bottom: 0, left: -28 }}>
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
+                  <Tooltip />
+                  <Bar dataKey="value" name="Avaliações" fill="#d59b36" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
           {!filteredRatings.length ? (
             <Empty text="Nenhuma avaliação encontrada com os filtros aplicados." />
           ) : (
@@ -198,6 +250,7 @@ export function CommunicationServiceReport({
                   <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">
                     {item.comment?.trim() || "Cliente não deixou comentário."}
                   </p>
+                  <RatingRecoveryActions item={item} organizationId={organizationId} />
                   <div className="mt-3 flex justify-end">
                     <Button asChild size="sm" variant="outline">
                       <Link to="/comunicacao" search={{ conversa: item.thread_id }}>
@@ -223,6 +276,70 @@ export function CommunicationServiceReport({
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+const recoveryLabels = {
+  nova: "Nova — precisa de contato",
+  em_contato: "Em contato",
+  resolvida: "Resolvida",
+  nao_necessaria: "Sem ação necessária",
+} as const;
+
+function RatingRecoveryActions({
+  item,
+  organizationId,
+}: {
+  item: CommunicationRatingDetail;
+  organizationId: string;
+}) {
+  const update = useUpdateCommunicationRatingRecovery(organizationId);
+  const [status, setStatus] = useState<"nova" | "em_contato" | "resolvida">(
+    item.recovery_status === "nao_necessaria" ? "nova" : item.recovery_status,
+  );
+  const [notes, setNotes] = useState(item.recovery_notes ?? "");
+  if (item.recovery_status === "nao_necessaria") {
+    return <Badge variant="secondary" className="mt-3">Sem ação necessária</Badge>;
+  }
+  return (
+    <div className="mt-3 space-y-2 rounded-lg border border-amber-300/70 bg-amber-50/60 p-3 dark:bg-amber-950/15">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-medium">Recuperação do atendimento</p>
+        <Badge variant={status === "resolvida" ? "secondary" : "outline"}>
+          {recoveryLabels[status]}
+        </Badge>
+      </div>
+      <div className="grid gap-2 md:grid-cols-[180px_minmax(0,1fr)_auto]">
+        <Select value={status} onValueChange={(value) => setStatus(value as typeof status)}>
+          <SelectTrigger aria-label="Situação da recuperação"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="nova">Nova</SelectItem>
+            <SelectItem value="em_contato">Em contato</SelectItem>
+            <SelectItem value="resolvida">Resolvida</SelectItem>
+          </SelectContent>
+        </Select>
+        <Textarea
+          rows={1}
+          maxLength={1000}
+          value={notes}
+          placeholder="Registre a providência tomada"
+          onChange={(event) => setNotes(event.target.value)}
+        />
+        <Button
+          disabled={update.isPending}
+          onClick={async () => {
+            try {
+              await update.mutateAsync({ ratingId: item.rating_id, status, notes });
+              toast.success("Tratamento da avaliação atualizado.");
+            } catch (error) {
+              toast.error(describeError(error, "salvar"));
+            }
+          }}
+        >
+          {update.isPending && <Loader2 className="size-4 animate-spin" />} Salvar
+        </Button>
+      </div>
     </div>
   );
 }

@@ -15,6 +15,7 @@ SELECT ok(
   has_function_privilege('authenticated', 'public.submit_client_portal_communication_rating(uuid,smallint,text)', 'EXECUTE')
   AND has_function_privilege('authenticated', 'public.create_client_portal_callback_request(uuid,uuid,timestamp with time zone,text)', 'EXECUTE')
   AND has_function_privilege('authenticated', 'public.list_staff_client_portal_communication_ratings(uuid,timestamp with time zone,timestamp with time zone)', 'EXECUTE')
+  AND has_function_privilege('authenticated', 'public.update_staff_client_portal_rating_recovery(uuid,uuid,text,text)', 'EXECUTE')
   AND NOT has_function_privilege('authenticated', 'public.prepare_communication_push(uuid,uuid)', 'EXECUTE'),
   'browser RPCs require authentication and push dispatch remains service-only'
 );
@@ -42,6 +43,10 @@ SELECT set_config('request.jwt.claim.sub','19900000-0000-0000-0000-000000000002'
 SELECT lives_ok(
  $$SELECT public.submit_client_portal_communication_rating('49900000-0000-0000-0000-000000000001',5::smallint,'Ótimo atendimento')$$,
  'linked portal client can rate a resolved shared conversation'
+);
+SELECT lives_ok(
+ $$SELECT public.submit_client_portal_communication_rating('49900000-0000-0000-0000-000000000001',2::smallint,'Precisamos melhorar')$$,
+ 'a changed low rating starts the recovery workflow'
 );
 SELECT lives_ok(
  $$SELECT public.create_client_portal_callback_request('69900000-0000-0000-0000-000000000001','49900000-0000-0000-0000-000000000001',now()+interval '1 day','Quero revisar os próximos passos')$$,
@@ -93,8 +98,36 @@ SELECT is(
     FROM public.list_staff_client_portal_communication_ratings(
       '29900000-0000-0000-0000-000000000001', now()-interval '1 day', now()
     ) LIMIT 1),
- 'Cliente Experiência|Atendimento concluído|5|Ótimo atendimento',
+ 'Cliente Experiência|Atendimento concluído|2|Precisamos melhorar',
  'rating details include the client, conversation, score and comment'
+);
+SELECT is(
+ (SELECT recovery_status FROM public.list_staff_client_portal_communication_ratings(
+   '29900000-0000-0000-0000-000000000001', now()-interval '1 day', now()
+ ) LIMIT 1),
+ 'nova',
+ 'a low rating is visibly waiting for recovery'
+);
+SELECT is(
+ (SELECT count(*) FROM public.notifications
+   WHERE organization_id='29900000-0000-0000-0000-000000000001'
+     AND user_id='19900000-0000-0000-0000-000000000001'
+     AND entity_type='client_portal_rating'
+     AND action_url='/relatorios?tipo=service'),
+ 1::bigint,
+ 'the responsible manager receives one direct rating alert'
+);
+SELECT lives_ok(
+ format($$SELECT public.update_staff_client_portal_rating_recovery(
+   '29900000-0000-0000-0000-000000000001','%s','resolvida','Cliente contatado'
+ )$$, (SELECT id FROM public.client_portal_communication_ratings LIMIT 1)),
+ 'company owner resolves the rating recovery'
+);
+SELECT is(
+ (SELECT recovery_status || '|' || recovery_notes
+    FROM public.client_portal_communication_ratings LIMIT 1),
+ 'resolvida|Cliente contatado',
+ 'recovery status and notes remain auditable'
 );
 
 RESET ROLE;
