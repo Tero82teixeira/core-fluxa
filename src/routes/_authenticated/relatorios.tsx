@@ -13,8 +13,10 @@ import { permissionsForRole } from "@/lib/access-control";
 import { useWorkspace } from "@/lib/workspace";
 import type { MonitoringAlert } from "@/lib/monitoring";
 import { CommunicationServiceReport } from "@/components/communication/communication-service-report";
+import { CommercialOpportunitiesPanel, TeamCapacityPanel } from "@/components/reports/business-panels";
 import { canAdminCommunication } from "@/lib/communication";
-import { businessAgenda, clientLossRisk, clientProcessSummary, commercialFunnel, currentMonthPerformance, downloadCsv, filterMonitoringReport, filterReportRows, groupCount, isOverdue, monitoringBuckets, monitoringExportRows, monitoringReportMetrics, periodRange, type BusinessAgendaItem, type ClientRiskRow, type CommercialFunnelStage, type PeriodPreset } from "@/lib/reports";
+import { useArchiveCommercialOpportunity, useSetMemberPerformanceGoals, useUpsertCommercialOpportunity } from "@/hooks/use-reports";
+import { businessAgenda, clientLossRisk, clientProcessSummary, commercialFunnel, currentMonthPerformance, downloadCsv, filterMonitoringReport, filterReportRows, groupCount, isOverdue, memberCapacityPerformance, monitoringBuckets, monitoringExportRows, monitoringReportMetrics, periodRange, type BusinessAgendaItem, type ClientRiskRow, type PeriodPreset } from "@/lib/reports";
 
 type ReportSearch = { tipo?: string };
 const REPORT_TYPES = new Set(["overview", "commercial", "risk", "agenda", "goals", "service", "tasks", "processes", "clients", "documents", "monitoring", "team"]);
@@ -28,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/relatorios")({
 
 type AnyRow = Record<string, any>;
 const COLORS = ["#176b5b", "#28917d", "#d59b36", "#c85b4a", "#66828a", "#7c6ca8"];
-const labels: Record<string, string> = { lead: "Lead", em_cadastro: "Em cadastro", ativo: "Ativo", com_pendencia: "Com pendência", inativo: "Inativo", arquivado: "Arquivado", pendente: "Pendente", em_andamento: "Em andamento", aguardando: "Aguardando", concluida: "Concluída", cancelada: "Cancelada", baixa: "Baixa", media: "Média", alta: "Alta", critica: "Crítica", novo: "Novo", aguardando_documentos: "Aguardando documentos", documentos_conferencia: "Documentos em conferência", montagem: "Montagem", pronto_protocolo: "Pronto para protocolo", protocolado: "Protocolado", em_analise: "Em análise", exigencia: "Exigência", deferido: "Deferido", finalizado: "Finalizado", cancelado: "Cancelado", acompanhado: "Acompanhado", resolvido: "Resolvido", ignorado: "Ignorado", aprovado: "Aprovado", rejeitado: "Rejeitado", recebido: "Recebido", vencido: "Vencido" };
+const labels: Record<string, string> = { lead: "Lead", em_cadastro: "Em cadastro", ativo: "Ativo", com_pendencia: "Com pendência", inativo: "Inativo", arquivado: "Arquivado", pendente: "Pendente", em_andamento: "Em andamento", aguardando: "Aguardando", concluida: "Concluída", cancelada: "Cancelada", baixa: "Baixa", media: "Média", alta: "Alta", critica: "Crítica", novo: "Novo", aguardando_documentos: "Aguardando documentos", documentos_conferencia: "Documentos em conferência", montagem: "Montagem", pronto_protocolo: "Pronto para protocolo", protocolado: "Protocolado", em_analise: "Em análise", exigencia: "Exigência", deferido: "Deferido", finalizado: "Finalizado", cancelado: "Cancelado", acompanhado: "Acompanhado", resolvido: "Resolvido", ignorado: "Ignorado", aprovado: "Aprovado", rejeitado: "Rejeitado", recebido: "Recebido", vencido: "Vencido", first_contact: "Primeiro contato", qualification: "Qualificação", proposal: "Proposta", negotiation: "Negociação", won: "Ganha", lost: "Perdida" };
 const periods: [PeriodPreset, string][] = [["7d", "Últimos 7 dias"], ["30d", "Últimos 30 dias"], ["90d", "Últimos 90 dias"], ["month", "Este mês"], ["previous_month", "Mês anterior"], ["year", "Este ano"], ["custom", "Período personalizado"]];
 const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
 
@@ -41,6 +43,9 @@ function ReportsPage() {
   const reportTabs = [["overview","Visão geral"],["commercial","Funil comercial"],["risk","Risco de perda"],["agenda","Agenda geral"],["goals","Metas"],["service","Atendimento"],["tasks","Tarefas"],["processes","Processos"],["clients","Clientes"],["documents","Documentos"],["monitoring","Monitoramentos"],["team","Equipe"]].filter(([value]) => value !== "service" || canViewServiceReport);
   const report = useReportData(organizationId);
   const setGoals = useSetPerformanceGoals(organizationId);
+  const saveOpportunity = useUpsertCommercialOpportunity(organizationId);
+  const archiveOpportunity = useArchiveCommercialOpportunity(organizationId);
+  const setMemberGoals = useSetMemberPerformanceGoals(organizationId);
   const [tab, setTab] = useState(requestedReport && reportTabs.some(([value]) => value === requestedReport) ? requestedReport : "overview");
   const [period, setPeriod] = useState<PeriodPreset>("30d");
   const [from, setFrom] = useState(""); const [to, setTo] = useState("");
@@ -78,7 +83,8 @@ function ReportsPage() {
     downloadCsv(kind, ((kind === "monitoring" || kind === "monitoramentos") && rows.some((row) => "suggested_priority" in row) ? monitoringExportRows(rows as MonitoringAlert[]) : rows.map(({ organization_id: _organizationId, deleted_at: _deletedAt, archived_at: _archivedAt, ...row }) => row)));
   };
   const clientSummary = filtered ? clientProcessSummary(filtered.clients, filtered.processes) : null;
-  const funnel = filtered ? commercialFunnel(filtered.clients, filtered.processes) : [];
+  const opportunities = data?.opportunities.filter((row: AnyRow) => !row.archived_at && (client === "all" || row.client_id === client) && (assignee === "all" || row.owner_id === assignee) && (status === "all" || row.stage === status)) ?? [];
+  const funnel = commercialFunnel(opportunities);
   const riskRows = data ? clientLossRisk(
     data.clients.filter((row: AnyRow) => (client === "all" || row.id === client) && (assignee === "all" || row.owner_id === assignee) && (status === "all" || row.status === status)),
     data.tasks,
@@ -91,14 +97,16 @@ function ReportsPage() {
     processes: data.processes.filter((row: AnyRow) => (client === "all" || row.client_id === client) && (assignee === "all" || row.owner_id === assignee) && (status === "all" || row.stage === status) && (priority === "all" || row.priority === priority) && (processId === "all" || row.id === processId)),
     documents: data.documents.filter((row: AnyRow) => (client === "all" || row.client_id === client) && (status === "all" || row.status === status) && (processId === "all" || row.process_id === processId)),
     monitoring: data.monitoring.filter((row: AnyRow) => (client === "all" || row.client_id === client) && (assignee === "all" || row.assigned_to === assignee || row.responsible_id === assignee) && (status === "all" || row.monitoring_status === status) && (priority === "all" || row.priority_override === priority || row.suggested_priority === priority) && (processId === "all" || row.process_id === processId)),
-  } : { tasks: [], processes: [], documents: [], monitoring: [] };
+    communications: data.communications.filter((row: AnyRow) => (client === "all" || row.client_id === client) && (assignee === "all" || row.assigned_to === assignee) && (status === "all" || row.status === status) && (priority === "all" || row.priority === priority) && (processId === "all" || row.process_id === processId)),
+  } : { tasks: [], processes: [], documents: [], monitoring: [], communications: [] };
+  const teamCapacity = data ? memberCapacityPerformance(data.members, data.tasks, data.processes, data.communications, data.memberGoals, data.movements, now) : [];
   const currentRows = tab === "tasks" ? filtered?.tasks
     : tab === "processes" ? filtered?.processes
     : tab === "clients" ? filtered?.clients
     : tab === "documents" ? filtered?.documents
     : tab === "monitoring" ? filtered?.monitoring
     : tab === "team" ? filtered?.members
-    : tab === "commercial" ? funnel
+    : tab === "commercial" ? opportunities
     : tab === "risk" ? riskRows.map((row) => ({ cliente: row.name, risco: row.level === "high" ? "Alto" : row.level === "medium" ? "Médio" : "Baixo", pontos: row.score, motivos: row.reasons.join("; "), responsavel: row.ownerName }))
     : tab === "agenda" ? businessAgenda(agendaData, 30).map((item) => ({ tipo: item.kind, titulo: item.title, data: item.date, situacao: item.timing, responsavel: item.responsible }))
     : tab === "goals" ? [{ mes: now.toISOString().slice(0, 7), novos_clientes: performance.newClients, tarefas_concluidas: performance.completedTasks, processos_concluidos: performance.completedProcesses }]
@@ -122,7 +130,7 @@ function ReportsPage() {
     {report.isError && <div role="alert" className="panel p-6 text-destructive"><AlertTriangle className="mr-2 inline" />Não foi possível carregar o relatório. <Button variant="outline" onClick={() => report.refetch()}>Tentar novamente</Button></div>}
     {filtered && <Tabs value={tab} onValueChange={(value) => { setTab(value); setPage(0); }}><div className="no-print rounded-xl border border-primary/20 bg-primary/5 p-3 shadow-sm"><p className="mb-2 text-sm font-semibold text-foreground">Escolha o relatório que deseja visualizar</p><TabsList className="flex h-auto w-full flex-wrap justify-start gap-1.5 bg-background/80 p-1.5">{reportTabs.map(([v,l]) => <TabsTrigger className="px-4 py-2" key={v} value={v}>{l}</TabsTrigger>)}</TabsList></div>
       <TabsContent value="overview" className="space-y-5"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{metrics.map(([label,value]) => <Card key={label}><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader><CardContent className="metric-value">{value.toLocaleString("pt-BR")}</CardContent></Card>)}</div><div className="grid gap-4 lg:grid-cols-2"><ReportChart title="Tarefas por status" data={taskStatus} pie /><ReportChart title="Processos por etapa" data={processStage} /></div></TabsContent>
-      <TabsContent value="commercial"><CommercialFunnelPanel rows={funnel} riskCount={riskRows.length} /></TabsContent>
+      <TabsContent value="commercial"><CommercialOpportunitiesPanel rows={opportunities} funnel={funnel} clients={data!.clients} members={data!.members} canEdit={["superadmin","proprietario","administrador","gestor","operacional"].includes(membership?.role ?? "")} canArchive={["superadmin","proprietario","administrador","gestor"].includes(membership?.role ?? "")} save={saveOpportunity} archive={archiveOpportunity} /></TabsContent>
       <TabsContent value="risk"><LossRiskPanel rows={riskRows} /></TabsContent>
       <TabsContent value="agenda"><BusinessAgendaPanel data={agendaData} /></TabsContent>
       <TabsContent value="goals"><PerformanceGoalsPanel key={organizationId} goals={data!.goals} actual={performance} canEdit={["superadmin","proprietario","administrador","gestor"].includes(membership?.role ?? "")} save={setGoals} /></TabsContent>
@@ -132,25 +140,9 @@ function ReportsPage() {
       <TabsContent value="clients"><Section title="Relatório de clientes" summary={`${clientSummary?.withProcesses ?? 0} clientes com processos; ${clientSummary?.withoutProcesses ?? 0} sem processos.`}><DataTable kind="clientes" rows={filtered.clients} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} canExportReports={canExportReports} /></Section></TabsContent>
       <TabsContent value="documents"><Section title="Relatório de documentos" summary={`${filtered.documents.filter((x: AnyRow)=>x.expiration_date && monitoringBuckets(x.expiration_date).expired).length} vencidos.`}><DataTable kind="documentos" rows={filtered.documents} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} canExportReports={canExportReports} /></Section></TabsContent>
       <TabsContent value="monitoring"><Section title="Relatório de monitoramentos" summary={`${filtered.monitoring.filter((x: AnyRow)=>monitoringBuckets(x.relevant_at).in7).length} vencendo em 7 dias; ${filtered.monitoring.filter((x: AnyRow)=>monitoringBuckets(x.relevant_at).in30).length} em 30 dias.`}><DataTable kind="monitoramentos" rows={monitoringExportRows(filtered.monitoring)} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} canExportReports={canExportReports} /></Section></TabsContent>
-      <TabsContent value="team"><Section title="Desempenho da equipe" summary="Carga operacional calculada a partir dos vínculos permitidos pelo RLS."><DataTable kind="equipe" rows={filtered.members.map((m: AnyRow)=>({...m,tarefas:filtered.tasks.filter(t=>t.assignee_id===m.user_id).length,concluidas:filtered.tasks.filter(t=>t.assignee_id===m.user_id&&t.status==='concluida').length,atrasadas:filtered.tasks.filter(t=>t.assignee_id===m.user_id&&isOverdue(t.due_at,t.status)).length,processos:filtered.processes.filter(p=>p.owner_id===m.user_id).length}))} search={search} setSearch={setSearch} page={page} setPage={setPage} exportRows={exportRows} canExportReports={canExportReports} /></Section></TabsContent>
+      <TabsContent value="team"><TeamCapacityPanel rows={teamCapacity} canEdit={["superadmin","proprietario","administrador","gestor"].includes(membership?.role ?? "")} save={setMemberGoals} /></TabsContent>
     </Tabs>}
   </div>;
-}
-
-function CommercialFunnelPanel({ rows, riskCount }: { rows: CommercialFunnelStage[]; riskCount: number }) {
-  const active = rows.find((row) => row.key === "active")?.value ?? 0;
-  const won = rows.find((row) => row.key === "won")?.value ?? 0;
-  return <Section title="Funil comercial atual" summary="Fotografia da carteira no período selecionado. Cada etapa usa somente cadastros e processos realmente registrados.">
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <InsightCard icon={<TrendingUp />} label="Clientes ativos" value={active} detail="Relacionamentos em andamento" />
-      <InsightCard icon={<Target />} label="Com conclusão" value={won} detail="Clientes com processo deferido ou finalizado" />
-      <InsightCard icon={<ShieldAlert />} label="Precisam de atenção" value={riskCount} detail="Sinais objetivos na carteira atual" danger={riskCount > 0} />
-    </div>
-    <ReportChart title="Etapas do funil comercial" data={rows.map((row) => ({ name: row.label, value: row.value }))} />
-    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
-      Este painel não presume conversões históricas: ele mostra quantos registros estão em cada situação agora. Use o período e os filtros acima para analisar recortes específicos.
-    </div>
-  </Section>;
 }
 
 function LossRiskPanel({ rows }: { rows: ClientRiskRow[] }) {
@@ -173,12 +165,12 @@ function LossRiskPanel({ rows }: { rows: ClientRiskRow[] }) {
   </Section>;
 }
 
-function BusinessAgendaPanel({ data }: { data: { tasks: AnyRow[]; processes: AnyRow[]; documents: AnyRow[]; monitoring: AnyRow[] } }) {
+function BusinessAgendaPanel({ data }: { data: { tasks: AnyRow[]; processes: AnyRow[]; documents: AnyRow[]; monitoring: AnyRow[]; communications: AnyRow[] } }) {
   const [horizon, setHorizon] = useState(30);
   const items = businessAgenda(data, horizon);
   const overdue = items.filter((item) => item.timing === "overdue").length;
   const today = items.filter((item) => item.timing === "today").length;
-  return <Section title="Agenda geral da empresa" summary="Tarefas, processos, documentos e monitoramentos reunidos pela data já cadastrada em cada módulo.">
+  return <Section title="Agenda geral da empresa" summary="Tarefas, retornos da comunicação, processos, documentos e monitoramentos reunidos pela data cadastrada em cada módulo.">
     <div className="no-print max-w-xs"><label className="grid gap-1 text-xs">Horizonte da agenda<select className={selectClass} value={horizon} onChange={(event) => setHorizon(Number(event.target.value))}><option value={7}>Próximos 7 dias + atrasados</option><option value={30}>Próximos 30 dias + atrasados</option><option value={60}>Próximos 60 dias + atrasados</option></select></label></div>
     <div className="grid gap-3 sm:grid-cols-3">
       <InsightCard icon={<AlertTriangle />} label="Atrasados" value={overdue} detail="Itens anteriores a hoje" danger={overdue > 0} />
@@ -190,7 +182,7 @@ function BusinessAgendaPanel({ data }: { data: { tasks: AnyRow[]; processes: Any
 }
 
 function AgendaRow({ item }: { item: BusinessAgendaItem }) {
-  const kind = { task: "Tarefa", process: "Processo", document: "Documento", monitoring: "Monitoramento" }[item.kind];
+  const kind = { task: "Tarefa", process: "Processo", document: "Documento", monitoring: "Monitoramento", communication: "Retorno da comunicação" }[item.kind];
   return <div className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">{kind}</span><strong className="truncate">{item.title}</strong></div><p className="mt-1 text-xs text-muted-foreground">{item.responsible || "Sem responsável definido"}</p></div><div className="flex items-center gap-3"><span className={`text-sm font-semibold ${item.timing === "overdue" ? "text-destructive" : "text-foreground"}`}>{item.timing === "overdue" ? "Atrasado · " : item.timing === "today" ? "Hoje · " : ""}{new Date(item.date.length === 10 ? `${item.date}T12:00:00` : item.date).toLocaleDateString("pt-BR")}</span><Button asChild size="sm" variant="outline"><a href={item.route}>Abrir</a></Button></div></div>;
 }
 
