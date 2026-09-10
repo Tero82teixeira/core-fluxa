@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { cashFlowForecast, profitabilityByDimension } from "../src/lib/finance.ts";
+import { cashFlowForecast, managerialIncomeStatement, profitabilityByDimension } from "../src/lib/finance.ts";
 
 const route = readFileSync("src/routes/_authenticated/financeiro.tsx", "utf8");
 const hook = readFileSync("src/hooks/use-finance.ts", "utf8");
@@ -85,6 +85,31 @@ test("cash-flow forecast subtracts partial payments and projects cumulative bala
   );
 });
 
+test("managerial DRE groups expenses by category and uses competence", () => {
+  const statement = managerialIncomeStatement(
+    [
+      { type: "income", amount: 1000, status: "paid", due_date: "2026-10-10", competence_date: "2026-09-01" },
+      { type: "expense", amount: 250, status: "pending", due_date: "2026-09-05", category_id: "people" },
+      { type: "expense", amount: 50, status: "pending", due_date: "2026-09-06" },
+      { type: "expense", amount: 999, status: "cancelled", due_date: "2026-09-07", category_id: "people" },
+    ],
+    [{ id: "people", name: "Pessoas", type: "expense", is_active: true }],
+    "2026-09-01",
+    "2026-09-30",
+  );
+  assert.deepEqual(
+    { income: statement.income, expense: statement.expense, result: statement.result, margin: statement.margin },
+    { income: 1000, expense: 300, result: 700, margin: 70 },
+  );
+  assert.deepEqual(statement.rows.map(({ label, amount }) => [label, amount]), [
+    ["Receita operacional", 1000],
+    ["Pessoas", 250],
+    ["Despesas não classificadas", 50],
+    ["Total de despesas", 300],
+    ["Resultado do período", 700],
+  ]);
+});
+
 test("financial screen explains forecasts and allows real business links", () => {
   for (const label of [
     "Rentabilidade",
@@ -95,6 +120,8 @@ test("financial screen explains forecasts and allows real business links", () =>
     "Cliente (rentabilidade)",
     "Processo (rentabilidade)",
     "Não classificados",
+    "DRE gerencial simplificada",
+    "Demonstrativo por competência",
   ]) assert.ok(route.includes(label), `missing ${label}`);
   assert.match(hook, /id,code,title,client_id/);
 });

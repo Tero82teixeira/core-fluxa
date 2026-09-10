@@ -1910,6 +1910,51 @@ export type Database = {
           },
         ]
       }
+      commercial_opportunity_stage_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          from_stage: string | null
+          id: string
+          opportunity_id: string
+          organization_id: string
+          to_stage: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          from_stage?: string | null
+          id?: string
+          opportunity_id: string
+          organization_id: string
+          to_stage: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          from_stage?: string | null
+          id?: string
+          opportunity_id?: string
+          organization_id?: string
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_opportunity_stage_history_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_opportunity_stage_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_response_alert_settings: {
         Row: {
           created_at: string
@@ -6093,6 +6138,10 @@ export type Database = {
       restore_financial_transaction: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
+      }
+      create_commercial_next_action_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
       }
       reverse_financial_payment: {
         Args: { _notes: string; _organization_id: string; _payment_id: string }

@@ -69,6 +69,79 @@ export function commercialFunnel(opportunities: ReportRow[]): CommercialFunnelSt
   });
 }
 
+export type CommercialPerformance = {
+  won: number;
+  lost: number;
+  closed: number;
+  winRate: number | null;
+  averageWonTicket: number;
+  lostReasons: Array<{ reason: string; count: number }>;
+  stageDurations: Array<{ stage: string; label: string; averageDays: number; samples: number }>;
+};
+
+/** Measures closed opportunities and elapsed stage time from the auditable movement history. */
+export function commercialPerformance(
+  opportunities: ReportRow[],
+  movements: ReportRow[],
+  range?: ReturnType<typeof periodRange>,
+  now = new Date(),
+): CommercialPerformance {
+  const available = opportunities.filter((row) => !row.archived_at);
+  const closedRows = available.filter((row) => {
+    if (!['won', 'lost'].includes(row.stage)) return false;
+    const closedAt = row.stage === 'won' ? row.won_at : row.lost_at;
+    return !range || isInPeriod(closedAt, range);
+  });
+  const wonRows = closedRows.filter((row) => row.stage === 'won');
+  const lostRows = closedRows.filter((row) => row.stage === 'lost');
+  const reasons = new Map<string, number>();
+  lostRows.forEach((row) => {
+    const reason = String(row.lost_reason || 'Não informado').trim();
+    reasons.set(reason, (reasons.get(reason) ?? 0) + 1);
+  });
+
+  const opportunityMap = new Map(available.map((row) => [row.id, row]));
+  const grouped = new Map<string, ReportRow[]>();
+  movements
+    .filter((row) => opportunityMap.has(row.opportunity_id))
+    .forEach((row) => grouped.set(row.opportunity_id, [...(grouped.get(row.opportunity_id) ?? []), row]));
+  const durations = new Map<string, number[]>();
+  grouped.forEach((history, opportunityId) => {
+    const sorted = history.sort((a, b) => new Date(a.changed_at).getTime() - new Date(b.changed_at).getTime());
+    sorted.forEach((movement, index) => {
+      if (['won', 'lost'].includes(movement.to_stage)) return;
+      const start = new Date(movement.changed_at).getTime();
+      const next = sorted[index + 1]?.changed_at;
+      const opportunity = opportunityMap.get(opportunityId);
+      const closedAt = opportunity?.stage === 'won'
+        ? opportunity.won_at
+        : opportunity?.stage === 'lost'
+          ? opportunity.lost_at
+          : null;
+      const end = next ? new Date(next).getTime() : closedAt ? new Date(closedAt).getTime() : now.getTime();
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return;
+      durations.set(movement.to_stage, [...(durations.get(movement.to_stage) ?? []), (end - start) / 86_400_000]);
+    });
+  });
+
+  return {
+    won: wonRows.length,
+    lost: lostRows.length,
+    closed: closedRows.length,
+    winRate: closedRows.length ? (wonRows.length / closedRows.length) * 100 : null,
+    averageWonTicket: wonRows.length
+      ? wonRows.reduce((sum, row) => sum + (Number(row.estimated_value) || 0), 0) / wonRows.length
+      : 0,
+    lostReasons: [...reasons.entries()].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason, 'pt-BR')),
+    stageDurations: commercialStages
+      .filter(([stage]) => !['won', 'lost'].includes(stage))
+      .map(([stage, label]) => {
+        const samples = durations.get(stage) ?? [];
+        return { stage, label, averageDays: samples.length ? samples.reduce((sum, value) => sum + value, 0) / samples.length : 0, samples: samples.length };
+      }),
+  };
+}
+
 export type ClientRiskRow = {
   id: string;
   name: string;

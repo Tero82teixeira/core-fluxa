@@ -80,6 +80,22 @@ export type ProfitabilityRow = {
   unclassified: boolean;
 };
 
+export type ManagerialIncomeStatementRow = {
+  id: string;
+  label: string;
+  kind: "income" | "expense" | "total" | "result";
+  amount: number;
+  percentageOfRevenue: number | null;
+};
+
+export type ManagerialIncomeStatement = {
+  rows: ManagerialIncomeStatementRow[];
+  income: number;
+  expense: number;
+  result: number;
+  margin: number | null;
+};
+
 type ProfitabilityTransaction = {
   type: FinancialType;
   amount: number;
@@ -89,7 +105,58 @@ type ProfitabilityTransaction = {
   client_id?: string | null;
   process_id?: string | null;
   archived_at?: string | null;
+  category_id?: string | null;
+  categories?: { name?: string | null } | null;
 };
+
+/** Builds a simplified managerial DRE by competence, using only registered categories. */
+export function managerialIncomeStatement(
+  transactions: ProfitabilityTransaction[],
+  categories: FinancialCategory[],
+  from?: string,
+  to?: string,
+): ManagerialIncomeStatement {
+  const categoryNames = new Map(categories.map((category) => [category.id, category.name]));
+  const expenses = new Map<string, { label: string; amount: number }>();
+  let income = 0;
+
+  for (const transaction of transactions) {
+    if (transaction.archived_at || transaction.status === "cancelled") continue;
+    const date = (transaction.competence_date || transaction.due_date).slice(0, 10);
+    if ((from && date < from) || (to && date > to)) continue;
+    const amount = Number(transaction.amount);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+    if (transaction.type === "income") {
+      income += amount;
+      continue;
+    }
+    const id = transaction.category_id || "unclassified";
+    const label = transaction.category_id
+      ? categoryNames.get(transaction.category_id) || transaction.categories?.name || "Categoria não encontrada"
+      : "Despesas não classificadas";
+    const current = expenses.get(id) ?? { label, amount: 0 };
+    current.amount += amount;
+    expenses.set(id, current);
+  }
+
+  const expense = [...expenses.values()].reduce((total, row) => total + row.amount, 0);
+  const result = income - expense;
+  const percentage = (amount: number) => (income > 0 ? (amount / income) * 100 : null);
+  return {
+    income,
+    expense,
+    result,
+    margin: percentage(result),
+    rows: [
+      { id: "revenue", label: "Receita operacional", kind: "income", amount: income, percentageOfRevenue: percentage(income) },
+      ...[...expenses.entries()]
+        .map(([id, row]) => ({ id, label: row.label, kind: "expense" as const, amount: row.amount, percentageOfRevenue: percentage(row.amount) }))
+        .sort((a, b) => b.amount - a.amount || a.label.localeCompare(b.label, "pt-BR")),
+      { id: "expenses", label: "Total de despesas", kind: "total", amount: expense, percentageOfRevenue: percentage(expense) },
+      { id: "result", label: "Resultado do período", kind: "result", amount: result, percentageOfRevenue: percentage(result) },
+    ],
+  };
+}
 
 /** Calculates accrual profitability without inventing links for legacy entries. */
 export function profitabilityByDimension(

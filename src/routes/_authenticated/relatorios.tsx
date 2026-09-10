@@ -16,7 +16,7 @@ import { CommunicationServiceReport } from "@/components/communication/communica
 import { CommercialOpportunitiesPanel, TeamCapacityPanel } from "@/components/reports/business-panels";
 import { canAdminCommunication } from "@/lib/communication";
 import { useArchiveCommercialOpportunity, useSetMemberPerformanceGoals, useUpsertCommercialOpportunity } from "@/hooks/use-reports";
-import { businessAgenda, clientLossRisk, clientProcessSummary, commercialFunnel, currentMonthPerformance, downloadCsv, filterMonitoringReport, filterReportRows, groupCount, isOverdue, memberCapacityPerformance, monitoringBuckets, monitoringExportRows, monitoringReportMetrics, periodRange, type BusinessAgendaItem, type ClientRiskRow, type PeriodPreset } from "@/lib/reports";
+import { businessAgenda, clientLossRisk, clientProcessSummary, commercialFunnel, commercialPerformance, currentMonthPerformance, downloadCsv, filterMonitoringReport, filterReportRows, groupCount, isOverdue, memberCapacityPerformance, monitoringBuckets, monitoringExportRows, monitoringReportMetrics, periodRange, type BusinessAgendaItem, type ClientRiskRow, type PeriodPreset } from "@/lib/reports";
 
 type ReportSearch = { tipo?: string };
 const REPORT_TYPES = new Set(["overview", "commercial", "risk", "agenda", "goals", "service", "tasks", "processes", "clients", "documents", "monitoring", "team"]);
@@ -85,6 +85,7 @@ function ReportsPage() {
   const clientSummary = filtered ? clientProcessSummary(filtered.clients, filtered.processes) : null;
   const opportunities = data?.opportunities.filter((row: AnyRow) => !row.archived_at && (client === "all" || row.client_id === client) && (assignee === "all" || row.owner_id === assignee) && (status === "all" || row.stage === status)) ?? [];
   const funnel = commercialFunnel(opportunities);
+  const commercialIndicators = commercialPerformance(opportunities, data?.opportunityMovements ?? [], range, now);
   const riskRows = data ? clientLossRisk(
     data.clients.filter((row: AnyRow) => (client === "all" || row.id === client) && (assignee === "all" || row.owner_id === assignee) && (status === "all" || row.status === status)),
     data.tasks,
@@ -130,7 +131,7 @@ function ReportsPage() {
     {report.isError && <div role="alert" className="panel p-6 text-destructive"><AlertTriangle className="mr-2 inline" />Não foi possível carregar o relatório. <Button variant="outline" onClick={() => report.refetch()}>Tentar novamente</Button></div>}
     {filtered && <Tabs value={tab} onValueChange={(value) => { setTab(value); setPage(0); }}><div className="no-print rounded-xl border border-primary/20 bg-primary/5 p-3 shadow-sm"><p className="mb-2 text-sm font-semibold text-foreground">Escolha o relatório que deseja visualizar</p><TabsList className="flex h-auto w-full flex-wrap justify-start gap-1.5 bg-background/80 p-1.5">{reportTabs.map(([v,l]) => <TabsTrigger className="px-4 py-2" key={v} value={v}>{l}</TabsTrigger>)}</TabsList></div>
       <TabsContent value="overview" className="space-y-5"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{metrics.map(([label,value]) => <Card key={label}><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader><CardContent className="metric-value">{value.toLocaleString("pt-BR")}</CardContent></Card>)}</div><div className="grid gap-4 lg:grid-cols-2"><ReportChart title="Tarefas por status" data={taskStatus} pie /><ReportChart title="Processos por etapa" data={processStage} /></div></TabsContent>
-      <TabsContent value="commercial"><CommercialOpportunitiesPanel rows={opportunities} funnel={funnel} clients={data!.clients} members={data!.members} canEdit={["superadmin","proprietario","administrador","gestor","operacional"].includes(membership?.role ?? "")} canArchive={["superadmin","proprietario","administrador","gestor"].includes(membership?.role ?? "")} save={saveOpportunity} archive={archiveOpportunity} /></TabsContent>
+      <TabsContent value="commercial"><CommercialOpportunitiesPanel rows={opportunities} funnel={funnel} performance={commercialIndicators} clients={data!.clients} members={data!.members} canEdit={["superadmin","proprietario","administrador","gestor","operacional"].includes(membership?.role ?? "")} canArchive={["superadmin","proprietario","administrador","gestor"].includes(membership?.role ?? "")} save={saveOpportunity} archive={archiveOpportunity} /></TabsContent>
       <TabsContent value="risk"><LossRiskPanel rows={riskRows} /></TabsContent>
       <TabsContent value="agenda"><BusinessAgendaPanel data={agendaData} /></TabsContent>
       <TabsContent value="goals"><PerformanceGoalsPanel key={organizationId} goals={data!.goals} actual={performance} canEdit={["superadmin","proprietario","administrador","gestor"].includes(membership?.role ?? "")} save={setGoals} /></TabsContent>
