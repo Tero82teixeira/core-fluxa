@@ -1828,6 +1828,88 @@ export type Database = {
           },
         ]
       }
+      commercial_opportunities: {
+        Row: {
+          archived_at: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string
+          estimated_value: number
+          id: string
+          lost_at: string | null
+          lost_reason: string | null
+          next_action_at: string | null
+          organization_id: string
+          owner_id: string | null
+          probability: number
+          stage: string
+          title: string
+          updated_at: string
+          updated_by: string
+          won_at: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by: string
+          estimated_value?: number
+          id?: string
+          lost_at?: string | null
+          lost_reason?: string | null
+          next_action_at?: string | null
+          organization_id: string
+          owner_id?: string | null
+          probability?: number
+          stage?: string
+          title: string
+          updated_at?: string
+          updated_by: string
+          won_at?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          estimated_value?: number
+          id?: string
+          lost_at?: string | null
+          lost_reason?: string | null
+          next_action_at?: string | null
+          organization_id?: string
+          owner_id?: string | null
+          probability?: number
+          stage?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string
+          won_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_opportunities_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_response_alert_settings: {
         Row: {
           created_at: string
@@ -3421,6 +3503,50 @@ export type Database = {
           },
         ]
       }
+      member_performance_goals: {
+        Row: {
+          completed_processes_target: number
+          completed_tasks_target: number
+          created_at: string
+          created_by: string
+          goal_month: string
+          organization_id: string
+          updated_at: string
+          updated_by: string
+          user_id: string
+        }
+        Insert: {
+          completed_processes_target?: number
+          completed_tasks_target?: number
+          created_at?: string
+          created_by: string
+          goal_month: string
+          organization_id: string
+          updated_at?: string
+          updated_by: string
+          user_id: string
+        }
+        Update: {
+          completed_processes_target?: number
+          completed_tasks_target?: number
+          created_at?: string
+          created_by?: string
+          goal_month?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_performance_goals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_settings: {
         Row: {
           allow_overdue_task_without_reason: boolean | null
@@ -4855,6 +4981,10 @@ export type Database = {
         Args: { _thread_id: string }
         Returns: undefined
       }
+      archive_commercial_opportunity: {
+        Args: { _opportunity_id: string; _organization_id: string }
+        Returns: undefined
+      }
       archive_financial_account: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
@@ -6096,6 +6226,16 @@ export type Database = {
         Args: { _active: boolean; _member: string }
         Returns: undefined
       }
+      set_member_performance_goals: {
+        Args: {
+          _completed_processes_target: number
+          _completed_tasks_target: number
+          _goal_month: string
+          _organization_id: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       set_platform_organization_archived: {
         Args: { _archived: boolean; _organization_id: string }
         Returns: undefined
@@ -6109,6 +6249,21 @@ export type Database = {
           _organization_id: string
         }
         Returns: Json
+      }
+      upsert_commercial_opportunity: {
+        Args: {
+          _client_id?: string
+          _estimated_value: number
+          _lost_reason?: string
+          _next_action_at?: string
+          _opportunity_id: string
+          _organization_id: string
+          _owner_id?: string
+          _probability: number
+          _stage: string
+          _title: string
+        }
+        Returns: string
       }
       set_scheduled_automation_active: {
         Args: { _is_active: boolean; _rule_id: string }

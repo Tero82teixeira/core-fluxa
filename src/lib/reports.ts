@@ -49,29 +49,24 @@ export function clientProcessSummary(clients: ReportRow[], processes: ReportRow[
 }
 
 export type CommercialFunnelStage = {
-  key: "leads" | "registration" | "active" | "with_process" | "won";
+  key: "first_contact" | "qualification" | "proposal" | "negotiation" | "won" | "lost";
   label: string;
   value: number;
+  estimatedValue: number;
 };
 
-/** Snapshot do avanço comercial sem transformar ausência de dados em conversão presumida. */
-export function commercialFunnel(clients: ReportRow[], processes: ReportRow[]): CommercialFunnelStage[] {
-  const availableClients = clients.filter((client) => !client.archived_at);
-  const availableProcesses = processes.filter((process) => !process.archived_at && process.stage !== "cancelado");
-  const clientsWithProcess = new Set(availableProcesses.map((process) => process.client_id).filter(Boolean));
-  const wonClients = new Set(
-    availableProcesses
-      .filter((process) => ["deferido", "finalizado"].includes(process.stage))
-      .map((process) => process.client_id)
-      .filter(Boolean),
-  );
-  return [
-    { key: "leads", label: "Leads", value: availableClients.filter((client) => client.status === "lead").length },
-    { key: "registration", label: "Em cadastro", value: availableClients.filter((client) => client.status === "em_cadastro").length },
-    { key: "active", label: "Clientes ativos", value: availableClients.filter((client) => ["ativo", "com_pendencia"].includes(client.status)).length },
-    { key: "with_process", label: "Com processo", value: clientsWithProcess.size },
-    { key: "won", label: "Com conclusão", value: wonClients.size },
-  ];
+export const commercialStages = [
+  ["first_contact", "Primeiro contato"], ["qualification", "Qualificação"], ["proposal", "Proposta"],
+  ["negotiation", "Negociação"], ["won", "Ganha"], ["lost", "Perdida"],
+] as const;
+
+/** Funil baseado apenas em oportunidades comerciais registradas. */
+export function commercialFunnel(opportunities: ReportRow[]): CommercialFunnelStage[] {
+  const available = opportunities.filter((row) => !row.archived_at);
+  return commercialStages.map(([key, label]) => {
+    const rows = available.filter((row) => row.stage === key);
+    return { key, label, value: rows.length, estimatedValue: rows.reduce((sum, row) => sum + (Number(row.estimated_value) || 0), 0) };
+  });
 }
 
 export type ClientRiskRow = {
@@ -131,7 +126,7 @@ export function clientLossRisk(
 
 export type BusinessAgendaItem = {
   id: string;
-  kind: "task" | "process" | "document" | "monitoring";
+  kind: "task" | "process" | "document" | "monitoring" | "communication";
   title: string;
   date: string;
   responsible: string | null;
@@ -141,7 +136,7 @@ export type BusinessAgendaItem = {
 
 /** Reúne compromissos já existentes sem criar ou alterar prazos. */
 export function businessAgenda(
-  data: { tasks: ReportRow[]; processes: ReportRow[]; documents: ReportRow[]; monitoring: ReportRow[] },
+  data: { tasks: ReportRow[]; processes: ReportRow[]; documents: ReportRow[]; monitoring: ReportRow[]; communications?: ReportRow[] },
   horizonDays = 30,
   now = new Date(),
 ): BusinessAgendaItem[] {
@@ -159,7 +154,59 @@ export function businessAgenda(
     ...data.processes.filter((row) => !["finalizado", "deferido", "cancelado", "arquivado"].includes(row.stage) && !row.archived_at).map((row) => item("process", row, row.due_date, row.title || row.code, row.owner_name, `/processos/${row.id}`)),
     ...data.documents.filter((row) => row.status !== "aprovado" && !row.archived_at).map((row) => item("document", row, row.expiration_date, row.title, row.uploaded_by_name, "/documentos")),
     ...data.monitoring.filter((row) => !["resolvido", "ignorado"].includes(row.monitoring_status)).map((row) => item("monitoring", row, row.relevant_at, row.title, row.assigned_name ?? row.responsible_name, "/monitoramento")),
+    ...(data.communications ?? []).filter((row) => !["resolvida", "arquivada"].includes(row.status) && !row.archived_at).map((row) => item("communication", row, row.follow_up_at, row.subject, row.assigned_name, "/comunicacao")),
   ].filter((value): value is BusinessAgendaItem => Boolean(value)).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.title.localeCompare(b.title, "pt-BR"));
+}
+
+export type MemberCapacityRow = {
+  userId: string;
+  name: string;
+  role: string;
+  openTasks: number;
+  overdueTasks: number;
+  taskCapacity: number;
+  openCommunications: number;
+  communicationCapacity: number;
+  activeProcesses: number;
+  completedTasks: number;
+  completedProcesses: number;
+  completedTasksTarget: number;
+  completedProcessesTarget: number;
+  overloaded: boolean;
+};
+
+/** Compara vínculos operacionais e capacidades já configuradas por membro. */
+export function memberCapacityPerformance(
+  members: ReportRow[], tasks: ReportRow[], processes: ReportRow[], communications: ReportRow[], goals: ReportRow[], movements: ReportRow[], now = new Date(),
+): MemberCapacityRow[] {
+  const month = now.toISOString().slice(0, 7);
+  const completedProcessOwners = new Map<string, Set<string>>();
+  for (const movement of movements.filter((row) => ["deferido", "finalizado"].includes(row.to_stage) && row.created_at?.slice(0, 7) === month)) {
+    const process = processes.find((row) => row.id === movement.process_id);
+    if (!process?.owner_id) continue;
+    if (!completedProcessOwners.has(process.owner_id)) completedProcessOwners.set(process.owner_id, new Set());
+    completedProcessOwners.get(process.owner_id)!.add(process.id);
+  }
+  return members.filter((member) => member.is_active).map((member) => {
+    const userId = member.user_id;
+    const memberTasks = tasks.filter((row) => row.assignee_id === userId && !row.archived_at && !row.deleted_at);
+    const openTasks = memberTasks.filter((row) => !["concluida", "cancelada", "arquivada"].includes(row.status)).length;
+    const openCommunications = communications.filter((row) => row.assigned_to === userId && !row.archived_at && !["resolvida", "arquivada"].includes(row.status)).length;
+    const activeProcesses = processes.filter((row) => row.owner_id === userId && !row.archived_at && !["finalizado", "deferido", "cancelado", "arquivado"].includes(row.stage)).length;
+    const goal = goals.find((row) => row.user_id === userId && row.goal_month?.slice(0, 7) === month);
+    const taskCapacity = Number(member.automatic_task_capacity) || 20;
+    const communicationCapacity = Number(member.portal_communication_capacity) || 20;
+    return {
+      userId, name: member.full_name || member.email || "Membro sem nome", role: member.role,
+      openTasks, overdueTasks: memberTasks.filter((row) => isOverdue(row.due_at, row.status, now)).length,
+      taskCapacity, openCommunications, communicationCapacity, activeProcesses,
+      completedTasks: memberTasks.filter((row) => row.status === "concluida" && row.completed_at?.slice(0, 7) === month).length,
+      completedProcesses: completedProcessOwners.get(userId)?.size ?? 0,
+      completedTasksTarget: Number(goal?.completed_tasks_target) || 0,
+      completedProcessesTarget: Number(goal?.completed_processes_target) || 0,
+      overloaded: openTasks > taskCapacity || openCommunications > communicationCapacity,
+    };
+  }).sort((a, b) => Number(b.overloaded) - Number(a.overloaded) || a.name.localeCompare(b.name, "pt-BR"));
 }
 
 export function currentMonthPerformance(clients: ReportRow[], tasks: ReportRow[], processes: ReportRow[], movements: ReportRow[], now = new Date()) {

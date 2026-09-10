@@ -2,29 +2,23 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { businessAgenda, clientLossRisk, commercialFunnel, currentMonthPerformance } from "../src/lib/reports.ts";
+import { businessAgenda, clientLossRisk, commercialFunnel, currentMonthPerformance, memberCapacityPerformance } from "../src/lib/reports.ts";
 
 const route = readFileSync("src/routes/_authenticated/relatorios.tsx", "utf8");
 const hook = readFileSync("src/hooks/use-reports.ts", "utf8");
 const migration = readFileSync("supabase/migrations/20260926130000_performance_goals.sql", "utf8");
 const types = readFileSync("src/integrations/supabase/types.ts", "utf8");
 
-test("commercial funnel reports only real client and process states", () => {
-  const rows = commercialFunnel(
-    [
-      { id: "lead", status: "lead" },
-      { id: "active", status: "ativo" },
-      { id: "won", status: "ativo" },
-      { id: "archived", status: "lead", archived_at: "2026-01-01" },
-    ],
-    [
-      { id: "p1", client_id: "active", stage: "em_analise" },
-      { id: "p2", client_id: "won", stage: "finalizado" },
-      { id: "p3", client_id: "lead", stage: "cancelado" },
-    ],
-  );
-  assert.deepEqual(rows.map(({ key, value }) => [key, value]), [
-    ["leads", 1], ["registration", 0], ["active", 2], ["with_process", 2], ["won", 1],
+test("commercial funnel reports only registered opportunities and values", () => {
+  const rows = commercialFunnel([
+    { id: "a", stage: "first_contact", estimated_value: 1000 },
+    { id: "b", stage: "proposal", estimated_value: 2500 },
+    { id: "c", stage: "won", estimated_value: 4000 },
+    { id: "d", stage: "lost", estimated_value: 500, archived_at: "2026-01-01" },
+  ]);
+  assert.deepEqual(rows.map(({ key, value, estimatedValue }) => [key, value, estimatedValue]), [
+    ["first_contact", 1, 1000], ["qualification", 0, 0], ["proposal", 1, 2500],
+    ["negotiation", 0, 0], ["won", 1, 4000], ["lost", 0, 0],
   ]);
 });
 
@@ -47,10 +41,25 @@ test("general agenda merges deadlines without changing their source", () => {
     processes: [{ id: "p", code: "P-1", stage: "em_analise", due_date: "2026-09-10" }],
     documents: [{ id: "d", title: "Documento", status: "pendente", expiration_date: "2026-09-20" }],
     monitoring: [{ source_id: "m", title: "Alvará", monitoring_status: "em_analise", relevant_at: "2026-11-20" }],
+    communications: [{ id: "c", subject: "Retornar cliente", status: "aguardando_equipe", follow_up_at: "2026-09-11", assigned_name: "Ana" }],
   }, 30, new Date("2026-09-10T12:00:00Z"));
   assert.deepEqual(rows.map(({ kind, timing }) => [kind, timing]), [
-    ["task", "overdue"], ["process", "today"], ["document", "upcoming"],
+    ["task", "overdue"], ["process", "today"], ["communication", "upcoming"], ["document", "upcoming"],
   ]);
+});
+
+test("team capacity flags overload and measures individual monthly results", () => {
+  const rows = memberCapacityPerformance(
+    [{ user_id: "u1", full_name: "Ana", role: "operacional", is_active: true, automatic_task_capacity: 1, portal_communication_capacity: 2 }],
+    [{ id: "t1", assignee_id: "u1", status: "pendente", due_at: "2026-09-01" }, { id: "t2", assignee_id: "u1", status: "concluida", completed_at: "2026-09-03" }],
+    [{ id: "p1", owner_id: "u1", stage: "finalizado" }],
+    [{ id: "c1", assigned_to: "u1", status: "aberta" }, { id: "c2", assigned_to: "u1", status: "aguardando_equipe" }, { id: "c3", assigned_to: "u1", status: "aberta" }],
+    [{ user_id: "u1", goal_month: "2026-09-01", completed_tasks_target: 5, completed_processes_target: 2 }],
+    [{ process_id: "p1", to_stage: "finalizado", created_at: "2026-09-04" }],
+    new Date("2026-09-10T12:00:00Z"),
+  );
+  assert.equal(rows[0].overloaded, true);
+  assert.deepEqual([rows[0].openTasks, rows[0].openCommunications, rows[0].completedTasks, rows[0].completedProcesses], [1, 3, 1, 1]);
 });
 
 test("monthly performance uses completion dates and never counts leads as clients", () => {
@@ -78,4 +87,6 @@ test("reports expose the four business views and guarded monthly goals", () => {
   assert.doesNotMatch(migration, /GRANT\s+(?:INSERT|UPDATE|DELETE|ALL)\s+ON\s+(?:TABLE\s+)?public\.organization_performance_goals/i);
   assert.match(types, /organization_performance_goals:/);
   assert.match(types, /set_organization_performance_goals:/);
+  assert.match(types, /commercial_opportunities:/);
+  assert.match(types, /member_performance_goals:/);
 });
