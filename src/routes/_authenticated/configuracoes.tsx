@@ -32,6 +32,7 @@ import { CommunicationMacrosSettings } from "@/components/communication/communic
 import { DocumentRequestTemplatesSettings } from "@/components/communication/document-request-templates-settings";
 import { CommunicationResponseAlertSettings } from "@/components/notifications/communication-response-alert-settings";
 import { ClientPortalFaqSettings } from "@/components/communication/client-portal-faq-settings";
+import { LeadCaptureSettings } from "@/components/leads/lead-capture-settings";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -49,6 +50,7 @@ const tabs = [
   ["preferencias", "Preferências"],
   ["operacao", "Operação"],
   ["financeiro", "Financeiro"],
+  ["captacao", "Captação"],
   ["comunicacao", "Comunicação"],
   ["monitoramento", "Monitoramento"],
   ["notificacoes", "Notificações"],
@@ -159,6 +161,9 @@ function SettingsPage() {
   const update = useUpdateOrganizationSettings(organizationId);
   const [draft, setDraft] = useState<Draft>({});
   const canEdit = Boolean(role && sensitiveRoles.has(role));
+  const canManageLeadCapture = Boolean(
+    role && ["superadmin", "proprietario", "administrador", "gestor"].includes(role),
+  );
   useEffect(() => {
     if (query.data) setDraft(query.data);
   }, [query.data]);
@@ -452,6 +457,12 @@ function SettingsPage() {
               onChange={(v) => set("monitoring_financial_critical_threshold", Number(v))}
             />
           </Section>
+        </TabsContent>
+        <TabsContent value="captacao">
+          <LeadCaptureSettings
+            organizationId={organizationId}
+            canManage={canManageLeadCapture}
+          />
         </TabsContent>
         <TabsContent value="comunicacao">
           <Section title="Preferências internas de comunicação">
