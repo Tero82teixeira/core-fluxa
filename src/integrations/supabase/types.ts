@@ -14,50 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      audit_logs: {
-        Row: {
-          action: string
-          actor_id: string | null
-          actor_name: string | null
-          created_at: string
-          entity: string
-          entity_id: string | null
-          id: string
-          metadata: Json | null
-          organization_id: string
-        }
-        Insert: {
-          action: string
-          actor_id?: string | null
-          actor_name?: string | null
-          created_at?: string
-          entity: string
-          entity_id?: string | null
-          id?: string
-          metadata?: Json | null
-          organization_id: string
-        }
-        Update: {
-          action?: string
-          actor_id?: string | null
-          actor_name?: string | null
-          created_at?: string
-          entity?: string
-          entity_id?: string | null
-          id?: string
-          metadata?: Json | null
-          organization_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "audit_logs_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       asaas_charges: {
         Row: {
           amount: number
@@ -133,27 +89,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "asaas_charges_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "asaas_charges_connection_id_fkey"
-            columns: ["connection_id"]
-            isOneToOne: false
-            referencedRelation: "asaas_connections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "asaas_charges_transaction_id_fkey"
-            columns: ["transaction_id"]
-            isOneToOne: false
-            referencedRelation: "financial_transactions"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "asaas_charges_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -165,6 +100,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "asaas_connections"
             referencedColumns: ["id"]
           },
           {
@@ -203,11 +145,25 @@ export type Database = {
             referencedColumns: ["organization_id", "id"]
           },
           {
+            foreignKeyName: "asaas_charges_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "asaas_charges_organization_id_transaction_id_fkey"
             columns: ["organization_id", "transaction_id"]
             isOneToOne: false
             referencedRelation: "financial_transactions"
             referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -304,18 +260,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "asaas_connections_settlement_account_id_fkey"
-            columns: ["settlement_account_id"]
-            isOneToOne: false
-            referencedRelation: "financial_accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "asaas_connections_organization_id_settlement_account_id_fkey"
             columns: ["organization_id", "settlement_account_id"]
             isOneToOne: false
             referencedRelation: "financial_accounts"
             referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "asaas_connections_settlement_account_id_fkey"
+            columns: ["settlement_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -346,39 +302,39 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "asaas_customers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_customers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_customers_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "asaas_customers_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: true
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
             foreignKeyName: "asaas_customers_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "asaas_customers_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "asaas_customers_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "asaas_customers_organization_id_client_id_fkey"
-            columns: ["organization_id", "client_id"]
-            isOneToOne: true
-            referencedRelation: "clients"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "asaas_customers_organization_id_client_id_fkey"
-            columns: ["organization_id", "client_id"]
-            isOneToOne: true
-            referencedRelation: "clients_secure"
-            referencedColumns: ["organization_id", "id"]
           },
         ]
       }
@@ -416,6 +372,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "asaas_webhook_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          metadata: Json | null
+          organization_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -1796,6 +1796,133 @@ export type Database = {
           },
         ]
       }
+      commercial_opportunities: {
+        Row: {
+          archived_at: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string
+          estimated_value: number
+          id: string
+          lost_at: string | null
+          lost_reason: string | null
+          next_action_at: string | null
+          organization_id: string
+          owner_id: string | null
+          probability: number
+          stage: string
+          title: string
+          updated_at: string
+          updated_by: string
+          won_at: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by: string
+          estimated_value?: number
+          id?: string
+          lost_at?: string | null
+          lost_reason?: string | null
+          next_action_at?: string | null
+          organization_id: string
+          owner_id?: string | null
+          probability?: number
+          stage?: string
+          title: string
+          updated_at?: string
+          updated_by: string
+          won_at?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          estimated_value?: number
+          id?: string
+          lost_at?: string | null
+          lost_reason?: string | null
+          next_action_at?: string | null
+          organization_id?: string
+          owner_id?: string | null
+          probability?: number
+          stage?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string
+          won_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_opportunities_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commercial_opportunity_stage_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          from_stage: string | null
+          id: string
+          opportunity_id: string
+          organization_id: string
+          to_stage: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          from_stage?: string | null
+          id?: string
+          opportunity_id: string
+          organization_id: string
+          to_stage: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          from_stage?: string | null
+          id?: string
+          opportunity_id?: string
+          organization_id?: string
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_opportunity_stage_history_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_opportunity_stage_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_attachments: {
         Row: {
           client_id: string
@@ -2088,10 +2215,12 @@ export type Database = {
           is_active: boolean
           organization_id: string
           priority_after:
-            Database["public"]["Enums"]["communication_priority"] | null
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           reply_content: string | null
           status_after:
-            Database["public"]["Enums"]["communication_status"] | null
+            | Database["public"]["Enums"]["communication_status"]
+            | null
           title: string
           updated_at: string
           updated_by: string | null
@@ -2105,10 +2234,12 @@ export type Database = {
           is_active?: boolean
           organization_id: string
           priority_after?:
-            Database["public"]["Enums"]["communication_priority"] | null
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           reply_content?: string | null
           status_after?:
-            Database["public"]["Enums"]["communication_status"] | null
+            | Database["public"]["Enums"]["communication_status"]
+            | null
           title: string
           updated_at?: string
           updated_by?: string | null
@@ -2122,10 +2253,12 @@ export type Database = {
           is_active?: boolean
           organization_id?: string
           priority_after?:
-            Database["public"]["Enums"]["communication_priority"] | null
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           reply_content?: string | null
           status_after?:
-            Database["public"]["Enums"]["communication_status"] | null
+            | Database["public"]["Enums"]["communication_status"]
+            | null
           title?: string
           updated_at?: string
           updated_by?: string | null
@@ -2180,133 +2313,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "communication_quick_replies_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      commercial_opportunities: {
-        Row: {
-          archived_at: string | null
-          client_id: string | null
-          created_at: string
-          created_by: string
-          estimated_value: number
-          id: string
-          lost_at: string | null
-          lost_reason: string | null
-          next_action_at: string | null
-          organization_id: string
-          owner_id: string | null
-          probability: number
-          stage: string
-          title: string
-          updated_at: string
-          updated_by: string
-          won_at: string | null
-        }
-        Insert: {
-          archived_at?: string | null
-          client_id?: string | null
-          created_at?: string
-          created_by: string
-          estimated_value?: number
-          id?: string
-          lost_at?: string | null
-          lost_reason?: string | null
-          next_action_at?: string | null
-          organization_id: string
-          owner_id?: string | null
-          probability?: number
-          stage?: string
-          title: string
-          updated_at?: string
-          updated_by: string
-          won_at?: string | null
-        }
-        Update: {
-          archived_at?: string | null
-          client_id?: string | null
-          created_at?: string
-          created_by?: string
-          estimated_value?: number
-          id?: string
-          lost_at?: string | null
-          lost_reason?: string | null
-          next_action_at?: string | null
-          organization_id?: string
-          owner_id?: string | null
-          probability?: number
-          stage?: string
-          title?: string
-          updated_at?: string
-          updated_by?: string
-          won_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "commercial_opportunities_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commercial_opportunities_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commercial_opportunities_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      commercial_opportunity_stage_history: {
-        Row: {
-          changed_at: string
-          changed_by: string | null
-          from_stage: string | null
-          id: string
-          opportunity_id: string
-          organization_id: string
-          to_stage: string
-        }
-        Insert: {
-          changed_at?: string
-          changed_by?: string | null
-          from_stage?: string | null
-          id?: string
-          opportunity_id: string
-          organization_id: string
-          to_stage: string
-        }
-        Update: {
-          changed_at?: string
-          changed_by?: string | null
-          from_stage?: string | null
-          id?: string
-          opportunity_id?: string
-          organization_id?: string
-          to_stage?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "commercial_opportunity_stage_history_opportunity_id_fkey"
-            columns: ["opportunity_id"]
-            isOneToOne: false
-            referencedRelation: "commercial_opportunities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commercial_opportunity_stage_history_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -3518,6 +3524,50 @@ export type Database = {
         }
         Relationships: []
       }
+      member_performance_goals: {
+        Row: {
+          completed_processes_target: number
+          completed_tasks_target: number
+          created_at: string
+          created_by: string
+          goal_month: string
+          organization_id: string
+          updated_at: string
+          updated_by: string
+          user_id: string
+        }
+        Insert: {
+          completed_processes_target?: number
+          completed_tasks_target?: number
+          created_at?: string
+          created_by: string
+          goal_month: string
+          organization_id: string
+          updated_at?: string
+          updated_by: string
+          user_id: string
+        }
+        Update: {
+          completed_processes_target?: number
+          completed_tasks_target?: number
+          created_at?: string
+          created_by?: string
+          goal_month?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_performance_goals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monitoring_history: {
         Row: {
           changed_by: string | null
@@ -4047,50 +4097,6 @@ export type Database = {
           },
         ]
       }
-      member_performance_goals: {
-        Row: {
-          completed_processes_target: number
-          completed_tasks_target: number
-          created_at: string
-          created_by: string
-          goal_month: string
-          organization_id: string
-          updated_at: string
-          updated_by: string
-          user_id: string
-        }
-        Insert: {
-          completed_processes_target?: number
-          completed_tasks_target?: number
-          created_at?: string
-          created_by: string
-          goal_month: string
-          organization_id: string
-          updated_at?: string
-          updated_by: string
-          user_id: string
-        }
-        Update: {
-          completed_processes_target?: number
-          completed_tasks_target?: number
-          created_at?: string
-          created_by?: string
-          goal_month?: string
-          organization_id?: string
-          updated_at?: string
-          updated_by?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "member_performance_goals_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       organization_settings: {
         Row: {
           allow_overdue_task_without_reason: boolean | null
@@ -4106,9 +4112,11 @@ export type Database = {
           current_control: string | null
           date_format: string | null
           default_communication_channel:
-            Database["public"]["Enums"]["communication_channel"] | null
+            | Database["public"]["Enums"]["communication_channel"]
+            | null
           default_communication_priority:
-            Database["public"]["Enums"]["communication_priority"] | null
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           default_expense_category_id: string | null
           default_financial_account_id: string | null
           default_follow_up_hours: number | null
@@ -4116,7 +4124,8 @@ export type Database = {
           default_responsible_id: string | null
           default_task_due_days: number | null
           default_task_priority:
-            Database["public"]["Enums"]["priority_level"] | null
+            | Database["public"]["Enums"]["priority_level"]
+            | null
           district: string | null
           employees_range: string | null
           financial_alert_days: number | null
@@ -4161,9 +4170,11 @@ export type Database = {
           current_control?: string | null
           date_format?: string | null
           default_communication_channel?:
-            Database["public"]["Enums"]["communication_channel"] | null
+            | Database["public"]["Enums"]["communication_channel"]
+            | null
           default_communication_priority?:
-            Database["public"]["Enums"]["communication_priority"] | null
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           default_expense_category_id?: string | null
           default_financial_account_id?: string | null
           default_follow_up_hours?: number | null
@@ -4171,7 +4182,8 @@ export type Database = {
           default_responsible_id?: string | null
           default_task_due_days?: number | null
           default_task_priority?:
-            Database["public"]["Enums"]["priority_level"] | null
+            | Database["public"]["Enums"]["priority_level"]
+            | null
           district?: string | null
           employees_range?: string | null
           financial_alert_days?: number | null
@@ -4216,9 +4228,11 @@ export type Database = {
           current_control?: string | null
           date_format?: string | null
           default_communication_channel?:
-            Database["public"]["Enums"]["communication_channel"] | null
+            | Database["public"]["Enums"]["communication_channel"]
+            | null
           default_communication_priority?:
-            Database["public"]["Enums"]["communication_priority"] | null
+            | Database["public"]["Enums"]["communication_priority"]
+            | null
           default_expense_category_id?: string | null
           default_financial_account_id?: string | null
           default_follow_up_hours?: number | null
@@ -4226,7 +4240,8 @@ export type Database = {
           default_responsible_id?: string | null
           default_task_due_days?: number | null
           default_task_priority?:
-            Database["public"]["Enums"]["priority_level"] | null
+            | Database["public"]["Enums"]["priority_level"]
+            | null
           district?: string | null
           employees_range?: string | null
           financial_alert_days?: number | null
@@ -5494,6 +5509,18 @@ export type Database = {
         }
         Returns: string
       }
+      apply_asaas_payment_event: {
+        Args: {
+          _amount?: number
+          _connection_token: string
+          _event_id: string
+          _event_type: string
+          _paid_at?: string
+          _provider_payment_id: string
+          _provider_status: string
+        }
+        Returns: Json
+      }
       apply_kiwify_subscription_event: {
         Args: {
           _access_until?: string
@@ -5508,44 +5535,16 @@ export type Database = {
         }
         Returns: boolean
       }
-      apply_asaas_payment_event: {
-        Args: {
-          _amount?: number
-          _connection_token: string
-          _event_id: string
-          _event_type: string
-          _paid_at?: string
-          _provider_payment_id: string
-          _provider_status: string
-        }
-        Returns: Json
-      }
-      client_portal_asaas_charges: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          amount: number
-          billing_type: string
-          charge_id: string
-          client_id: string
-          description: string
-          due_date: string
-          invoice_url: string
-          organization_id: string
-          organization_name: string
-          paid_at: string
-          status: string
-        }[]
-      }
       archive_automation_rule: {
         Args: { _rule_id: string }
         Returns: undefined
       }
-      archive_communication_thread: {
-        Args: { _thread_id: string }
-        Returns: undefined
-      }
       archive_commercial_opportunity: {
         Args: { _opportunity_id: string; _organization_id: string }
+        Returns: undefined
+      }
+      archive_communication_thread: {
+        Args: { _thread_id: string }
         Returns: undefined
       }
       archive_financial_account: {
@@ -5624,6 +5623,10 @@ export type Database = {
         Args: { _file_path: string }
         Returns: boolean
       }
+      cancel_client_portal_callback_request: {
+        Args: { _request_id: string }
+        Returns: undefined
+      }
       cancel_client_portal_invitation: {
         Args: { _invitation_id: string }
         Returns: undefined
@@ -5661,6 +5664,22 @@ export type Database = {
         Args: { _thread_id: string }
         Returns: undefined
       }
+      client_portal_asaas_charges: {
+        Args: never
+        Returns: {
+          amount: number
+          billing_type: string
+          charge_id: string
+          client_id: string
+          description: string
+          due_date: string
+          invoice_url: string
+          organization_id: string
+          organization_name: string
+          paid_at: string
+          status: string
+        }[]
+      }
       client_portal_communication_entries: {
         Args: { _thread_id: string }
         Returns: {
@@ -5684,6 +5703,16 @@ export type Database = {
           opened_by_client: boolean
           status: string
           subject: string
+          thread_id: string
+          updated_at: string
+        }[]
+      }
+      client_portal_communication_ratings: {
+        Args: never
+        Returns: {
+          comment: string
+          created_at: string
+          rating: number
           thread_id: string
           updated_at: string
         }[]
@@ -5869,117 +5898,9 @@ export type Database = {
         Args: { _administrative?: boolean; _org: string }
         Returns: undefined
       }
-      cancel_client_portal_callback_request: {
-        Args: { _request_id: string }
-        Returns: undefined
-      }
-      client_portal_communication_ratings: {
-        Args: never
-        Returns: {
-          comment: string
-          created_at: string
-          rating: number
-          thread_id: string
-          updated_at: string
-        }[]
-      }
       communication_experience_metrics: {
         Args: { _from: string; _organization_id: string; _to: string }
         Returns: Json
-      }
-      create_client_portal_callback_request: {
-        Args: {
-          _access_id: string
-          _reason: string
-          _requested_for: string
-          _thread_id: string
-        }
-        Returns: string
-      }
-      list_client_portal_callback_requests: {
-        Args: never
-        Returns: {
-          access_id: string
-          client_name: string
-          created_at: string
-          organization_name: string
-          reason: string
-          request_id: string
-          requested_for: string
-          staff_notes: string
-          status: string
-          thread_id: string
-        }[]
-      }
-      list_staff_client_portal_callback_requests: {
-        Args: { _organization_id: string }
-        Returns: {
-          assigned_name: string
-          assigned_to: string
-          client_id: string
-          client_name: string
-          created_at: string
-          reason: string
-          request_id: string
-          requested_for: string
-          staff_notes: string
-          status: string
-          task_id: string
-          thread_id: string
-        }[]
-      }
-      list_staff_client_portal_communication_ratings: {
-        Args: { _from: string; _organization_id: string; _to: string }
-        Returns: {
-          client_id: string
-          client_name: string
-          comment: string
-          created_at: string
-          rating: number
-          rating_id: string
-          recovery_handled_at: string
-          recovery_handled_by: string
-          recovery_notes: string
-          recovery_status: string
-          subject: string
-          thread_id: string
-          updated_at: string
-        }[]
-      }
-      register_client_portal_push_subscription: {
-        Args: {
-          _auth_key: string
-          _endpoint: string
-          _p256dh: string
-          _user_agent?: string
-        }
-        Returns: number
-      }
-      remove_client_portal_push_subscription: {
-        Args: { _endpoint: string }
-        Returns: undefined
-      }
-      submit_client_portal_communication_rating: {
-        Args: { _comment?: string; _rating: number; _thread_id: string }
-        Returns: string
-      }
-      update_staff_client_portal_callback_request: {
-        Args: {
-          _organization_id: string
-          _request_id: string
-          _staff_notes?: string
-          _status: string
-        }
-        Returns: undefined
-      }
-      update_staff_client_portal_rating_recovery: {
-        Args: {
-          _notes?: string
-          _organization_id: string
-          _rating_id: string
-          _status: string
-        }
-        Returns: undefined
       }
       communication_service_metrics: {
         Args: { _from: string; _organization_id: string; _to: string }
@@ -6014,6 +5935,15 @@ export type Database = {
         Args: { _as_of?: string }
         Returns: number
       }
+      create_client_portal_callback_request: {
+        Args: {
+          _access_id: string
+          _reason: string
+          _requested_for: string
+          _thread_id: string
+        }
+        Returns: string
+      }
       create_client_portal_communication_thread: {
         Args: { _access_id: string; _content: string; _subject: string }
         Returns: string
@@ -6036,6 +5966,10 @@ export type Database = {
           invitation_id: string
           token: string
         }[]
+      }
+      create_commercial_next_action_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
       }
       create_communication_thread: {
         Args: {
@@ -6242,6 +6176,10 @@ export type Database = {
           first_reminder_minutes: number
         }[]
       }
+      get_organization_settings: {
+        Args: { _organization_id: string }
+        Returns: Json
+      }
       get_public_lead_capture_form: {
         Args: { _public_token: string }
         Returns: {
@@ -6250,10 +6188,6 @@ export type Database = {
           success_message: string
           title: string
         }[]
-      }
-      get_organization_settings: {
-        Args: { _organization_id: string }
-        Returns: Json
       }
       has_client_portal_access: {
         Args: { _client_id: string; _organization_id: string }
@@ -6301,6 +6235,21 @@ export type Database = {
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
+      list_client_portal_callback_requests: {
+        Args: never
+        Returns: {
+          access_id: string
+          client_name: string
+          created_at: string
+          organization_name: string
+          reason: string
+          request_id: string
+          requested_for: string
+          staff_notes: string
+          status: string
+          thread_id: string
+        }[]
+      }
       list_client_portal_faq_articles: {
         Args: { _organization_id: string }
         Returns: Json
@@ -6346,6 +6295,41 @@ export type Database = {
       list_my_client_portal_faq_articles: {
         Args: { _access_id: string }
         Returns: Json
+      }
+      list_staff_client_portal_callback_requests: {
+        Args: { _organization_id: string }
+        Returns: {
+          assigned_name: string
+          assigned_to: string
+          client_id: string
+          client_name: string
+          created_at: string
+          reason: string
+          request_id: string
+          requested_for: string
+          staff_notes: string
+          status: string
+          task_id: string
+          thread_id: string
+        }[]
+      }
+      list_staff_client_portal_communication_ratings: {
+        Args: { _from: string; _organization_id: string; _to: string }
+        Returns: {
+          client_id: string
+          client_name: string
+          comment: string
+          created_at: string
+          rating: number
+          rating_id: string
+          recovery_handled_at: string
+          recovery_handled_by: string
+          recovery_notes: string
+          recovery_status: string
+          subject: string
+          thread_id: string
+          updated_at: string
+        }[]
       }
       list_team_push_status: {
         Args: { _organization_id: string }
@@ -6616,6 +6600,15 @@ export type Database = {
         }
         Returns: string
       }
+      register_client_portal_push_subscription: {
+        Args: {
+          _auth_key: string
+          _endpoint: string
+          _p256dh: string
+          _user_agent?: string
+        }
+        Returns: number
+      }
       register_partial_payment: {
         Args: {
           _account_id: string
@@ -6641,6 +6634,10 @@ export type Database = {
         Args: { _member_user_id: string; _organization_id: string }
         Returns: boolean
       }
+      remove_client_portal_push_subscription: {
+        Args: { _endpoint: string }
+        Returns: undefined
+      }
       remove_push_subscription: {
         Args: { _endpoint: string; _organization_id: string }
         Returns: undefined
@@ -6665,10 +6662,6 @@ export type Database = {
       restore_financial_transaction: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
-      }
-      create_commercial_next_action_notifications: {
-        Args: { _as_of?: string }
-        Returns: number
       }
       reverse_financial_payment: {
         Args: { _notes: string; _organization_id: string; _payment_id: string }
@@ -6823,10 +6816,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      set_platform_organization_archived: {
-        Args: { _archived: boolean; _organization_id: string }
-        Returns: undefined
-      }
       set_organization_performance_goals: {
         Args: {
           _completed_processes_target: number
@@ -6837,38 +6826,13 @@ export type Database = {
         }
         Returns: Json
       }
-      upsert_commercial_opportunity: {
-        Args: {
-          _client_id?: string
-          _estimated_value: number
-          _lost_reason?: string
-          _next_action_at?: string
-          _opportunity_id: string
-          _organization_id: string
-          _owner_id?: string
-          _probability: number
-          _stage: string
-          _title: string
-        }
-        Returns: string
+      set_platform_organization_archived: {
+        Args: { _archived: boolean; _organization_id: string }
+        Returns: undefined
       }
       set_scheduled_automation_active: {
         Args: { _is_active: boolean; _rule_id: string }
         Returns: undefined
-      }
-      submit_public_lead: {
-        Args: {
-          _company?: string
-          _consent?: boolean
-          _email?: string
-          _message?: string
-          _name: string
-          _phone?: string
-          _public_token: string
-          _source?: string
-          _website?: string
-        }
-        Returns: Json
       }
       staff_client_portal_communication_entries: {
         Args: { _organization_id: string; _thread_id: string }
@@ -6922,6 +6886,24 @@ export type Database = {
         }[]
       }
       storage_path_org: { Args: { _name: string }; Returns: string }
+      submit_client_portal_communication_rating: {
+        Args: { _comment?: string; _rating: number; _thread_id: string }
+        Returns: string
+      }
+      submit_public_lead: {
+        Args: {
+          _company?: string
+          _consent?: boolean
+          _email?: string
+          _message?: string
+          _name: string
+          _phone?: string
+          _public_token: string
+          _source?: string
+          _website?: string
+        }
+        Returns: Json
+      }
       support_assert_admin: { Args: { _org: string }; Returns: undefined }
       support_request_thread: {
         Args: { _request_id: string }
@@ -7056,9 +7038,42 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_staff_client_portal_callback_request: {
+        Args: {
+          _organization_id: string
+          _request_id: string
+          _staff_notes?: string
+          _status: string
+        }
+        Returns: undefined
+      }
+      update_staff_client_portal_rating_recovery: {
+        Args: {
+          _notes?: string
+          _organization_id: string
+          _rating_id: string
+          _status: string
+        }
+        Returns: undefined
+      }
       update_support_request_status: {
         Args: { _request_id: string; _status: string }
         Returns: undefined
+      }
+      upsert_commercial_opportunity: {
+        Args: {
+          _client_id?: string
+          _estimated_value: number
+          _lost_reason?: string
+          _next_action_at?: string
+          _opportunity_id: string
+          _organization_id: string
+          _owner_id?: string
+          _probability: number
+          _stage: string
+          _title: string
+        }
+        Returns: string
       }
       upsert_monitoring_state: {
         Args: {
@@ -7092,7 +7107,11 @@ export type Database = {
         | "visualizador"
         | "cliente_externo"
       checklist_status:
-        "pendente" | "recebido" | "em_analise" | "aprovado" | "rejeitado"
+        | "pendente"
+        | "recebido"
+        | "em_analise"
+        | "aprovado"
+        | "rejeitado"
       client_status:
         | "lead"
         | "em_cadastro"
@@ -7101,7 +7120,12 @@ export type Database = {
         | "inativo"
         | "arquivado"
       communication_channel:
-        "whatsapp" | "telefone" | "email" | "presencial" | "interno" | "outro"
+        | "whatsapp"
+        | "telefone"
+        | "email"
+        | "presencial"
+        | "interno"
+        | "outro"
       communication_entry_type:
         | "mensagem"
         | "nota_interna"
@@ -7140,7 +7164,11 @@ export type Database = {
         | "vencido"
         | "arquivado"
       financial_status:
-        "nao_aplicavel" | "pendente" | "parcial" | "pago" | "atrasado"
+        | "nao_aplicavel"
+        | "pendente"
+        | "parcial"
+        | "pago"
+        | "atrasado"
       monitoring_status: "ativo" | "em_renovacao" | "renovado" | "arquivado"
       person_type: "pf" | "pj"
       priority_level: "baixa" | "media" | "alta" | "critica"
@@ -7206,7 +7234,8 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -7230,7 +7259,8 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -7254,7 +7284,8 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
