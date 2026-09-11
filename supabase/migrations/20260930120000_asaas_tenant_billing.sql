@@ -277,7 +277,8 @@ LANGUAGE plpgsql SET search_path = pg_catalog, public, pg_temp
 AS $function$
 DECLARE transaction_key uuid;
 BEGIN
-  IF coalesce(auth.role(),'') <> 'authenticated' THEN RETURN NEW; END IF;
+  -- service_role applies provider webhooks; user sessions always have auth.uid().
+  IF coalesce(auth.role(),'') = 'service_role' OR auth.uid() IS NULL THEN RETURN NEW; END IF;
   IF TG_TABLE_NAME='financial_transactions' THEN
     IF EXISTS(SELECT 1 FROM public.asaas_charges
       WHERE transaction_id=OLD.id AND status IN ('pending','confirmed','overdue')) THEN
