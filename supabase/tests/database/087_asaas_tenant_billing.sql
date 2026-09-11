@@ -42,6 +42,7 @@ SELECT throws_ok(
   'P0001','ACTIVE_ASAAS_CHARGE','manual payment is blocked while hosted charge is active'
 );
 RESET ROLE;
+SELECT set_config('request.jwt.claim.sub','',true);
 
 SELECT lives_ok(
   $$SELECT public.apply_asaas_payment_event('8a870000-0000-0000-0000-000000000001','evt_received_1','PAYMENT_RECEIVED','pay_test_1','RECEIVED',now(),250)$$,
@@ -62,6 +63,7 @@ SELECT is((SELECT count(*) FROM public.client_portal_asaas_charges()),1::bigint,
 SELECT set_config('request.jwt.claim.sub','1a870000-0000-0000-0000-000000000003',true);
 SELECT is((SELECT count(*) FROM public.client_portal_asaas_charges()),0::bigint,'outsider sees no charge');
 RESET ROLE;
+SELECT set_config('request.jwt.claim.sub','',true);
 
 SELECT lives_ok(
   $$SELECT public.apply_asaas_payment_event('8a870000-0000-0000-0000-000000000001','evt_refund_1','PAYMENT_REFUNDED','pay_test_1','REFUNDED',now(),250)$$,
