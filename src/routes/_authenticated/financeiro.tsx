@@ -6,7 +6,9 @@ import {
   ArchiveRestore,
   Ban,
   Download,
+  ExternalLink,
   History,
+  Loader2,
   Pencil,
   Plus,
   Printer,
@@ -54,6 +56,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFinance, useFinancialAction, useFinancialPayment } from "@/hooks/use-finance";
+import {
+  useCancelAsaasCharge,
+  useCreateAsaasCharge,
+  type AsaasCharge,
+} from "@/hooks/use-asaas";
 import {
   availableFinancialAccounts,
   availableFinancialCategories,
@@ -107,6 +114,16 @@ const statusTone: Record<string, Tone> = {
   overdue: "danger",
   cancelled: "neutral",
 };
+const asaasStatus: Record<AsaasCharge["status"], { label: string; tone: Tone }> = {
+  pending: { label: "Aguardando pagamento", tone: "warning" },
+  confirmed: { label: "Pagamento confirmado", tone: "info" },
+  received: { label: "Recebido", tone: "success" },
+  overdue: { label: "Vencida", tone: "danger" },
+  refunded: { label: "Estornada", tone: "warning" },
+  chargeback: { label: "Contestada", tone: "danger" },
+  cancelled: { label: "Cancelada", tone: "neutral" },
+  failed: { label: "Falhou", tone: "danger" },
+};
 const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
 
 function FinancePage() {
@@ -142,10 +159,15 @@ function FinancePage() {
         </Card>
       </div>
     );
-  return <FinanceDashboard {...{ membership, role, action, payment }} data={query.data} />;
+  return (
+    <FinanceDashboard
+      {...{ organizationId, membership, role, action, payment }}
+      data={query.data}
+    />
+  );
 }
 
-function FinanceDashboard({ membership, role, action, payment, data }: any) {
+function FinanceDashboard({ organizationId, membership, role, action, payment, data }: any) {
   const [tab, setTab] = useState("overview"),
     [search, setSearch] = useState(""),
     [status, setStatus] = useState<FinancialStatus | "all">("all"),
@@ -242,6 +264,22 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
   );
   const dre = managerialIncomeStatement(data.transactions, data.categories, from, to);
   const exportRows = () => {
+    if (tab === "charges") {
+      downloadFinancialCsv(
+        "cobrancas-asaas",
+        data.asaasCharges.map((charge: AsaasCharge) => ({
+          Descrição:
+            data.transactions.find((item: any) => item.id === charge.transaction_id)
+              ?.description ?? "Cobrança",
+          Cliente:
+            data.clients.find((item: any) => item.id === charge.client_id)?.name ?? "—",
+          Valor: brl(Number(charge.amount)),
+          Vencimento: brDate(charge.due_date),
+          Status: asaasStatus[charge.status]?.label ?? charge.status,
+        })),
+      );
+      return;
+    }
     if (tab === "dre") {
       downloadFinancialCsv(
         "dre-gerencial",
@@ -312,7 +350,11 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
             <Printer />
             Imprimir / PDF
           </Button>
-          <Button variant="outline" disabled={!rows.length} onClick={exportRows}>
+          <Button
+            variant="outline"
+            disabled={tab === "charges" ? !data.asaasCharges.length : !rows.length}
+            onClick={exportRows}
+          >
             <Download />
             CSV
           </Button>
@@ -335,6 +377,7 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
             ["payable", "Contas a pagar"],
             ["income", "Receitas"],
             ["expense", "Despesas"],
+            ["charges", "Cobranças"],
             ["profitability", "Rentabilidade"],
             ["dre", "DRE gerencial"],
             ["cashflow", "Fluxo de caixa"],
@@ -432,6 +475,13 @@ function FinanceDashboard({ membership, role, action, payment, data }: any) {
             currentBalance={currentBalance}
             forecast={forecast}
             historical={cashFlowChart}
+          />
+        </TabsContent>
+        <TabsContent value="charges">
+          <AsaasChargeCenter
+            organizationId={organizationId}
+            data={data}
+            editable={editable}
           />
         </TabsContent>
         <TabsContent value="dre">
@@ -997,6 +1047,11 @@ function TransactionActions({
     .filter((item: any) => !item.reversed_at)
     .reduce((total: number, item: any) => total + Number(item.amount), 0);
   const open = !["paid", "cancelled"].includes(transaction.status);
+  const activeAsaasCharge = (data.asaasCharges as AsaasCharge[]).find(
+    (charge) =>
+      charge.transaction_id === transaction.id &&
+      ["pending", "confirmed", "overdue"].includes(charge.status),
+  );
   const runLifecycleAction = async (rpc: string, successMessage: string) => {
     try {
       await action.mutateAsync({ rpc, payload: { id: transaction.id } });
@@ -1011,6 +1066,16 @@ function TransactionActions({
     >
       {editable && open && !transaction.archived_at && (
         <>
+            {transaction.type === "income" && (
+              <AsaasChargeButton
+                organizationId={transaction.organization_id}
+                transaction={transaction}
+                data={data}
+                charge={activeAsaasCharge}
+              />
+            )}
+            {!activeAsaasCharge && (
+              <>
             <TransactionDialog
               data={data}
               transaction={transaction}
@@ -1029,13 +1094,21 @@ function TransactionActions({
               payments={transactionPayments}
               payment={payment}
             />
+              </>
+            )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={action.isPending || paidTotal > 0}
-                  title={paidTotal > 0 ? "Estorne os pagamentos antes de cancelar." : undefined}
+                  disabled={action.isPending || paidTotal > 0 || Boolean(activeAsaasCharge)}
+                  title={
+                    activeAsaasCharge
+                      ? "Cancele primeiro a cobrança ativa no Asaas."
+                      : paidTotal > 0
+                        ? "Estorne os pagamentos antes de cancelar."
+                        : undefined
+                  }
                 >
                   <Ban />
                   Cancelar
@@ -1143,10 +1216,200 @@ function TransactionActions({
         accounts={data.accounts}
         payment={payment}
         canReverse={canReverseFinancialPayment(role)}
+        asaasPaymentIds={(data.asaasCharges as AsaasCharge[])
+          .map((charge) => charge.financial_payment_id)
+          .filter(Boolean)}
       />
     </div>
   );
 }
+
+function asaasError(error: unknown) {
+  const code = String((error as Error)?.message ?? error).toUpperCase();
+  if (code.includes("CLIENT_DOCUMENT_REQUIRED"))
+    return "Cadastre o CPF ou CNPJ do cliente antes de gerar a cobrança.";
+  if (code.includes("CLIENT_REQUIRED"))
+    return "Vincule um cliente ao lançamento antes de gerar a cobrança.";
+  if (code.includes("CONNECTION"))
+    return "Conecte a conta Asaas da empresa em Configurações > Financeiro.";
+  if (code.includes("PAYMENT_EXISTS"))
+    return "Este lançamento já possui pagamento registrado.";
+  return "Não foi possível concluir a operação no Asaas.";
+}
+
+function AsaasChargeButton({ organizationId, transaction, data, charge }: any) {
+  const createCharge = useCreateAsaasCharge(organizationId);
+  const connected = data.asaasConnection?.status === "connected";
+  if (charge)
+    return (
+      <Button asChild size="sm" variant="outline">
+        <a href={charge.invoice_url} target="_blank" rel="noreferrer">
+          <ExternalLink /> Abrir cobrança
+        </a>
+      </Button>
+    );
+  const disabledReason = !connected
+    ? "Conecte o Asaas em Configurações > Financeiro."
+    : !transaction.client_id
+      ? "Vincule um cliente ao lançamento."
+      : undefined;
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={Boolean(disabledReason) || createCharge.isPending}
+      title={disabledReason}
+      onClick={async () => {
+        try {
+          const created = await createCharge.mutateAsync(transaction.id);
+          toast.success("Cobrança criada no Asaas.");
+          window.open(created.invoice_url, "_blank", "noopener,noreferrer");
+        } catch (error) {
+          toast.error(asaasError(error));
+        }
+      }}
+    >
+      {createCharge.isPending ? <Loader2 className="animate-spin" /> : <WalletCards />}
+      Gerar cobrança
+    </Button>
+  );
+}
+
+function AsaasChargeCenter({ organizationId, data, editable }: any) {
+  const cancelCharge = useCancelAsaasCharge(organizationId);
+  const charges = data.asaasCharges as AsaasCharge[];
+  const amount = (statuses: AsaasCharge["status"][]) =>
+    charges
+      .filter((charge) => statuses.includes(charge.status))
+      .reduce((total, charge) => total + Number(charge.amount), 0);
+  const transactionName = (charge: AsaasCharge) =>
+    data.transactions.find((item: any) => item.id === charge.transaction_id)?.description ??
+    "Cobrança";
+  const clientName = (charge: AsaasCharge) =>
+    data.clients.find((item: any) => item.id === charge.client_id)?.name ?? "Cliente";
+  return (
+    <div className="space-y-4">
+      {data.asaasConnection?.status !== "connected" && (
+        <Card className="border-warning/30 bg-warning/5">
+          <CardContent className="flex gap-3 p-4 text-sm">
+            <AlertTriangle className="size-5 shrink-0 text-warning" />
+            <div>
+              <p className="font-medium">Asaas ainda não conectado</p>
+              <p className="text-muted-foreground">
+                Um administrador pode conectar a conta da empresa em Configurações &gt;
+                Financeiro.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          ["Aguardando", amount(["pending", "confirmed"])],
+          ["Vencidas", amount(["overdue"])],
+          ["Recebidas", amount(["received"])],
+        ].map(([label, value]) => (
+          <Card key={String(label)}>
+            <CardContent className="p-5">
+              <p className="text-sm text-muted-foreground">{label}</p>
+              <p className="mt-1 text-2xl font-semibold">{brl(Number(value))}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Cobranças enviadas aos clientes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!charges.length ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Nenhuma cobrança Asaas foi criada. Gere uma em uma receita vinculada a um cliente.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs uppercase text-muted-foreground">
+                    <th className="px-2 py-3">Cobrança</th>
+                    <th className="px-2 py-3">Cliente</th>
+                    <th className="px-2 py-3 text-right">Valor</th>
+                    <th className="px-2 py-3">Vencimento</th>
+                    <th className="px-2 py-3">Status</th>
+                    <th className="px-2 py-3 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {charges.map((charge) => {
+                    const current = asaasStatus[charge.status];
+                    const cancellable = ["pending", "confirmed", "overdue"].includes(
+                      charge.status,
+                    );
+                    return (
+                      <tr key={charge.id} className="border-b">
+                        <td className="px-2 py-3 font-medium">{transactionName(charge)}</td>
+                        <td className="px-2 py-3">{clientName(charge)}</td>
+                        <td className="px-2 py-3 text-right tabular-nums">
+                          {brl(Number(charge.amount))}
+                        </td>
+                        <td className="px-2 py-3">{brDate(charge.due_date)}</td>
+                        <td className="px-2 py-3">
+                          <StatusBadge label={current.label} tone={current.tone} />
+                        </td>
+                        <td className="px-2 py-3">
+                          <div className="flex justify-end gap-2">
+                            <Button asChild size="sm" variant="outline">
+                              <a href={charge.invoice_url} target="_blank" rel="noreferrer">
+                                <ExternalLink /> Abrir
+                              </a>
+                            </Button>
+                            {editable && cancellable && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="outline">Cancelar</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Cancelar cobrança no Asaas?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      O link deixará de aceitar pagamentos. O lançamento financeiro
+                                      continuará aberto e poderá ser editado ou recebido manualmente.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      disabled={cancelCharge.isPending}
+                                      onClick={async () => {
+                                        try {
+                                          await cancelCharge.mutateAsync(charge.id);
+                                          toast.success("Cobrança cancelada no Asaas.");
+                                        } catch (error) {
+                                          toast.error(asaasError(error));
+                                        }
+                                      }}
+                                    >
+                                      Confirmar cancelamento
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function transactionForm(transaction?: any) {
   return {
     description: transaction?.description ?? "",
@@ -1463,7 +1726,14 @@ function PayDialog({ transaction, accounts, payments, payment }: any) {
   );
 }
 
-function PaymentHistory({ transaction, payments, accounts, payment, canReverse }: any) {
+function PaymentHistory({
+  transaction,
+  payments,
+  accounts,
+  payment,
+  canReverse,
+  asaasPaymentIds = [],
+}: any) {
   const [open, setOpen] = useState(false),
     confirmed = payments
       .filter((p: any) => !p.reversed_at)
@@ -1508,7 +1778,7 @@ function PaymentHistory({ transaction, payments, accounts, payment, canReverse }
                   Observação: {p.notes || "—"}
                   {p.reversed_at ? ` · Estornado em ${brDate(p.reversed_at)}` : ""}
                 </p>
-                {canReverse && !p.reversed_at && (
+                {canReverse && !p.reversed_at && !asaasPaymentIds.includes(p.id) && (
                   <Button
                     size="sm"
                     variant="destructive"
@@ -1529,6 +1799,11 @@ function PaymentHistory({ transaction, payments, accounts, payment, canReverse }
                     <Undo2 />
                     Estornar pagamento
                   </Button>
+                )}
+                {!p.reversed_at && asaasPaymentIds.includes(p.id) && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Estornos deste pagamento são conciliados automaticamente pelo Asaas.
+                  </p>
                 )}
               </div>
             ))}

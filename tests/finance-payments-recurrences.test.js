@@ -200,10 +200,12 @@ describe("recorrências financeiras", () => {
       /CREATE TRIGGER|CREATE OR REPLACE FUNCTION public\.financial_validate_recurrence_links/,
     );
   });
-  test("não há Edge Function financeira nem escrita financeira direta no frontend", () => {
+  test("somente a integração Asaas usa Edge Function financeira", () => {
     const functionsUrl = new URL("../supabase/functions", import.meta.url);
     const functions = existsSync(functionsUrl) ? readdirSync(functionsUrl) : [];
     assert.deepEqual(functions, [
+      "asaas-connector",
+      "asaas-webhook",
       "communication-channel-send",
       "communication-channel-webhook",
       "communication-copilot",

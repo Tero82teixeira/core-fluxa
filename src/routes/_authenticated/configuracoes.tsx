@@ -33,6 +33,7 @@ import { DocumentRequestTemplatesSettings } from "@/components/communication/doc
 import { CommunicationResponseAlertSettings } from "@/components/notifications/communication-response-alert-settings";
 import { ClientPortalFaqSettings } from "@/components/communication/client-portal-faq-settings";
 import { LeadCaptureSettings } from "@/components/leads/lead-capture-settings";
+import { AsaasSettings } from "@/components/finance/asaas-settings";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -457,6 +458,9 @@ function SettingsPage() {
               onChange={(v) => set("monitoring_financial_critical_threshold", Number(v))}
             />
           </Section>
+          <div className="mt-4">
+            <AsaasSettings organizationId={organizationId} canManage={canEdit} />
+          </div>
         </TabsContent>
         <TabsContent value="captacao">
           <LeadCaptureSettings
