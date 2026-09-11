@@ -40,23 +40,28 @@ SELECT throws_ok(
   $$SELECT public.save_lead_capture_form('2d600000-0000-0000-0000-000000000001','Título proibido','Descrição proibida','Mensagem proibida',true,false)$$,
   'P0001','NOT_ALLOWED','viewer cannot manage the public form'
 );
+SELECT set_config(
+  'test.lead_capture_token',
+  (SELECT public_token::text FROM public.lead_capture_forms WHERE organization_id='2d600000-0000-0000-0000-000000000001'),
+  true
+);
 
 RESET ROLE;
 SET LOCAL ROLE anon;
 SELECT is(
-  (SELECT organization_name FROM public.get_public_lead_capture_form((SELECT public_token FROM public.lead_capture_forms WHERE organization_id='2d600000-0000-0000-0000-000000000001'))),
+  (SELECT organization_name FROM public.get_public_lead_capture_form(current_setting('test.lead_capture_token')::uuid)),
   'Equipe Lead','public metadata exposes the display name only'
 );
 SELECT lives_ok(
   $$SELECT public.submit_public_lead(
-    (SELECT public_token FROM public.lead_capture_forms WHERE organization_id='2d600000-0000-0000-0000-000000000001'),
+    current_setting('test.lead_capture_token')::uuid,
     'Maria Interessada','MARIA@EXAMPLE.COM','(11) 99999-0000','Empresa Maria','Preciso organizar meus processos.','instagram',NULL,true
   )$$,
   'visitor submits a valid lead'
 );
 SELECT throws_ok(
   $$SELECT public.submit_public_lead(
-    (SELECT public_token FROM public.lead_capture_forms WHERE organization_id='2d600000-0000-0000-0000-000000000001'),
+    current_setting('test.lead_capture_token')::uuid,
     'Sem contato',NULL,NULL,NULL,NULL,'link',NULL,true
   )$$,
   'P0001','LEAD_CONTACT_REQUIRED','a return contact is required'
@@ -71,7 +76,7 @@ SELECT is((SELECT count(*)::integer FROM public.notifications WHERE organization
 SET LOCAL ROLE anon;
 SELECT lives_ok(
   $$SELECT public.submit_public_lead(
-    (SELECT public_token FROM public.lead_capture_forms WHERE organization_id='2d600000-0000-0000-0000-000000000001'),
+    current_setting('test.lead_capture_token')::uuid,
     'Maria Interessada','maria@example.com','11999990000',NULL,NULL,'link',NULL,true
   )$$,
   'immediate duplicate receives a neutral success response'
@@ -88,7 +93,7 @@ SELECT lives_ok(
 RESET ROLE;
 SET LOCAL ROLE anon;
 SELECT is_empty(
-  $$SELECT * FROM public.get_public_lead_capture_form((SELECT public_token FROM public.lead_capture_forms WHERE organization_id='2d600000-0000-0000-0000-000000000001'))$$,
+  $$SELECT * FROM public.get_public_lead_capture_form(current_setting('test.lead_capture_token')::uuid)$$,
   'paused form is no longer publicly discoverable'
 );
 
