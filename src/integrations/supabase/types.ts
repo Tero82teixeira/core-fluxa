@@ -5532,7 +5532,7 @@ export type Database = {
           invoice_url: string
           organization_id: string
           organization_name: string
-          paid_at: string | null
+          paid_at: string
           status: string
         }[]
       }
