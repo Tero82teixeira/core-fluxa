@@ -10,8 +10,10 @@ import {
   ChevronDown,
   Circle,
   CircleAlert,
+  CreditCard,
   Download,
   Eye,
+  ExternalLink,
   FileText,
   FolderKanban,
   Home,
@@ -92,12 +94,13 @@ import {
   type DocumentCategory,
   type DocumentStatus,
 } from "@/lib/documents";
-import { PIPELINE_STAGES, PROCESS_STAGE } from "@/lib/domain";
+import { PIPELINE_STAGES, PROCESS_STAGE, type Tone } from "@/lib/domain";
 import { describeError } from "@/lib/errors";
 import { civilDateKey, formatDate, formatDateTime } from "@/lib/format";
 import { PortalFaq } from "@/components/client-portal/portal-faq";
 import { PortalCallbackCenter, PortalConversationRating, PortalPushPrompt } from "@/components/client-portal/portal-experience";
 import type { ClientPortalFaqArticle } from "@/hooks/use-client-portal-faq";
+import { usePortalAsaasCharges, type PortalAsaasCharge } from "@/hooks/use-asaas";
 
 export const Route = createFileRoute("/meu-portal")({
   ssr: false,
@@ -124,6 +127,7 @@ function MyClientPortal() {
   const documents = useClientPortalDocuments(contentEnabled, user?.id ?? null);
   const requests = useClientPortalDocumentRequests(contentEnabled, user?.id ?? null);
   const notifications = useClientPortalNotifications(contentEnabled, user?.id ?? null);
+  const charges = usePortalAsaasCharges(contentEnabled, user?.id ?? null);
   const markNotificationRead = useMarkClientPortalNotificationRead(user?.id ?? null);
   const markConversationNotificationsRead = useMarkClientPortalNotificationsRead(
     user?.id ?? null,
@@ -757,7 +761,7 @@ function MyClientPortal() {
             }}
           >
             <PortalPushPrompt enabled={contentEnabled} />
-            <TabsList className="sticky top-[73px] z-30 grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-primary/10 bg-background/90 p-2 shadow-lg shadow-primary/5 backdrop-blur-xl sm:grid-cols-4 lg:grid-cols-7">
+            <TabsList className="sticky top-[73px] z-30 grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-primary/10 bg-background/90 p-2 shadow-lg shadow-primary/5 backdrop-blur-xl sm:grid-cols-4 lg:grid-cols-8">
               <TabsTrigger value="inicio" className={PORTAL_TAB_CLASS}>
                 <Home className="size-4" aria-hidden /> Início
               </TabsTrigger>
@@ -772,6 +776,9 @@ function MyClientPortal() {
               </TabsTrigger>
               <TabsTrigger value="comunicacao" className={PORTAL_TAB_CLASS}>
                 <MessageSquare className="size-4" aria-hidden /> Comunicação
+              </TabsTrigger>
+              <TabsTrigger value="pagamentos" className={PORTAL_TAB_CLASS}>
+                <CreditCard className="size-4" aria-hidden /> Pagamentos
               </TabsTrigger>
               <TabsTrigger value="ajuda" className={PORTAL_TAB_CLASS}>
                 <BookOpenText className="size-4" aria-hidden /> Ajuda
@@ -788,7 +795,7 @@ function MyClientPortal() {
 
             <TabsContent value="inicio" className="space-y-6">
               <AccessCards accesses={session.data ?? []} />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
                 <SummaryCard
                   icon={FolderKanban}
                   label="Processos compartilhados"
@@ -812,6 +819,14 @@ function MyClientPortal() {
                   label="Conversas com a empresa"
                   value={communicationThreads.data?.length ?? 0}
                   loading={communicationThreads.isLoading}
+                />
+                <SummaryCard
+                  icon={CreditCard}
+                  label="Cobranças em aberto"
+                  value={(charges.data ?? []).filter((charge) =>
+                    ["pending", "confirmed", "overdue"].includes(charge.status),
+                  ).length}
+                  loading={charges.isLoading}
                 />
                 <SummaryCard
                   icon={Bell}
@@ -1657,6 +1672,10 @@ function MyClientPortal() {
               </div>
             </TabsContent>
 
+            <TabsContent value="pagamentos" className="space-y-4">
+              <PortalPayments charges={charges} />
+            </TabsContent>
+
             <TabsContent value="ajuda" className="space-y-4">
               <PortalFaq accesses={activeAccesses} onEscalate={openFaqEscalation} />
             </TabsContent>
@@ -2059,6 +2078,7 @@ type PortalTab =
   | "documentos"
   | "pendencias"
   | "comunicacao"
+  | "pagamentos"
   | "ajuda"
   | "notificacoes";
 
@@ -2625,6 +2645,77 @@ function SummaryCard({
     </Card>
   );
 }
+const PORTAL_ASAAS_STATUS: Record<PortalAsaasCharge["status"], { label: string; tone: Tone }> = {
+  pending: { label: "Aguardando pagamento", tone: "warning" },
+  confirmed: { label: "Pagamento confirmado", tone: "info" },
+  received: { label: "Pago", tone: "success" },
+  overdue: { label: "Vencida", tone: "danger" },
+  refunded: { label: "Estornada", tone: "warning" },
+  chargeback: { label: "Contestada", tone: "danger" },
+  cancelled: { label: "Cancelada", tone: "neutral" },
+  failed: { label: "Falhou", tone: "danger" },
+};
+
+function PortalPayments({ charges }: { charges: ReturnType<typeof usePortalAsaasCharges> }) {
+  if (charges.isLoading) return <LoadingRows />;
+  if (charges.isError) return <ContentError retry={() => void charges.refetch()} />;
+  if (!charges.data?.length)
+    return (
+      <EmptyContent
+        icon={CreditCard}
+        title="Nenhuma cobrança disponível"
+        description="Quando a empresa enviar uma cobrança pelo Asaas, ela aparecerá aqui."
+      />
+    );
+  const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+  return (
+    <Card className={PORTAL_PANEL_CLASS}>
+      <CardContent className="space-y-5 p-4 sm:p-6">
+        <div>
+          <h2 className="font-semibold">Pagamentos enviados pela empresa</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            O pagamento é processado na conta Asaas da empresa. O FLUXA não armazena dados do seu
+            cartão.
+          </p>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {charges.data.map((charge) => {
+            const status = PORTAL_ASAAS_STATUS[charge.status];
+            const payable = ["pending", "confirmed", "overdue"].includes(charge.status);
+            return (
+              <article key={charge.charge_id} className="rounded-2xl border bg-background p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">{charge.organization_name}</p>
+                    <h3 className="mt-1 font-medium">{charge.description}</h3>
+                  </div>
+                  <StatusBadge label={status.label} tone={status.tone} />
+                </div>
+                <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <p className="text-2xl font-semibold tabular-nums">
+                      {money.format(Number(charge.amount))}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Vencimento: {formatDate(charge.due_date)}
+                    </p>
+                  </div>
+                  <Button asChild variant={payable ? "default" : "outline"}>
+                    <a href={charge.invoice_url} target="_blank" rel="noreferrer">
+                      <ExternalLink className="size-4" aria-hidden />
+                      {payable ? "Pagar no Asaas" : "Ver cobrança"}
+                    </a>
+                  </Button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function LoadingRows() {
   return (
     <div className="grid min-h-32 place-items-center text-sm text-muted-foreground">

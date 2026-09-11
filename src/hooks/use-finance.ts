@@ -17,6 +17,8 @@ export type FinanceData = {
   tasks: any[];
   documents: any[];
   members: any[];
+  asaasCharges: any[];
+  asaasConnection: any | null;
 };
 
 export function useFinance(organizationId: string | null) {
@@ -34,21 +36,33 @@ export function useFinance(organizationId: string | null) {
           .eq("organization_id", organizationId)
           .is("archived_at", null)
           .limit(2000);
-      const results = await Promise.all([
-        query("financial_transactions"),
-        query("financial_categories"),
-        query("financial_accounts"),
-        queryUnarchived("financial_recurrences"),
-        query("financial_transaction_payments"),
-        query("financial_account_movements"),
-        query("clients_secure", "id,name"),
-        query("processes", "id,code,title,client_id"),
-        query("tasks", "id,title"),
-        query("documents", "id,title"),
-        query("organization_members", "id,user_id,role,is_active"),
+      const [results, asaasChargeResult, asaasConnectionResult] = await Promise.all([
+        Promise.all([
+          query("financial_transactions"),
+          query("financial_categories"),
+          query("financial_accounts"),
+          queryUnarchived("financial_recurrences"),
+          query("financial_transaction_payments"),
+          query("financial_account_movements"),
+          query("clients_secure", "id,name"),
+          query("processes", "id,code,title,client_id"),
+          query("tasks", "id,title"),
+          query("documents", "id,title"),
+          query("organization_members", "id,user_id,role,is_active"),
+        ]),
+        query("asaas_charges"),
+        query(
+          "asaas_connections",
+          "id,organization_id,status,environment,account_name,settlement_account_id,last_checked_at,last_error_code",
+        ),
       ]);
       const failed = results.find((x) => x.error);
       if (failed?.error) throw failed.error;
+      const missing = (error: any) => error && ["PGRST205", "42P01"].includes(String(error.code));
+      const asaasFailure = [asaasChargeResult, asaasConnectionResult].find(
+        (x) => x.error && !missing(x.error),
+      );
+      if (asaasFailure?.error) throw asaasFailure.error;
       const [
         transactions,
         categories,
@@ -74,6 +88,10 @@ export function useFinance(organizationId: string | null) {
         tasks,
         documents,
         members,
+        asaasCharges: asaasChargeResult.error ? [] : (asaasChargeResult.data ?? []),
+        asaasConnection: asaasConnectionResult.error
+          ? null
+          : (asaasConnectionResult.data?.[0] ?? null),
       };
     },
   });

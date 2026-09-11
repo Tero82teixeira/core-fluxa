@@ -58,6 +58,371 @@ export type Database = {
           },
         ]
       }
+      asaas_charges: {
+        Row: {
+          amount: number
+          bank_slip_url: string | null
+          billing_type: string
+          client_id: string
+          connection_id: string
+          created_at: string
+          created_by: string
+          due_date: string
+          failure_code: string | null
+          financial_payment_id: string | null
+          id: string
+          invoice_url: string
+          last_event_at: string | null
+          last_event_type: string | null
+          net_value: number | null
+          organization_id: string
+          paid_at: string | null
+          provider_customer_id: string
+          provider_payment_id: string
+          status: string
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          bank_slip_url?: string | null
+          billing_type?: string
+          client_id: string
+          connection_id: string
+          created_at?: string
+          created_by: string
+          due_date: string
+          failure_code?: string | null
+          financial_payment_id?: string | null
+          id?: string
+          invoice_url: string
+          last_event_at?: string | null
+          last_event_type?: string | null
+          net_value?: number | null
+          organization_id: string
+          paid_at?: string | null
+          provider_customer_id: string
+          provider_payment_id: string
+          status: string
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          bank_slip_url?: string | null
+          billing_type?: string
+          client_id?: string
+          connection_id?: string
+          created_at?: string
+          created_by?: string
+          due_date?: string
+          failure_code?: string | null
+          financial_payment_id?: string | null
+          id?: string
+          invoice_url?: string
+          last_event_at?: string | null
+          last_event_type?: string | null
+          net_value?: number | null
+          organization_id?: string
+          paid_at?: string | null
+          provider_customer_id?: string
+          provider_payment_id?: string
+          status?: string
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asaas_charges_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "asaas_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_financial_payment_id_fkey"
+            columns: ["financial_payment_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transaction_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_organization_id_connection_id_fkey"
+            columns: ["organization_id", "connection_id"]
+            isOneToOne: false
+            referencedRelation: "asaas_connections"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_organization_id_financial_payment_id_fkey"
+            columns: ["organization_id", "financial_payment_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transaction_payments"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "asaas_charges_organization_id_transaction_id_fkey"
+            columns: ["organization_id", "transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      asaas_connection_secrets: {
+        Row: {
+          api_key_ciphertext: string
+          api_key_iv: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          api_key_ciphertext: string
+          api_key_iv: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          api_key_ciphertext?: string
+          api_key_iv?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asaas_connection_secrets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asaas_connections: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          created_at: string
+          created_by: string
+          environment: string
+          id: string
+          last_checked_at: string | null
+          last_error_code: string | null
+          organization_id: string
+          public_token: string
+          settlement_account_id: string
+          status: string
+          updated_at: string
+          updated_by: string
+          webhook_id: string | null
+          webhook_token_hash: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          created_by: string
+          environment: string
+          id?: string
+          last_checked_at?: string | null
+          last_error_code?: string | null
+          organization_id: string
+          public_token?: string
+          settlement_account_id: string
+          status?: string
+          updated_at?: string
+          updated_by: string
+          webhook_id?: string | null
+          webhook_token_hash?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          created_by?: string
+          environment?: string
+          id?: string
+          last_checked_at?: string | null
+          last_error_code?: string | null
+          organization_id?: string
+          public_token?: string
+          settlement_account_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          webhook_id?: string | null
+          webhook_token_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asaas_connections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_connections_settlement_account_id_fkey"
+            columns: ["settlement_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_connections_organization_id_settlement_account_id_fkey"
+            columns: ["organization_id", "settlement_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      asaas_customers: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          organization_id: string
+          provider_customer_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          provider_customer_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          provider_customer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asaas_customers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_customers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_customers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_customers_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "asaas_customers_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: true
+            referencedRelation: "clients_secure"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      asaas_webhook_events: {
+        Row: {
+          diagnostic_code: string | null
+          event_id: string
+          event_type: string
+          id: string
+          organization_id: string
+          processed_at: string | null
+          provider_payment_id: string | null
+          received_at: string
+        }
+        Insert: {
+          diagnostic_code?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          organization_id: string
+          processed_at?: string | null
+          provider_payment_id?: string | null
+          received_at?: string
+        }
+        Update: {
+          diagnostic_code?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          organization_id?: string
+          processed_at?: string | null
+          provider_payment_id?: string | null
+          received_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asaas_webhook_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_executions: {
         Row: {
           automation_rule_id: string
@@ -5142,6 +5507,34 @@ export type Database = {
           _subscription_status: string
         }
         Returns: boolean
+      }
+      apply_asaas_payment_event: {
+        Args: {
+          _amount?: number
+          _connection_token: string
+          _event_id: string
+          _event_type: string
+          _paid_at?: string
+          _provider_payment_id: string
+          _provider_status: string
+        }
+        Returns: Json
+      }
+      client_portal_asaas_charges: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          amount: number
+          billing_type: string
+          charge_id: string
+          client_id: string
+          description: string
+          due_date: string
+          invoice_url: string
+          organization_id: string
+          organization_name: string
+          paid_at: string
+          status: string
+        }[]
       }
       archive_automation_rule: {
         Args: { _rule_id: string }
