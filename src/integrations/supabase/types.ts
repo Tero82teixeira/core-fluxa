@@ -1723,12 +1723,10 @@ export type Database = {
           is_active: boolean
           organization_id: string
           priority_after:
-            | Database["public"]["Enums"]["communication_priority"]
-            | null
+            Database["public"]["Enums"]["communication_priority"] | null
           reply_content: string | null
           status_after:
-            | Database["public"]["Enums"]["communication_status"]
-            | null
+            Database["public"]["Enums"]["communication_status"] | null
           title: string
           updated_at: string
           updated_by: string | null
@@ -1742,12 +1740,10 @@ export type Database = {
           is_active?: boolean
           organization_id: string
           priority_after?:
-            | Database["public"]["Enums"]["communication_priority"]
-            | null
+            Database["public"]["Enums"]["communication_priority"] | null
           reply_content?: string | null
           status_after?:
-            | Database["public"]["Enums"]["communication_status"]
-            | null
+            Database["public"]["Enums"]["communication_status"] | null
           title: string
           updated_at?: string
           updated_by?: string | null
@@ -1761,12 +1757,10 @@ export type Database = {
           is_active?: boolean
           organization_id?: string
           priority_after?:
-            | Database["public"]["Enums"]["communication_priority"]
-            | null
+            Database["public"]["Enums"]["communication_priority"] | null
           reply_content?: string | null
           status_after?:
-            | Database["public"]["Enums"]["communication_status"]
-            | null
+            Database["public"]["Enums"]["communication_status"] | null
           title?: string
           updated_at?: string
           updated_by?: string | null
@@ -2992,6 +2986,146 @@ export type Database = {
           },
         ]
       }
+      lead_capture_forms: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          is_active: boolean
+          organization_id: string
+          public_token: string
+          success_message: string
+          title: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          organization_id: string
+          public_token?: string
+          success_message?: string
+          title?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          organization_id?: string
+          public_token?: string
+          success_message?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_capture_forms_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_capture_submissions: {
+        Row: {
+          client_id: string
+          company: string | null
+          consent_at: string
+          contact_fingerprint: string
+          email: string | null
+          form_id: string
+          id: string
+          message: string | null
+          name: string
+          opportunity_id: string
+          organization_id: string
+          phone: string | null
+          privacy_notice_version: string
+          received_at: string
+          source: string
+        }
+        Insert: {
+          client_id: string
+          company?: string | null
+          consent_at: string
+          contact_fingerprint: string
+          email?: string | null
+          form_id: string
+          id?: string
+          message?: string | null
+          name: string
+          opportunity_id: string
+          organization_id: string
+          phone?: string | null
+          privacy_notice_version?: string
+          received_at?: string
+          source?: string
+        }
+        Update: {
+          client_id?: string
+          company?: string | null
+          consent_at?: string
+          contact_fingerprint?: string
+          email?: string | null
+          form_id?: string
+          id?: string
+          message?: string | null
+          name?: string
+          opportunity_id?: string
+          organization_id?: string
+          phone?: string | null
+          privacy_notice_version?: string
+          received_at?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_capture_submissions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_capture_submissions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_capture_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "lead_capture_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_capture_submissions_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_capture_submissions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_acceptances: {
         Row: {
           acceptance_source: string
@@ -3607,11 +3741,9 @@ export type Database = {
           current_control: string | null
           date_format: string | null
           default_communication_channel:
-            | Database["public"]["Enums"]["communication_channel"]
-            | null
+            Database["public"]["Enums"]["communication_channel"] | null
           default_communication_priority:
-            | Database["public"]["Enums"]["communication_priority"]
-            | null
+            Database["public"]["Enums"]["communication_priority"] | null
           default_expense_category_id: string | null
           default_financial_account_id: string | null
           default_follow_up_hours: number | null
@@ -3619,8 +3751,7 @@ export type Database = {
           default_responsible_id: string | null
           default_task_due_days: number | null
           default_task_priority:
-            | Database["public"]["Enums"]["priority_level"]
-            | null
+            Database["public"]["Enums"]["priority_level"] | null
           district: string | null
           employees_range: string | null
           financial_alert_days: number | null
@@ -3665,11 +3796,9 @@ export type Database = {
           current_control?: string | null
           date_format?: string | null
           default_communication_channel?:
-            | Database["public"]["Enums"]["communication_channel"]
-            | null
+            Database["public"]["Enums"]["communication_channel"] | null
           default_communication_priority?:
-            | Database["public"]["Enums"]["communication_priority"]
-            | null
+            Database["public"]["Enums"]["communication_priority"] | null
           default_expense_category_id?: string | null
           default_financial_account_id?: string | null
           default_follow_up_hours?: number | null
@@ -3677,8 +3806,7 @@ export type Database = {
           default_responsible_id?: string | null
           default_task_due_days?: number | null
           default_task_priority?:
-            | Database["public"]["Enums"]["priority_level"]
-            | null
+            Database["public"]["Enums"]["priority_level"] | null
           district?: string | null
           employees_range?: string | null
           financial_alert_days?: number | null
@@ -3723,11 +3851,9 @@ export type Database = {
           current_control?: string | null
           date_format?: string | null
           default_communication_channel?:
-            | Database["public"]["Enums"]["communication_channel"]
-            | null
+            Database["public"]["Enums"]["communication_channel"] | null
           default_communication_priority?:
-            | Database["public"]["Enums"]["communication_priority"]
-            | null
+            Database["public"]["Enums"]["communication_priority"] | null
           default_expense_category_id?: string | null
           default_financial_account_id?: string | null
           default_follow_up_hours?: number | null
@@ -3735,8 +3861,7 @@ export type Database = {
           default_responsible_id?: string | null
           default_task_due_days?: number | null
           default_task_priority?:
-            | Database["public"]["Enums"]["priority_level"]
-            | null
+            Database["public"]["Enums"]["priority_level"] | null
           district?: string | null
           employees_range?: string | null
           financial_alert_days?: number | null
@@ -5724,6 +5849,15 @@ export type Database = {
           first_reminder_minutes: number
         }[]
       }
+      get_public_lead_capture_form: {
+        Args: { _public_token: string }
+        Returns: {
+          description: string
+          organization_name: string
+          success_message: string
+          title: string
+        }[]
+      }
       get_organization_settings: {
         Args: { _organization_id: string }
         Returns: Json
@@ -6210,6 +6344,17 @@ export type Database = {
         }
         Returns: string
       }
+      save_lead_capture_form: {
+        Args: {
+          _description: string
+          _is_active: boolean
+          _organization_id: string
+          _rotate_token?: boolean
+          _success_message: string
+          _title: string
+        }
+        Returns: Json
+      }
       seed_default_document_types: {
         Args: { _org: string }
         Returns: undefined
@@ -6317,6 +6462,20 @@ export type Database = {
       set_scheduled_automation_active: {
         Args: { _is_active: boolean; _rule_id: string }
         Returns: undefined
+      }
+      submit_public_lead: {
+        Args: {
+          _company?: string
+          _consent?: boolean
+          _email?: string
+          _message?: string
+          _name: string
+          _phone?: string
+          _public_token: string
+          _source?: string
+          _website?: string
+        }
+        Returns: Json
       }
       staff_client_portal_communication_entries: {
         Args: { _organization_id: string; _thread_id: string }
@@ -6540,11 +6699,7 @@ export type Database = {
         | "visualizador"
         | "cliente_externo"
       checklist_status:
-        | "pendente"
-        | "recebido"
-        | "em_analise"
-        | "aprovado"
-        | "rejeitado"
+        "pendente" | "recebido" | "em_analise" | "aprovado" | "rejeitado"
       client_status:
         | "lead"
         | "em_cadastro"
@@ -6553,12 +6708,7 @@ export type Database = {
         | "inativo"
         | "arquivado"
       communication_channel:
-        | "whatsapp"
-        | "telefone"
-        | "email"
-        | "presencial"
-        | "interno"
-        | "outro"
+        "whatsapp" | "telefone" | "email" | "presencial" | "interno" | "outro"
       communication_entry_type:
         | "mensagem"
         | "nota_interna"
@@ -6597,11 +6747,7 @@ export type Database = {
         | "vencido"
         | "arquivado"
       financial_status:
-        | "nao_aplicavel"
-        | "pendente"
-        | "parcial"
-        | "pago"
-        | "atrasado"
+        "nao_aplicavel" | "pendente" | "parcial" | "pago" | "atrasado"
       monitoring_status: "ativo" | "em_renovacao" | "renovado" | "arquivado"
       person_type: "pf" | "pj"
       priority_level: "baixa" | "media" | "alta" | "critica"
@@ -6667,8 +6813,7 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -6692,8 +6837,7 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -6717,8 +6861,7 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
