@@ -17,7 +17,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { organizationDisplayName } from "@/lib/organization-name";
-import { NAV_GROUPS, NAV_ITEMS } from "@/lib/navigation";
+import { NAV_GROUPS, NAV_ITEMS, navItemVisibleForRole } from "@/lib/navigation";
 import { initials } from "@/lib/format";
 import { useTheme } from "@/lib/theme";
 import { useWorkspace } from "@/lib/workspace";
@@ -85,6 +85,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
           const items = NAV_ITEMS.filter(
             (item) =>
               item.group === group.key &&
+              navItemVisibleForRole(item.to, role) &&
               (item.to !== "/assinatura" || canManageSubscription(role)),
           );
           if (items.length === 0) return null;
