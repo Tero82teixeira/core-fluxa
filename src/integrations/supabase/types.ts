@@ -6046,6 +6046,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_asaas_client_payment_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       create_automation_rule: {
         Args: {
           _organization_id: string
@@ -6058,10 +6062,6 @@ export type Database = {
           trigger_type: string
         }
         Returns: string
-      }
-      create_asaas_client_payment_notifications: {
-        Args: { _as_of?: string }
-        Returns: number
       }
       create_client_birthday_notifications: {
         Args: { _as_of?: string }
