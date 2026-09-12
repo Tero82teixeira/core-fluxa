@@ -39,6 +39,7 @@ import { Route as AuthenticatedTarefasRouteImport } from './routes/_authenticate
 import { Route as CaptarTokenRouteImport } from './routes/captar.$token'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as PortalDoClienteTokenRouteImport } from './routes/portal-do-cliente.$token'
+import { Route as PropostaTokenRouteImport } from './routes/proposta.$token'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as AuthenticatedClientesClientIdRouteImport } from './routes/_authenticated/clientes.$clientId'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
@@ -202,6 +203,11 @@ const PortalDoClienteTokenRoute = PortalDoClienteTokenRouteImport.update({
   path: '/portal-do-cliente/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PropostaTokenRoute = PropostaTokenRouteImport.update({
+  id: '/proposta/$token',
+  path: '/proposta/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedClientesIndexRoute =
   AuthenticatedClientesIndexRouteImport.update({
     id: '/',
@@ -275,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/captar/$token': typeof CaptarTokenRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/portal-do-cliente/$token': typeof PortalDoClienteTokenRoute
+  '/proposta/$token': typeof PropostaTokenRoute
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
@@ -311,6 +318,7 @@ export interface FileRoutesByTo {
   '/captar/$token': typeof CaptarTokenRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/portal-do-cliente/$token': typeof PortalDoClienteTokenRoute
+  '/proposta/$token': typeof PropostaTokenRoute
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
@@ -351,6 +359,7 @@ export interface FileRoutesById {
   '/captar/$token': typeof CaptarTokenRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/portal-do-cliente/$token': typeof PortalDoClienteTokenRoute
+  '/proposta/$token': typeof PropostaTokenRoute
   '/_authenticated/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/_authenticated/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
@@ -391,6 +400,7 @@ export interface FileRouteTypes {
     | '/captar/$token'
     | '/convite/$token'
     | '/portal-do-cliente/$token'
+    | '/proposta/$token'
     | '/clientes/$clientId'
     | '/clientes/novo'
     | '/processos/$processId'
@@ -427,6 +437,7 @@ export interface FileRouteTypes {
     | '/captar/$token'
     | '/convite/$token'
     | '/portal-do-cliente/$token'
+    | '/proposta/$token'
     | '/clientes/$clientId'
     | '/clientes/novo'
     | '/processos/$processId'
@@ -466,6 +477,7 @@ export interface FileRouteTypes {
     | '/captar/$token'
     | '/convite/$token'
     | '/portal-do-cliente/$token'
+    | '/proposta/$token'
     | '/_authenticated/clientes/$clientId'
     | '/_authenticated/clientes/novo'
     | '/_authenticated/processos/$processId'
@@ -486,6 +498,7 @@ export interface RootRouteChildren {
   CaptarTokenRoute: typeof CaptarTokenRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
   PortalDoClienteTokenRoute: typeof PortalDoClienteTokenRoute
+  PropostaTokenRoute: typeof PropostaTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -700,6 +713,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalDoClienteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/proposta/$token': {
+      id: '/proposta/$token'
+      path: '/proposta/$token'
+      fullPath: '/proposta/$token'
+      preLoaderRoute: typeof PropostaTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/clientes/': {
       id: '/_authenticated/clientes/'
       path: '/'
@@ -852,6 +872,7 @@ const rootRouteChildren: RootRouteChildren = {
   CaptarTokenRoute: CaptarTokenRoute,
   ConviteTokenRoute: ConviteTokenRoute,
   PortalDoClienteTokenRoute: PortalDoClienteTokenRoute,
+  PropostaTokenRoute: PropostaTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

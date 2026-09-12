@@ -107,20 +107,30 @@ async function processJob(service: Service, job: Job) {
     ["paid", "cancelled"].includes(transaction.status)
   )
     throw new Error("ASAAS_TRANSACTION_NOT_ELIGIBLE");
-  if (!transaction.recurrence_id) return;
-  const { data: recurrence } = await service
-    .from("financial_recurrences")
-    .select("id,status,asaas_auto_charge,archived_at")
-    .eq("organization_id", job.organization_id)
-    .eq("id", transaction.recurrence_id)
-    .maybeSingle();
-  if (
-    !recurrence ||
-    recurrence.status !== "active" ||
-    !recurrence.asaas_auto_charge ||
-    recurrence.archived_at
-  )
-    return;
+  if (transaction.recurrence_id) {
+    const { data: recurrence } = await service
+      .from("financial_recurrences")
+      .select("id,status,asaas_auto_charge,archived_at")
+      .eq("organization_id", job.organization_id)
+      .eq("id", transaction.recurrence_id)
+      .maybeSingle();
+    if (
+      !recurrence ||
+      recurrence.status !== "active" ||
+      !recurrence.asaas_auto_charge ||
+      recurrence.archived_at
+    )
+      return;
+  } else if (transaction.commercial_proposal_id) {
+    const { data: proposal } = await service
+      .from("commercial_proposals")
+      .select("id,status,asaas_auto_charge,archived_at")
+      .eq("organization_id", job.organization_id)
+      .eq("id", transaction.commercial_proposal_id)
+      .maybeSingle();
+    if (!proposal || proposal.status !== "accepted" || !proposal.asaas_auto_charge || proposal.archived_at)
+      return;
+  } else return;
   const { data: existingRows } = await service
     .from("asaas_charges")
     .select("id,status")

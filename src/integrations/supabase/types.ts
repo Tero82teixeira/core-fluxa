@@ -2020,6 +2020,213 @@ export type Database = {
           },
         ]
       }
+      commercial_proposal_counters: {
+        Row: {
+          next_number: number
+          organization_id: string
+          proposal_year: number
+        }
+        Insert: {
+          next_number?: number
+          organization_id: string
+          proposal_year: number
+        }
+        Update: {
+          next_number?: number
+          organization_id?: string
+          proposal_year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_proposal_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commercial_proposals: {
+        Row: {
+          acceptance_user_agent_hash: string | null
+          accepted_at: string | null
+          accepted_by_name: string | null
+          amount: number
+          archived_at: string | null
+          asaas_auto_charge: boolean
+          billing_frequency: string
+          client_id: string | null
+          converted_client_id: string | null
+          converted_opportunity_id: string | null
+          created_at: string
+          created_by: string
+          customer_document: string | null
+          customer_document_digits: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          declined_at: string | null
+          first_due_date: string
+          first_viewed_at: string | null
+          id: string
+          initial_transaction_id: string | null
+          opportunity_id: string | null
+          organization_id: string
+          proposal_number: string
+          public_token: string
+          recurrence_id: string | null
+          responded_at: string | null
+          sent_at: string | null
+          service_description: string
+          status: string
+          terms: string
+          title: string
+          updated_at: string
+          updated_by: string
+          valid_until: string
+        }
+        Insert: {
+          acceptance_user_agent_hash?: string | null
+          accepted_at?: string | null
+          accepted_by_name?: string | null
+          amount: number
+          archived_at?: string | null
+          asaas_auto_charge?: boolean
+          billing_frequency?: string
+          client_id?: string | null
+          converted_client_id?: string | null
+          converted_opportunity_id?: string | null
+          created_at?: string
+          created_by: string
+          customer_document?: string | null
+          customer_document_digits?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          declined_at?: string | null
+          first_due_date: string
+          first_viewed_at?: string | null
+          id?: string
+          initial_transaction_id?: string | null
+          opportunity_id?: string | null
+          organization_id: string
+          proposal_number: string
+          public_token?: string
+          recurrence_id?: string | null
+          responded_at?: string | null
+          sent_at?: string | null
+          service_description: string
+          status?: string
+          terms: string
+          title: string
+          updated_at?: string
+          updated_by: string
+          valid_until: string
+        }
+        Update: {
+          acceptance_user_agent_hash?: string | null
+          accepted_at?: string | null
+          accepted_by_name?: string | null
+          amount?: number
+          archived_at?: string | null
+          asaas_auto_charge?: boolean
+          billing_frequency?: string
+          client_id?: string | null
+          converted_client_id?: string | null
+          converted_opportunity_id?: string | null
+          created_at?: string
+          created_by?: string
+          customer_document?: string | null
+          customer_document_digits?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          declined_at?: string | null
+          first_due_date?: string
+          first_viewed_at?: string | null
+          id?: string
+          initial_transaction_id?: string | null
+          opportunity_id?: string | null
+          organization_id?: string
+          proposal_number?: string
+          public_token?: string
+          recurrence_id?: string | null
+          responded_at?: string | null
+          sent_at?: string | null
+          service_description?: string
+          status?: string
+          terms?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_proposals_converted_client_id_fkey"
+            columns: ["converted_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_proposals_converted_client_id_fkey"
+            columns: ["converted_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_proposals_converted_opportunity_id_fkey"
+            columns: ["converted_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_proposals_initial_transaction_id_fkey"
+            columns: ["initial_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_proposals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_proposals_organization_id_opportunity_id_fkey"
+            columns: ["organization_id", "opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_opportunities"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "commercial_proposals_recurrence_id_fkey"
+            columns: ["recurrence_id"]
+            isOneToOne: false
+            referencedRelation: "financial_recurrences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_attachments: {
         Row: {
           client_id: string
@@ -3278,6 +3485,7 @@ export type Database = {
           archived_at: string | null
           category_id: string | null
           client_id: string | null
+          commercial_proposal_id: string | null
           competence_date: string | null
           created_at: string
           created_by: string
@@ -3305,6 +3513,7 @@ export type Database = {
           archived_at?: string | null
           category_id?: string | null
           client_id?: string | null
+          commercial_proposal_id?: string | null
           competence_date?: string | null
           created_at?: string
           created_by: string
@@ -3332,6 +3541,7 @@ export type Database = {
           archived_at?: string | null
           category_id?: string | null
           client_id?: string | null
+          commercial_proposal_id?: string | null
           competence_date?: string | null
           created_at?: string
           created_by?: string
@@ -3380,6 +3590,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_commercial_proposal_id_fkey"
+            columns: ["commercial_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_proposals"
             referencedColumns: ["id"]
           },
           {
@@ -5734,6 +5951,10 @@ export type Database = {
         Args: { _invitation_id: string }
         Returns: undefined
       }
+      cancel_commercial_proposal: {
+        Args: { _organization_id: string; _proposal_id: string }
+        Returns: undefined
+      }
       cancel_financial_transaction: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
@@ -6312,6 +6533,22 @@ export type Database = {
         Args: { _organization_id: string }
         Returns: Json
       }
+      get_public_commercial_proposal: {
+        Args: { _public_token: string }
+        Returns: {
+          amount: number
+          billing_frequency: string
+          customer_name: string
+          first_due_date: string
+          organization_name: string
+          proposal_number: string
+          service_description: string
+          status: string
+          terms: string
+          title: string
+          valid_until: string
+        }[]
+      }
       get_public_lead_capture_form: {
         Args: { _public_token: string }
         Returns: {
@@ -6692,6 +6929,14 @@ export type Database = {
         Args: { _as_of?: string; _batch_size?: number }
         Returns: number
       }
+      publish_commercial_proposal: {
+        Args: {
+          _organization_id: string
+          _proposal_id: string
+          _rotate_token?: boolean
+        }
+        Returns: string
+      }
       record_audit_event: {
         Args: {
           _action: string
@@ -6783,6 +7028,16 @@ export type Database = {
         Args: { _event_key: string }
         Returns: undefined
       }
+      respond_to_commercial_proposal: {
+        Args: {
+          _accepted_by_name?: string
+          _confirmed?: boolean
+          _decision: string
+          _public_token: string
+          _user_agent?: string
+        }
+        Returns: Json
+      }
       restore_financial_account: {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
@@ -6814,6 +7069,14 @@ export type Database = {
           _organization_id: string
           _sort_order?: number
           _title: string
+        }
+        Returns: string
+      }
+      save_commercial_proposal: {
+        Args: {
+          _organization_id: string
+          _payload: Json
+          _proposal_id: string
         }
         Returns: string
       }
