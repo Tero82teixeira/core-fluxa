@@ -7,10 +7,11 @@ export type ClientPortalNotification = {
   notification_id: string;
   organization_name: string;
   client_name: string;
-  kind: "process" | "document" | "document_request" | "communication" | "system";
+  kind: "process" | "document" | "document_request" | "communication" | "system" | "financial";
   title: string;
   body: string | null;
-  entity_type: "process" | "document" | "document_request" | "communication" | null;
+  entity_type:
+    "process" | "document" | "document_request" | "communication" | "asaas_charge" | null;
   entity_id: string | null;
   read_at: string | null;
   created_at: string;

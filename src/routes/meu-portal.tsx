@@ -140,6 +140,16 @@ function MyClientPortal() {
     user?.id ?? null,
   );
   const requestedThreadId = useMemo(() => typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("thread"), []);
+  const requestedPayment = useMemo(
+    () =>
+      typeof window === "undefined"
+        ? null
+        : {
+            tab: new URLSearchParams(window.location.search).get("tab"),
+            charge: new URLSearchParams(window.location.search).get("charge"),
+          },
+    [],
+  );
   const createCommunication = useCreateClientPortalCommunicationThread(user?.id ?? null);
   const addCommunicationEntry = useAddClientPortalCommunicationEntry(user?.id ?? null);
   const markCommunicationRead = useMarkClientPortalCommunicationRead(user?.id ?? null);
@@ -178,6 +188,17 @@ function MyClientPortal() {
   const [quickContent, setQuickContent] = useState("");
   const [quickReply, setQuickReply] = useState("");
   const communicationTimelineRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (requestedPayment?.tab !== "pagamentos") return;
+    setActiveTab("pagamentos");
+    if (!requestedPayment.charge) return;
+    setHighlightedEntity(`asaas_charge:${requestedPayment.charge}`);
+    window.setTimeout(() => {
+      document
+        .getElementById(portalEntityElementId("asaas_charge", requestedPayment.charge!))
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 250);
+  }, [requestedPayment]);
   const quickChatTimelineRef = useRef<HTMLDivElement>(null);
   const communicationFileInputRef = useRef<HTMLInputElement>(null);
   const quickChatFileInputRef = useRef<HTMLInputElement>(null);
@@ -1673,7 +1694,7 @@ function MyClientPortal() {
             </TabsContent>
 
             <TabsContent value="pagamentos" className="space-y-4">
-              <PortalPayments charges={charges} />
+              <PortalPayments charges={charges} highlightedEntity={highlightedEntity} />
             </TabsContent>
 
             <TabsContent value="ajuda" className="space-y-4">
@@ -2138,6 +2159,7 @@ function notificationDestination(
   if (entityType === "document") return "documentos";
   if (entityType === "document_request") return "pendencias";
   if (entityType === "communication") return "comunicacao";
+  if (entityType === "asaas_charge") return "pagamentos";
   return null;
 }
 
@@ -2656,7 +2678,13 @@ const PORTAL_ASAAS_STATUS: Record<PortalAsaasCharge["status"], { label: string; 
   failed: { label: "Falhou", tone: "danger" },
 };
 
-function PortalPayments({ charges }: { charges: ReturnType<typeof usePortalAsaasCharges> }) {
+function PortalPayments({
+  charges,
+  highlightedEntity,
+}: {
+  charges: ReturnType<typeof usePortalAsaasCharges>;
+  highlightedEntity: string | null;
+}) {
   if (charges.isLoading) return <LoadingRows />;
   if (charges.isError) return <ContentError retry={() => void charges.refetch()} />;
   if (!charges.data?.length)
@@ -2683,7 +2711,15 @@ function PortalPayments({ charges }: { charges: ReturnType<typeof usePortalAsaas
             const status = PORTAL_ASAAS_STATUS[charge.status];
             const payable = ["pending", "confirmed", "overdue"].includes(charge.status);
             return (
-              <article key={charge.charge_id} className="rounded-2xl border bg-background p-4">
+              <article
+                id={portalEntityElementId("asaas_charge", charge.charge_id)}
+                key={charge.charge_id}
+                className={`rounded-2xl border bg-background p-4 transition-colors ${
+                  highlightedEntity === `asaas_charge:${charge.charge_id}`
+                    ? "border-primary bg-primary/5"
+                    : ""
+                }`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground">{charge.organization_name}</p>

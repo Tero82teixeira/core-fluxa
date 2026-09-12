@@ -22,6 +22,7 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
       : [];
 
     assert.deepEqual(functionEntries, [
+      "asaas-billing-automation/index.ts",
       "asaas-connector/index.ts",
       "asaas-webhook/index.ts",
       "communication-channel-send/index.ts",
@@ -37,6 +38,7 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
       "kiwify-webhook",
       "asaas-connector",
       "asaas-webhook",
+      "asaas-billing-automation",
       "communication-copilot",
       "communication-push",
       "communication-channel-send",

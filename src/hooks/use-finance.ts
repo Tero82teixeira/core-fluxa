@@ -18,6 +18,7 @@ export type FinanceData = {
   documents: any[];
   members: any[];
   asaasCharges: any[];
+  asaasChargeJobs: any[];
   asaasConnection: any | null;
 };
 
@@ -36,7 +37,7 @@ export function useFinance(organizationId: string | null) {
           .eq("organization_id", organizationId)
           .is("archived_at", null)
           .limit(2000);
-      const [results, asaasChargeResult, asaasConnectionResult] = await Promise.all([
+      const [results, asaasChargeResult, asaasConnectionResult, asaasChargeJobsResult] = await Promise.all([
         Promise.all([
           query("financial_transactions"),
           query("financial_categories"),
@@ -55,11 +56,15 @@ export function useFinance(organizationId: string | null) {
           "asaas_connections",
           "id,organization_id,status,environment,account_name,settlement_account_id,last_checked_at,last_error_code",
         ),
+        query(
+          "asaas_charge_jobs",
+          "id,organization_id,transaction_id,status,attempts,last_attempt_at,last_error_code,updated_at",
+        ),
       ]);
       const failed = results.find((x) => x.error);
       if (failed?.error) throw failed.error;
       const missing = (error: any) => error && ["PGRST205", "42P01"].includes(String(error.code));
-      const asaasFailure = [asaasChargeResult, asaasConnectionResult].find(
+      const asaasFailure = [asaasChargeResult, asaasConnectionResult, asaasChargeJobsResult].find(
         (x) => x.error && !missing(x.error),
       );
       if (asaasFailure?.error) throw asaasFailure.error;
@@ -89,6 +94,7 @@ export function useFinance(organizationId: string | null) {
         documents,
         members,
         asaasCharges: asaasChargeResult.error ? [] : (asaasChargeResult.data ?? []),
+        asaasChargeJobs: asaasChargeJobsResult.error ? [] : (asaasChargeJobsResult.data ?? []),
         asaasConnection: asaasConnectionResult.error
           ? null
           : (asaasConnectionResult.data?.[0] ?? null),

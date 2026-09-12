@@ -25,13 +25,13 @@ describe("cobranças Asaas por organização", () => {
     assert.match(migration, /FOREIGN KEY \(organization_id,transaction_id\)/);
     assert.match(migration, /FOREIGN KEY \(organization_id,client_id\)/);
     assert.match(migration, /asaas_one_open_charge_per_transaction/);
-    assert.match(connector, /externalReference:transaction\.id/);
-    assert.match(connector, /externalReference:client\.id/);
+    assert.match(connector, /externalReference:\s*transaction\.id/);
+    assert.match(connector, /externalReference:\s*client\.id/);
     assert.match(connector, /connector-recovery-/);
   });
 
   test("checkout fica hospedado no Asaas sem dados de cartão no FLUXA", () => {
-    assert.match(connector, /billingType:"UNDEFINED"/);
+    assert.match(connector, /billingType:\s*"UNDEFINED"/);
     assert.match(connector, /invoice_url/);
     assert.doesNotMatch(migration, /card_number|cvv|security_code|card_token/i);
     assert.match(portal, /O FLUXA não armazena dados do seu/);
@@ -59,7 +59,7 @@ describe("cobranças Asaas por organização", () => {
     assert.match(migration, /ASAAS_PAYMENT_MANAGED_AUTOMATICALLY/);
     assert.match(finance, /Cancele primeiro a cobrança ativa no Asaas/);
     assert.match(finance, /conciliados automaticamente pelo Asaas/);
-    assert.match(connector, /action==="cancel_charge"/);
+    assert.match(connector, /action\s*===\s*"cancel_charge"/);
   });
 
   test("empresa gerencia cobranças e cliente acessa somente seu portal", () => {

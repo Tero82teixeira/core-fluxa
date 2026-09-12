@@ -40,10 +40,15 @@ export type AsaasCharge = {
 
 async function invoke(body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke("asaas-connector", { body });
-  if (error)
-    throw Object.assign(new Error((data as any)?.error || error.message), {
-      code: (data as any)?.error,
-    });
+  if (error) {
+    let responseCode = (data as any)?.error as string | undefined;
+    const context = (error as any)?.context;
+    if (!responseCode && context instanceof Response) {
+      const payload = await context.clone().json().catch(() => null);
+      responseCode = payload?.error;
+    }
+    throw Object.assign(new Error(responseCode || error.message), { code: responseCode });
+  }
   if (data?.error) throw Object.assign(new Error(data.error), { code: data.error });
   return data;
 }
@@ -111,6 +116,28 @@ export function useCancelAsaasCharge(organizationId: string | null) {
     mutationFn: async (chargeId: string) => {
       if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
       return invoke({ action: "cancel_charge", organizationId, chargeId });
+    },
+    onSuccess: () => client.invalidateQueries({ queryKey: ["finance", organizationId] }),
+  });
+}
+
+export function useSyncAsaasCharge(organizationId: string | null) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (chargeId: string): Promise<AsaasCharge> => {
+      if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
+      return (await invoke({ action: "sync_charge", organizationId, chargeId })).charge;
+    },
+    onSuccess: () => client.invalidateQueries({ queryKey: ["finance", organizationId] }),
+  });
+}
+
+export function useRetryAsaasChargeJob(organizationId: string | null) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (jobId: string) => {
+      if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
+      return invoke({ action: "retry_charge_job", organizationId, jobId });
     },
     onSuccess: () => client.invalidateQueries({ queryKey: ["finance", organizationId] }),
   });

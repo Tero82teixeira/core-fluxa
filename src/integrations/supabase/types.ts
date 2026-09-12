@@ -14,6 +14,70 @@ export type Database = {
   }
   public: {
     Tables: {
+      asaas_charge_jobs: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          id: string
+          last_attempt_at: string | null
+          last_error_code: string | null
+          next_attempt_at: string
+          organization_id: string
+          status: string
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_error_code?: string | null
+          next_attempt_at?: string
+          organization_id: string
+          status?: string
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_error_code?: string | null
+          next_attempt_at?: string
+          organization_id?: string
+          status?: string
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asaas_charge_jobs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_charge_jobs_organization_id_transaction_id_fkey"
+            columns: ["organization_id", "transaction_id"]
+            isOneToOne: true
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "asaas_charge_jobs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asaas_charges: {
         Row: {
           amount: number
@@ -334,6 +398,39 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asaas_reminder_push_claims: {
+        Row: {
+          claimed_at: string
+          notification_id: string
+          subscription_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          notification_id: string
+          subscription_id: string
+        }
+        Update: {
+          claimed_at?: string
+          notification_id?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asaas_reminder_push_claims_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_reminder_push_claims_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "push_subscriptions"
             referencedColumns: ["id"]
           },
         ]
@@ -2994,6 +3091,8 @@ export type Database = {
           account_id: string | null
           amount: number
           archived_at: string | null
+          asaas_auto_charge: boolean
+          asaas_charge_days_before: number
           category_id: string | null
           client_id: string | null
           created_at: string
@@ -3016,6 +3115,8 @@ export type Database = {
           account_id?: string | null
           amount: number
           archived_at?: string | null
+          asaas_auto_charge?: boolean
+          asaas_charge_days_before?: number
           category_id?: string | null
           client_id?: string | null
           created_at?: string
@@ -3038,6 +3139,8 @@ export type Database = {
           account_id?: string | null
           amount?: number
           archived_at?: string | null
+          asaas_auto_charge?: boolean
+          asaas_charge_days_before?: number
           category_id?: string | null
           client_id?: string | null
           created_at?: string
@@ -5660,6 +5763,27 @@ export type Database = {
         }
         Returns: string
       }
+      claim_asaas_charge_jobs: {
+        Args: { _limit?: number }
+        Returns: {
+          job_id: string
+          organization_id: string
+          transaction_id: string
+        }[]
+      }
+      claim_asaas_reminder_push_deliveries: {
+        Args: { _limit?: number }
+        Returns: {
+          action_url: string
+          auth_key: string
+          body: string
+          endpoint: string
+          notification_id: string
+          p256dh: string
+          subscription_id: string
+          title: string
+        }[]
+      }
       claim_portal_communication_thread: {
         Args: { _thread_id: string }
         Returns: undefined
@@ -5906,6 +6030,10 @@ export type Database = {
         Args: { _from: string; _organization_id: string; _to: string }
         Returns: Json
       }
+      complete_asaas_charge_job: {
+        Args: { _error_code?: string; _job_id: string; _succeeded: boolean }
+        Returns: undefined
+      }
       complete_communication_channel_send: {
         Args: {
           _actor_id: string
@@ -5930,6 +6058,10 @@ export type Database = {
           trigger_type: string
         }
         Returns: string
+      }
+      create_asaas_client_payment_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
       }
       create_client_birthday_notifications: {
         Args: { _as_of?: string }
