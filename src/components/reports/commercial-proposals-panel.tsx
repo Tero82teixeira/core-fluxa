@@ -245,9 +245,21 @@ export function CommercialProposalsPanel({
                     ))}
                 </select>
               </label>
-              <label className="grid min-w-0 gap-1 text-xs">
-                Cliente existente
+              <div className="grid min-w-0 gap-1 text-xs">
+                <span>Cliente da proposta</span>
+                {form.clientId && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-9 w-full justify-start"
+                    onClick={() => setForm({ ...form, clientId: null })}
+                  >
+                    <Plus /> Novo cliente — criar no aceite
+                  </Button>
+                )}
                 <select
+                  aria-label="Cliente existente"
                   className={selectClass}
                   value={form.clientId ?? ""}
                   onChange={(event) => {
@@ -259,14 +271,14 @@ export function CommercialProposalsPanel({
                     });
                   }}
                 >
-                  <option value="">Criar ou localizar no aceite</option>
+                  <option value="">Novo cliente — criar no aceite</option>
                   {clients.map((row) => (
                     <option key={row.id} value={row.id}>
                       {row.name}
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
               <label className="grid gap-1 text-xs lg:col-span-2">
                 Serviço oferecido
                 <Textarea

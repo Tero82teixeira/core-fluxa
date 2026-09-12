@@ -68,3 +68,10 @@ test("proposal form contains selects and formats Brazilian contact fields", () =
   assert.match(proposalPanel, /slice\(0, 11\)/);
   assert.match(proposalPanel, /slice\(0, 14\)/);
 });
+
+
+test("proposal form exposes an explicit new-client choice", () => {
+  assert.match(proposalPanel, /Novo cliente — criar no aceite/);
+  assert.match(proposalPanel, /onClick=\{\(\) => setForm\(\{ \.\.\.form, clientId: null \}\)\}/);
+  assert.match(proposalPanel, /aria-label="Cliente existente"/);
+});
