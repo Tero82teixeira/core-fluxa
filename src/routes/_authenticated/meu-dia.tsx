@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { GettingStartedCard } from "@/components/onboarding/getting-started-card";
 import { useCommunicationThreads } from "@/hooks/use-communication";
 import { useTasks } from "@/hooks/use-operations";
 import { useStaffPortalServiceCenter } from "@/hooks/use-staff-portal-service-center";
@@ -106,6 +107,8 @@ function MyDayPage() {
           </Button>
         </div>
       </header>
+
+      <GettingStartedCard />
 
       <section aria-label="Resumo do meu dia" className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         <Metric label="Atrasados" value={data.summary.overdue} icon={AlertTriangle} critical />

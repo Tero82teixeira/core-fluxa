@@ -18,7 +18,7 @@ import {
   Wallet,
 } from "lucide-react";
 
-import type { IconType } from "@/lib/domain";
+import type { AppRole, IconType } from "@/lib/domain";
 
 export type NavGroupKey = "operacao" | "gestao" | "sistema";
 
@@ -60,3 +60,78 @@ export const NAV_GROUPS: { key: NavGroupKey; label: string }[] = [
 export const PAGE_TITLES: Record<string, string> = Object.fromEntries(
   NAV_ITEMS.map((item) => [item.to, item.label]),
 );
+
+
+const ROLE_NAVIGATION: Partial<Record<AppRole, readonly string[]>> = {
+  gestor: [
+    "/meu-dia",
+    "/central",
+    "/clientes",
+    "/processos",
+    "/documentos",
+    "/monitoramento",
+    "/tarefas",
+    "/comunicacao",
+    "/relatorios",
+    "/equipe",
+    "/automacoes",
+    "/notificacoes",
+    "/ajuda",
+    "/novidades",
+  ],
+  operacional: [
+    "/meu-dia",
+    "/central",
+    "/clientes",
+    "/processos",
+    "/documentos",
+    "/monitoramento",
+    "/tarefas",
+    "/comunicacao",
+    "/notificacoes",
+    "/ajuda",
+    "/novidades",
+  ],
+  atendimento: [
+    "/meu-dia",
+    "/central",
+    "/clientes",
+    "/tarefas",
+    "/comunicacao",
+    "/notificacoes",
+    "/ajuda",
+    "/novidades",
+  ],
+  financeiro: [
+    "/meu-dia",
+    "/central",
+    "/clientes",
+    "/financeiro",
+    "/relatorios",
+    "/notificacoes",
+    "/ajuda",
+    "/novidades",
+  ],
+  visualizador: [
+    "/meu-dia",
+    "/central",
+    "/clientes",
+    "/processos",
+    "/documentos",
+    "/monitoramento",
+    "/tarefas",
+    "/comunicacao",
+    "/relatorios",
+    "/notificacoes",
+    "/ajuda",
+    "/novidades",
+  ],
+  cliente_externo: ["/ajuda"],
+};
+
+export function navItemVisibleForRole(to: string, role: AppRole | null) {
+  if (!role || role === "superadmin" || role === "proprietario" || role === "administrador") {
+    return true;
+  }
+  return ROLE_NAVIGATION[role]?.includes(to) ?? false;
+}
