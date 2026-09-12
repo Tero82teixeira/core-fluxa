@@ -7286,8 +7286,8 @@ export type Database = {
       save_platform_trial_followup: {
         Args: {
           _mark_contacted?: boolean
-          _next_contact_at?: string | null
-          _notes?: string | null
+          _next_contact_at?: string
+          _notes?: string
           _organization_id: string
           _status: string
         }
