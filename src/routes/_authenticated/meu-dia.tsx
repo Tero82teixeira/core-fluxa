@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
+  BriefcaseBusiness,
+  Building2,
   CalendarCheck2,
   CheckCircle2,
   CheckSquare2,
@@ -20,6 +22,8 @@ import { GettingStartedCard } from "@/components/onboarding/getting-started-card
 import { useCommunicationThreads } from "@/hooks/use-communication";
 import { useTasks } from "@/hooks/use-operations";
 import { useStaffPortalServiceCenter } from "@/hooks/use-staff-portal-service-center";
+import { useCommercialOpportunityAlerts } from "@/hooks/use-reports";
+import { usePlatformTrialFollowUpAlerts } from "@/hooks/use-commercial-follow-up";
 import { canWriteCommunication } from "@/lib/communication";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { buildMyDay, type MyDayItem } from "@/lib/my-day";
@@ -41,6 +45,8 @@ const kindLabel: Record<MyDayItem["kind"], string> = {
   communication: "Atendimento",
   triage: "Triagem",
   document: "Documento",
+  commercial: "Comercial",
+  platform_trial: "Teste FLUXA",
 };
 
 const kindIcon = {
@@ -48,6 +54,8 @@ const kindIcon = {
   communication: MessageSquare,
   triage: UserRoundCheck,
   document: FileCheck2,
+  commercial: BriefcaseBusiness,
+  platform_trial: Building2,
 };
 
 const urgency = {
@@ -58,11 +66,13 @@ const urgency = {
 };
 
 function MyDayPage() {
-  const { organizationId, user, role, displayName } = useWorkspace();
+  const { organizationId, user, role, displayName, platformAdmin } = useWorkspace();
   const tasks = useTasks(organizationId);
   const communications = useCommunicationThreads(organizationId);
   const allowedPortal = canWriteCommunication(role);
   const portal = useStaffPortalServiceCenter(organizationId, allowedPortal);
+  const opportunities = useCommercialOpportunityAlerts(organizationId);
+  const platformTrials = usePlatformTrialFollowUpAlerts(platformAdmin);
   const canReviewDocuments = role === "proprietario" || role === "administrador";
   const data = buildMyDay({
     tasks: tasks.data ?? [],
@@ -70,8 +80,10 @@ function MyDayPage() {
     portalItems: portal.data ?? [],
     userId: user?.id ?? null,
     canReviewDocuments,
+    opportunities: opportunities.data ?? [],
+    platformTrials: platformTrials.data ?? [],
   });
-  const queries = [tasks, communications, portal];
+  const queries = [tasks, communications, portal, opportunities, platformTrials];
   const loading = queries.some((query) => query.isLoading);
   const refreshing = queries.some((query) => query.isFetching);
   const error = queries.some((query) => query.isError);
@@ -110,7 +122,10 @@ function MyDayPage() {
 
       <GettingStartedCard />
 
-      <section aria-label="Resumo do meu dia" className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+      <section
+        aria-label="Resumo do meu dia"
+        className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8"
+      >
         <Metric label="Atrasados" value={data.summary.overdue} icon={AlertTriangle} critical />
         <Metric label="Para hoje" value={data.summary.today} icon={Clock3} />
         <Metric label="Minhas tarefas" value={data.summary.assignedTasks} icon={CheckSquare2} />
@@ -122,6 +137,18 @@ function MyDayPage() {
         <Metric label="Sem responsável" value={data.summary.triage} icon={UserRoundCheck} />
         {canReviewDocuments && (
           <Metric label="Para analisar" value={data.summary.documents} icon={FileCheck2} />
+        )}
+        <Metric
+          label="Retornos comerciais"
+          value={data.summary.commercial}
+          icon={BriefcaseBusiness}
+        />
+        {platformAdmin && (
+          <Metric
+            label="Testes para contatar"
+            value={data.summary.platformTrials}
+            icon={Building2}
+          />
         )}
       </section>
 
@@ -197,10 +224,11 @@ function MyDayPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Shortcut href="/tarefas" label="Abrir minhas tarefas" icon={CheckSquare2} />
         <Shortcut href="/comunicacao" label="Responder clientes" icon={MessageSquare} />
         <Shortcut href="/comunicacao" label="Abrir triagem" icon={Inbox} />
+        <Shortcut href="/relatorios" label="Abrir funil comercial" icon={BriefcaseBusiness} />
       </div>
     </main>
   );
@@ -250,7 +278,7 @@ function Shortcut({
   label,
   icon: Icon,
 }: {
-  href: "/tarefas" | "/comunicacao";
+  href: "/tarefas" | "/comunicacao" | "/relatorios";
   label: string;
   icon: typeof Clock3;
 }) {

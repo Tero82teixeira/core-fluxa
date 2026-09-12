@@ -42,7 +42,14 @@ import {
   trialUsage,
   type TrialEngagementFilter,
 } from "@/lib/platform-trial-engagement";
+import {
+  commercialFollowUpStatusLabel,
+  contactStatusTone,
+  followUpDue,
+  type CommercialFollowUpStatus,
+} from "@/lib/commercial-follow-up";
 import type { Tables } from "@/integrations/supabase/types";
+import { CommercialFollowUpDialog } from "@/components/commercial/commercial-follow-up-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,6 +96,8 @@ type PlatformOrganization = {
   trade_name: string | null;
   owner_name: string | null;
   owner_email: string | null;
+  organization_phone: string | null;
+  organization_whatsapp: string | null;
   commercial_status: "trial" | "active" | "suspended";
   effective_status: EffectiveCommercialStatus;
   trial_started_at: string | null;
@@ -102,6 +111,10 @@ type PlatformOrganization = {
   task_count: number;
   document_count: number;
   last_activity_at: string | null;
+  follow_up_status: CommercialFollowUpStatus;
+  next_contact_at: string | null;
+  last_contact_at: string | null;
+  follow_up_notes: string | null;
 };
 
 type PlatformSubscription = Pick<
@@ -263,7 +276,10 @@ function PlatformAdministration() {
           .some((value) => String(value).toLocaleLowerCase("pt-BR").includes(term));
       return (
         matchesSearch &&
-        matchesTrialEngagementFilter(organization, trialFilter) &&
+        (trialFilter === "attention"
+          ? organization.effective_status === "trial" &&
+            (trialNeedsAttention(organization) || followUpDue(organization.next_contact_at))
+          : matchesTrialEngagementFilter(organization, trialFilter)) &&
         matchesPlatformSubscriptionFilter(
           subscription?.status ?? null,
           subscriptionFilter,
@@ -294,7 +310,11 @@ function PlatformAdministration() {
   const summary = {
     total: activeRows.length,
     trial: activeRows.filter((row) => row.effective_status === "trial").length,
-    trialsNeedingAttention: activeRows.filter((row) => trialNeedsAttention(row)).length,
+    trialsNeedingAttention: activeRows.filter(
+      (row) =>
+        trialNeedsAttention(row) ||
+        (row.effective_status === "trial" && followUpDue(row.next_contact_at)),
+    ).length,
     ...billing,
   };
 
@@ -407,7 +427,7 @@ function PlatformAdministration() {
             )}
           {filtered.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1320px] text-sm">
+              <table className="w-full min-w-[1540px] text-sm">
                 <thead>
                   <tr className="border-y bg-muted/40 text-left text-xs text-muted-foreground">
                     <th className="px-4 py-3 font-medium">Empresa</th>
@@ -417,6 +437,7 @@ function PlatformAdministration() {
                     <th className="px-4 py-3 font-medium">Próxima cobrança</th>
                     <th className="px-4 py-3 font-medium">Teste</th>
                     <th className="px-4 py-3 font-medium">Uso do teste</th>
+                    <th className="px-4 py-3 font-medium">Acompanhamento</th>
                     <th className="px-4 py-3 font-medium">Entrada</th>
                     <th className="px-4 py-3 text-right font-medium">Ações</th>
                   </tr>
@@ -491,6 +512,39 @@ function PlatformAdministration() {
                         )}
                       </td>
                       <TrialUsageCell organization={organization} />
+                      <td className="px-4 py-3">
+                        <div className="space-y-2">
+                          <Badge
+                            variant="outline"
+                            className={contactStatusTone(organization.follow_up_status)}
+                          >
+                            {commercialFollowUpStatusLabel[organization.follow_up_status]}
+                          </Badge>
+                          <p
+                            className={cn(
+                              "text-xs text-muted-foreground",
+                              followUpDue(organization.next_contact_at) &&
+                                "font-medium text-destructive",
+                            )}
+                          >
+                            {organization.next_contact_at
+                              ? `Retorno: ${formatDateTime(organization.next_contact_at)}`
+                              : "Próximo contato não definido"}
+                          </p>
+                          <CommercialFollowUpDialog
+                            mode="platform"
+                            organizationId={null}
+                            targetId={organization.organization_id}
+                            title={organization.trade_name || organization.legal_name}
+                            currentStatus={organization.follow_up_status}
+                            nextContactAt={organization.next_contact_at}
+                            summaryNotes={organization.follow_up_notes}
+                            email={organization.owner_email}
+                            whatsapp={organization.organization_whatsapp}
+                            phone={organization.organization_phone}
+                          />
+                        </div>
+                      </td>
                       <td className="px-4 py-3">{formatDate(organization.created_at)}</td>
                       <td className="px-4 py-3 text-right">
                         <CommercialActions

@@ -19,7 +19,7 @@ export function useReportData(organizationId: string | null) {
     queryFn: async () => {
       if (!organizationId) throw new Error("Selecione uma organização ativa para consultar relatórios.");
       const [clients, tasks, processes, documents, monitoring, members, goals, movements, communications, opportunities, opportunityMovements, memberGoals] = await Promise.all([
-        rows("clients_secure", "id,name,status,city,state,owner_id,owner_name,last_interaction_at,created_at,archived_at", organizationId),
+        rows("clients_secure", "id,name,email,phone,whatsapp,status,city,state,owner_id,owner_name,last_interaction_at,created_at,archived_at", organizationId),
         rows("tasks", "id,title,status,priority,due_at,completed_at,created_at,assignee_id,assignee_name,client_id,process_id,archived_at,deleted_at", organizationId),
         rows("processes", "id,code,title,stage,priority,owner_id,owner_name,client_id,opened_at,due_date,last_movement_at,value,financial_status,updated_at,archived_at", organizationId),
         rows("documents", "id,title,status,expiration_date,created_at,client_id,process_id,uploaded_by_name,archived_at", organizationId),
@@ -28,7 +28,7 @@ export function useReportData(organizationId: string | null) {
         rows("organization_performance_goals", "goal_month,new_clients_target,completed_tasks_target,completed_processes_target,updated_at", organizationId),
         rows("process_movements", "id,process_id,to_stage,created_at", organizationId),
         rows("communication_threads", "id,client_id,process_id,subject,status,priority,assigned_to,follow_up_at,created_at,archived_at", organizationId),
-        rows("commercial_opportunities", "id,client_id,title,stage,estimated_value,probability,owner_id,next_action_at,lost_reason,won_at,lost_at,created_at,updated_at,archived_at", organizationId),
+        rows("commercial_opportunities", "id,client_id,title,stage,contact_status,last_contact_at,estimated_value,probability,owner_id,next_action_at,lost_reason,won_at,lost_at,created_at,updated_at,archived_at", organizationId),
         rows("commercial_opportunity_stage_history", "id,opportunity_id,from_stage,to_stage,changed_by,changed_at", organizationId),
         rows("member_performance_goals", "user_id,goal_month,completed_tasks_target,completed_processes_target,updated_at", organizationId),
       ]);
@@ -56,7 +56,7 @@ export function useCommercialOpportunityAlerts(organizationId: string | null) {
       if (!organizationId) return [];
       const data = await rows(
         "commercial_opportunities",
-        "id,title,stage,estimated_value,owner_id,next_action_at,archived_at",
+        "id,title,stage,contact_status,estimated_value,owner_id,next_action_at,archived_at",
         organizationId,
       );
       return data.filter((row: any) => !row.archived_at && !["won", "lost"].includes(row.stage));
