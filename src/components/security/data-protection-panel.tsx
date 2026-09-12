@@ -86,18 +86,6 @@ export function DataProtectionPanel({
     }
   };
 
-  if (!canManage) {
-    return (
-      <Card>
-        <CardContent className="flex items-center gap-3 p-5 text-sm text-muted-foreground">
-          <ShieldCheck className="size-5 shrink-0 text-primary" />
-          Por segurança, somente proprietário e administrador podem exportar dados e consultar a
-          auditoria completa.
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <Card className="border-primary/20 bg-primary/[0.02]">
@@ -111,12 +99,21 @@ export function DataProtectionPanel({
               e históricos desta empresa.
             </CardDescription>
           </div>
-          <Button onClick={exportBackup} disabled={exporter.isPending || !organizationId}>
+          <Button
+            onClick={exportBackup}
+            disabled={!canManage || exporter.isPending || !organizationId}
+          >
             <Download className="size-4" />
             {exporter.isPending ? "Gerando backup…" : "Gerar backup agora"}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
+          {!canManage && (
+            <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+              <ShieldCheck className="size-4 shrink-0 text-primary" />
+              Somente proprietário e administrador podem gerar o arquivo completo.
+            </div>
+          )}
           {exporter.isPending && (
             <div className="space-y-2 rounded-lg border bg-background p-3" aria-live="polite">
               <div className="flex justify-between gap-3 text-sm">

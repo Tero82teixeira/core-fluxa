@@ -12,10 +12,6 @@ import {
 const hook = readFileSync("src/hooks/use-data-protection.ts", "utf8");
 const panel = readFileSync("src/components/security/data-protection-panel.tsx", "utf8");
 const settings = readFileSync("src/routes/_authenticated/configuracoes.tsx", "utf8");
-const migration = readFileSync(
-  "supabase/migrations/20261005120000_restrict_organization_audit_visibility.sql",
-  "utf8",
-);
 
 test("backup cobre os módulos essenciais sem exportar tabelas de segredos", () => {
   const tables = BACKUP_SECTIONS.map((section) => section.table);
@@ -58,14 +54,12 @@ test("exportação pagina dados, registra auditoria e informa limitações", () 
   assert.match(hook, /Segredos, chaves de API, tokens e credenciais/);
 });
 
-test("segurança mostra backup, histórico e auditoria somente para gestores autorizados", () => {
+test("segurança restringe a exportação e mantém a auditoria visível na própria empresa", () => {
   assert.match(settings, /DataProtectionPanel/);
   assert.match(settings, /canManage=\{canManageDataProtection\}/);
-  assert.match(panel, /somente proprietário e administrador/);
+  assert.match(panel, /Somente proprietário e administrador podem gerar o arquivo completo/);
   assert.match(panel, /Gerar backup agora/);
   assert.match(panel, /Histórico de backups/);
   assert.match(panel, /Auditoria da empresa/);
   assert.equal(auditActionLabel("organization.backup.exported"), "Backup exportado");
-  assert.match(migration, /has_org_role[\s\S]+proprietario[\s\S]+administrador/);
-  assert.match(migration, /OR public\.is_platform_admin\(\)/);
 });

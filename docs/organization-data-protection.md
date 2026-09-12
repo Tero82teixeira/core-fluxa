@@ -22,7 +22,6 @@ A central apresenta as 100 ações mais recentes da empresa, com busca por açã
 
 ## Permissões
 
-- Proprietário e administrador: exportação, histórico e auditoria completa.
-- Demais papéis: recebem uma explicação de acesso restrito.
-- A política `audit_select_management` repete a restrição no banco; ocultar a tela não é a única barreira.
+- Proprietário e administrador: podem gerar a exportação completa.
+- Membros ativos: podem consultar o histórico e a auditoria da própria empresa, conforme a política RLS já utilizada pelos módulos operacionais.
 - Todas as consultas continuam limitadas à empresa ativa pelas políticas de isolamento do banco.
