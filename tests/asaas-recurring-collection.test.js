@@ -25,6 +25,8 @@ describe("automação de cobranças recorrentes Asaas", () => {
   test("execução agendada usa credencial cifrada e autenticação de serviço", () => {
     assert.match(automation, /ASAAS_CREDENTIALS_ENCRYPTION_KEY/);
     assert.match(automation, /safeEqual\(token, serviceKey\)/);
+    assert.match(automation, /request\.headers\.get\("apikey"\)/);
+    assert.match(automation, /safeEqual\(apiKey, serviceKey\)/);
     assert.match(automation, /externalReference:\s*transaction\.id/);
     assert.match(automation, /claim_asaas_charge_jobs/);
     assert.match(automation, /complete_asaas_charge_job/);
