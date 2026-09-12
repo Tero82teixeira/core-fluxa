@@ -31,13 +31,38 @@ import {
 } from "@/hooks/use-commercial-proposals";
 
 type Row = Record<string, any>;
-const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
+const selectClass = "h-9 w-full min-w-0 max-w-full rounded-md border border-input bg-background px-3 text-sm";
 const money = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const isoDate = (days: number) => {
   const date = new Date();
   date.setDate(date.getDate() + days);
   return date.toISOString().slice(0, 10);
+};
+const formatPhone = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+const formatDocument = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length <= 11) {
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    if (digits.length <= 9) {
+      return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    }
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+  }
+  if (digits.length <= 12) {
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  }
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 };
 const emptyProposal = (): CommercialProposalInput => ({
   title: "",
@@ -194,7 +219,7 @@ export function CommercialProposalsPanel({
                   placeholder="Ex.: Assessoria contábil mensal"
                 />
               </label>
-              <label className="grid gap-1 text-xs">
+              <label className="grid min-w-0 gap-1 text-xs">
                 Oportunidade
                 <select
                   className={selectClass}
@@ -220,7 +245,7 @@ export function CommercialProposalsPanel({
                     ))}
                 </select>
               </label>
-              <label className="grid gap-1 text-xs">
+              <label className="grid min-w-0 gap-1 text-xs">
                 Cliente existente
                 <select
                   className={selectClass}
@@ -283,8 +308,10 @@ export function CommercialProposalsPanel({
                 <Input
                   inputMode="tel"
                   value={form.customerPhone ?? ""}
-                  maxLength={24}
-                  onChange={(event) => setForm({ ...form, customerPhone: event.target.value })}
+                  maxLength={15}
+                  onChange={(event) =>
+                    setForm({ ...form, customerPhone: formatPhone(event.target.value) })
+                  }
                 />
               </label>
               <label className="grid gap-1 text-xs">
@@ -293,7 +320,9 @@ export function CommercialProposalsPanel({
                   inputMode="numeric"
                   value={form.customerDocument ?? ""}
                   maxLength={18}
-                  onChange={(event) => setForm({ ...form, customerDocument: event.target.value })}
+                  onChange={(event) =>
+                    setForm({ ...form, customerDocument: formatDocument(event.target.value) })
+                  }
                 />
               </label>
               <label className="grid gap-1 text-xs">
