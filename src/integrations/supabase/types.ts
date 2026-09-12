@@ -5037,6 +5037,47 @@ export type Database = {
           },
         ]
       }
+      platform_trial_followups: {
+        Row: {
+          created_at: string
+          last_contact_at: string | null
+          next_contact_at: string | null
+          notes: string | null
+          organization_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          last_contact_at?: string | null
+          next_contact_at?: string | null
+          notes?: string | null
+          organization_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          last_contact_at?: string | null
+          next_contact_at?: string | null
+          notes?: string | null
+          organization_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_trial_followups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -6810,6 +6851,7 @@ export type Database = {
           organization_id: string
           owner_email: string
           owner_name: string
+          owner_phone: string
           trade_name: string
           trial_ends_at: string
           trial_started_at: string
@@ -6818,6 +6860,17 @@ export type Database = {
           task_count: number
           document_count: number
           last_activity_at: string
+        }[]
+      }
+      platform_trial_followups: {
+        Args: never
+        Returns: {
+          last_contact_at: string
+          next_contact_at: string
+          notes: string
+          organization_id: string
+          status: string
+          updated_at: string
         }[]
       }
       platform_support_open_count: { Args: never; Returns: number }
@@ -7228,6 +7281,16 @@ export type Database = {
       }
       set_platform_organization_archived: {
         Args: { _archived: boolean; _organization_id: string }
+        Returns: undefined
+      }
+      save_platform_trial_followup: {
+        Args: {
+          _mark_contacted?: boolean
+          _next_contact_at?: string | null
+          _notes?: string | null
+          _organization_id: string
+          _status: string
+        }
         Returns: undefined
       }
       set_scheduled_automation_active: {
