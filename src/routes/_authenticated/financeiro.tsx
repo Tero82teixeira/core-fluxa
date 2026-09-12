@@ -59,8 +59,11 @@ import { useFinance, useFinancialAction, useFinancialPayment } from "@/hooks/use
 import {
   useCancelAsaasCharge,
   useCreateAsaasCharge,
+  useRetryAsaasChargeJob,
+  useSyncAsaasCharge,
   type AsaasCharge,
 } from "@/hooks/use-asaas";
+import { asaasCollectionSummary, asaasErrorMessage } from "@/lib/asaas";
 import {
   availableFinancialAccounts,
   availableFinancialCategories,
@@ -1224,19 +1227,6 @@ function TransactionActions({
   );
 }
 
-function asaasError(error: unknown) {
-  const code = String((error as Error)?.message ?? error).toUpperCase();
-  if (code.includes("CLIENT_DOCUMENT_REQUIRED"))
-    return "Cadastre o CPF ou CNPJ do cliente antes de gerar a cobrança.";
-  if (code.includes("CLIENT_REQUIRED"))
-    return "Vincule um cliente ao lançamento antes de gerar a cobrança.";
-  if (code.includes("CONNECTION"))
-    return "Conecte a conta Asaas da empresa em Configurações > Financeiro.";
-  if (code.includes("PAYMENT_EXISTS"))
-    return "Este lançamento já possui pagamento registrado.";
-  return "Não foi possível concluir a operação no Asaas.";
-}
-
 function AsaasChargeButton({ organizationId, transaction, data, charge }: any) {
   const createCharge = useCreateAsaasCharge(organizationId);
   const connected = data.asaasConnection?.status === "connected";
@@ -1265,7 +1255,7 @@ function AsaasChargeButton({ organizationId, transaction, data, charge }: any) {
           toast.success("Cobrança criada no Asaas.");
           window.open(created.invoice_url, "_blank", "noopener,noreferrer");
         } catch (error) {
-          toast.error(asaasError(error));
+          toast.error(asaasErrorMessage(error));
         }
       }}
     >
@@ -1277,16 +1267,34 @@ function AsaasChargeButton({ organizationId, transaction, data, charge }: any) {
 
 function AsaasChargeCenter({ organizationId, data, editable }: any) {
   const cancelCharge = useCancelAsaasCharge(organizationId);
+  const syncCharge = useSyncAsaasCharge(organizationId);
+  const retryJob = useRetryAsaasChargeJob(organizationId);
   const charges = data.asaasCharges as AsaasCharge[];
-  const amount = (statuses: AsaasCharge["status"][]) =>
-    charges
-      .filter((charge) => statuses.includes(charge.status))
-      .reduce((total, charge) => total + Number(charge.amount), 0);
+  const jobs = data.asaasChargeJobs ?? [];
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [clientFilter, setClientFilter] = useState("all");
+  const [chargeSearch, setChargeSearch] = useState("");
+  const [dueFrom, setDueFrom] = useState("");
+  const [dueTo, setDueTo] = useState("");
+  const summary = asaasCollectionSummary(charges, jobs, data.transactions);
   const transactionName = (charge: AsaasCharge) =>
     data.transactions.find((item: any) => item.id === charge.transaction_id)?.description ??
     "Cobrança";
   const clientName = (charge: AsaasCharge) =>
     data.clients.find((item: any) => item.id === charge.client_id)?.name ?? "Cliente";
+  const filteredCharges = charges.filter((charge) => {
+    const term = chargeSearch.trim().toLocaleLowerCase("pt-BR");
+    return (
+      (statusFilter === "all" || charge.status === statusFilter) &&
+      (clientFilter === "all" || charge.client_id === clientFilter) &&
+      (!dueFrom || charge.due_date >= dueFrom) &&
+      (!dueTo || charge.due_date <= dueTo) &&
+      (!term ||
+        transactionName(charge).toLocaleLowerCase("pt-BR").includes(term) ||
+        clientName(charge).toLocaleLowerCase("pt-BR").includes(term))
+    );
+  });
+  const failedJobs = jobs.filter((job: any) => job.status === "failed");
   return (
     <div className="space-y-4">
       {data.asaasConnection?.status !== "connected" && (
@@ -1303,28 +1311,89 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
           </CardContent>
         </Card>
       )}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          ["Aguardando", amount(["pending", "confirmed"])],
-          ["Vencidas", amount(["overdue"])],
-          ["Recebidas", amount(["received"])],
+          ["Aguardando", brl(summary.awaiting)],
+          ["Vencidas", brl(summary.overdue)],
+          ["Recebidas", brl(summary.received)],
+          ["Clientes inadimplentes", String(summary.delinquentClients)],
         ].map(([label, value]) => (
           <Card key={String(label)}>
             <CardContent className="p-5">
               <p className="text-sm text-muted-foreground">{label}</p>
-              <p className="mt-1 text-2xl font-semibold">{brl(Number(value))}</p>
+              <p className="mt-1 text-2xl font-semibold">{value}</p>
             </CardContent>
           </Card>
         ))}
       </div>
+      <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
+        <Card>
+          <CardHeader className="pb-3"><CardTitle className="text-base">Tempo de atraso</CardTitle></CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-3">
+            {[
+              ["1–7 dias", summary.aging.firstWeek],
+              ["8–30 dias", summary.aging.firstMonth],
+              ["Mais de 30 dias", summary.aging.older],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="mt-1 font-semibold">{brl(Number(value))}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+        <Card className={summary.issues ? "border-warning/40 bg-warning/5" : "border-success/30 bg-success/5"}>
+          <CardHeader className="pb-3"><CardTitle className="text-base">Conciliação Asaas</CardTitle></CardHeader>
+          <CardContent>
+            <p className="font-semibold">{summary.issues ? "Precisa de atenção" : "Integração normal"}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {summary.issues ? `${summary.issues} item(ns) aguardando correção ou sincronização.` : "Cobranças e lançamentos estão conciliados."}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      {failedJobs.length > 0 && (
+        <Card className="border-warning/40">
+          <CardHeader className="pb-3"><CardTitle className="text-base">Cobranças automáticas com falha</CardTitle></CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {failedJobs.slice(0, 5).map((job: any) => (
+              <div key={job.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
+                <span>{data.transactions.find((row: any) => row.id === job.transaction_id)?.description ?? "Cobrança recorrente"}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-warning">{asaasErrorMessage(job.last_error_code)}</span>
+                  {editable && (
+                    <Button size="sm" variant="outline" disabled={retryJob.isPending} onClick={async () => {
+                      try { await retryJob.mutateAsync(job.id); toast.success("Nova tentativa programada."); }
+                      catch (error) { toast.error(asaasErrorMessage(error)); }
+                    }}>Tentar novamente</Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
       <Card>
-        <CardHeader>
+        <CardHeader className="space-y-4">
           <CardTitle className="text-base">Cobranças enviadas aos clientes</CardTitle>
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+            <Input placeholder="Buscar cliente ou cobrança" value={chargeSearch} onChange={(event) => setChargeSearch(event.target.value)} />
+            <select className={selectClass} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <option value="all">Todos os status</option>
+              {Object.entries(asaasStatus).map(([value, item]) => <option key={value} value={value}>{item.label}</option>)}
+            </select>
+            <select className={selectClass} value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}>
+              <option value="all">Todos os clientes</option>
+              {data.clients.map((client: any) => <option key={client.id} value={client.id}>{client.name}</option>)}
+            </select>
+            <Input aria-label="Vencimento inicial" type="date" value={dueFrom} onChange={(event) => setDueFrom(event.target.value)} />
+            <Input aria-label="Vencimento final" type="date" value={dueTo} onChange={(event) => setDueTo(event.target.value)} />
+          </div>
         </CardHeader>
         <CardContent>
-          {!charges.length ? (
+          {!filteredCharges.length ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              Nenhuma cobrança Asaas foi criada. Gere uma em uma receita vinculada a um cliente.
+              Nenhuma cobrança encontrada para os filtros selecionados.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -1340,8 +1409,8 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
                   </tr>
                 </thead>
                 <tbody>
-                  {charges.map((charge) => {
-                    const current = asaasStatus[charge.status];
+                  {filteredCharges.map((charge) => {
+                    const current = asaasStatus[charge.status] ?? { label: charge.status, tone: "neutral" as Tone };
                     const cancellable = ["pending", "confirmed", "overdue"].includes(
                       charge.status,
                     );
@@ -1358,6 +1427,10 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
                         </td>
                         <td className="px-2 py-3">
                           <div className="flex justify-end gap-2">
+                            <Button size="sm" variant="ghost" disabled={syncCharge.isPending} onClick={async () => {
+                              try { await syncCharge.mutateAsync(charge.id); toast.success("Cobrança sincronizada."); }
+                              catch (error) { toast.error(asaasErrorMessage(error)); }
+                            }}><RefreshCw /> Sincronizar</Button>
                             <Button asChild size="sm" variant="outline">
                               <a href={charge.invoice_url} target="_blank" rel="noreferrer">
                                 <ExternalLink /> Abrir
@@ -1385,7 +1458,7 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
                                           await cancelCharge.mutateAsync(charge.id);
                                           toast.success("Cobrança cancelada no Asaas.");
                                         } catch (error) {
-                                          toast.error(asaasError(error));
+                                          toast.error(asaasErrorMessage(error));
                                         }
                                       }}
                                     >
@@ -1875,6 +1948,9 @@ function Recurrences({ data, editable, action }: any) {
                       : r.status === "paused"
                         ? "Pausada"
                         : "Finalizada"}
+                    {r.asaas_auto_charge
+                      ? ` · Asaas automático (${r.asaas_charge_days_before} dia(s) antes)`
+                      : ""}
                   </p>
                 </div>
                 {editable && (
@@ -1930,6 +2006,8 @@ function RecurrenceDialog({ data, action, recurrence }: any) {
       client_id: recurrence?.client_id ?? "",
       process_id: recurrence?.process_id ?? "",
       notes: recurrence?.notes ?? "",
+      asaas_auto_charge: recurrence?.asaas_auto_charge ?? false,
+      asaas_charge_days_before: String(recurrence?.asaas_charge_days_before ?? 0),
     }));
   const field = (key: string, value: string) => setForm({ ...form, [key]: value });
   return (
@@ -1958,7 +2036,9 @@ function RecurrenceDialog({ data, action, recurrence }: any) {
           <Select
             label="Tipo"
             value={form.type}
-            set={(v: string) => field("type", v)}
+            set={(v: string) =>
+              setForm({ ...form, type: v, asaas_auto_charge: v === "income" && form.asaas_auto_charge })
+            }
             options={[
               ["income", "Receita"],
               ["expense", "Despesa"],
@@ -2044,6 +2124,32 @@ function RecurrenceDialog({ data, action, recurrence }: any) {
             set={(v: string) => field("process_id", v === "all" ? "" : v)}
             options={data.processes.map((x: any) => [x.id, `${x.code} — ${x.title}`])}
           />
+          {form.type === "income" && (
+            <label className="sm:col-span-2 flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 size-4"
+                checked={form.asaas_auto_charge}
+                onChange={(event) => setForm({ ...form, asaas_auto_charge: event.target.checked })}
+              />
+              <span>
+                <strong className="block">Gerar cobrança automática no Asaas</strong>
+                O lançamento e o link de pagamento serão criados automaticamente. É necessário selecionar um cliente com CPF/CNPJ.
+              </span>
+            </label>
+          )}
+          {form.asaas_auto_charge && (
+            <Label className="sm:col-span-2">
+              Criar cobrança com quantos dias de antecedência?
+              <Input
+                type="number"
+                min="0"
+                max="30"
+                value={form.asaas_charge_days_before}
+                onChange={(e) => field("asaas_charge_days_before", e.target.value)}
+              />
+            </Label>
+          )}
           <Label className="sm:col-span-2">
             Observações
             <Input value={form.notes} onChange={(e) => field("notes", e.target.value)} />
@@ -2055,7 +2161,11 @@ function RecurrenceDialog({ data, action, recurrence }: any) {
               saving ||
               !form.name.trim() ||
               Number(form.amount) <= 0 ||
-              Number(form.interval_count) < 1
+              Number(form.interval_count) < 1 ||
+              (form.asaas_auto_charge &&
+                (!form.client_id ||
+                  Number(form.asaas_charge_days_before) < 0 ||
+                  Number(form.asaas_charge_days_before) > 30))
             }
             onClick={async () => {
               setSaving(true);
@@ -2067,6 +2177,7 @@ function RecurrenceDialog({ data, action, recurrence }: any) {
                     ...form,
                     amount: Number(form.amount),
                     interval_count: Number(form.interval_count),
+                    asaas_charge_days_before: Number(form.asaas_charge_days_before),
                   },
                 });
                 toast.success(recurrence ? "Recorrência atualizada." : "Recorrência criada.");

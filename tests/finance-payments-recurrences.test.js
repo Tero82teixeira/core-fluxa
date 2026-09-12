@@ -204,6 +204,7 @@ describe("recorrências financeiras", () => {
     const functionsUrl = new URL("../supabase/functions", import.meta.url);
     const functions = existsSync(functionsUrl) ? readdirSync(functionsUrl) : [];
     assert.deepEqual(functions, [
+      "asaas-billing-automation",
       "asaas-connector",
       "asaas-webhook",
       "communication-channel-send",
