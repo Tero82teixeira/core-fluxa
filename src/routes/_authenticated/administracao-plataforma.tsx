@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,12 +11,19 @@ import {
   Clock3,
   CreditCard,
   HandCoins,
+  Mail,
+  MessageCircle,
+  NotebookPen,
   RefreshCw,
   ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import {
+  usePlatformTrialFollowups,
+  useSavePlatformTrialFollowup,
+} from "@/hooks/use-platform-trial-followups";
 import { useWorkspace } from "@/lib/workspace";
 import { COMMERCIAL_STATUS_LABEL, type EffectiveCommercialStatus } from "@/lib/commercial-trial";
 import { describeError } from "@/lib/errors";
@@ -42,11 +49,31 @@ import {
   trialUsage,
   type TrialEngagementFilter,
 } from "@/lib/platform-trial-engagement";
+import {
+  matchesPlatformTrialFollowupFilter,
+  PLATFORM_TRIAL_FOLLOWUP_LABEL,
+  platformTrialFollowupIsDue,
+  whatsappUrl,
+  type PlatformTrialFollowup,
+  type PlatformTrialFollowupFilter,
+  type PlatformTrialFollowupStatus,
+} from "@/lib/platform-trial-followups";
 import type { Tables } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -89,6 +116,7 @@ type PlatformOrganization = {
   trade_name: string | null;
   owner_name: string | null;
   owner_email: string | null;
+  owner_phone: string | null;
   commercial_status: "trial" | "active" | "suspended";
   effective_status: EffectiveCommercialStatus;
   trial_started_at: string | null;
@@ -180,12 +208,15 @@ function PlatformAdministration() {
   const organizations = usePlatformOrganizations(platformAdmin);
   const subscriptions = usePlatformSubscriptions(platformAdmin);
   const kiwifyEvents = usePlatformKiwifyEvents(platformAdmin);
+  const trialFollowups = usePlatformTrialFollowups(platformAdmin);
   const [search, setSearch] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState<PlatformSubscriptionFilter>("all");
   const [trialFilter, setTrialFilter] = useState<TrialEngagementFilter>("all");
+  const [followupFilter, setFollowupFilter] = useState<PlatformTrialFollowupFilter>("all");
   const [includeArchived, setIncludeArchived] = useState(false);
   const [suspendTarget, setSuspendTarget] = useState<PlatformOrganization | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<PlatformOrganization | null>(null);
+  const [followupTarget, setFollowupTarget] = useState<PlatformOrganization | null>(null);
 
   const update = useMutation({
     mutationFn: async ({
@@ -240,16 +271,22 @@ function PlatformAdministration() {
 
   const rows = organizations.data ?? [];
   const subscriptionRows = subscriptions.data ?? [];
+  const followupRows = trialFollowups.data ?? [];
   const subscriptionsByOrganization = useMemo(
     () =>
       new Map(subscriptionRows.map((subscription) => [subscription.organization_id, subscription])),
     [subscriptionRows],
+  );
+  const followupsByOrganization = useMemo(
+    () => new Map(followupRows.map((followup) => [followup.organization_id, followup])),
+    [followupRows],
   );
   const filtered = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("pt-BR");
     return rows.filter((organization) => {
       if (organization.archived_at && !includeArchived) return false;
       const subscription = subscriptionsByOrganization.get(organization.organization_id);
+      const followup = followupsByOrganization.get(organization.organization_id);
       const matchesSearch =
         !term ||
         [
@@ -264,6 +301,7 @@ function PlatformAdministration() {
       return (
         matchesSearch &&
         matchesTrialEngagementFilter(organization, trialFilter) &&
+        matchesPlatformTrialFollowupFilter(followup, followupFilter) &&
         matchesPlatformSubscriptionFilter(
           subscription?.status ?? null,
           subscriptionFilter,
@@ -271,7 +309,16 @@ function PlatformAdministration() {
         )
       );
     });
-  }, [rows, search, subscriptionFilter, trialFilter, subscriptionsByOrganization, includeArchived]);
+  }, [
+    rows,
+    search,
+    subscriptionFilter,
+    trialFilter,
+    followupFilter,
+    subscriptionsByOrganization,
+    followupsByOrganization,
+    includeArchived,
+  ]);
 
   if (!platformAdmin) {
     return (
@@ -295,6 +342,8 @@ function PlatformAdministration() {
     total: activeRows.length,
     trial: activeRows.filter((row) => row.effective_status === "trial").length,
     trialsNeedingAttention: activeRows.filter((row) => trialNeedsAttention(row)).length,
+    overdueFollowups: followupRows.filter((followup) => platformTrialFollowupIsDue(followup))
+      .length,
     ...billing,
   };
 
@@ -307,13 +356,18 @@ function PlatformAdministration() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
         <SummaryCard label="Empresas ativas" value={summary.total} icon={Building2} />
         <SummaryCard label="Em teste" value={summary.trial} icon={Clock3} />
         <SummaryCard
           label="Testes para acompanhar"
           value={summary.trialsNeedingAttention}
           icon={Activity}
+        />
+        <SummaryCard
+          label="Retornos vencidos"
+          value={summary.overdueFollowups}
+          icon={NotebookPen}
         />
         <SummaryCard
           label="Assinaturas ativas"
@@ -342,7 +396,7 @@ function PlatformAdministration() {
               {filtered.length} empresa(s) encontrada(s).
             </p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,20rem)_13rem_13rem_auto]">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_12rem_12rem_12rem_auto]">
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -378,6 +432,21 @@ function PlatformAdministration() {
                 <SelectItem value="not_started">Ainda não iniciaram</SelectItem>
               </SelectContent>
             </Select>
+            <Select
+              value={followupFilter}
+              onValueChange={(value) => setFollowupFilter(value as PlatformTrialFollowupFilter)}
+            >
+              <SelectTrigger aria-label="Filtrar acompanhamento comercial">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os contatos</SelectItem>
+                <SelectItem value="due">Retornos vencidos</SelectItem>
+                <SelectItem value="not_contacted">Ainda não contatados</SelectItem>
+                <SelectItem value="following">Em acompanhamento</SelectItem>
+                <SelectItem value="interested">Interessados</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               type="button"
               variant="outline"
@@ -390,24 +459,26 @@ function PlatformAdministration() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {(organizations.isLoading || subscriptions.isLoading) && (
+          {(organizations.isLoading || subscriptions.isLoading || trialFollowups.isLoading) && (
             <p className="p-6 text-sm text-muted-foreground">Carregando painel comercial…</p>
           )}
-          {(organizations.isError || subscriptions.isError) && (
+          {(organizations.isError || subscriptions.isError || trialFollowups.isError) && (
             <p className="p-6 text-sm text-destructive">
-              {describeError(organizations.error ?? subscriptions.error)}
+              {describeError(organizations.error ?? subscriptions.error ?? trialFollowups.error)}
             </p>
           )}
           {!organizations.isLoading &&
             !subscriptions.isLoading &&
+            !trialFollowups.isLoading &&
             !organizations.isError &&
             !subscriptions.isError &&
+            !trialFollowups.isError &&
             filtered.length === 0 && (
               <p className="p-6 text-sm text-muted-foreground">Nenhuma empresa encontrada.</p>
             )}
           {filtered.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1320px] text-sm">
+              <table className="w-full min-w-[1510px] text-sm">
                 <thead>
                   <tr className="border-y bg-muted/40 text-left text-xs text-muted-foreground">
                     <th className="px-4 py-3 font-medium">Empresa</th>
@@ -417,6 +488,7 @@ function PlatformAdministration() {
                     <th className="px-4 py-3 font-medium">Próxima cobrança</th>
                     <th className="px-4 py-3 font-medium">Teste</th>
                     <th className="px-4 py-3 font-medium">Uso do teste</th>
+                    <th className="px-4 py-3 font-medium">Acompanhamento</th>
                     <th className="px-4 py-3 font-medium">Entrada</th>
                     <th className="px-4 py-3 text-right font-medium">Ações</th>
                   </tr>
@@ -491,6 +563,9 @@ function PlatformAdministration() {
                         )}
                       </td>
                       <TrialUsageCell organization={organization} />
+                      <TrialFollowupCell
+                        followup={followupsByOrganization.get(organization.organization_id)}
+                      />
                       <td className="px-4 py-3">{formatDate(organization.created_at)}</td>
                       <td className="px-4 py-3 text-right">
                         <CommercialActions
@@ -513,6 +588,7 @@ function PlatformAdministration() {
                             })
                           }
                           onSuspend={() => setSuspendTarget(organization)}
+                          onFollowup={() => setFollowupTarget(organization)}
                           onArchive={() => setArchiveTarget(organization)}
                           onRestore={() =>
                             archive.mutate({
@@ -587,6 +663,14 @@ function PlatformAdministration() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <TrialFollowupDialog
+        organization={followupTarget}
+        followup={
+          followupTarget ? followupsByOrganization.get(followupTarget.organization_id) : undefined
+        }
+        onClose={() => setFollowupTarget(null)}
+      />
     </div>
   );
 }
@@ -821,6 +905,199 @@ function TrialUsageCell({ organization }: { organization: PlatformOrganization }
   );
 }
 
+const followupTone: Record<PlatformTrialFollowupStatus, string> = {
+  not_contacted: "border-slate-300 bg-slate-100 text-slate-700",
+  following: "border-info/30 bg-info/10 text-info",
+  interested: "border-success/30 bg-success/10 text-success",
+  not_interested: "border-muted-foreground/30 bg-muted text-muted-foreground",
+};
+
+function TrialFollowupCell({ followup }: { followup: PlatformTrialFollowup | undefined }) {
+  const status = followup?.status ?? "not_contacted";
+  const overdue = platformTrialFollowupIsDue(followup);
+  return (
+    <td className="px-4 py-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge variant="outline" className={followupTone[status]}>
+          {PLATFORM_TRIAL_FOLLOWUP_LABEL[status]}
+        </Badge>
+        {overdue && (
+          <Badge
+            variant="outline"
+            className="border-destructive/30 bg-destructive/10 text-destructive"
+          >
+            Retorno vencido
+          </Badge>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {followup?.next_contact_at
+          ? `Próximo contato: ${formatDateTime(followup.next_contact_at)}`
+          : "Próximo contato não definido"}
+      </p>
+      {followup?.last_contact_at && (
+        <p className="text-xs text-muted-foreground">
+          Último contato: {formatDateTime(followup.last_contact_at)}
+        </p>
+      )}
+    </td>
+  );
+}
+
+function datetimeLocalValue(value: string | null | undefined): string {
+  if (!value) return "";
+  const date = new Date(value);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function TrialFollowupDialog({
+  organization,
+  followup,
+  onClose,
+}: {
+  organization: PlatformOrganization | null;
+  followup: PlatformTrialFollowup | undefined;
+  onClose: () => void;
+}) {
+  const save = useSavePlatformTrialFollowup();
+  const [status, setStatus] = useState<PlatformTrialFollowupStatus>("not_contacted");
+  const [nextContactAt, setNextContactAt] = useState("");
+  const [notes, setNotes] = useState("");
+  const [markContacted, setMarkContacted] = useState(false);
+
+  useEffect(() => {
+    setStatus(followup?.status ?? "not_contacted");
+    setNextContactAt(datetimeLocalValue(followup?.next_contact_at));
+    setNotes(followup?.notes ?? "");
+    setMarkContacted(false);
+  }, [organization?.organization_id, followup]);
+
+  if (!organization) return null;
+
+  const companyName = organization.trade_name || organization.legal_name;
+  const message = `Olá, ${organization.owner_name || "tudo bem"}! Aqui é da equipe FLUXA. Como está sendo sua experiência com a plataforma?`;
+  const whatsapp = whatsappUrl(organization.owner_phone, message);
+  const email = organization.owner_email
+    ? `mailto:${organization.owner_email}?subject=${encodeURIComponent(`Acompanhamento do teste da FLUXA — ${companyName}`)}`
+    : null;
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Acompanhamento comercial</DialogTitle>
+          <DialogDescription>
+            Registre o contato com {companyName}. Estas informações ficam visíveis somente para a
+            administração da FLUXA.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-wrap gap-2">
+          {whatsapp && (
+            <Button variant="outline" size="sm" asChild>
+              <a href={whatsapp} target="_blank" rel="noreferrer">
+                <MessageCircle className="size-4" aria-hidden /> Abrir WhatsApp
+              </a>
+            </Button>
+          )}
+          {email && (
+            <Button variant="outline" size="sm" asChild>
+              <a href={email}>
+                <Mail className="size-4" aria-hidden /> Enviar e-mail
+              </a>
+            </Button>
+          )}
+          {!whatsapp && !email && (
+            <p className="text-sm text-muted-foreground">Responsável sem telefone ou e-mail.</p>
+          )}
+        </div>
+
+        <div className="grid gap-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="trial-followup-status">Situação do contato</Label>
+            <Select
+              value={status}
+              onValueChange={(value) => setStatus(value as PlatformTrialFollowupStatus)}
+            >
+              <SelectTrigger id="trial-followup-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(PLATFORM_TRIAL_FOLLOWUP_LABEL).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="trial-followup-next-contact">Próximo contato</Label>
+            <Input
+              id="trial-followup-next-contact"
+              type="datetime-local"
+              value={nextContactAt}
+              onChange={(event) => setNextContactAt(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="trial-followup-notes">Observações</Label>
+            <Textarea
+              id="trial-followup-notes"
+              value={notes}
+              maxLength={4000}
+              rows={5}
+              placeholder="Ex.: gostou do financeiro, precisa de ajuda para cadastrar a equipe…"
+              onChange={(event) => setNotes(event.target.value)}
+            />
+            <p className="text-right text-xs text-muted-foreground">{notes.length}/4000</p>
+          </div>
+          <label className="flex items-start gap-3 rounded-lg border p-3 text-sm">
+            <Checkbox
+              checked={markContacted}
+              onCheckedChange={(checked) => setMarkContacted(Boolean(checked))}
+            />
+            <span>
+              <span className="block font-medium">Contato realizado agora</span>
+              <span className="text-muted-foreground">
+                Atualiza automaticamente a data do último contato.
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={save.isPending}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            disabled={save.isPending}
+            onClick={async () => {
+              try {
+                await save.mutateAsync({
+                  organizationId: organization.organization_id,
+                  status: markContacted && status === "not_contacted" ? "following" : status,
+                  nextContactAt: nextContactAt ? new Date(nextContactAt).toISOString() : null,
+                  notes,
+                  markContacted,
+                });
+                toast.success("Acompanhamento comercial salvo.");
+                onClose();
+              } catch (error) {
+                toast.error(describeError(error));
+              }
+            }}
+          >
+            {save.isPending ? "Salvando…" : "Salvar acompanhamento"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function SummaryCard({
   label,
   value,
@@ -850,6 +1127,7 @@ function CommercialActions({
   onActivate,
   onExtend,
   onSuspend,
+  onFollowup,
   onArchive,
   onRestore,
 }: {
@@ -859,6 +1137,7 @@ function CommercialActions({
   onActivate: () => void;
   onExtend: (days: number) => void;
   onSuspend: () => void;
+  onFollowup: () => void;
   onArchive: () => void;
   onRestore: () => void;
 }) {
@@ -881,6 +1160,11 @@ function CommercialActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuLabel>Acompanhamento</DropdownMenuLabel>
+        <DropdownMenuItem onSelect={onFollowup}>
+          <NotebookPen className="size-4" /> Registrar contato
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuLabel>Situação comercial</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {organization.effective_status !== "active" && (
