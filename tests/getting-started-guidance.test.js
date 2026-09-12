@@ -9,6 +9,7 @@ const guide = readFileSync(
 const myDay = readFileSync("src/routes/_authenticated/meu-dia.tsx", "utf8");
 const navigation = readFileSync("src/lib/navigation.ts", "utf8");
 const sidebar = readFileSync("src/components/layout/app-sidebar.tsx", "utf8");
+const header = readFileSync("src/components/layout/app-header.tsx", "utf8");
 
 test("Meu Dia presents a real five-step setup sequence to managers", () => {
   assert.match(myDay, /<GettingStartedCard \/>/);
@@ -60,4 +61,12 @@ test("owners and administrators preserve the complete navigation", () => {
     /role === "superadmin" \|\| role === "proprietario" \|\| role === "administrador"/,
   );
   assert.match(navigation, /return true;/);
+});
+
+
+test("quick-create actions also respect operational responsibility", () => {
+  assert.match(header, /visible: can\("clients\.create"\)/);
+  assert.match(header, /visible: can\("processes\.create"\)/);
+  assert.match(header, /visible: financeRole/);
+  assert.match(header, /filter\(\(action\) => action\.visible\)/);
 });
