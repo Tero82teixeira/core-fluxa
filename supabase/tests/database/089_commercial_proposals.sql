@@ -40,6 +40,8 @@ INSERT INTO public.commercial_opportunities(
   '1a890000-0000-0000-0000-000000000001','1a890000-0000-0000-0000-000000000001'
 );
 CREATE TEMP TABLE proposal_test_ids(id uuid, public_token uuid);
+GRANT SELECT, INSERT, UPDATE ON proposal_test_ids TO authenticated;
+GRANT SELECT ON proposal_test_ids TO anon;
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','1a890000-0000-0000-0000-000000000002',true);
