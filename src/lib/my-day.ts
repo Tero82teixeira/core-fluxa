@@ -7,11 +7,11 @@ import { isTaskOpen } from "./tasks.ts";
 
 export type MyDayItem = {
   id: string;
-  kind: "task" | "communication" | "triage" | "document";
+  kind: "task" | "communication" | "triage" | "document" | "commercial" | "platform_trial";
   title: string;
   context: string;
   deadline: string | null;
-  href: "/tarefas" | "/comunicacao";
+  href: "/tarefas" | "/comunicacao" | "/relatorios" | "/administracao-plataforma";
   urgency: "overdue" | "today" | "attention" | "normal";
   rank: number;
 };
@@ -22,6 +22,22 @@ type MyDayInput = {
   portalItems: readonly PortalServiceCenterItem[];
   userId: string | null;
   canReviewDocuments: boolean;
+  opportunities?: readonly {
+    id: string;
+    title: string;
+    stage: string;
+    owner_id: string | null;
+    next_action_at: string | null;
+    contact_status?: string | null;
+  }[];
+  platformTrials?: readonly {
+    organization_id: string;
+    legal_name: string;
+    trade_name: string | null;
+    effective_status: string;
+    follow_up_status: string;
+    next_contact_at: string | null;
+  }[];
   now?: Date;
 };
 
@@ -57,6 +73,19 @@ export function buildMyDay(input: MyDayInput) {
         (item) => item.item_kind === "document_request" && item.status === "submitted",
       )
     : [];
+  const opportunities = (input.opportunities ?? []).filter(
+    (row) =>
+      row.owner_id === input.userId &&
+      row.next_action_at &&
+      !["won", "lost"].includes(row.stage) &&
+      row.contact_status !== "not_interested",
+  );
+  const platformTrials = (input.platformTrials ?? []).filter(
+    (row) =>
+      row.effective_status === "trial" &&
+      row.next_contact_at &&
+      row.follow_up_status !== "not_interested",
+  );
 
   const items: MyDayItem[] = [
     ...assignedTasks.map((task): MyDayItem => {
@@ -109,6 +138,32 @@ export function buildMyDay(input: MyDayInput) {
       urgency: urgencyForDate(item.due_date, today),
       rank: urgencyForDate(item.due_date, today) === "overdue" ? 0 : 3,
     })),
+    ...opportunities.map((row): MyDayItem => {
+      const urgency = urgencyForDate(row.next_action_at, today);
+      return {
+        id: `commercial:${row.id}`,
+        kind: "commercial",
+        title: row.title,
+        context: "Retorno comercial sob sua responsabilidade",
+        deadline: row.next_action_at,
+        href: "/relatorios",
+        urgency,
+        rank: urgency === "overdue" ? 0 : urgency === "today" ? 2 : 6,
+      };
+    }),
+    ...platformTrials.map((row): MyDayItem => {
+      const urgency = urgencyForDate(row.next_contact_at, today);
+      return {
+        id: `platform-trial:${row.organization_id}`,
+        kind: "platform_trial",
+        title: row.trade_name || row.legal_name,
+        context: "Empresa em teste aguardando contato",
+        deadline: row.next_contact_at,
+        href: "/administracao-plataforma",
+        urgency,
+        rank: urgency === "overdue" ? 0 : urgency === "today" ? 1 : 5,
+      };
+    }),
   ].sort(
     (left, right) =>
       left.rank - right.rank ||
@@ -125,6 +180,8 @@ export function buildMyDay(input: MyDayInput) {
       assignedCommunications: assignedCommunications.length,
       triage: triage.length,
       documents: documents.length,
+      commercial: opportunities.length,
+      platformTrials: platformTrials.length,
     },
   };
 }

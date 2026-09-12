@@ -4,11 +4,14 @@ import { AlertTriangle, Archive, Plus, Target, TrendingUp, Users } from "lucide-
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CommercialFollowUpDialog } from "@/components/commercial/commercial-follow-up-dialog";
 import { CommercialProposalsPanel } from "@/components/reports/commercial-proposals-panel";
 import type { CommercialOpportunityInput } from "@/hooks/use-reports";
 import { commercialStages, type CommercialFunnelStage, type CommercialPerformance, type MemberCapacityRow } from "@/lib/reports";
+import { commercialFollowUpStatusLabel, contactStatusTone, followUpDue, type CommercialFollowUpStatus } from "@/lib/commercial-follow-up";
 
 type Row = Record<string, any>;
 const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
@@ -67,7 +70,26 @@ export function CommercialOpportunitiesPanel({ organizationId, rows, funnel, per
       <label className="grid gap-1 text-xs">Próxima ação<Input type="datetime-local" value={form.nextActionAt ?? ""} onChange={(event) => setForm({ ...form, nextActionAt: event.target.value || null })}/></label>
       {form.stage === "lost" && <label className="grid gap-1 text-xs md:col-span-2">Motivo da perda<Input value={form.lostReason ?? ""} maxLength={500} onChange={(event) => setForm({ ...form, lostReason: event.target.value })}/></label>}
     </div><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button><Button onClick={submit} disabled={save.isPending || form.title.trim().length < 3 || (form.stage === "lost" && (form.lostReason?.trim().length ?? 0) < 3)}>{save.isPending ? "Salvando…" : "Salvar oportunidade"}</Button></div></CardContent></Card>}
-    <div className="grid gap-3 xl:grid-cols-3">{funnel.map((stage) => <Card key={stage.key}><CardHeader className="pb-2"><CardTitle className="flex items-center justify-between text-base"><span>{stage.label}</span><span className="rounded-full bg-primary/10 px-2 py-0.5 text-sm text-primary">{stage.value}</span></CardTitle><p className="text-xs text-muted-foreground">{money(stage.estimatedValue)}</p></CardHeader><CardContent className="space-y-2">{!stage.value ? <p className="py-5 text-center text-xs text-muted-foreground">Nenhuma oportunidade nesta etapa.</p> : rows.filter((row) => row.stage === stage.key).map((row) => <div key={row.id} className="rounded-lg border p-3"><button className="w-full text-left" onClick={() => canEdit && edit(row)}><strong className="block truncate text-sm">{row.title}</strong><span className="text-xs text-muted-foreground">{money(Number(row.estimated_value) || 0)} · {row.probability}%</span><span className="block text-xs text-muted-foreground">Próxima ação: {row.next_action_at ? new Date(row.next_action_at).toLocaleString("pt-BR") : "não definida"}</span></button>{canArchive && <div className="mt-2 flex justify-end"><Button size="sm" variant="ghost" aria-label={`Arquivar ${row.title}`} onClick={async () => { try { await archive.mutateAsync(row.id); toast.success("Oportunidade arquivada."); } catch { toast.error("Não foi possível arquivar."); } }}><Archive /></Button></div>}</div>)}</CardContent></Card>)}</div>
+    <div className="grid gap-3 xl:grid-cols-3">
+      {funnel.map((stage) => <Card key={stage.key}><CardHeader className="pb-2"><CardTitle className="flex items-center justify-between text-base"><span>{stage.label}</span><span className="rounded-full bg-primary/10 px-2 py-0.5 text-sm text-primary">{stage.value}</span></CardTitle><p className="text-xs text-muted-foreground">{money(stage.estimatedValue)}</p></CardHeader><CardContent className="space-y-2">{!stage.value ? <p className="py-5 text-center text-xs text-muted-foreground">Nenhuma oportunidade nesta etapa.</p> : rows.filter((row) => row.stage === stage.key).map((row) => {
+        const status = (row.contact_status ?? "not_contacted") as CommercialFollowUpStatus;
+        const client = clients.find((candidate) => candidate.id === row.client_id);
+        return <div key={row.id} className="rounded-lg border p-3">
+          <button className="w-full text-left" onClick={() => canEdit && edit(row)}>
+            <strong className="block truncate text-sm">{row.title}</strong>
+            <span className="text-xs text-muted-foreground">{money(Number(row.estimated_value) || 0)} · {row.probability}%</span>
+            <span className={followUpDue(row.next_action_at) ? "block text-xs font-medium text-destructive" : "block text-xs text-muted-foreground"}>Próxima ação: {row.next_action_at ? new Date(row.next_action_at).toLocaleString("pt-BR") : "não definida"}</span>
+          </button>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t pt-2">
+            <Badge variant="outline" className={contactStatusTone(status)}>{commercialFollowUpStatusLabel[status]}</Badge>
+            <div className="flex items-center gap-1">
+              {canEdit && <CommercialFollowUpDialog mode="tenant" organizationId={organizationId} targetId={row.id} title={row.title} currentStatus={status} nextContactAt={row.next_action_at} email={client?.email} whatsapp={client?.whatsapp} phone={client?.phone} compact />}
+              {canArchive && <Button size="sm" variant="ghost" aria-label={`Arquivar ${row.title}`} onClick={async () => { try { await archive.mutateAsync(row.id); toast.success("Oportunidade arquivada."); } catch { toast.error("Não foi possível arquivar."); } }}><Archive /></Button>}
+            </div>
+          </div>
+        </div>;
+      })}</CardContent></Card>)}
+    </div>
   </div>;
 }
 
