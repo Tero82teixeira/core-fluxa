@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CommercialProposalsPanel } from "@/components/reports/commercial-proposals-panel";
 import type { CommercialOpportunityInput } from "@/hooks/use-reports";
 import { commercialStages, type CommercialFunnelStage, type CommercialPerformance, type MemberCapacityRow } from "@/lib/reports";
 
@@ -19,8 +20,8 @@ const localDateTime = (value: string | null) => {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 };
 
-export function CommercialOpportunitiesPanel({ rows, funnel, performance, clients, members, canEdit, canArchive, save, archive }: {
-  rows: Row[]; funnel: CommercialFunnelStage[]; performance: CommercialPerformance; clients: Row[]; members: Row[]; canEdit: boolean; canArchive: boolean; save: any; archive: any;
+export function CommercialOpportunitiesPanel({ organizationId, rows, funnel, performance, clients, members, canEdit, canArchive, save, archive }: {
+  organizationId: string; rows: Row[]; funnel: CommercialFunnelStage[]; performance: CommercialPerformance; clients: Row[]; members: Row[]; canEdit: boolean; canArchive: boolean; save: any; archive: any;
 }) {
   const empty: CommercialOpportunityInput = { title: "", stage: "first_contact", estimatedValue: 0, probability: 10, clientId: null, ownerId: null, nextActionAt: null, lostReason: null };
   const [form, setForm] = useState<CommercialOpportunityInput>(empty);
@@ -43,6 +44,7 @@ export function CommercialOpportunitiesPanel({ rows, funnel, performance, client
   return <div className="space-y-4">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="section-title">Funil comercial real</h2><p className="page-subtitle">Acompanhe cada oportunidade do primeiro contato ao ganho ou à perda.</p></div>{canEdit && <Button onClick={() => { setForm(empty); setEditing((value) => !value); }}><Plus /> Nova oportunidade</Button>}</div>
     <div className="grid gap-3 sm:grid-cols-3"><Metric icon={<TrendingUp />} label="Pipeline aberto" value={money(pipeline)} detail={`${active.length} oportunidade(s)`}/><Metric icon={<Target />} label="Previsão ponderada" value={money(weighted)} detail="Valor × probabilidade"/><Metric icon={<Users />} label="Ganhos registrados" value={money(won)} detail={`${rows.filter((row) => row.stage === "won").length} oportunidade(s)`}/></div>
+    <CommercialProposalsPanel organizationId={organizationId} opportunities={rows} clients={clients} canEdit={canEdit} canCancel={canArchive} />
     <Card className="border-primary/20"><CardHeader><CardTitle className="text-base">Indicadores comerciais</CardTitle><p className="text-xs text-muted-foreground">Conversão e ticket usam negócios encerrados no período selecionado. O tempo por etapa considera todo o histórico registrado das oportunidades exibidas.</p></CardHeader><CardContent className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <CommercialIndicator label="Taxa de conversão" value={performance.winRate === null ? "—" : `${performance.winRate.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`} detail={`${performance.won} ganha(s) de ${performance.closed} encerrada(s)`}/>
