@@ -329,10 +329,15 @@ export default {
       ? authorization.slice(7).trim()
       : "";
     const apiKey = request.headers.get("apikey")?.trim() ?? "";
+    const automationKey = Deno.env.get("ASAAS_BILLING_AUTOMATION_KEY")?.trim() ?? "";
+    const suppliedAutomationKey = request.headers.get("x-fluxa-automation-key")?.trim() ?? "";
     if (!url || !serviceKey) return json({ error: "SERVER_NOT_CONFIGURED" }, 503);
     const authorized =
       (Boolean(token) && safeEqual(token, serviceKey)) ||
-      (Boolean(apiKey) && safeEqual(apiKey, serviceKey));
+      (Boolean(apiKey) && safeEqual(apiKey, serviceKey)) ||
+      (Boolean(automationKey) &&
+        Boolean(suppliedAutomationKey) &&
+        safeEqual(suppliedAutomationKey, automationKey));
     if (!authorized) return json({ error: "NOT_ALLOWED" }, 403);
     const service = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },

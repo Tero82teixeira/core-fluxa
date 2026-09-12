@@ -27,6 +27,9 @@ describe("automação de cobranças recorrentes Asaas", () => {
     assert.match(automation, /safeEqual\(token, serviceKey\)/);
     assert.match(automation, /request\.headers\.get\("apikey"\)/);
     assert.match(automation, /safeEqual\(apiKey, serviceKey\)/);
+    assert.match(automation, /ASAAS_BILLING_AUTOMATION_KEY/);
+    assert.match(automation, /x-fluxa-automation-key/);
+    assert.match(automation, /safeEqual\(suppliedAutomationKey, automationKey\)/);
     assert.match(automation, /externalReference:\s*transaction\.id/);
     assert.match(automation, /claim_asaas_charge_jobs/);
     assert.match(automation, /complete_asaas_charge_job/);

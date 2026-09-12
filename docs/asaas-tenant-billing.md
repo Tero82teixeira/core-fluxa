@@ -17,6 +17,7 @@ assinatura do próprio FLUXA.
 
    ```bash
    supabase secrets set ASAAS_CREDENTIALS_ENCRYPTION_KEY="valor-gerado"
+   supabase secrets set ASAAS_BILLING_AUTOMATION_KEY="outra-chave-forte-gerada"
    ```
 
 4. Publique as funções:
@@ -38,8 +39,11 @@ assinatura do próprio FLUXA.
 
 Depois da ativação inicial, aplique também a migration
 `20261001120000_asaas_recurring_collection.sql`. No Lovable Cloud, crie um Job agendado para chamar
-`asaas-billing-automation` a cada hora com `POST` e autorização de serviço. A função rejeita chamadas
-sem a chave de serviço e nunca recebe essa chave do navegador.
+`asaas-billing-automation` a cada hora com `POST`. Autorize a chamada com a chave exclusiva da
+automação no cabeçalho `x-fluxa-automation-key`. A função também mantém compatibilidade com a chave
+de serviço via `Authorization: Bearer` ou `apikey`, mas a chave exclusiva evita depender do formato
+de chave interna do projeto. A função rejeita chamadas sem uma credencial válida e nenhuma dessas
+chaves é enviada ao navegador.
 
 Em uma recorrência de receita, a empresa pode ativar **Gerar cobrança automática no Asaas** e
 escolher de 0 a 30 dias de antecedência. Cada lançamento entra em uma fila idempotente: existe no
