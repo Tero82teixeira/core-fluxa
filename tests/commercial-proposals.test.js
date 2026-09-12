@@ -9,6 +9,10 @@ const migration = readFileSync(
 const publicRoute = readFileSync("src/routes/proposta.$token.tsx", "utf8");
 const worker = readFileSync("supabase/functions/asaas-billing-automation/index.ts", "utf8");
 const generatedTypes = readFileSync("src/integrations/supabase/types.ts", "utf8");
+const proposalPanel = readFileSync(
+  "src/components/reports/commercial-proposals-panel.tsx",
+  "utf8",
+);
 
 test("proposal conversion is transactional and idempotent", () => {
   assert.match(migration, /FOR UPDATE/);
@@ -54,4 +58,13 @@ test("generated contracts expose proposal tables and RPCs", () => {
   ]) {
     assert.match(generatedTypes, new RegExp(`${rpc}: \\{`));
   }
+});
+
+
+test("proposal form contains selects and formats Brazilian contact fields", () => {
+  assert.match(proposalPanel, /w-full min-w-0 max-w-full/);
+  assert.match(proposalPanel, /customerPhone: formatPhone\(event\.target\.value\)/);
+  assert.match(proposalPanel, /customerDocument: formatDocument\(event\.target\.value\)/);
+  assert.match(proposalPanel, /slice\(0, 11\)/);
+  assert.match(proposalPanel, /slice\(0, 14\)/);
 });
