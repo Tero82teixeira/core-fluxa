@@ -6813,6 +6813,11 @@ export type Database = {
           trade_name: string
           trial_ends_at: string
           trial_started_at: string
+          client_count: number
+          process_count: number
+          task_count: number
+          document_count: number
+          last_activity_at: string
         }[]
       }
       platform_support_open_count: { Args: never; Returns: number }
