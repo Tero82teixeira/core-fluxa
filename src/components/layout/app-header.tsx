@@ -66,6 +66,8 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
     commercialStatus,
     trialDaysRemaining,
     platformAdmin,
+    role,
+    can,
   } = useWorkspace();
   const [searchOpen, setSearchOpen] = useState(false);
   const subscription = useSubscriptionCheckout();
@@ -98,14 +100,21 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
+  const operationalRole = Boolean(
+    role && ["superadmin", "proprietario", "administrador", "gestor", "operacional"].includes(role),
+  );
+  const taskRole = Boolean(operationalRole || role === "atendimento");
+  const financeRole = Boolean(
+    role && ["superadmin", "proprietario", "administrador", "financeiro"].includes(role),
+  );
   const quickActions = [
-    { label: "Novo cliente", icon: UserPlus, to: "/clientes/novo" as const },
-    { label: "Novo processo", icon: FilePlus2, to: "/processos" as const },
-    { label: "Nova tarefa", icon: ListPlus, to: "/tarefas" as const },
-    { label: "Adicionar documento", icon: UploadCloud, to: "/documentos" as const },
-    { label: "Registrar pagamento", icon: CreditCard, to: "/financeiro" as const },
-    { label: "Criar lembrete", icon: CalendarPlus, to: "/monitoramento" as const },
-  ];
+    { label: "Novo cliente", icon: UserPlus, to: "/clientes/novo" as const, visible: can("clients.create") },
+    { label: "Novo processo", icon: FilePlus2, to: "/processos" as const, visible: can("processes.create") },
+    { label: "Nova tarefa", icon: ListPlus, to: "/tarefas" as const, visible: taskRole },
+    { label: "Adicionar documento", icon: UploadCloud, to: "/documentos" as const, visible: operationalRole },
+    { label: "Registrar pagamento", icon: CreditCard, to: "/financeiro" as const, visible: financeRole },
+    { label: "Criar lembrete", icon: CalendarPlus, to: "/monitoramento" as const, visible: operationalRole },
+  ].filter((action) => action.visible);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
