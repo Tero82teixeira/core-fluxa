@@ -34,6 +34,7 @@ import { CommunicationResponseAlertSettings } from "@/components/notifications/c
 import { ClientPortalFaqSettings } from "@/components/communication/client-portal-faq-settings";
 import { LeadCaptureSettings } from "@/components/leads/lead-capture-settings";
 import { AsaasSettings } from "@/components/finance/asaas-settings";
+import { DataProtectionPanel } from "@/components/security/data-protection-panel";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -165,6 +166,7 @@ function SettingsPage() {
   const canManageLeadCapture = Boolean(
     role && ["superadmin", "proprietario", "administrador", "gestor"].includes(role),
   );
+  const canManageDataProtection = role === "proprietario" || role === "administrador";
   useEffect(() => {
     if (query.data) setDraft(query.data);
   }, [query.data]);
@@ -463,10 +465,7 @@ function SettingsPage() {
           </div>
         </TabsContent>
         <TabsContent value="captacao">
-          <LeadCaptureSettings
-            organizationId={organizationId}
-            canManage={canManageLeadCapture}
-          />
+          <LeadCaptureSettings organizationId={organizationId} canManage={canManageLeadCapture} />
         </TabsContent>
         <TabsContent value="comunicacao">
           <Section title="Preferências internas de comunicação">
@@ -600,43 +599,34 @@ function SettingsPage() {
           <CommunicationResponseAlertSettings organizationId={organizationId} canEdit={canEdit} />
         </TabsContent>
         <TabsContent value="seguranca">
-          <Section title="Acesso e auditoria">
-            <Field
-              label="Sessão atual"
-              value={session?.user.email ?? "Sessão autenticada"}
-              onChange={() => {}}
-              disabled
+          <div className="space-y-4">
+            <Section title="Acesso atual">
+              <Field
+                label="Sessão atual"
+                value={session?.user.email ?? "Sessão autenticada"}
+                onChange={() => {}}
+                disabled
+              />
+              <Field
+                label="Papel atual"
+                value={getRoleLabel(role, ROLE)}
+                onChange={() => {}}
+                disabled
+              />
+              <Field label="Membros ativos" value={d.member_count} onChange={() => {}} disabled />
+              <Field
+                label="Última atualização"
+                value={d.updated_at ? formatOptionalDate(d.updated_at, true) : "Ainda não alterada"}
+                onChange={() => {}}
+                disabled
+              />
+            </Section>
+            <DataProtectionPanel
+              organizationId={organizationId}
+              organizationName={d.trade_name || d.legal_name}
+              canManage={canManageDataProtection}
             />
-            <Field
-              label="Papel atual"
-              value={getRoleLabel(role, ROLE)}
-              onChange={() => {}}
-              disabled
-            />
-            <Field label="Membros ativos" value={d.member_count} onChange={() => {}} disabled />
-            <Field
-              label="Última atualização"
-              value={d.updated_at ? formatOptionalDate(d.updated_at, true) : "Ainda não alterada"}
-              onChange={() => {}}
-              disabled
-            />
-            <div className="sm:col-span-2">
-              <p className="mb-2 text-sm font-medium">Auditoria recente</p>
-              {(d.recent_audit ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhuma alteração registrada.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {(d.recent_audit ?? []).map((a) => (
-                    <li key={a.id} className="rounded border p-2 text-sm">
-                      {String(a.metadata.key ?? "Configuração")} ·{" "}
-                      {formatOptionalDate(a.created_at, true)} ·{" "}
-                      {a.actor_name || "Usuário autenticado"}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </Section>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
