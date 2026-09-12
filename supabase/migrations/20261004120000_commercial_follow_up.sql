@@ -245,8 +245,9 @@ BEGIN
     RAISE EXCEPTION 'NOT_ALLOWED' USING ERRCODE = '42501';
   END IF;
   IF NOT EXISTS (
-    SELECT 1 FROM public.commercial_opportunities
-    WHERE id=_opportunity_id AND organization_id=_organization_id
+    SELECT 1 FROM public.commercial_opportunities opportunity
+    WHERE opportunity.id=_opportunity_id
+      AND opportunity.organization_id=_organization_id
   ) THEN RAISE EXCEPTION 'OPPORTUNITY_NOT_FOUND'; END IF;
   RETURN QUERY
   SELECT history.id,history.status,history.channel,history.notes,
