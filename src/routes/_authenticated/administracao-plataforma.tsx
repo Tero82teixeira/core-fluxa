@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/lib/workspace";
 import { COMMERCIAL_STATUS_LABEL, type EffectiveCommercialStatus } from "@/lib/commercial-trial";
 import { describeError } from "@/lib/errors";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { brl } from "@/lib/finance";
 import { cn } from "@/lib/utils";
 import { subscriptionStatusLabel } from "@/lib/billing";
@@ -36,6 +36,12 @@ import {
   platformBillingMetrics,
   type PlatformSubscriptionFilter,
 } from "@/lib/platform-billing";
+import {
+  matchesTrialEngagementFilter,
+  trialNeedsAttention,
+  trialUsage,
+  type TrialEngagementFilter,
+} from "@/lib/platform-trial-engagement";
 import type { Tables } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,6 +97,11 @@ type PlatformOrganization = {
   onboarding_completed: boolean;
   created_at: string;
   archived_at: string | null;
+  client_count: number;
+  process_count: number;
+  task_count: number;
+  document_count: number;
+  last_activity_at: string | null;
 };
 
 type PlatformSubscription = Pick<
@@ -171,6 +182,7 @@ function PlatformAdministration() {
   const kiwifyEvents = usePlatformKiwifyEvents(platformAdmin);
   const [search, setSearch] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState<PlatformSubscriptionFilter>("all");
+  const [trialFilter, setTrialFilter] = useState<TrialEngagementFilter>("all");
   const [includeArchived, setIncludeArchived] = useState(false);
   const [suspendTarget, setSuspendTarget] = useState<PlatformOrganization | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<PlatformOrganization | null>(null);
@@ -251,6 +263,7 @@ function PlatformAdministration() {
           .some((value) => String(value).toLocaleLowerCase("pt-BR").includes(term));
       return (
         matchesSearch &&
+        matchesTrialEngagementFilter(organization, trialFilter) &&
         matchesPlatformSubscriptionFilter(
           subscription?.status ?? null,
           subscriptionFilter,
@@ -258,7 +271,7 @@ function PlatformAdministration() {
         )
       );
     });
-  }, [rows, search, subscriptionFilter, subscriptionsByOrganization, includeArchived]);
+  }, [rows, search, subscriptionFilter, trialFilter, subscriptionsByOrganization, includeArchived]);
 
   if (!platformAdmin) {
     return (
@@ -281,6 +294,7 @@ function PlatformAdministration() {
   const summary = {
     total: activeRows.length,
     trial: activeRows.filter((row) => row.effective_status === "trial").length,
+    trialsNeedingAttention: activeRows.filter((row) => trialNeedsAttention(row)).length,
     ...billing,
   };
 
@@ -293,9 +307,14 @@ function PlatformAdministration() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <SummaryCard label="Empresas ativas" value={summary.total} icon={Building2} />
         <SummaryCard label="Em teste" value={summary.trial} icon={Clock3} />
+        <SummaryCard
+          label="Testes para acompanhar"
+          value={summary.trialsNeedingAttention}
+          icon={Activity}
+        />
         <SummaryCard
           label="Assinaturas ativas"
           value={summary.activeSubscriptions}
@@ -323,7 +342,7 @@ function PlatformAdministration() {
               {filtered.length} empresa(s) encontrada(s).
             </p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-[minmax(0,22rem)_13rem_auto]">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,20rem)_13rem_13rem_auto]">
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -343,6 +362,20 @@ function PlatformAdministration() {
                 <SelectItem value="pending">Aguardando pagamento</SelectItem>
                 <SelectItem value="attention">Precisam de atenção</SelectItem>
                 <SelectItem value="not_started">Checkout não iniciado</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={trialFilter}
+              onValueChange={(value) => setTrialFilter(value as TrialEngagementFilter)}
+            >
+              <SelectTrigger aria-label="Filtrar por uso do teste">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os usos</SelectItem>
+                <SelectItem value="attention">Precisam de acompanhamento</SelectItem>
+                <SelectItem value="engaged">Uso consistente</SelectItem>
+                <SelectItem value="not_started">Ainda não iniciaram</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -374,7 +407,7 @@ function PlatformAdministration() {
             )}
           {filtered.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1180px] text-sm">
+              <table className="w-full min-w-[1320px] text-sm">
                 <thead>
                   <tr className="border-y bg-muted/40 text-left text-xs text-muted-foreground">
                     <th className="px-4 py-3 font-medium">Empresa</th>
@@ -383,6 +416,7 @@ function PlatformAdministration() {
                     <th className="px-4 py-3 font-medium">Assinatura Kiwify</th>
                     <th className="px-4 py-3 font-medium">Próxima cobrança</th>
                     <th className="px-4 py-3 font-medium">Teste</th>
+                    <th className="px-4 py-3 font-medium">Uso do teste</th>
                     <th className="px-4 py-3 font-medium">Entrada</th>
                     <th className="px-4 py-3 text-right font-medium">Ações</th>
                   </tr>
@@ -456,6 +490,7 @@ function PlatformAdministration() {
                           <span className="text-muted-foreground">Sem prazo</span>
                         )}
                       </td>
+                      <TrialUsageCell organization={organization} />
                       <td className="px-4 py-3">{formatDate(organization.created_at)}</td>
                       <td className="px-4 py-3 text-right">
                         <CommercialActions
@@ -741,6 +776,47 @@ function SubscriptionChargeCell({
           Acesso até {formatDate(subscription.access_until)}
         </p>
       )}
+    </td>
+  );
+}
+
+function TrialUsageCell({ organization }: { organization: PlatformOrganization }) {
+  const usage = trialUsage(organization);
+  const needsAttention = trialNeedsAttention(organization);
+  const label = {
+    not_started: "Ainda não iniciou",
+    exploring: "Explorando",
+    engaged: "Uso consistente",
+  }[usage.level];
+  const tone = {
+    not_started: "border-warning/30 bg-warning/10 text-warning",
+    exploring: "border-info/30 bg-info/10 text-info",
+    engaged: "border-success/30 bg-success/10 text-success",
+  }[usage.level];
+
+  return (
+    <td className="px-4 py-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge variant="outline" className={tone}>
+          {label}
+        </Badge>
+        {needsAttention && organization.effective_status === "trial" && (
+          <Badge
+            variant="outline"
+            className="border-destructive/30 bg-destructive/10 text-destructive"
+          >
+            Acompanhar
+          </Badge>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {usage.total} registro(s) em {usage.modules} módulo(s)
+      </p>
+      <p className="text-xs text-muted-foreground">
+        {organization.last_activity_at
+          ? `Última atividade: ${formatDateTime(organization.last_activity_at)}`
+          : "Sem atividade registrada"}
+      </p>
     </td>
   );
 }
