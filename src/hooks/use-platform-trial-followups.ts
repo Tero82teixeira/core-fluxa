@@ -31,9 +31,9 @@ export function useSavePlatformTrialFollowup() {
       const { error } = await supabase.rpc("save_platform_trial_followup", {
         _organization_id: input.organizationId,
         _status: input.status,
-        _next_contact_at: input.nextContactAt,
         _notes: input.notes,
         _mark_contacted: input.markContacted,
+        ...(input.nextContactAt ? { _next_contact_at: input.nextContactAt } : {}),
       });
       if (error) throw error;
     },
