@@ -70,11 +70,16 @@ describe("automação de cobranças recorrentes Asaas", () => {
       "Conciliação Asaas",
       "Sincronizar",
       "Tentar novamente",
+      "Corrigir cliente",
     ]) {
       assert.match(finance, new RegExp(label));
     }
     assert.match(connector, /action\s*===\s*"sync_charge"/);
     assert.match(connector, /action\s*===\s*"retry_charge_job"/);
+    assert.match(finance, /Cliente: \{client\?\.name \?\? "Não identificado"\}/);
+    assert.match(finance, /Tentativa \{job\.attempts\}\/8/);
+    assert.match(finance, /isValidBrazilianPhone\(contact\)/);
+    assert.match(finance, /retryJob\.isPending \|\| needsContactCorrection/);
   });
 });
 
