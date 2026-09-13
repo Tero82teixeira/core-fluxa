@@ -3,12 +3,14 @@ import { describe, test } from "node:test";
 import {
   civilDateKey,
   formatDateOnly,
+  isValidBrazilianPhone,
   isValidCNPJ,
   isValidCPF,
   maskCNPJ,
   maskCPF,
   maskDocument,
   maskPhone,
+  nationalPhoneDigits,
 } from "../src/lib/format.ts";
 
 describe("civilDateKey", () => {
@@ -25,6 +27,11 @@ describe("documentos e contatos brasileiros", () => {
     assert.equal(maskDocument("52998224725"), "529.982.247-25");
     assert.equal(maskDocument("00000000000191"), "00.000.000/0001-91");
     assert.equal(maskPhone("28999410465"), "(28) 99941-0465");
+    assert.equal(maskPhone("+55 (28) 99941-0465"), "(28) 99941-0465");
+    assert.equal(nationalPhoneDigits("+55 (28) 99941-0465"), "28999410465");
+    assert.equal(isValidBrazilianPhone("+55 (28) 99941-0465"), true);
+    assert.equal(isValidBrazilianPhone("(08) 99941-0465"), false);
+    assert.equal(isValidBrazilianPhone("(28) 9941-046"), false);
   });
 
   test("valida os dígitos verificadores e rejeita sequências", () => {
