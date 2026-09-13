@@ -6239,6 +6239,19 @@ export type Database = {
           zip_code: string
         }[]
       }
+      commercial_opportunity_contacts: {
+        Args: { _opportunity_id: string; _organization_id: string }
+        Returns: {
+          channel: string
+          contacted_at: string
+          created_by: string
+          created_by_name: string
+          id: string
+          next_contact_at: string
+          notes: string
+          status: string
+        }[]
+      }
       communication_assert_role: {
         Args: { _administrative?: boolean; _org: string }
         Returns: undefined
