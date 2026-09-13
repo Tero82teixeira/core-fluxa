@@ -18,6 +18,16 @@ const onlyDigits = (value: string) => value.replace(/\D+/g, "");
 
 export const digits = onlyDigits;
 
+export function nationalPhoneDigits(value: string) {
+  const raw = onlyDigits(value);
+  return raw.startsWith("55") && raw.length > 11 ? raw.slice(2) : raw;
+}
+
+export function isValidBrazilianPhone(value: string) {
+  const d = nationalPhoneDigits(value);
+  return (d.length === 10 || d.length === 11) && Number(d.slice(0, 2)) >= 11;
+}
+
 export function maskCPF(value: string) {
   return onlyDigits(value)
     .slice(0, 11)
@@ -40,7 +50,7 @@ export function maskDocument(value: string) {
 }
 
 export function maskPhone(value: string) {
-  const d = onlyDigits(value).slice(0, 11);
+  const d = nationalPhoneDigits(value).slice(0, 11);
   if (d.length <= 10) {
     return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{4})(\d{1,4})$/, "$1-$2");
   }

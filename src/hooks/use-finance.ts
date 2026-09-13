@@ -45,7 +45,7 @@ export function useFinance(organizationId: string | null) {
           queryUnarchived("financial_recurrences"),
           query("financial_transaction_payments"),
           query("financial_account_movements"),
-          query("clients_secure", "id,name"),
+          query("clients_secure", "id,name,phone,whatsapp"),
           query("processes", "id,code,title,client_id"),
           query("tasks", "id,title"),
           query("documents", "id,title"),
