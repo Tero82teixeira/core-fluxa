@@ -2,7 +2,13 @@
  * Validação e normalização de dados de clientes.
  * Mensagens em português, específicas por campo.
  */
-import { digits, isValidCPF, isValidCNPJ } from "@/lib/format";
+import {
+  digits,
+  isValidBrazilianPhone,
+  isValidCPF,
+  isValidCNPJ,
+  nationalPhoneDigits,
+} from "@/lib/format";
 import type { ClientStatus } from "@/lib/domain";
 
 export const UF_LIST = [
@@ -59,10 +65,9 @@ export type FieldErrors = Partial<Record<keyof ClientFormValues, string>>;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function phoneError(value: string, label: string): string | undefined {
-  const d = digits(value);
+  const d = nationalPhoneDigits(value);
   if (!d) return undefined;
-  if (d.length < 10 || d.length > 11) return `Informe o ${label} com DDD.`;
-  if (Number(d.slice(0, 2)) < 11) return `Informe o ${label} com DDD.`;
+  if (!isValidBrazilianPhone(d)) return `Informe o ${label} com DDD e 10 ou 11 dígitos.`;
   return undefined;
 }
 
@@ -125,8 +130,8 @@ export function toClientPayload(values: ClientFormValues) {
     birth_date: !isPJ ? nullable(values.birth_date) : null,
     legal_rep_name: isPJ ? nullable(values.legal_rep_name) : null,
     email: nullable(values.email)?.toLowerCase() ?? null,
-    phone: digits(values.phone) || null,
-    whatsapp: digits(values.whatsapp) || null,
+    phone: nationalPhoneDigits(values.phone) || null,
+    whatsapp: nationalPhoneDigits(values.whatsapp) || null,
     zip_code: digits(values.zip_code) || null,
     street: nullable(values.street),
     number: nullable(values.number),
