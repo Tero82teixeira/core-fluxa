@@ -8,7 +8,7 @@ O botão **Gerar backup agora** consulta, com a sessão atual e as políticas RL
 
 São incluídos dados disponíveis dos módulos de clientes, processos, tarefas, documentos, financeiro, comercial, comunicação, monitoramento, captação, metas, automações, suporte e auditoria. Segredos do Asaas, tokens, senhas, convites e credenciais são excluídos de forma deliberada.
 
-Algumas tabelas internas só podem ser lidas por RPCs específicas. Quando o banco bloquear uma dessas seções, a exportação continua e registra `restricted_sections` no manifesto. Erros de conexão e outros erros inesperados continuam interrompendo o processo para evitar um arquivo silenciosamente incompleto.
+Algumas tabelas internas só podem ser lidas por RPCs específicas. Quando o banco bloquear uma dessas seções, a exportação continua e registra `restricted_sections` no manifesto. Se uma migration opcional ainda não estiver disponível no ambiente publicado, a seção fica registrada em `unavailable_sections` e também não impede a geração do arquivo. Erros de conexão e outros erros inesperados continuam interrompendo o processo para evitar um arquivo silenciosamente incompleto.
 
 Navegadores compatíveis geram `json.gz`; nos demais, o sistema gera `json`. O conteúdo é produzido no navegador autenticado e baixado diretamente no aparelho do usuário.
 
