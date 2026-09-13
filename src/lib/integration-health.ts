@@ -50,6 +50,16 @@ export function integrationDiagnosticMessage(code: string | null): string | null
   if (code === "ASAAS_invalid_mobilePhone")
     return "O telefone ou WhatsApp do cliente precisa ser corrigido.";
   if (code === "ASAAS_NOT_CONNECTED") return "A conta Asaas precisa ser conectada novamente.";
+  if (code === "CHANNEL_NOT_CONFIGURED") return "Este canal ainda não está configurado.";
+  if (code === "WHATSAPP_SECRETS_MISSING")
+    return "As credenciais do WhatsApp não estão disponíveis na publicação.";
+  if (code === "RESEND_API_KEY_MISSING")
+    return "A credencial de envio de e-mail não está disponível na publicação.";
+  if (code === "COPILOT_NOT_CONFIGURED") return "O Copiloto ainda não está configurado.";
+  if (code === "COPILOT_RATE_LIMITED")
+    return "O provedor da IA atingiu o limite temporário de uso.";
+  if (/^(WHATSAPP|RESEND|OPENAI)_\d+$/.test(code))
+    return "O provedor recusou o teste. Verifique a credencial e a configuração.";
   if (code === "PAST_DUE") return "A assinatura está com pagamento atrasado.";
   return code.replaceAll("_", " ");
 }

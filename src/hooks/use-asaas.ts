@@ -44,7 +44,10 @@ async function invoke(body: Record<string, unknown>) {
     let responseCode = (data as any)?.error as string | undefined;
     const context = (error as any)?.context;
     if (!responseCode && context instanceof Response) {
-      const payload = await context.clone().json().catch(() => null);
+      const payload = await context
+        .clone()
+        .json()
+        .catch(() => null);
       responseCode = payload?.error;
     }
     throw Object.assign(new Error(responseCode || error.message), { code: responseCode });
@@ -82,8 +85,7 @@ export function useConnectAsaas(organizationId: string | null) {
       if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
       return invoke({ action: "connect", organizationId, ...values });
     },
-    onSuccess: () =>
-      client.invalidateQueries({ queryKey: ["asaas-connection", organizationId] }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["asaas-connection", organizationId] }),
   });
 }
 
@@ -94,8 +96,21 @@ export function useDisconnectAsaas(organizationId: string | null) {
       if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
       return invoke({ action: "disconnect", organizationId });
     },
-    onSuccess: () =>
-      client.invalidateQueries({ queryKey: ["asaas-connection", organizationId] }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["asaas-connection", organizationId] }),
+  });
+}
+
+export function useTestAsaasConnection(organizationId: string | null) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => {
+      if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
+      return invoke({ action: "test_connection", organizationId });
+    },
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: ["asaas-connection", organizationId] });
+      void client.invalidateQueries({ queryKey: ["integration-health", organizationId] });
+    },
   });
 }
 

@@ -57,6 +57,7 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
     const communicationHook = read("src/hooks/use-communication.ts");
     const channelHook = read("src/hooks/use-communication-channels.ts");
     const asaasHook = read("src/hooks/use-asaas.ts");
+    const integrationActionsHook = read("src/hooks/use-integration-actions.ts");
     const otherFrontend = frontendFiles
       .filter(
         (path) =>
@@ -68,6 +69,7 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
             "src/hooks/use-communication.ts",
             "src/hooks/use-communication-channels.ts",
             "src/hooks/use-asaas.ts",
+            "src/hooks/use-integration-actions.ts",
           ].includes(path),
       )
       .map(read)
@@ -80,6 +82,10 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
     assert.match(communicationHook, /functions\.invoke\("communication-push"/);
     assert.match(channelHook, /functions\.invoke\("communication-channel-send"/);
     assert.match(asaasHook, /functions\.invoke\("asaas-connector"/);
+    assert.match(integrationActionsHook, /invoke\("asaas-connector"/);
+    assert.match(integrationActionsHook, /invoke\("communication-channel-send"/);
+    assert.match(integrationActionsHook, /invoke\("communication-push"/);
+    assert.match(integrationActionsHook, /invoke\("communication-copilot"/);
     assert.doesNotMatch(copilotHook, /OPENAI_API_KEY|SERVICE_ROLE|service_role/);
     assert.doesNotMatch(
       pushHook + portalCommunicationHook + portalExperienceHook + communicationHook,
@@ -87,6 +93,10 @@ describe("ETAPA 17 — Edge Functions e higiene de secrets", () => {
     );
     assert.doesNotMatch(channelHook, /META_WHATSAPP|RESEND_API_KEY|SERVICE_ROLE|service_role/);
     assert.doesNotMatch(asaasHook, /ASAAS_CREDENTIALS_ENCRYPTION_KEY|SERVICE_ROLE|service_role/);
+    assert.doesNotMatch(
+      integrationActionsHook,
+      /ASAAS_CREDENTIALS_ENCRYPTION_KEY|META_WHATSAPP|RESEND_API_KEY|OPENAI_API_KEY|VAPID_PRIVATE_KEY|SERVICE_ROLE|service_role/,
+    );
     assert.doesNotMatch(otherFrontend, /functions\s*\.\s*invoke\s*\(/);
     assert.doesNotMatch(otherFrontend, /supabase\s*\.\s*functions\b/);
     assert.doesNotMatch(otherFrontend, /\/functions\/v1\//);
