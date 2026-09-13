@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -64,6 +64,7 @@ import {
   type AsaasCharge,
 } from "@/hooks/use-asaas";
 import { asaasCollectionSummary, asaasErrorMessage } from "@/lib/asaas";
+import { isValidBrazilianPhone } from "@/lib/format";
 import {
   availableFinancialAccounts,
   availableFinancialCategories,
@@ -1356,20 +1357,73 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
         <Card className="border-warning/40">
           <CardHeader className="pb-3"><CardTitle className="text-base">Cobranças automáticas com falha</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {failedJobs.slice(0, 5).map((job: any) => (
-              <div key={job.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
-                <span>{data.transactions.find((row: any) => row.id === job.transaction_id)?.description ?? "Cobrança recorrente"}</span>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-warning">{asaasErrorMessage(job.last_error_code)}</span>
-                  {editable && (
-                    <Button size="sm" variant="outline" disabled={retryJob.isPending} onClick={async () => {
-                      try { await retryJob.mutateAsync(job.id); toast.success("Nova tentativa programada."); }
-                      catch (error) { toast.error(asaasErrorMessage(error)); }
-                    }}>Tentar novamente</Button>
-                  )}
+            {failedJobs.slice(0, 5).map((job: any) => {
+              const transaction = data.transactions.find(
+                (row: any) => row.id === job.transaction_id,
+              );
+              const client = data.clients.find((row: any) => row.id === transaction?.client_id);
+              const phoneFailure = String(job.last_error_code ?? "")
+                .toUpperCase()
+                .includes("INVALID_MOBILEPHONE");
+              const contact = client?.whatsapp || client?.phone || "";
+              const needsContactCorrection =
+                phoneFailure && !isValidBrazilianPhone(contact);
+              return (
+                <div
+                  key={job.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium">
+                      {transaction?.description ?? "Cobrança recorrente"}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Cliente: {client?.name ?? "Não identificado"} · Tentativa {job.attempts}/8
+                    </p>
+                    <p className="mt-1 break-all font-mono text-[11px] text-muted-foreground">
+                      {job.last_error_code ?? "AUTOMATION_FAILED"}
+                    </p>
+                  </div>
+                  <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
+                    <span className="text-warning">
+                      {asaasErrorMessage(job.last_error_code)}
+                    </span>
+                    {editable && client?.id && (
+                      <Button size="sm" variant="outline" asChild>
+                        <Link
+                          to="/clientes/$clientId/editar"
+                          params={{ clientId: client.id }}
+                        >
+                          <Pencil /> Corrigir cliente
+                        </Link>
+                      </Button>
+                    )}
+                    {editable && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={retryJob.isPending || needsContactCorrection}
+                        title={
+                          needsContactCorrection
+                            ? "Corrija o telefone ou WhatsApp do cliente antes de tentar novamente."
+                            : undefined
+                        }
+                        onClick={async () => {
+                          try {
+                            await retryJob.mutateAsync(job.id);
+                            toast.success("Nova tentativa programada.");
+                          } catch (error) {
+                            toast.error(asaasErrorMessage(error));
+                          }
+                        }}
+                      >
+                        Tentar novamente
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}
