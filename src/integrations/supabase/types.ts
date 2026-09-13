@@ -3700,6 +3700,39 @@ export type Database = {
           },
         ]
       }
+      integration_alert_push_claims: {
+        Row: {
+          claimed_at: string
+          notification_id: string
+          subscription_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          notification_id: string
+          subscription_id: string
+        }
+        Update: {
+          claimed_at?: string
+          notification_id?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_alert_push_claims_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_alert_push_claims_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "push_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_runtime_heartbeats: {
         Row: {
           function_name: string
@@ -6169,6 +6202,19 @@ export type Database = {
           title: string
         }[]
       }
+      claim_integration_alert_push_deliveries: {
+        Args: { _limit?: number }
+        Returns: {
+          action_url: string
+          auth_key: string
+          body: string
+          endpoint: string
+          notification_id: string
+          p256dh: string
+          subscription_id: string
+          title: string
+        }[]
+      }
       claim_portal_communication_thread: {
         Args: { _thread_id: string }
         Returns: undefined
@@ -6960,6 +7006,19 @@ export type Database = {
       organization_has_commercial_access: {
         Args: { _org: string }
         Returns: boolean
+      }
+      organization_integration_failures: {
+        Args: { _organization_id: string }
+        Returns: {
+          attempts: number
+          description: string
+          error_code: string
+          failed_at: string
+          failure_id: string
+          integration_key: string
+          label: string
+          retryable: boolean
+        }[]
       }
       organization_integration_health: {
         Args: { _organization_id: string }

@@ -60,10 +60,6 @@ export default {
     } catch {
       return json({ error: "INVALID_JSON" }, 400);
     }
-    if (!uuid(body.threadId) || typeof body.content !== "string" || !body.content.trim()) {
-      return json({ error: "INVALID_REQUEST" }, 400);
-    }
-
     const url = Deno.env.get("SUPABASE_URL") ?? "";
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -80,6 +76,79 @@ export default {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     await recordIntegrationHeartbeat(service, "communication-channel-send");
+
+    if (body.mode === "test_connection") {
+      if (!uuid(body.organizationId) || !["whatsapp", "email"].includes(String(body.channel))) {
+        return json({ error: "INVALID_REQUEST" }, 400);
+      }
+      const { data: membership } = await service
+        .from("organization_members")
+        .select("role")
+        .eq("organization_id", body.organizationId)
+        .eq("user_id", identity.user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (
+        !membership ||
+        !["superadmin", "proprietario", "administrador"].includes(membership.role)
+      ) {
+        return json({ error: "NOT_ALLOWED" }, 403);
+      }
+      const { data: connection } = await service
+        .from("communication_channel_connections")
+        .select("id,channel,provider,sender_identifier,is_enabled")
+        .eq("organization_id", body.organizationId)
+        .eq("channel", body.channel)
+        .maybeSingle();
+      if (!connection?.is_enabled) return json({ error: "CHANNEL_NOT_CONFIGURED" }, 409);
+
+      let testError = "";
+      try {
+        if (connection.channel === "whatsapp") {
+          const accessToken = Deno.env.get("META_WHATSAPP_ACCESS_TOKEN") ?? "";
+          const graphVersion = Deno.env.get("META_GRAPH_VERSION") ?? "";
+          if (!accessToken || !graphVersion) throw new Error("WHATSAPP_SECRETS_MISSING");
+          const response = await fetch(
+            `https://graph.facebook.com/${encodeURIComponent(graphVersion)}/${encodeURIComponent(connection.sender_identifier)}?fields=id,display_phone_number,verified_name`,
+            { headers: { authorization: `Bearer ${accessToken}` } },
+          );
+          if (!response.ok) throw new Error(`WHATSAPP_${response.status}`);
+        } else {
+          const resendKey = Deno.env.get("RESEND_API_KEY") ?? "";
+          if (!resendKey) throw new Error("RESEND_API_KEY_MISSING");
+          const response = await fetch("https://api.resend.com/domains?limit=1", {
+            headers: { authorization: `Bearer ${resendKey}` },
+          });
+          if (!response.ok) throw new Error(`RESEND_${response.status}`);
+        }
+      } catch (error) {
+        testError = errorCode(error);
+      }
+      await service
+        .from("communication_channel_connections")
+        .update({
+          status: testError ? "error" : "active",
+          last_error_code: testError || null,
+          updated_by: identity.user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", connection.id)
+        .eq("organization_id", body.organizationId);
+      await service.from("audit_logs").insert({
+        organization_id: body.organizationId,
+        actor_id: identity.user.id,
+        action: "communication.channel.connection.tested",
+        entity: "communication_channel_connection",
+        entity_id: connection.id,
+        metadata: { channel: connection.channel, success: !testError },
+      });
+      if (testError) return json({ error: testError }, 502);
+      return json({ ok: true, channel: connection.channel });
+    }
+
+    if (!uuid(body.threadId) || typeof body.content !== "string" || !body.content.trim()) {
+      return json({ error: "INVALID_REQUEST" }, 400);
+    }
     const content = body.content.trim().slice(0, 5000);
     const { data, error } = await service.rpc("prepare_communication_channel_send", {
       _thread_id: body.threadId,

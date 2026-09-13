@@ -1,6 +1,20 @@
-import { Activity, ExternalLink, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
+import {
+  Activity,
+  ExternalLink,
+  FlaskConical,
+  RefreshCw,
+  RotateCcw,
+  ShieldCheck,
+  TriangleAlert,
+} from "lucide-react";
+import { toast } from "sonner";
 
+import {
+  useIntegrationFailures,
+  useTestIntegrationConnection,
+} from "@/hooks/use-integration-actions";
 import { useIntegrationHealth } from "@/hooks/use-integration-health";
+import { useRetryAsaasChargeJob } from "@/hooks/use-asaas";
 import {
   INTEGRATION_STATUS_LABEL,
   integrationDiagnosticMessage,
@@ -24,7 +38,23 @@ const statusTone: Record<IntegrationHealthStatus, string> = {
   outdated: "border-destructive/30 bg-destructive/10 text-destructive",
 };
 
-function HealthCard({ item }: { item: IntegrationHealthItem }) {
+const testableIntegrations = new Set([
+  "asaas",
+  "channel-whatsapp",
+  "channel-email",
+  "push",
+  "copilot",
+]);
+
+function HealthCard({
+  item,
+  testing,
+  onTest,
+}: {
+  item: IntegrationHealthItem;
+  testing: boolean;
+  onTest: (integrationKey: string) => void;
+}) {
   const detail = integrationDiagnosticMessage(item.last_error_code);
   return (
     <div className="flex min-h-52 flex-col rounded-xl border bg-card p-4 shadow-xs">
@@ -62,7 +92,19 @@ function HealthCard({ item }: { item: IntegrationHealthItem }) {
         {detail && <p className="font-medium text-destructive">{detail}</p>}
       </div>
 
-      <div className="mt-auto pt-4">
+      <div className="mt-auto flex flex-wrap gap-2 pt-4">
+        {item.category === "servico" && testableIntegrations.has(item.integration_key) && (
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            disabled={testing || item.status === "not_configured"}
+            onClick={() => onTest(item.integration_key)}
+          >
+            <FlaskConical className="size-3.5" aria-hidden />
+            {item.integration_key === "push" ? "Enviar teste" : "Testar conexão"}
+          </Button>
+        )}
         <Button asChild variant="outline" size="sm">
           <a href={item.action_url}>
             {item.action_label}
@@ -82,6 +124,9 @@ export function IntegrationHealthPanel({
   enabled: boolean;
 }) {
   const query = useIntegrationHealth(organizationId, enabled);
+  const failures = useIntegrationFailures(organizationId, enabled);
+  const connectionTest = useTestIntegrationConnection(organizationId);
+  const retryJob = useRetryAsaasChargeJob(organizationId);
   const items = query.data ?? [];
   const services = items.filter((item) => item.category === "servico");
   const deployments = items.filter((item) => item.category === "implantacao");
@@ -89,6 +134,35 @@ export function IntegrationHealthPanel({
   const hasDeploymentDrift = deployments.some((item) =>
     ["not_reported", "outdated"].includes(item.status),
   );
+  const runConnectionTest = (integrationKey: string) => {
+    connectionTest.mutate(integrationKey, {
+      onSuccess: (result) => {
+        const delivered = Number(result?.delivered ?? 0);
+        toast.success(
+          integrationKey === "push"
+            ? delivered > 0
+              ? "Notificação de teste enviada."
+              : "Nenhum aparelho ativo recebeu o teste."
+            : "Conexão verificada com sucesso.",
+        );
+      },
+      onError: (error) =>
+        toast.error(
+          integrationDiagnosticMessage(error instanceof Error ? error.message : null) ??
+            "Não foi possível testar esta integração.",
+        ),
+    });
+  };
+  const retryFailure = (failureId: string) => {
+    retryJob.mutate(failureId, {
+      onSuccess: () => {
+        toast.success("Cobrança recolocada na fila com segurança.");
+        void failures.refetch();
+        void query.refetch();
+      },
+      onError: () => toast.error("Não foi possível recolocar esta cobrança na fila."),
+    });
+  };
 
   return (
     <Card>
@@ -178,7 +252,14 @@ export function IntegrationHealthPanel({
               </div>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {services.map((item) => (
-                  <HealthCard key={item.integration_key} item={item} />
+                  <HealthCard
+                    key={item.integration_key}
+                    item={item}
+                    testing={
+                      connectionTest.isPending && connectionTest.variables === item.integration_key
+                    }
+                    onTest={runConnectionTest}
+                  />
                 ))}
               </div>
             </section>
@@ -192,7 +273,65 @@ export function IntegrationHealthPanel({
               </div>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {deployments.map((item) => (
-                  <HealthCard key={item.integration_key} item={item} />
+                  <HealthCard
+                    key={item.integration_key}
+                    item={item}
+                    testing={false}
+                    onTest={runConnectionTest}
+                  />
+                ))}
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <div>
+                <h3 className="font-semibold">Falhas recentes e reprocessamento</h3>
+                <p className="text-sm text-muted-foreground">
+                  Cobranças podem voltar à fila sem duplicar o pagamento. Falhas de mensagens ficam
+                  disponíveis para análise manual.
+                </p>
+              </div>
+              {failures.isLoading && <Skeleton className="h-24 rounded-xl" />}
+              {failures.isError && (
+                <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                  Não foi possível carregar as falhas recentes.
+                </p>
+              )}
+              {!failures.isLoading && !failures.isError && (failures.data ?? []).length === 0 && (
+                <p className="rounded-lg border border-success/30 bg-success/10 p-4 text-sm">
+                  Nenhuma falha de integração aguarda tratamento.
+                </p>
+              )}
+              <div className="space-y-2">
+                {(failures.data ?? []).map((failure) => (
+                  <div
+                    key={`${failure.integration_key}-${failure.failure_id}`}
+                    className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium">{failure.label}</p>
+                      <p className="truncate text-sm text-muted-foreground">
+                        {failure.description} · {integrationDiagnosticMessage(failure.error_code)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {formatDateTime(failure.failed_at)} · {failure.attempts} tentativa(s)
+                      </p>
+                    </div>
+                    {failure.retryable ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={retryJob.isPending}
+                        onClick={() => retryFailure(failure.failure_id)}
+                      >
+                        <RotateCcw className="size-3.5" aria-hidden />
+                        Reprocessar
+                      </Button>
+                    ) : (
+                      <Badge variant="outline">Análise manual</Badge>
+                    )}
+                  </div>
                 ))}
               </div>
             </section>

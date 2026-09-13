@@ -298,14 +298,16 @@ async function processJob(service: Service, job: Job) {
   }
 }
 
-async function sendReminderPushes(service: Service) {
+async function sendPushBatch(
+  service: Service,
+  rpc: "claim_asaas_reminder_push_deliveries" | "claim_integration_alert_push_deliveries",
+  tagPrefix: string,
+) {
   const publicKey = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
   const privateKey = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
   const subject = Deno.env.get("VAPID_SUBJECT") ?? "";
   if (!publicKey || !privateKey || !subject) return { claimed: 0, delivered: 0 };
-  const { data, error } = await service.rpc("claim_asaas_reminder_push_deliveries", {
-    _limit: 100,
-  });
+  const { data, error } = await service.rpc(rpc, { _limit: 100 });
   if (error) throw error;
   const deliveries = (data ?? []) as PushDelivery[];
   webpush.setVapidDetails(subject, publicKey, privateKey);
@@ -318,7 +320,7 @@ async function sendReminderPushes(service: Service) {
           title: item.title,
           body: item.body,
           url: item.action_url,
-          tag: `asaas-reminder-${item.notification_id}`,
+          tag: `${tagPrefix}-${item.notification_id}`,
         }),
         { TTL: 3600, urgency: "normal" },
       );
@@ -391,7 +393,11 @@ export default {
         failed += 1;
       }
     }
-    const pushes = await sendReminderPushes(service).catch((error) => {
+    const pushes = await sendPushBatch(
+      service,
+      "claim_asaas_reminder_push_deliveries",
+      "asaas-reminder",
+    ).catch((error) => {
       console.warn(
         JSON.stringify({
           source: "asaas-billing-automation",
@@ -400,6 +406,26 @@ export default {
       );
       return { claimed: 0, delivered: 0 };
     });
-    return json({ claimed: (data ?? []).length, succeeded, failed, pushes });
+    const integrationAlertPushes = await sendPushBatch(
+      service,
+      "claim_integration_alert_push_deliveries",
+      "integration-alert",
+    ).catch((error) => {
+      console.warn(
+        JSON.stringify({
+          source: "asaas-billing-automation",
+          code:
+            error instanceof Error ? error.message.split(" ")[0] : "INTEGRATION_PUSH_BATCH_FAILED",
+        }),
+      );
+      return { claimed: 0, delivered: 0 };
+    });
+    return json({
+      claimed: (data ?? []).length,
+      succeeded,
+      failed,
+      pushes,
+      integrationAlertPushes,
+    });
   },
 };

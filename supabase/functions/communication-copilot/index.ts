@@ -10,7 +10,7 @@ const corsHeaders = {
   "access-control-allow-methods": "POST, OPTIONS",
 };
 
-type CopilotMode = "assist" | "review";
+type CopilotMode = "assist" | "review" | "health";
 type JsonObject = Record<string, unknown>;
 
 function json(value: unknown, status = 200): Response {
@@ -122,11 +122,13 @@ export default {
     }
 
     const threadId = body.threadId;
+    const organizationId = body.organizationId;
     const mode: CopilotMode | null =
-      body.mode === "assist" || body.mode === "review" ? body.mode : null;
+      body.mode === "assist" || body.mode === "review" || body.mode === "health" ? body.mode : null;
     const draft = typeof body.draft === "string" ? body.draft.trim() : "";
 
-    if (!validUuid(threadId) || !mode) return json({ error: "INVALID_REQUEST" }, 400);
+    if (!mode || (mode === "health" ? !validUuid(organizationId) : !validUuid(threadId)))
+      return json({ error: "INVALID_REQUEST" }, 400);
     if (draft.length > 5000) return json({ error: "DRAFT_TOO_LONG" }, 400);
     if (mode === "review" && !draft) return json({ error: "DRAFT_REQUIRED" }, 400);
 
@@ -143,6 +145,26 @@ export default {
       global: { headers: { Authorization: authorization } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    if (mode === "health") {
+      const { error: settingsError } = await supabase.rpc("get_communication_copilot_settings", {
+        _organization_id: organizationId,
+      });
+      if (settingsError) return json({ error: "COPILOT_CONTEXT_DENIED" }, 403);
+      const providerResponse = await fetch(
+        `https://api.openai.com/v1/models/${encodeURIComponent(model)}`,
+        { headers: { authorization: `Bearer ${openAiKey}` } },
+      );
+      if (!providerResponse.ok) {
+        const code =
+          providerResponse.status === 429
+            ? "COPILOT_RATE_LIMITED"
+            : `OPENAI_${providerResponse.status}`;
+        return json({ error: code }, providerResponse.status === 429 ? 429 : 502);
+      }
+      return json({ ok: true, model });
+    }
+
     const { data: context, error: contextError } = await supabase.rpc(
       "prepare_communication_copilot",
       { _thread_id: threadId, _mode: mode },

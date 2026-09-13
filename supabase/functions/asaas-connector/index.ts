@@ -163,6 +163,47 @@ export default {
     });
     await recordIntegrationHeartbeat(service, "asaas-connector");
     try {
+      if (action === "test_connection") {
+        await authorize(service, body.organizationId, identity.user.id, [
+          "superadmin",
+          "proprietario",
+          "administrador",
+        ]);
+        const now = new Date().toISOString();
+        try {
+          const { connection, apiKey } = await credential(service, body.organizationId);
+          const profile = await asaas(apiKey, connection.environment, "/myAccount");
+          await service
+            .from("asaas_connections")
+            .update({
+              status: "connected",
+              account_name: text(profile.name) ?? connection.account_name,
+              last_checked_at: now,
+              last_error_code: null,
+              updated_by: identity.user.id,
+              updated_at: now,
+            })
+            .eq("id", connection.id)
+            .eq("organization_id", body.organizationId);
+          return json({ ok: true, environment: connection.environment });
+        } catch (testError) {
+          const code =
+            testError instanceof Error
+              ? testError.message.split(" ")[0].slice(0, 140)
+              : "ASAAS_CONNECTION_TEST_FAILED";
+          await service
+            .from("asaas_connections")
+            .update({
+              status: "error",
+              last_checked_at: now,
+              last_error_code: code,
+              updated_by: identity.user.id,
+              updated_at: now,
+            })
+            .eq("organization_id", body.organizationId);
+          return json({ error: code }, code === "ASAAS_NOT_CONNECTED" ? 409 : 502);
+        }
+      }
       if (action === "connect") {
         await authorize(service, body.organizationId, identity.user.id, [
           "superadmin",
