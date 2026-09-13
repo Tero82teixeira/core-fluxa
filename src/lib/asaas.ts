@@ -97,6 +97,8 @@ export function asaasErrorMessage(error: unknown) {
     return "A chave não pertence ao ambiente Asaas selecionado.";
   if (code.includes("INVALID_ACCESS_TOKEN") || code.includes("UNAUTHORIZED"))
     return "A chave do Asaas é inválida ou foi revogada.";
+  if (code.includes("INVALID_MOBILEPHONE"))
+    return "O telefone ou WhatsApp do cliente é inválido. Corrija o cadastro e tente novamente.";
   if (code.includes("ENCRYPTION_KEY_MISSING"))
     return "A proteção das credenciais Asaas não está configurada.";
   if (code.includes("SETTLEMENT_ACCOUNT"))

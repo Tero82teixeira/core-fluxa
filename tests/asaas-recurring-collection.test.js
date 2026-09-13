@@ -31,6 +31,8 @@ describe("automação de cobranças recorrentes Asaas", () => {
     assert.match(automation, /x-fluxa-automation-key/);
     assert.match(automation, /safeEqual\(suppliedAutomationKey, automationKey\)/);
     assert.match(automation, /externalReference:\s*transaction\.id/);
+    assert.match(automation, /mobilePhone:\s*asaasPhone\(client\.whatsapp \|\| client\.phone\)/);
+    assert.match(connector, /mobilePhone:asaasPhone\(client\.whatsapp\|\|client\.phone\)/);
     assert.match(automation, /claim_asaas_charge_jobs/);
     assert.match(automation, /complete_asaas_charge_job/);
     assert.doesNotMatch(automation, /api_key_ciphertext[\s\S]{0,80}console\./);
@@ -124,5 +126,6 @@ describe("resumo de cobrança Asaas", () => {
   test("transforma códigos técnicos em orientação prática", () => {
     assert.match(asaasErrorMessage("ASAAS_CLIENT_DOCUMENT_REQUIRED"), /CPF ou CNPJ/);
     assert.match(asaasErrorMessage("ASAAS_NOT_CONNECTED"), /Conecte a conta Asaas/);
+    assert.match(asaasErrorMessage("ASAAS_invalid_mobilePhone"), /telefone ou WhatsApp/);
   });
 });
