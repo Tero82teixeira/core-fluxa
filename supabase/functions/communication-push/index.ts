@@ -2,6 +2,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.111.0";
 import webpush from "npm:web-push@3.6.7";
+import { recordIntegrationHeartbeat, runtimeHeaders } from "../_shared/integration-runtime.ts";
 
 const cors = {
   "access-control-allow-origin": "*",
@@ -15,6 +16,7 @@ const json = (value: unknown, status = 200) =>
       ...cors,
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
+      ...runtimeHeaders(),
     },
   });
 const uuid = (value: unknown): value is string =>
@@ -47,20 +49,21 @@ export default {
     const privateKey = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
     const subject = Deno.env.get("VAPID_SUBJECT") ?? "";
     if (!publicKey || !privateKey || !subject) return json({ error: "PUSH_NOT_CONFIGURED" }, 503);
-    if (body.mode === "public-key") return json({ publicKey });
     const url = Deno.env.get("SUPABASE_URL") ?? "";
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     if (!url || !anonKey || !serviceRoleKey) return json({ error: "PUSH_NOT_CONFIGURED" }, 503);
+    const serviceClient = createClient(url, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    await recordIntegrationHeartbeat(serviceClient, "communication-push");
+    if (body.mode === "public-key") return json({ publicKey });
     const authClient = createClient(url, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const token = authorization.slice(7).trim();
     const { data: identity, error: identityError } = await authClient.auth.getUser(token);
     if (identityError || !identity.user) return json({ error: "AUTHENTICATION_REQUIRED" }, 401);
-    const serviceClient = createClient(url, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
     let rpc: "prepare_communication_push" | "prepare_push_test";
     let args: Record<string, string>;
     if (body.mode === "dispatch" && uuid(body.threadId)) {
@@ -97,6 +100,12 @@ export default {
           typeof error === "object" && error && "statusCode" in error
             ? Number(error.statusCode)
             : 0;
+        if (status === 404 || status === 410) {
+          await serviceClient
+            .from("push_subscriptions")
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq("id", item.subscription_id);
+        }
         console.warn(
           JSON.stringify({ source: "communication-push", code: "DELIVERY_FAILED", status }),
         );

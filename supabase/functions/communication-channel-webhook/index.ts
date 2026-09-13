@@ -2,11 +2,16 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.111.0";
+import { recordIntegrationHeartbeat, runtimeHeaders } from "../_shared/integration-runtime.ts";
 
 const json = (value: unknown, status = 200) =>
   new Response(JSON.stringify(value), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      ...runtimeHeaders(),
+    },
   });
 
 const encoder = new TextEncoder();
@@ -119,6 +124,7 @@ export default {
     const service = createClient(url, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    await recordIntegrationHeartbeat(service, "communication-channel-webhook");
     const raw = await request.text();
 
     try {

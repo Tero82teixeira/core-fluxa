@@ -35,6 +35,7 @@ import { ClientPortalFaqSettings } from "@/components/communication/client-porta
 import { LeadCaptureSettings } from "@/components/leads/lead-capture-settings";
 import { AsaasSettings } from "@/components/finance/asaas-settings";
 import { DataProtectionPanel } from "@/components/security/data-protection-panel";
+import { IntegrationHealthPanel } from "@/components/integrations/integration-health-panel";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -56,6 +57,7 @@ const tabs = [
   ["comunicacao", "Comunicação"],
   ["monitoramento", "Monitoramento"],
   ["notificacoes", "Notificações"],
+  ["integracoes", "Integrações"],
   ["seguranca", "Segurança"],
 ] as const;
 const sensitiveRoles = new Set(["superadmin", "proprietario", "administrador"]);
@@ -597,6 +599,9 @@ function SettingsPage() {
             ))}
           </Section>
           <CommunicationResponseAlertSettings organizationId={organizationId} canEdit={canEdit} />
+        </TabsContent>
+        <TabsContent value="integracoes">
+          <IntegrationHealthPanel organizationId={organizationId} enabled={canEdit} />
         </TabsContent>
         <TabsContent value="seguranca">
           <div className="space-y-4">
