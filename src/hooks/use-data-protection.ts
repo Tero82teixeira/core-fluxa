@@ -34,10 +34,16 @@ async function organizationRows(table: string, organizationId: string) {
       .select("*")
       .eq("organization_id", organizationId)
       .range(from, from + PAGE_SIZE - 1);
-    if (error) throw new Error(`Falha ao exportar ${table}: ${error.message}`);
+    if (error) {
+      const permissionDenied =
+        error.code === "42501" ||
+        /permission denied|row-level security|not allowed/i.test(error.message ?? "");
+      if (permissionDenied) return { rows: result, restricted: true };
+      throw new Error(`Falha ao exportar ${table}: ${error.message}`);
+    }
     const page = data ?? [];
     result.push(...page);
-    if (page.length < PAGE_SIZE) return result;
+    if (page.length < PAGE_SIZE) return { rows: result, restricted: false };
   }
 }
 
@@ -54,10 +60,13 @@ async function createOrganizationBackup(
   if (organizationError) throw organizationError;
 
   const sections: Record<string, unknown[]> = {};
+  const restrictedSections: Array<{ key: string; label: string }> = [];
   for (let index = 0; index < BACKUP_SECTIONS.length; index += 1) {
     const section = BACKUP_SECTIONS[index];
     onProgress?.(index, BACKUP_SECTIONS.length, section.label);
-    sections[section.key] = await organizationRows(section.table, organizationId);
+    const result = await organizationRows(section.table, organizationId);
+    sections[section.key] = result.rows;
+    if (result.restricted) restrictedSections.push({ key: section.key, label: section.label });
   }
   const sectionCounts = Object.fromEntries(
     Object.entries(sections).map(([key, rows]) => [key, rows.length]),
@@ -73,6 +82,7 @@ async function createOrganizationBackup(
       organization_name: organizationName,
       record_count: recordCount,
       section_counts: sectionCounts,
+      restricted_sections: restrictedSections,
       security: "Segredos, chaves de API, tokens e credenciais não fazem parte desta exportação.",
       document_notice:
         "A exportação contém os dados e o inventário dos documentos, não as cópias binárias dos arquivos protegidos.",
@@ -95,10 +105,17 @@ async function createOrganizationBackup(
       file_size_bytes: file.blob.size,
       record_count: recordCount,
       section_count: BACKUP_SECTIONS.length,
+      restricted_section_count: restrictedSections.length,
       compressed: file.compressed,
     },
   });
-  return { fileName, fileSize: file.blob.size, recordCount, auditRecorded: !auditError };
+  return {
+    fileName,
+    fileSize: file.blob.size,
+    recordCount,
+    restrictedSectionCount: restrictedSections.length,
+    auditRecorded: !auditError,
+  };
 }
 
 export function useOrganizationAudit(organizationId: string | null, limit = 100) {

@@ -51,6 +51,9 @@ test("exportação pagina dados, registra auditoria e informa limitações", () 
   assert.match(hook, /organization\.backup\.exported/);
   assert.match(hook, /record_count/);
   assert.match(hook, /document_notice/);
+  assert.match(hook, /permission denied\|row-level security\|not allowed/);
+  assert.match(hook, /restrictedSections\.push/);
+  assert.match(hook, /restricted_section_count/);
   assert.match(hook, /Segredos, chaves de API, tokens e credenciais/);
 });
 
@@ -61,5 +64,6 @@ test("segurança restringe a exportação e mantém a auditoria visível na pró
   assert.match(panel, /Gerar backup agora/);
   assert.match(panel, /Histórico de backups/);
   assert.match(panel, /Auditoria da empresa/);
+  assert.match(panel, /seção\(ões\) interna\(s\) protegida\(s\) não foram incluídas/);
   assert.equal(auditActionLabel("organization.backup.exported"), "Backup exportado");
 });
