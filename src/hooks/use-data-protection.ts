@@ -38,12 +38,20 @@ async function organizationRows(table: string, organizationId: string) {
       const permissionDenied =
         error.code === "42501" ||
         /permission denied|row-level security|not allowed/i.test(error.message ?? "");
-      if (permissionDenied) return { rows: result, restricted: true };
+      const unavailable =
+        error.code === "PGRST205" ||
+        error.code === "42P01" ||
+        /could not find the table|relation .* does not exist|schema cache/i.test(
+          error.message ?? "",
+        );
+      if (permissionDenied) return { rows: result, restricted: true, unavailable: false };
+      if (unavailable) return { rows: result, restricted: false, unavailable: true };
       throw new Error(`Falha ao exportar ${table}: ${error.message}`);
     }
     const page = data ?? [];
     result.push(...page);
-    if (page.length < PAGE_SIZE) return { rows: result, restricted: false };
+    if (page.length < PAGE_SIZE)
+      return { rows: result, restricted: false, unavailable: false };
   }
 }
 
@@ -61,12 +69,15 @@ async function createOrganizationBackup(
 
   const sections: Record<string, unknown[]> = {};
   const restrictedSections: Array<{ key: string; label: string }> = [];
+  const unavailableSections: Array<{ key: string; label: string }> = [];
   for (let index = 0; index < BACKUP_SECTIONS.length; index += 1) {
     const section = BACKUP_SECTIONS[index];
     onProgress?.(index, BACKUP_SECTIONS.length, section.label);
     const result = await organizationRows(section.table, organizationId);
     sections[section.key] = result.rows;
     if (result.restricted) restrictedSections.push({ key: section.key, label: section.label });
+    if (result.unavailable)
+      unavailableSections.push({ key: section.key, label: section.label });
   }
   const sectionCounts = Object.fromEntries(
     Object.entries(sections).map(([key, rows]) => [key, rows.length]),
@@ -83,6 +94,7 @@ async function createOrganizationBackup(
       record_count: recordCount,
       section_counts: sectionCounts,
       restricted_sections: restrictedSections,
+      unavailable_sections: unavailableSections,
       security: "Segredos, chaves de API, tokens e credenciais não fazem parte desta exportação.",
       document_notice:
         "A exportação contém os dados e o inventário dos documentos, não as cópias binárias dos arquivos protegidos.",
@@ -106,6 +118,7 @@ async function createOrganizationBackup(
       record_count: recordCount,
       section_count: BACKUP_SECTIONS.length,
       restricted_section_count: restrictedSections.length,
+      unavailable_section_count: unavailableSections.length,
       compressed: file.compressed,
     },
   });
@@ -114,6 +127,7 @@ async function createOrganizationBackup(
     fileSize: file.blob.size,
     recordCount,
     restrictedSectionCount: restrictedSections.length,
+    unavailableSectionCount: unavailableSections.length,
     auditRecorded: !auditError,
   };
 }

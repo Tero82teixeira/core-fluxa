@@ -96,6 +96,7 @@ export type OrganizationBackup = {
     record_count: number;
     section_counts: Record<string, number>;
     restricted_sections: Array<{ key: string; label: string }>;
+    unavailable_sections: Array<{ key: string; label: string }>;
     security: string;
     document_notice: string;
   };

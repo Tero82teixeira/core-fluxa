@@ -72,9 +72,10 @@ export function DataProtectionPanel({
         organizationName,
         onProgress: (completed, total, label) => setProgress({ completed, total, label }),
       });
-      if (result.restrictedSectionCount > 0) {
+      const omittedCount = result.restrictedSectionCount + result.unavailableSectionCount;
+      if (omittedCount > 0) {
         toast.warning(
-          `Backup gerado. ${result.restrictedSectionCount} seção(ões) interna(s) protegida(s) não foram incluídas.`,
+          `Backup gerado. ${omittedCount} seção(ões) protegida(s) ou ainda indisponível(is) não foram incluídas.`,
         );
       } else if (result.auditRecorded) {
         toast.success(`Backup gerado com ${result.recordCount.toLocaleString("pt-BR")} registros.`);
