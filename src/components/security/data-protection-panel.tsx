@@ -72,7 +72,11 @@ export function DataProtectionPanel({
         organizationName,
         onProgress: (completed, total, label) => setProgress({ completed, total, label }),
       });
-      if (result.auditRecorded) {
+      if (result.restrictedSectionCount > 0) {
+        toast.warning(
+          `Backup gerado. ${result.restrictedSectionCount} seção(ões) interna(s) protegida(s) não foram incluídas.`,
+        );
+      } else if (result.auditRecorded) {
         toast.success(`Backup gerado com ${result.recordCount.toLocaleString("pt-BR")} registros.`);
       } else {
         toast.warning(
@@ -95,8 +99,8 @@ export function DataProtectionPanel({
               <Archive className="size-5 text-primary" /> Proteção e exportação dos dados
             </CardTitle>
             <CardDescription>
-              Gere uma cópia dos registros de clientes, processos, tarefas, financeiro, comunicação
-              e históricos desta empresa.
+              Gere uma cópia dos dados disponíveis de clientes, processos, tarefas, financeiro,
+              comunicação e históricos desta empresa.
             </CardDescription>
           </div>
           <Button
@@ -148,8 +152,9 @@ export function DataProtectionPanel({
           <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-600" />
             <p>
-              Chaves de API, senhas e tokens nunca entram no arquivo. O backup contém o inventário
-              dos documentos; os arquivos protegidos continuam no armazenamento do FLUXA.
+              Chaves de API, senhas e tokens nunca entram no arquivo. Se uma seção interna bloquear
+              a leitura direta, ela será identificada no manifesto sem interromper o backup. O
+              inventário dos documentos é incluído; os arquivos continuam no armazenamento do FLUXA.
             </p>
           </div>
         </CardContent>

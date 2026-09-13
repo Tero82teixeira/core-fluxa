@@ -6,7 +6,9 @@ Em **Configurações → Segurança**, proprietários e administradores encontra
 
 O botão **Gerar backup agora** consulta, com a sessão atual e as políticas RLS, os registros da empresa em páginas de até 1.000 itens. O arquivo contém um manifesto com data, empresa, quantidade total e contagem por seção.
 
-São incluídos dados dos módulos de clientes, processos, tarefas, documentos, financeiro, comercial, comunicação, monitoramento, captação, metas, automações, suporte e auditoria. Segredos do Asaas, tokens, senhas, convites e credenciais são excluídos de forma deliberada.
+São incluídos dados disponíveis dos módulos de clientes, processos, tarefas, documentos, financeiro, comercial, comunicação, monitoramento, captação, metas, automações, suporte e auditoria. Segredos do Asaas, tokens, senhas, convites e credenciais são excluídos de forma deliberada.
+
+Algumas tabelas internas só podem ser lidas por RPCs específicas. Quando o banco bloquear uma dessas seções, a exportação continua e registra `restricted_sections` no manifesto. Erros de conexão e outros erros inesperados continuam interrompendo o processo para evitar um arquivo silenciosamente incompleto.
 
 Navegadores compatíveis geram `json.gz`; nos demais, o sistema gera `json`. O conteúdo é produzido no navegador autenticado e baixado diretamente no aparelho do usuário.
 
