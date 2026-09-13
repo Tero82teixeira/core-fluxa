@@ -13,6 +13,11 @@ const record = (value: unknown): Record<string, unknown> =>
     ? (value as Record<string, unknown>)
     : {};
 const text = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : null);
+const asaasPhone = (value: unknown) => {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  const national = digits.startsWith("55") && digits.length > 11 ? digits.slice(2) : digits;
+  return national.length === 10 || national.length === 11 ? national : undefined;
+};
 const encoder = new TextEncoder();
 function bytesToBase64(bytes: Uint8Array) {
   let binary = "";
@@ -185,7 +190,7 @@ async function processJob(service: Service, job: Job) {
             name: client.name,
             cpfCnpj: client.document_digits,
             email: client.email || undefined,
-            mobilePhone: client.whatsapp || client.phone || undefined,
+            mobilePhone: asaasPhone(client.whatsapp || client.phone),
             externalReference: client.id,
           }),
         });
