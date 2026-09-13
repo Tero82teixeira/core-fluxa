@@ -3700,6 +3700,24 @@ export type Database = {
           },
         ]
       }
+      integration_runtime_heartbeats: {
+        Row: {
+          function_name: string
+          last_seen_at: string
+          release_version: string
+        }
+        Insert: {
+          function_name: string
+          last_seen_at?: string
+          release_version: string
+        }
+        Update: {
+          function_name?: string
+          last_seen_at?: string
+          release_version?: string
+        }
+        Relationships: []
+      }
       kiwify_webhook_events: {
         Row: {
           event_key: string
@@ -6943,6 +6961,23 @@ export type Database = {
         Args: { _org: string }
         Returns: boolean
       }
+      organization_integration_health: {
+        Args: { _organization_id: string }
+        Returns: {
+          action_label: string
+          action_url: string
+          category: string
+          error_count: number
+          expected_version: string
+          integration_key: string
+          label: string
+          last_activity_at: string
+          last_error_code: string
+          pending_count: number
+          reported_version: string
+          status: string
+        }[]
+      }
       platform_kiwify_event_health: {
         Args: { _limit?: number }
         Returns: {
@@ -7129,6 +7164,10 @@ export type Database = {
           _organization_id: string
         }
         Returns: string
+      }
+      record_integration_runtime_heartbeat: {
+        Args: { _function_name: string; _release_version: string }
+        Returns: undefined
       }
       record_kiwify_webhook_failure: {
         Args: {

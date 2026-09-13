@@ -4,6 +4,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "jsr:@supabase/server@1";
 import { createClient } from "npm:@supabase/supabase-js@2.111.0";
 import { asRecord, extractKiwifyOrder, type JsonRecord } from "./payload.ts";
+import { recordIntegrationHeartbeat, runtimeHeaders } from "../_shared/integration-runtime.ts";
 
 const ACTIVE_EVENTS = new Set(["order_approved", "paid", "subscription_renewed"]);
 const PAST_DUE_EVENTS = new Set([
@@ -18,7 +19,7 @@ const CHARGEBACK_EVENTS = new Set(["order_chargedback", "chargeback"]);
 function json(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8" },
+    headers: { "content-type": "application/json; charset=utf-8", ...runtimeHeaders() },
   });
 }
 
@@ -178,6 +179,7 @@ export default {
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    await recordIntegrationHeartbeat(supabase, "kiwify-webhook");
     const failureReference: FailureReference = {
       eventKey,
       eventType,

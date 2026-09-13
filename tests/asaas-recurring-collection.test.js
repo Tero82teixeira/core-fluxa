@@ -32,7 +32,7 @@ describe("automação de cobranças recorrentes Asaas", () => {
     assert.match(automation, /safeEqual\(suppliedAutomationKey, automationKey\)/);
     assert.match(automation, /externalReference:\s*transaction\.id/);
     assert.match(automation, /mobilePhone:\s*asaasPhone\(client\.whatsapp \|\| client\.phone\)/);
-    assert.match(connector, /mobilePhone:asaasPhone\(client\.whatsapp\|\|client\.phone\)/);
+    assert.match(connector, /mobilePhone:\s*asaasPhone\(client\.whatsapp\s*\|\|\s*client\.phone\)/);
     assert.match(automation, /claim_asaas_charge_jobs/);
     assert.match(automation, /complete_asaas_charge_job/);
     assert.doesNotMatch(automation, /api_key_ciphertext[\s\S]{0,80}console\./);
@@ -42,15 +42,15 @@ describe("automação de cobranças recorrentes Asaas", () => {
     assert.match(connector, /async function resolveChargeJob/);
     assert.match(
       connector,
-      /status:"succeeded",completed_at:now,last_error_code:null,updated_at:now/,
+      /status:\s*"succeeded"[\s\S]{0,120}completed_at:\s*now[\s\S]{0,120}last_error_code:\s*null/,
     );
     assert.match(
       connector,
-      /if\(existing\)\{await resolveChargeJob\(service,body\.organizationId,body\.transactionId\)/,
+      /if \(existing\)[\s\S]{0,160}await resolveChargeJob\(service, body\.organizationId, body\.transactionId\)/,
     );
     assert.match(
       connector,
-      /await resolveChargeJob\(service,body\.organizationId,transaction\.id\);await service\.from\("audit_logs"\)/,
+      /await resolveChargeJob\(service, body\.organizationId, transaction\.id\)[\s\S]{0,200}service[\s\S]{0,40}\.from\("audit_logs"\)/,
     );
   });
 

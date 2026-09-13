@@ -2,6 +2,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.111.0";
+import { runtimeHeaders } from "../_shared/integration-runtime.ts";
 
 const corsHeaders = {
   "access-control-allow-origin": "*",
@@ -19,6 +20,7 @@ function json(value: unknown, status = 200): Response {
       ...corsHeaders,
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
+      ...runtimeHeaders(),
     },
   });
 }
@@ -235,7 +237,15 @@ export default {
           status: providerResponse.status,
         }),
       );
-      return json({ error: "COPILOT_PROVIDER_UNAVAILABLE" }, 502);
+      return json(
+        {
+          error:
+            providerResponse.status === 429
+              ? "COPILOT_RATE_LIMITED"
+              : "COPILOT_PROVIDER_UNAVAILABLE",
+        },
+        providerResponse.status === 429 ? 429 : 502,
+      );
     }
 
     const providerPayload = asObject(await providerResponse.json());

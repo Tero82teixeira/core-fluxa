@@ -2,6 +2,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.111.0";
+import { recordIntegrationHeartbeat, runtimeHeaders } from "../_shared/integration-runtime.ts";
 
 const cors = {
   "access-control-allow-origin": "*",
@@ -16,6 +17,7 @@ const json = (value: unknown, status = 200) =>
       ...cors,
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
+      ...runtimeHeaders(),
     },
   });
 
@@ -77,6 +79,7 @@ export default {
     const service = createClient(url, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    await recordIntegrationHeartbeat(service, "communication-channel-send");
     const content = body.content.trim().slice(0, 5000);
     const { data, error } = await service.rpc("prepare_communication_channel_send", {
       _thread_id: body.threadId,

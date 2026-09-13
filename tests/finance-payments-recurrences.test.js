@@ -202,7 +202,9 @@ describe("recorrências financeiras", () => {
   });
   test("somente a integração Asaas usa Edge Function financeira", () => {
     const functionsUrl = new URL("../supabase/functions", import.meta.url);
-    const functions = existsSync(functionsUrl) ? readdirSync(functionsUrl) : [];
+    const functions = existsSync(functionsUrl)
+      ? readdirSync(functionsUrl).filter((name) => !name.startsWith("_"))
+      : [];
     assert.deepEqual(functions, [
       "asaas-billing-automation",
       "asaas-connector",

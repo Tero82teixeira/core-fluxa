@@ -2,11 +2,16 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.111.0";
 import webpush from "npm:web-push@3.6.7";
+import { recordIntegrationHeartbeat, runtimeHeaders } from "../_shared/integration-runtime.ts";
 
 const json = (value: unknown, status = 200) =>
   new Response(JSON.stringify(value), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      ...runtimeHeaders(),
+    },
   });
 const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
@@ -133,7 +138,12 @@ async function processJob(service: Service, job: Job) {
       .eq("organization_id", job.organization_id)
       .eq("id", transaction.commercial_proposal_id)
       .maybeSingle();
-    if (!proposal || proposal.status !== "accepted" || !proposal.asaas_auto_charge || proposal.archived_at)
+    if (
+      !proposal ||
+      proposal.status !== "accepted" ||
+      !proposal.asaas_auto_charge ||
+      proposal.archived_at
+    )
       return;
   } else return;
   const { data: existingRows } = await service
@@ -316,6 +326,12 @@ async function sendReminderPushes(service: Service) {
     } catch (error) {
       const status =
         typeof error === "object" && error && "statusCode" in error ? Number(error.statusCode) : 0;
+      if (status === 404 || status === 410) {
+        await service
+          .from("push_subscriptions")
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq("id", item.subscription_id);
+      }
       console.warn(
         JSON.stringify({ source: "asaas-billing-automation", code: "PUSH_FAILED", status }),
       );
@@ -347,6 +363,7 @@ export default {
     const service = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    await recordIntegrationHeartbeat(service, "asaas-billing-automation");
     const { data, error } = await service.rpc("claim_asaas_charge_jobs", { _limit: 25 });
     if (error) return json({ error: "JOB_CLAIM_FAILED" }, 500);
     let succeeded = 0;
