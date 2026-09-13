@@ -6814,18 +6814,42 @@ export type Database = {
         Args: never
         Returns: {
           archived_at: string
+          client_count: number
           commercial_status: string
           created_at: string
           days_remaining: number
+          document_count: number
           effective_status: string
+          follow_up_notes: string
+          follow_up_status: string
+          last_activity_at: string
+          last_contact_at: string
           legal_name: string
+          next_contact_at: string
           onboarding_completed: boolean
           organization_id: string
+          organization_phone: string
+          organization_whatsapp: string
           owner_email: string
           owner_name: string
+          process_count: number
+          task_count: number
           trade_name: string
           trial_ends_at: string
           trial_started_at: string
+        }[]
+      }
+      platform_trial_contact_history: {
+        Args: { _organization_id: string }
+        Returns: {
+          channel: string
+          contacted_at: string
+          created_by: string
+          created_by_name: string
+          id: string
+          next_contact_at: string
+          notes: string
+          status: string
         }[]
       }
       platform_support_open_count: { Args: never; Returns: number }
@@ -7085,6 +7109,17 @@ export type Database = {
         }
         Returns: string
       }
+      save_commercial_opportunity_contact: {
+        Args: {
+          _channel: string
+          _next_contact_at?: string
+          _notes: string
+          _opportunity_id: string
+          _organization_id: string
+          _status: string
+        }
+        Returns: undefined
+      }
       save_commercial_proposal: {
         Args: { _organization_id: string; _payload: Json; _proposal_id: string }
         Returns: string
@@ -7144,6 +7179,17 @@ export type Database = {
           _title: string
         }
         Returns: Json
+      }
+      save_platform_trial_follow_up: {
+        Args: {
+          _channel?: string
+          _next_contact_at?: string
+          _notes?: string
+          _organization_id: string
+          _register_contact?: boolean
+          _status: string
+        }
+        Returns: undefined
       }
       seed_default_document_types: {
         Args: { _org: string }
