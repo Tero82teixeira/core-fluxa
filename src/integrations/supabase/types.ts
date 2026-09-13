@@ -2017,6 +2017,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "commercial_opportunity_contact_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "commercial_opportunity_contact_history_opportunity_id_fkey"
             columns: ["opportunity_id"]
             isOneToOne: false
