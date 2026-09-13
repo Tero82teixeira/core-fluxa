@@ -38,6 +38,22 @@ describe("automação de cobranças recorrentes Asaas", () => {
     assert.doesNotMatch(automation, /api_key_ciphertext[\s\S]{0,80}console\./);
   });
 
+  test("encerra a falha antiga quando a cobrança manual já foi resolvida", () => {
+    assert.match(connector, /async function resolveChargeJob/);
+    assert.match(
+      connector,
+      /status:"succeeded",completed_at:now,last_error_code:null,updated_at:now/,
+    );
+    assert.match(
+      connector,
+      /if\(existing\)\{await resolveChargeJob\(service,body\.organizationId,body\.transactionId\)/,
+    );
+    assert.match(
+      connector,
+      /await resolveChargeJob\(service,body\.organizationId,transaction\.id\);await service\.from\("audit_logs"\)/,
+    );
+  });
+
   test("lembretes do portal são idempotentes e abrem a cobrança certa", () => {
     assert.match(migration, /days_until IN \(3,1,0,-3,-7\)/);
     assert.match(migration, /asaas-payment-reminder:/);
