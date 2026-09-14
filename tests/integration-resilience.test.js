@@ -24,7 +24,7 @@ describe("resiliência das integrações", () => {
     assert.doesNotMatch(
       asaas.slice(
         asaas.indexOf('action === "test_connection"'),
-        asaas.indexOf('action === "connect"'),
+        asaas.indexOf('action === "replay_webhook_event"'),
       ),
       /\/payments|\/customers/,
     );
