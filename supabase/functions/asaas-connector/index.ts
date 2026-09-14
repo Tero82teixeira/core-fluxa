@@ -204,6 +204,87 @@ export default {
           return json({ error: code }, code === "ASAAS_NOT_CONNECTED" ? 409 : 502);
         }
       }
+      if (action === "replay_webhook_event") {
+        await authorize(service, body.organizationId, identity.user.id, [
+          "superadmin",
+          "proprietario",
+          "administrador",
+        ]);
+        if (!uuid(body.webhookEventId)) throw new Error("ASAAS_WEBHOOK_EVENT_REQUIRED");
+        const [{ connection, apiKey }, { data: webhookEvent }] = await Promise.all([
+          credential(service, body.organizationId),
+          service
+            .from("asaas_webhook_events")
+            .select("id,event_type,provider_payment_id,diagnostic_code")
+            .eq("id", body.webhookEventId)
+            .eq("organization_id", body.organizationId)
+            .maybeSingle(),
+        ]);
+        if (!webhookEvent?.provider_payment_id || !webhookEvent.diagnostic_code)
+          throw new Error("ASAAS_WEBHOOK_EVENT_NOT_REPLAYABLE");
+        const providerPayment = await asaas(
+            apiKey,
+            connection.environment,
+            `/payments/${encodeURIComponent(webhookEvent.provider_payment_id)}`,
+          ),
+          providerStatus = String(providerPayment.status ?? "PENDING").toUpperCase(),
+          eventType =
+            providerStatus === "RECEIVED"
+              ? "PAYMENT_RECEIVED"
+              : providerStatus === "CONFIRMED"
+                ? "PAYMENT_CONFIRMED"
+                : providerStatus === "OVERDUE"
+                  ? "PAYMENT_OVERDUE"
+                  : providerStatus === "REFUNDED"
+                    ? "PAYMENT_REFUNDED"
+                    : providerStatus.includes("CHARGEBACK")
+                      ? "PAYMENT_CHARGEBACK_REQUESTED"
+                      : providerStatus === "DELETED" || providerStatus === "CANCELLED"
+                        ? "PAYMENT_DELETED"
+                        : "PAYMENT_UPDATED",
+          paidAtValue = text(providerPayment.paymentDate) ?? text(providerPayment.confirmedDate),
+          paidAt = paidAtValue ? new Date(`${paidAtValue}T12:00:00Z`).toISOString() : null,
+          providerAmount = Number(providerPayment.value),
+          replayEventId = `manual-replay-${webhookEvent.id}-${providerStatus}`;
+        if (!Number.isFinite(providerAmount) || providerAmount <= 0)
+          throw new Error("ASAAS_WEBHOOK_REPLAY_AMOUNT_INVALID");
+        const { data: replay, error: replayError } = await service.rpc(
+          "apply_asaas_payment_event",
+          {
+            _connection_token: connection.public_token,
+            _event_id: replayEventId,
+            _event_type: eventType,
+            _provider_payment_id: webhookEvent.provider_payment_id,
+            _provider_status: providerStatus,
+            _paid_at: paidAt,
+            _amount: providerAmount,
+          },
+        );
+        if (replayError) throw new Error("ASAAS_WEBHOOK_REPLAY_FAILED");
+        const { data: replayEvent, error: replayStateError } = await service
+          .from("asaas_webhook_events")
+          .select("diagnostic_code,processed_at")
+          .eq("organization_id", body.organizationId)
+          .eq("event_id", replayEventId)
+          .maybeSingle();
+        if (replayStateError || !replayEvent?.processed_at || replayEvent.diagnostic_code)
+          throw new Error("ASAAS_WEBHOOK_REPLAY_NOT_APPLIED");
+        const { error: clearError } = await service
+          .from("asaas_webhook_events")
+          .update({ diagnostic_code: null, processed_at: new Date().toISOString() })
+          .eq("id", webhookEvent.id)
+          .eq("organization_id", body.organizationId);
+        if (clearError) throw new Error("ASAAS_WEBHOOK_REPLAY_STATE_FAILED");
+        await service.from("audit_logs").insert({
+          organization_id: body.organizationId,
+          actor_id: identity.user.id,
+          action: "asaas.webhook.replayed",
+          entity: "asaas_webhook_event",
+          entity_id: webhookEvent.id,
+          metadata: { provider_status: providerStatus },
+        });
+        return json({ replay });
+      }
       if (action === "connect") {
         await authorize(service, body.organizationId, identity.user.id, [
           "superadmin",

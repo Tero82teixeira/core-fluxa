@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { IntegrationObservabilityPanel } from "@/components/integrations/integration-observability-panel";
 
 const statusTone: Record<IntegrationHealthStatus, string> = {
   healthy: "border-success/30 bg-success/10 text-success",
@@ -335,6 +336,8 @@ export function IntegrationHealthPanel({
                 ))}
               </div>
             </section>
+
+            <IntegrationObservabilityPanel organizationId={organizationId} enabled={enabled} />
           </>
         )}
       </CardContent>

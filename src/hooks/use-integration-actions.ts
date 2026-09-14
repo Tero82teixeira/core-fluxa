@@ -13,6 +13,39 @@ export type IntegrationFailure = {
   retryable: boolean;
 };
 
+export type WebhookEvent = {
+  event_record_id: string;
+  provider: "asaas" | "kiwify" | "whatsapp" | "email";
+  event_type: string;
+  reference: string;
+  status: "processed" | "pending" | "attention" | "ignored" | "failed";
+  diagnostic_code: string | null;
+  received_at: string;
+  processed_at: string | null;
+  replayable: boolean;
+};
+
+export type IntegrationCredential = {
+  integration_key: string;
+  label: string;
+  status: "healthy" | "attention" | "stale" | "not_configured";
+  last_validated_at: string | null;
+  days_since_validation: number | null;
+  diagnostic_code: string | null;
+  action_url: string;
+};
+
+export type IntegrationReportItem = {
+  provider: string;
+  label: string;
+  total_count: number;
+  processed_count: number;
+  warning_count: number;
+  failed_count: number;
+  success_rate: number;
+  last_event_at: string | null;
+};
+
 async function invoke(functionName: string, body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke(functionName, { body });
   if (error) {
@@ -40,6 +73,77 @@ export function useIntegrationFailures(organizationId: string | null, enabled: b
       });
       if (error) throw error;
       return (data ?? []) as IntegrationFailure[];
+    },
+  });
+}
+
+export function useWebhookEvents(organizationId: string | null, enabled: boolean) {
+  return useQuery({
+    enabled: Boolean(organizationId && enabled),
+    queryKey: ["integration-webhook-events", organizationId],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("organization_webhook_events", {
+        _organization_id: organizationId!,
+        _limit: 100,
+      });
+      if (error) throw error;
+      return (data ?? []) as WebhookEvent[];
+    },
+  });
+}
+
+export function useIntegrationCredentials(organizationId: string | null, enabled: boolean) {
+  return useQuery({
+    enabled: Boolean(organizationId && enabled),
+    queryKey: ["integration-credentials", organizationId],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("organization_integration_credentials", {
+        _organization_id: organizationId!,
+      });
+      if (error) throw error;
+      return (data ?? []) as IntegrationCredential[];
+    },
+  });
+}
+
+export function useIntegrationReport(organizationId: string | null, enabled: boolean) {
+  return useQuery({
+    enabled: Boolean(organizationId && enabled),
+    queryKey: ["integration-report", organizationId, "30-days"],
+    queryFn: async () => {
+      const to = new Date();
+      const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const { data, error } = await supabase.rpc("organization_integration_report", {
+        _organization_id: organizationId!,
+        _from: from.toISOString(),
+        _to: to.toISOString(),
+      });
+      if (error) throw error;
+      return (data ?? []).map((item) => ({
+        ...item,
+        success_rate: Number(item.success_rate),
+      })) as IntegrationReportItem[];
+    },
+  });
+}
+
+export function useReplayAsaasWebhook(organizationId: string | null) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (webhookEventId: string) => {
+      if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
+      return invoke("asaas-connector", {
+        action: "replay_webhook_event",
+        organizationId,
+        webhookEventId,
+      });
+    },
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: ["integration-webhook-events", organizationId] });
+      void client.invalidateQueries({ queryKey: ["integration-report", organizationId] });
+      void client.invalidateQueries({ queryKey: ["integration-health", organizationId] });
     },
   });
 }

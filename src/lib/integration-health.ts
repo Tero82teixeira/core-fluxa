@@ -58,6 +58,13 @@ export function integrationDiagnosticMessage(code: string | null): string | null
   if (code === "COPILOT_NOT_CONFIGURED") return "O Copiloto ainda não está configurado.";
   if (code === "COPILOT_RATE_LIMITED")
     return "O provedor da IA atingiu o limite temporário de uso.";
+  if (code === "CREDENTIAL_VALIDATION_STALE") return "Esta conexão precisa ser validada novamente.";
+  if (code === "CREDENTIAL_TEST_RECOMMENDED")
+    return "Execute um teste para confirmar a credencial ativa.";
+  if (code === "PUSH_NO_ACTIVE_DEVICE")
+    return "Nenhum aparelho está habilitado para receber notificações.";
+  if (code === "CHARGE_NOT_FOUND")
+    return "A cobrança relacionada ao evento ainda não foi localizada.";
   if (/^(WHATSAPP|RESEND|OPENAI)_\d+$/.test(code))
     return "O provedor recusou o teste. Verifique a credencial e a configuração.";
   if (code === "PAST_DUE") return "A assinatura está com pagamento atrasado.";

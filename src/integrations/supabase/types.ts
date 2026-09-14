@@ -7007,6 +7007,18 @@ export type Database = {
         Args: { _org: string }
         Returns: boolean
       }
+      organization_integration_credentials: {
+        Args: { _organization_id: string }
+        Returns: {
+          action_url: string
+          days_since_validation: number
+          diagnostic_code: string
+          integration_key: string
+          label: string
+          last_validated_at: string
+          status: string
+        }[]
+      }
       organization_integration_failures: {
         Args: { _organization_id: string }
         Returns: {
@@ -7034,6 +7046,33 @@ export type Database = {
           last_error_code: string
           pending_count: number
           reported_version: string
+          status: string
+        }[]
+      }
+      organization_integration_report: {
+        Args: { _from?: string; _organization_id: string; _to?: string }
+        Returns: {
+          failed_count: number
+          label: string
+          last_event_at: string
+          processed_count: number
+          provider: string
+          success_rate: number
+          total_count: number
+          warning_count: number
+        }[]
+      }
+      organization_webhook_events: {
+        Args: { _limit?: number; _organization_id: string }
+        Returns: {
+          diagnostic_code: string
+          event_record_id: string
+          event_type: string
+          processed_at: string
+          provider: string
+          received_at: string
+          reference: string
+          replayable: boolean
           status: string
         }[]
       }
