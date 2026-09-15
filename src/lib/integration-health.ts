@@ -42,9 +42,8 @@ export function integrationDeploymentNotice(items: IntegrationHealthItem[]): Dep
 export function integrationHealthSummary(items: IntegrationHealthItem[]) {
   return {
     healthy: items.filter((item) => item.status === "healthy").length,
-    attention: items.filter((item) =>
-      ["attention", "not_reported", "outdated"].includes(item.status),
-    ).length,
+    attention: items.filter((item) => ["attention", "outdated"].includes(item.status)).length,
+    awaitingConfirmation: items.filter((item) => item.status === "not_reported").length,
     pending: items.filter((item) => item.status === "pending").length,
     notConfigured: items.filter((item) => item.status === "not_configured").length,
   };

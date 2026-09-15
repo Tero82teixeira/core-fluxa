@@ -215,6 +215,11 @@ export function IntegrationHealthPanel({
               <Badge variant="outline" className={statusTone.attention}>
                 {summary.attention} para verificar
               </Badge>
+              {summary.awaitingConfirmation > 0 && (
+                <Badge variant="outline" className={statusTone.not_reported}>
+                  {summary.awaitingConfirmation} aguardando uso
+                </Badge>
+              )}
               <Badge variant="outline" className={statusTone.pending}>
                 {summary.pending} pendente(s)
               </Badge>

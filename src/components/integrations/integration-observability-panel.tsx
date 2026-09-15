@@ -1,11 +1,20 @@
 import { useMemo, useState } from "react";
-import { BarChart3, Download, ExternalLink, KeyRound, RotateCcw, Webhook } from "lucide-react";
+import {
+  BarChart3,
+  Download,
+  ExternalLink,
+  FlaskConical,
+  KeyRound,
+  RotateCcw,
+  Webhook,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
   useIntegrationCredentials,
   useIntegrationReport,
   useReplayAsaasWebhook,
+  useTestIntegrationConnection,
   useWebhookEvents,
   type IntegrationCredential,
 } from "@/hooks/use-integration-actions";
@@ -51,6 +60,7 @@ export function IntegrationObservabilityPanel({
   const credentials = useIntegrationCredentials(organizationId, enabled);
   const report = useIntegrationReport(organizationId, enabled);
   const replay = useReplayAsaasWebhook(organizationId);
+  const credentialTest = useTestIntegrationConnection(organizationId);
   const filteredEvents = useMemo(
     () => filterWebhookEvents(events.data ?? [], provider, status),
     [events.data, provider, status],
@@ -64,6 +74,26 @@ export function IntegrationObservabilityPanel({
     anchor.download = `fluxa-integracoes-${new Date().toISOString().slice(0, 10)}.csv`;
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  const testCredential = (integrationKey: string) => {
+    credentialTest.mutate(integrationKey, {
+      onSuccess: (result) => {
+        const delivered = Number(result?.delivered ?? 0);
+        toast.success(
+          integrationKey === "push"
+            ? delivered > 0
+              ? "Notificação de teste enviada."
+              : "Nenhum aparelho ativo recebeu o teste."
+            : "Conexão verificada com sucesso.",
+        );
+      },
+      onError: (error) =>
+        toast.error(
+          integrationDiagnosticMessage(error instanceof Error ? error.message : null) ??
+            "Não foi possível testar esta integração.",
+        ),
+    });
   };
 
   return (
@@ -202,11 +232,26 @@ export function IntegrationObservabilityPanel({
                   {integrationDiagnosticMessage(credential.diagnostic_code)}
                 </p>
               )}
-              <Button asChild variant="ghost" size="sm" className="mt-2 px-0">
-                <a href={credential.action_url}>
-                  Revisar configuração <ExternalLink className="size-3.5" aria-hidden />
-                </a>
-              </Button>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={
+                    credential.status === "not_configured" ||
+                    (credentialTest.isPending &&
+                      credentialTest.variables === credential.integration_key)
+                  }
+                  onClick={() => testCredential(credential.integration_key)}
+                >
+                  <FlaskConical className="size-3.5" aria-hidden />
+                  {credential.integration_key === "push" ? "Enviar teste" : "Testar agora"}
+                </Button>
+                <Button asChild variant="ghost" size="sm">
+                  <a href={credential.action_url}>
+                    Revisar configuração <ExternalLink className="size-3.5" aria-hidden />
+                  </a>
+                </Button>
+              </div>
             </div>
           ))}
         </div>
