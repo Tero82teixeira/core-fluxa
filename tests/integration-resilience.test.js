@@ -37,7 +37,7 @@ describe("resiliência das integrações", () => {
     assert.match(migration, /CREATE OR REPLACE FUNCTION public\.notify_integration_failure/);
     assert.match(migration, /INSERT INTO public\.notifications/);
     assert.match(migration, /ON CONFLICT DO NOTHING/);
-    assert.match(migration, /CREATE TABLE public\.integration_alert_push_claims/);
+    assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.integration_alert_push_claims/);
     assert.match(migration, /claim_integration_alert_push_deliveries/);
     assert.match(automation, /"claim_integration_alert_push_deliveries"/);
     assert.match(automation, /"integration-alert"/);

@@ -30,6 +30,15 @@ export const INTEGRATION_STATUS_LABEL: Record<IntegrationHealthStatus, string> =
   outdated: "Publicação desatualizada",
 };
 
+export type DeploymentNotice = "outdated" | "awaiting_first_run" | "verified";
+
+export function integrationDeploymentNotice(items: IntegrationHealthItem[]): DeploymentNotice {
+  const deployments = items.filter((item) => item.category === "implantacao");
+  if (deployments.some((item) => item.status === "outdated")) return "outdated";
+  if (deployments.some((item) => item.status === "not_reported")) return "awaiting_first_run";
+  return "verified";
+}
+
 export function integrationHealthSummary(items: IntegrationHealthItem[]) {
   return {
     healthy: items.filter((item) => item.status === "healthy").length,

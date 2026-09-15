@@ -1,67 +1,6 @@
--- Central de saúde das integrações e identificação da versão ativa das Edge Functions.
--- Nenhum segredo ou payload de cliente é exposto ao navegador.
+-- Clareza do diagnóstico, validação real do Copiloto e nova versão observável.
 
 BEGIN;
-
-CREATE TABLE IF NOT EXISTS public.integration_runtime_heartbeats (
-  function_name text PRIMARY KEY,
-  release_version text NOT NULL,
-  last_seen_at timestamptz NOT NULL DEFAULT now(),
-  CHECK (function_name IN (
-    'asaas-billing-automation',
-    'asaas-connector',
-    'asaas-webhook',
-    'communication-channel-send',
-    'communication-channel-webhook',
-    'communication-copilot',
-    'communication-push',
-    'kiwify-webhook'
-  )),
-  CHECK (char_length(release_version) BETWEEN 1 AND 80)
-);
-
-ALTER TABLE public.integration_runtime_heartbeats ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.integration_runtime_heartbeats FROM PUBLIC, anon, authenticated;
-GRANT ALL ON TABLE public.integration_runtime_heartbeats TO service_role;
-
-CREATE OR REPLACE FUNCTION public.record_integration_runtime_heartbeat(
-  _function_name text,
-  _release_version text
-)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = pg_catalog, public, pg_temp
-AS $function$
-BEGIN
-  IF auth.role() <> 'service_role' THEN
-    RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE = '42501';
-  END IF;
-  IF _function_name NOT IN (
-    'asaas-billing-automation',
-    'asaas-connector',
-    'asaas-webhook',
-    'communication-channel-send',
-    'communication-channel-webhook',
-    'communication-copilot',
-    'communication-push',
-    'kiwify-webhook'
-  ) OR _release_version IS NULL OR char_length(btrim(_release_version)) NOT BETWEEN 1 AND 80 THEN
-    RAISE EXCEPTION 'INVALID_RUNTIME_HEARTBEAT' USING ERRCODE = '22023';
-  END IF;
-
-  INSERT INTO public.integration_runtime_heartbeats(function_name, release_version, last_seen_at)
-  VALUES (_function_name, btrim(_release_version), now())
-  ON CONFLICT (function_name) DO UPDATE
-     SET release_version = EXCLUDED.release_version,
-         last_seen_at = EXCLUDED.last_seen_at;
-END;
-$function$;
-
-REVOKE ALL ON FUNCTION public.record_integration_runtime_heartbeat(text, text)
-  FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.record_integration_runtime_heartbeat(text, text)
-  TO service_role;
 
 CREATE OR REPLACE FUNCTION public.organization_integration_health(_organization_id uuid)
 RETURNS TABLE(
@@ -107,21 +46,21 @@ BEGIN
          'implantacao'::text,
          CASE
            WHEN heartbeat.function_name IS NULL THEN 'not_reported'
-           WHEN heartbeat.release_version <> '2026.10.05.1' THEN 'outdated'
+           WHEN heartbeat.release_version <> '2026.10.08.1' THEN 'outdated'
            ELSE 'healthy'
          END::text,
-         '2026.10.05.1'::text,
+         '2026.10.08.1'::text,
          heartbeat.release_version,
          heartbeat.last_seen_at,
          0::integer,
          CASE
-           WHEN heartbeat.function_name IS NULL OR heartbeat.release_version <> '2026.10.05.1'
+           WHEN heartbeat.function_name IS NULL OR heartbeat.release_version <> '2026.10.08.1'
              THEN 1
            ELSE 0
          END::integer,
          CASE
            WHEN heartbeat.function_name IS NULL THEN 'FUNCTION_VERSION_NOT_REPORTED'
-           WHEN heartbeat.release_version <> '2026.10.05.1' THEN 'FUNCTION_VERSION_OUTDATED'
+           WHEN heartbeat.release_version <> '2026.10.08.1' THEN 'FUNCTION_VERSION_OUTDATED'
            ELSE NULL
          END::text,
          '/configuracoes'::text,
@@ -281,9 +220,120 @@ BEGIN
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.organization_integration_health(uuid)
+CREATE OR REPLACE FUNCTION public.organization_integration_credentials(_organization_id uuid)
+RETURNS TABLE(
+  integration_key text,
+  label text,
+  status text,
+  last_validated_at timestamptz,
+  days_since_validation integer,
+  diagnostic_code text,
+  action_url text
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, public, pg_temp
+AS $function$
+BEGIN
+  IF auth.uid() IS NULL OR NOT public.has_org_role(
+    _organization_id,
+    ARRAY['superadmin','proprietario','administrador']::public.app_role[]
+  ) THEN RAISE EXCEPTION 'INTEGRATION_CREDENTIALS_ACCESS_DENIED' USING ERRCODE = '42501'; END IF;
+
+  RETURN QUERY
+  SELECT 'asaas'::text, 'Asaas'::text,
+         CASE
+           WHEN connection.id IS NULL OR connection.status = 'disconnected' THEN 'not_configured'
+           WHEN connection.status = 'error' OR connection.last_error_code IS NOT NULL THEN 'attention'
+           WHEN connection.last_checked_at IS NULL OR connection.last_checked_at < now() - interval '30 days' THEN 'stale'
+           ELSE 'healthy'
+         END::text,
+         connection.last_checked_at,
+         CASE WHEN connection.last_checked_at IS NULL THEN NULL
+           ELSE floor(extract(epoch FROM (now() - connection.last_checked_at)) / 86400)::integer END,
+         CASE
+           WHEN connection.status = 'error' THEN COALESCE(connection.last_error_code, 'ASAAS_CONNECTION_ERROR')
+           WHEN connection.last_checked_at IS NULL OR connection.last_checked_at < now() - interval '30 days'
+             THEN 'CREDENTIAL_VALIDATION_STALE'
+           ELSE NULL
+         END::text,
+         '/configuracoes'::text
+    FROM (SELECT 1) seed
+    LEFT JOIN public.asaas_connections connection
+      ON connection.organization_id = _organization_id;
+
+  RETURN QUERY
+  WITH channels(channel_name, channel_label) AS (
+    VALUES ('whatsapp'::public.communication_channel, 'WhatsApp'),
+           ('email'::public.communication_channel, 'E-mail')
+  )
+  SELECT ('channel-' || channels.channel_name::text)::text,
+         channels.channel_label::text,
+         CASE
+           WHEN connection.id IS NULL OR NOT connection.is_enabled THEN 'not_configured'
+           WHEN connection.status = 'error' OR connection.last_error_code IS NOT NULL THEN 'attention'
+           WHEN connection.status <> 'active' OR connection.updated_at < now() - interval '30 days' THEN 'stale'
+           ELSE 'healthy'
+         END::text,
+         GREATEST(connection.last_inbound_at, connection.last_outbound_at, connection.updated_at),
+         CASE WHEN connection.updated_at IS NULL THEN NULL
+           ELSE floor(extract(epoch FROM (now() - connection.updated_at)) / 86400)::integer END,
+         CASE
+           WHEN connection.status = 'error' THEN COALESCE(connection.last_error_code, 'CHANNEL_CONNECTION_ERROR')
+           WHEN connection.id IS NOT NULL AND (connection.status <> 'active' OR connection.updated_at < now() - interval '30 days')
+             THEN 'CREDENTIAL_VALIDATION_STALE'
+           ELSE NULL
+         END::text,
+         '/configuracoes'::text
+    FROM channels
+    LEFT JOIN public.communication_channel_connections connection
+      ON connection.organization_id = _organization_id
+     AND connection.channel = channels.channel_name;
+
+  RETURN QUERY
+  SELECT 'push'::text, 'Notificações push'::text,
+         CASE WHEN count(*) FILTER (WHERE subscription.is_active) > 0
+           THEN 'healthy' ELSE 'not_configured' END::text,
+         max(subscription.last_used_at),
+         CASE WHEN max(subscription.last_used_at) IS NULL THEN NULL
+           ELSE floor(extract(epoch FROM (now() - max(subscription.last_used_at))) / 86400)::integer END,
+         CASE WHEN count(*) FILTER (WHERE subscription.is_active) = 0
+           THEN 'PUSH_NO_ACTIVE_DEVICE' ELSE NULL END::text,
+         '/notificacoes'::text
+    FROM public.push_subscriptions subscription
+   WHERE subscription.organization_id = _organization_id;
+
+  RETURN QUERY
+  SELECT 'copilot'::text, 'Copiloto com IA'::text,
+         CASE
+           WHEN NOT COALESCE(settings.communication_ai_enabled, false) THEN 'not_configured'
+           WHEN settings.updated_at IS NULL
+             OR settings.updated_at < now() - interval '30 days' THEN 'stale'
+           ELSE 'healthy'
+         END::text,
+         settings.updated_at,
+         CASE WHEN settings.updated_at IS NULL THEN NULL
+           ELSE floor(extract(epoch FROM (now() - settings.updated_at)) / 86400)::integer END,
+         CASE
+           WHEN NOT COALESCE(settings.communication_ai_enabled, false) THEN 'COPILOT_NOT_CONFIGURED'
+           WHEN settings.updated_at IS NULL
+             OR settings.updated_at < now() - interval '30 days'
+             THEN 'CREDENTIAL_TEST_RECOMMENDED'
+           ELSE NULL
+         END::text,
+         '/configuracoes'::text
+    FROM (SELECT 1) seed
+    LEFT JOIN public.organization_settings settings
+      ON settings.organization_id = _organization_id;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.organization_integration_health(uuid),
+  public.organization_integration_credentials(uuid)
   FROM PUBLIC, anon, service_role;
-GRANT EXECUTE ON FUNCTION public.organization_integration_health(uuid)
+GRANT EXECUTE ON FUNCTION public.organization_integration_health(uuid),
+  public.organization_integration_credentials(uuid)
   TO authenticated;
 
 COMMIT;

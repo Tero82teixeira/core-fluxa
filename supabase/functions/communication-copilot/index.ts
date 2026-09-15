@@ -147,10 +147,12 @@ export default {
     });
 
     if (mode === "health") {
-      const { error: settingsError } = await supabase.rpc("get_communication_copilot_settings", {
-        _organization_id: organizationId,
-      });
+      const { data: settingsData, error: settingsError } = await supabase.rpc(
+        "get_communication_copilot_settings",
+        { _organization_id: organizationId },
+      );
       if (settingsError) return json({ error: "COPILOT_CONTEXT_DENIED" }, 403);
+      const copilotEnabled = asObject(settingsData)?.enabled === true;
       const providerResponse = await fetch(
         `https://api.openai.com/v1/models/${encodeURIComponent(model)}`,
         { headers: { authorization: `Bearer ${openAiKey}` } },
@@ -162,6 +164,11 @@ export default {
             : `OPENAI_${providerResponse.status}`;
         return json({ error: code }, providerResponse.status === 429 ? 429 : 502);
       }
+      const { error: recordError } = await supabase.rpc("update_communication_copilot_settings", {
+        _organization_id: organizationId,
+        _enabled: copilotEnabled,
+      });
+      if (recordError) return json({ error: "COPILOT_TEST_RECORD_FAILED" }, 500);
       return json({ ok: true, model });
     }
 

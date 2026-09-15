@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 
 import {
+  integrationDeploymentNotice,
   integrationDiagnosticMessage,
   integrationHealthSummary,
 } from "../src/lib/integration-health.ts";
@@ -50,10 +51,21 @@ describe("central de saúde das integrações", () => {
     );
     assert.match(integrationDiagnosticMessage("FUNCTION_VERSION_OUTDATED"), /GitHub/);
     assert.match(integrationDiagnosticMessage("ASAAS_invalid_mobilePhone"), /telefone/);
+    assert.equal(
+      integrationDeploymentNotice([{ ...base, category: "implantacao", status: "not_reported" }]),
+      "awaiting_first_run",
+    );
+    assert.equal(
+      integrationDeploymentNotice([
+        { ...base, category: "implantacao", status: "not_reported" },
+        { ...base, category: "implantacao", status: "outdated" },
+      ]),
+      "outdated",
+    );
   });
 
   test("RPC protege dados por organização e não devolve segredos", () => {
-    assert.match(migration, /CREATE TABLE public\.integration_runtime_heartbeats/);
+    assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.integration_runtime_heartbeats/);
     assert.match(migration, /CREATE OR REPLACE FUNCTION public\.organization_integration_health/);
     assert.match(migration, /public\.has_org_role/);
     assert.match(migration, /INTEGRATION_HEALTH_ACCESS_DENIED/);
@@ -69,7 +81,7 @@ describe("central de saúde das integrações", () => {
   });
 
   test("todas as Edge Functions informam a mesma release ativa", () => {
-    assert.match(runtime, /EDGE_FUNCTION_RELEASE = "2026\.10\.05\.1"/);
+    assert.match(runtime, /EDGE_FUNCTION_RELEASE = "2026\.10\.08\.1"/);
     assert.match(read("supabase/functions/communication-copilot/index.ts"), /runtimeHeaders/);
     for (const functionName of functionPaths) {
       const source = read(`supabase/functions/${functionName}/index.ts`);
@@ -84,7 +96,9 @@ describe("central de saúde das integrações", () => {
     assert.match(panel, /Saúde das integrações/);
     assert.match(panel, /Serviços da organização/);
     assert.match(panel, /Versões publicadas/);
-    assert.match(panel, /GitHub e Lovable Cloud podem estar em versões diferentes/);
+    assert.match(panel, /Algumas funções aguardam a primeira execução/);
+    assert.match(panel, /A publicação não está com erro/);
+    assert.match(panel, /Cobrança aguardando o próximo ciclo automático/);
     assert.match(panel, /Atualizar diagnóstico/);
   });
 

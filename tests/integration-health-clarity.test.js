@@ -1,0 +1,60 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { describe, test } from "node:test";
+
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+const migration = read("supabase/migrations/20261008120000_integration_health_clarity.sql");
+const copilot = read("supabase/functions/communication-copilot/index.ts");
+const actions = read("src/hooks/use-integration-actions.ts");
+const healthHook = read("src/hooks/use-integration-health.ts");
+const panel = read("src/components/integrations/integration-health-panel.tsx");
+const healthMigration = read("supabase/migrations/20261005120000_integration_health_center.sql");
+const resilienceMigration = read("supabase/migrations/20261006120000_integration_resilience.sql");
+
+describe("clareza e atualização da saúde das integrações", () => {
+  test("função sem primeira execução não é apresentada como divergência", () => {
+    assert.match(panel, /deploymentNotice === "outdated"/);
+    assert.match(panel, /deploymentNotice === "awaiting_first_run"/);
+    assert.match(panel, /A publicação não está com erro/);
+    assert.doesNotMatch(panel, /GitHub e Lovable Cloud podem estar em versões diferentes/);
+  });
+
+  test("teste bem-sucedido do Copiloto registra a validação sem service role", () => {
+    assert.match(copilot, /update_communication_copilot_settings/);
+    assert.match(copilot, /_enabled: copilotEnabled/);
+    assert.match(copilot, /COPILOT_TEST_RECORD_FAILED/);
+    assert.doesNotMatch(copilot, /SERVICE_ROLE|service_role/);
+    assert.match(migration, /settings\.updated_at < now\(\) - interval '30 days'/);
+    assert.match(migration, /'healthy'/);
+    assert.match(actions, /\["integration-credentials", organizationId\]/);
+  });
+
+  test("fila Asaas é explicada e acompanhada com atualização mais rápida", () => {
+    assert.match(panel, /Cobrança aguardando o próximo ciclo automático/);
+    assert.match(panel, /Não é necessário[\s\S]*reprocessar novamente/);
+    assert.match(healthHook, /item\.integration_key === "asaas"/);
+    assert.match(healthHook, /item\.pending_count > 0/);
+    assert.match(healthHook, /15_000/);
+  });
+
+  test("migration mantém acesso administrativo e não inclui segredos", () => {
+    assert.match(migration, /INTEGRATION_HEALTH_ACCESS_DENIED/);
+    assert.match(migration, /INTEGRATION_CREDENTIALS_ACCESS_DENIED/);
+    assert.match(migration, /FROM PUBLIC, anon, service_role/);
+    assert.doesNotMatch(
+      migration,
+      /api_key_ciphertext|api_key_iv|webhook_token_hash|p256dh|auth_key|raw_payload/,
+    );
+  });
+
+  test("migrations permanecem idempotentes após a sincronização do Lovable", () => {
+    assert.match(
+      healthMigration,
+      /CREATE TABLE IF NOT EXISTS public\.integration_runtime_heartbeats/,
+    );
+    assert.match(
+      resilienceMigration,
+      /CREATE TABLE IF NOT EXISTS public\.integration_alert_push_claims/,
+    );
+  });
+});

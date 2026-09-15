@@ -17,6 +17,7 @@ import { useIntegrationHealth } from "@/hooks/use-integration-health";
 import { useRetryAsaasChargeJob } from "@/hooks/use-asaas";
 import {
   INTEGRATION_STATUS_LABEL,
+  integrationDeploymentNotice,
   integrationDiagnosticMessage,
   integrationHealthSummary,
   type IntegrationHealthItem,
@@ -132,9 +133,7 @@ export function IntegrationHealthPanel({
   const services = items.filter((item) => item.category === "servico");
   const deployments = items.filter((item) => item.category === "implantacao");
   const summary = integrationHealthSummary(items);
-  const hasDeploymentDrift = deployments.some((item) =>
-    ["not_reported", "outdated"].includes(item.status),
-  );
+  const deploymentNotice = integrationDeploymentNotice(deployments);
   const runConnectionTest = (integrationKey: string) => {
     connectionTest.mutate(integrationKey, {
       onSuccess: (result) => {
@@ -224,16 +223,24 @@ export function IntegrationHealthPanel({
               </Badge>
             </div>
 
-            {hasDeploymentDrift ? (
+            {deploymentNotice === "outdated" ? (
               <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm">
                 <TriangleAlert className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden />
                 <div>
-                  <p className="font-medium">
-                    GitHub e Lovable Cloud podem estar em versões diferentes
-                  </p>
+                  <p className="font-medium">Existe uma função publicada em versão anterior</p>
                   <p className="mt-1 text-muted-foreground">
-                    Publique as Edge Functions indicadas e execute uma operação de teste. A versão
-                    ativa será confirmada automaticamente.
+                    Confira a função marcada como desatualizada antes de usar essa integração.
+                  </p>
+                </div>
+              </div>
+            ) : deploymentNotice === "awaiting_first_run" ? (
+              <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-4 text-sm">
+                <Activity className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
+                <div>
+                  <p className="font-medium">Algumas funções aguardam a primeira execução</p>
+                  <p className="mt-1 text-muted-foreground">
+                    A publicação não está com erro. A versão será confirmada automaticamente quando
+                    cada função for usada.
                   </p>
                 </div>
               </div>
@@ -241,6 +248,21 @@ export function IntegrationHealthPanel({
               <div className="flex items-center gap-3 rounded-lg border border-success/30 bg-success/10 p-4 text-sm">
                 <ShieldCheck className="size-5 text-success" aria-hidden />
                 Todas as funções que já foram acionadas estão na versão esperada.
+              </div>
+            )}
+
+            {services.some(
+              (item) =>
+                item.integration_key === "asaas" &&
+                item.pending_count > 0 &&
+                item.error_count === 0,
+            ) && (
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm">
+                <p className="font-medium">Cobrança aguardando o próximo ciclo automático</p>
+                <p className="mt-1 text-muted-foreground">
+                  Ela já está na fila e o painel será atualizado automaticamente. Não é necessário
+                  reprocessar novamente.
+                </p>
               </div>
             )}
 
