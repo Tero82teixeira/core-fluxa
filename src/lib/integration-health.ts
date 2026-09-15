@@ -31,6 +31,19 @@ export const INTEGRATION_STATUS_LABEL: Record<IntegrationHealthStatus, string> =
 };
 
 export type DeploymentNotice = "outdated" | "awaiting_first_run" | "verified";
+export type IntegrationActivityState = "never" | "recent" | "silent" | null;
+
+export function integrationActivityState(
+  item: IntegrationHealthItem,
+  now = new Date(),
+  silentDays = 30,
+): IntegrationActivityState {
+  if (item.category !== "servico" || item.status !== "healthy") return null;
+  if (!item.last_activity_at) return "never";
+  const lastActivity = new Date(item.last_activity_at).getTime();
+  if (!Number.isFinite(lastActivity)) return "never";
+  return now.getTime() - lastActivity > silentDays * 24 * 60 * 60 * 1000 ? "silent" : "recent";
+}
 
 export function integrationDeploymentNotice(items: IntegrationHealthItem[]): DeploymentNotice {
   const deployments = items.filter((item) => item.category === "implantacao");
@@ -40,8 +53,12 @@ export function integrationDeploymentNotice(items: IntegrationHealthItem[]): Dep
 }
 
 export function integrationHealthSummary(items: IntegrationHealthItem[]) {
+  const silent = items.filter((item) => integrationActivityState(item) === "silent").length;
   return {
-    healthy: items.filter((item) => item.status === "healthy").length,
+    healthy: items.filter(
+      (item) => item.status === "healthy" && integrationActivityState(item) !== "silent",
+    ).length,
+    silent,
     attention: items.filter((item) => ["attention", "outdated"].includes(item.status)).length,
     awaitingConfirmation: items.filter((item) => item.status === "not_reported").length,
     pending: items.filter((item) => item.status === "pending").length,

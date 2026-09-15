@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   BarChart3,
+  Copy,
   Download,
   ExternalLink,
   FlaskConical,
@@ -17,8 +18,10 @@ import {
   useTestIntegrationConnection,
   useWebhookEvents,
   type IntegrationCredential,
+  type AsaasAutomationStatus,
 } from "@/hooks/use-integration-actions";
-import { integrationDiagnosticMessage } from "@/lib/integration-health";
+import { integrationDiagnosticMessage, type IntegrationHealthItem } from "@/lib/integration-health";
+import { buildIntegrationSupportDiagnostic } from "@/lib/integration-support-diagnostic";
 import {
   filterWebhookEvents,
   integrationReportCsv,
@@ -50,9 +53,13 @@ const statusTone: Record<string, string> = {
 export function IntegrationObservabilityPanel({
   organizationId,
   enabled,
+  healthItems,
+  asaasAutomation,
 }: {
   organizationId: string | null;
   enabled: boolean;
+  healthItems: IntegrationHealthItem[];
+  asaasAutomation: AsaasAutomationStatus | null;
 }) {
   const [provider, setProvider] = useState("all");
   const [status, setStatus] = useState("all");
@@ -74,6 +81,22 @@ export function IntegrationObservabilityPanel({
     anchor.download = `fluxa-integracoes-${new Date().toISOString().slice(0, 10)}.csv`;
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  const copySupportDiagnostic = async () => {
+    const diagnostic = buildIntegrationSupportDiagnostic({
+      generatedAt: new Date().toISOString(),
+      health: healthItems,
+      credentials: credentials.data ?? [],
+      report: report.data ?? [],
+      asaasAutomation,
+    });
+    try {
+      await navigator.clipboard.writeText(diagnostic);
+      toast.success("Diagnóstico seguro copiado.");
+    } catch {
+      toast.error("Não foi possível copiar o diagnóstico.");
+    }
   };
 
   const testCredential = (integrationKey: string) => {
@@ -298,6 +321,26 @@ export function IntegrationObservabilityPanel({
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="font-semibold">Diagnóstico para suporte</h3>
+          <p className="text-sm text-muted-foreground">
+            Copia somente estados, horários, versões e contadores. Não inclui secrets nem conteúdo
+            de clientes.
+          </p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={credentials.isLoading || report.isLoading}
+          onClick={() => void copySupportDiagnostic()}
+        >
+          <Copy className="size-3.5" aria-hidden />
+          Copiar diagnóstico
+        </Button>
       </section>
     </div>
   );

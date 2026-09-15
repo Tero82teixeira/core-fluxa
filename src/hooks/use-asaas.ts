@@ -121,7 +121,10 @@ export function useCreateAsaasCharge(organizationId: string | null) {
       if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
       return (await invoke({ action: "create_charge", organizationId, transactionId })).charge;
     },
-    onSuccess: () => client.invalidateQueries({ queryKey: ["finance", organizationId] }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["finance", organizationId] });
+      void client.invalidateQueries({ queryKey: ["asaas-automation-status", organizationId] });
+    },
   });
 }
 
@@ -154,7 +157,10 @@ export function useRetryAsaasChargeJob(organizationId: string | null) {
       if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
       return invoke({ action: "retry_charge_job", organizationId, jobId });
     },
-    onSuccess: () => client.invalidateQueries({ queryKey: ["finance", organizationId] }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["finance", organizationId] });
+      void client.invalidateQueries({ queryKey: ["asaas-automation-status", organizationId] });
+    },
   });
 }
 

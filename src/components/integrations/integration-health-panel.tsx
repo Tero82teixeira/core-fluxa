@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner";
 
 import {
+  useAsaasAutomationStatus,
   useIntegrationFailures,
   useTestIntegrationConnection,
 } from "@/hooks/use-integration-actions";
@@ -19,6 +20,7 @@ import {
   INTEGRATION_STATUS_LABEL,
   integrationDeploymentNotice,
   integrationDiagnosticMessage,
+  integrationActivityState,
   integrationHealthSummary,
   type IntegrationHealthItem,
   type IntegrationHealthStatus,
@@ -58,6 +60,8 @@ function HealthCard({
   onTest: (integrationKey: string) => void;
 }) {
   const detail = integrationDiagnosticMessage(item.last_error_code);
+  const activityState = integrationActivityState(item);
+  const displayedStatus = activityState === "silent" ? "silent" : item.status;
   return (
     <div className="flex min-h-52 flex-col rounded-xl border bg-card p-4 shadow-xs">
       <div className="flex items-start justify-between gap-3">
@@ -67,8 +71,17 @@ function HealthCard({
             {item.category === "implantacao" ? "Edge Function" : "Serviço conectado"}
           </p>
         </div>
-        <Badge variant="outline" className={statusTone[item.status]}>
-          {INTEGRATION_STATUS_LABEL[item.status]}
+        <Badge
+          variant="outline"
+          className={
+            displayedStatus === "silent"
+              ? "border-warning/30 bg-warning/10 text-warning"
+              : statusTone[displayedStatus]
+          }
+        >
+          {displayedStatus === "silent"
+            ? "Sem atividade recente"
+            : INTEGRATION_STATUS_LABEL[displayedStatus]}
         </Badge>
       </div>
 
@@ -86,6 +99,10 @@ function HealthCard({
           Última atividade:{" "}
           {item.last_activity_at ? formatDateTime(item.last_activity_at) : "ainda não registrada"}
         </p>
+        {activityState === "never" && <p>Conectada, ainda sem operação registrada.</p>}
+        {activityState === "silent" && (
+          <p className="font-medium text-warning">Sem atividade registrada há mais de 30 dias.</p>
+        )}
         {(item.pending_count > 0 || item.error_count > 0) && (
           <p>
             {item.pending_count} pendente(s) · {item.error_count} falha(s)
@@ -127,6 +144,7 @@ export function IntegrationHealthPanel({
 }) {
   const query = useIntegrationHealth(organizationId, enabled);
   const failures = useIntegrationFailures(organizationId, enabled);
+  const automation = useAsaasAutomationStatus(organizationId, enabled);
   const connectionTest = useTestIntegrationConnection(organizationId);
   const retryJob = useRetryAsaasChargeJob(organizationId);
   const items = query.data ?? [];
@@ -159,6 +177,7 @@ export function IntegrationHealthPanel({
         toast.success("Cobrança recolocada na fila com segurança.");
         void failures.refetch();
         void query.refetch();
+        void automation.refetch();
       },
       onError: () => toast.error("Não foi possível recolocar esta cobrança na fila."),
     });
@@ -212,6 +231,11 @@ export function IntegrationHealthPanel({
               <Badge variant="outline" className={statusTone.healthy}>
                 {summary.healthy} funcionando
               </Badge>
+              {summary.silent > 0 && (
+                <Badge variant="outline" className={statusTone.pending}>
+                  {summary.silent} sem atividade
+                </Badge>
+              )}
               <Badge variant="outline" className={statusTone.attention}>
                 {summary.attention} para verificar
               </Badge>
@@ -270,6 +294,49 @@ export function IntegrationHealthPanel({
                 </p>
               </div>
             )}
+
+            <section className="space-y-3 rounded-xl border p-4">
+              <div>
+                <h3 className="font-semibold">Automação de cobranças Asaas</h3>
+                <p className="text-sm text-muted-foreground">
+                  Último processamento registrado e situação atual da fila desta organização.
+                </p>
+              </div>
+              {automation.isLoading && <Skeleton className="h-16 rounded-lg" />}
+              {automation.isError && (
+                <p className="text-sm text-destructive">
+                  Não foi possível consultar o processamento automático.
+                </p>
+              )}
+              {!automation.isLoading && !automation.isError && (
+                <div className="space-y-1 text-sm">
+                  {automation.data?.last_run_at ? (
+                    <>
+                      <p>
+                        Último processamento com cobranças:{" "}
+                        {formatDateTime(automation.data.last_run_at)}
+                      </p>
+                      <p className="text-muted-foreground">
+                        {automation.data.processed_count} processada(s) ·{" "}
+                        {automation.data.succeeded_count} concluída(s) ·{" "}
+                        {automation.data.failed_count} falha(s)
+                      </p>
+                    </>
+                  ) : (
+                    <p>Nenhuma cobrança automática foi processada ainda.</p>
+                  )}
+                  <p className="text-muted-foreground">
+                    {automation.data?.queued_count
+                      ? `${automation.data.queued_count} cobrança(s) na fila${
+                          automation.data.next_attempt_at
+                            ? ` · próxima tentativa: ${formatDateTime(automation.data.next_attempt_at)}`
+                            : ""
+                        }`
+                      : "Fila vazia."}
+                  </p>
+                </div>
+              )}
+            </section>
 
             <section className="space-y-3">
               <div>
@@ -364,7 +431,12 @@ export function IntegrationHealthPanel({
               </div>
             </section>
 
-            <IntegrationObservabilityPanel organizationId={organizationId} enabled={enabled} />
+            <IntegrationObservabilityPanel
+              organizationId={organizationId}
+              enabled={enabled}
+              healthItems={items}
+              asaasAutomation={automation.data ?? null}
+            />
           </>
         )}
       </CardContent>

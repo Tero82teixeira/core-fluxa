@@ -7003,6 +7003,17 @@ export type Database = {
         Returns: undefined
       }
       next_process_code: { Args: { _org: string }; Returns: string }
+      organization_asaas_automation_status: {
+        Args: { _organization_id: string }
+        Returns: {
+          failed_count: number
+          last_run_at: string
+          next_attempt_at: string
+          processed_count: number
+          queued_count: number
+          succeeded_count: number
+        }[]
+      }
       organization_has_commercial_access: {
         Args: { _org: string }
         Returns: boolean
