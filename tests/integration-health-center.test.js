@@ -44,10 +44,17 @@ describe("central de saúde das integrações", () => {
         { ...base, status: "healthy" },
         { ...base, status: "attention" },
         { ...base, status: "outdated" },
+        { ...base, status: "not_reported" },
         { ...base, status: "pending" },
         { ...base, status: "not_configured" },
       ]),
-      { healthy: 1, attention: 2, pending: 1, notConfigured: 1 },
+      {
+        healthy: 1,
+        attention: 2,
+        awaitingConfirmation: 1,
+        pending: 1,
+        notConfigured: 1,
+      },
     );
     assert.match(integrationDiagnosticMessage("FUNCTION_VERSION_OUTDATED"), /GitHub/);
     assert.match(integrationDiagnosticMessage("ASAAS_invalid_mobilePhone"), /telefone/);
