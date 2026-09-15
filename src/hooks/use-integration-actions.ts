@@ -177,6 +177,7 @@ export function useTestIntegrationConnection(organizationId: string | null) {
     onSettled: () => {
       void client.invalidateQueries({ queryKey: ["integration-health", organizationId] });
       void client.invalidateQueries({ queryKey: ["integration-failures", organizationId] });
+      void client.invalidateQueries({ queryKey: ["integration-credentials", organizationId] });
     },
   });
 }

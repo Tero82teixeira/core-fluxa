@@ -2,7 +2,7 @@
 
 BEGIN;
 
-CREATE TABLE public.integration_alert_push_claims (
+CREATE TABLE IF NOT EXISTS public.integration_alert_push_claims (
   notification_id uuid NOT NULL REFERENCES public.notifications(id) ON DELETE CASCADE,
   subscription_id uuid NOT NULL REFERENCES public.push_subscriptions(id) ON DELETE CASCADE,
   claimed_at timestamptz NOT NULL DEFAULT now(),

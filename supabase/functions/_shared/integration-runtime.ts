@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.111.0";
 
-export const EDGE_FUNCTION_RELEASE = "2026.10.05.1";
+export const EDGE_FUNCTION_RELEASE = "2026.10.08.1";
 
 export async function recordIntegrationHeartbeat(
   service: SupabaseClient,
