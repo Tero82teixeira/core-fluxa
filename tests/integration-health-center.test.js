@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 
 import {
+  integrationActivityState,
   integrationDeploymentNotice,
   integrationDiagnosticMessage,
   integrationHealthSummary,
@@ -50,12 +51,21 @@ describe("central de saúde das integrações", () => {
       ]),
       {
         healthy: 1,
+        silent: 0,
         attention: 2,
         awaitingConfirmation: 1,
         pending: 1,
         notConfigured: 1,
       },
     );
+    assert.equal(
+      integrationActivityState(
+        { ...base, status: "healthy", last_activity_at: "2026-01-01T00:00:00.000Z" },
+        new Date("2026-02-01T00:00:01.000Z"),
+      ),
+      "silent",
+    );
+    assert.equal(integrationActivityState({ ...base, status: "healthy" }), "never");
     assert.match(integrationDiagnosticMessage("FUNCTION_VERSION_OUTDATED"), /GitHub/);
     assert.match(integrationDiagnosticMessage("ASAAS_invalid_mobilePhone"), /telefone/);
     assert.equal(

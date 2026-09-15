@@ -46,6 +46,15 @@ export type IntegrationReportItem = {
   last_event_at: string | null;
 };
 
+export type AsaasAutomationStatus = {
+  last_run_at: string | null;
+  processed_count: number;
+  succeeded_count: number;
+  failed_count: number;
+  queued_count: number;
+  next_attempt_at: string | null;
+};
+
 async function invoke(functionName: string, body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke(functionName, { body });
   if (error) {
@@ -125,6 +134,21 @@ export function useIntegrationReport(organizationId: string | null, enabled: boo
         ...item,
         success_rate: Number(item.success_rate),
       })) as IntegrationReportItem[];
+    },
+  });
+}
+
+export function useAsaasAutomationStatus(organizationId: string | null, enabled: boolean) {
+  return useQuery({
+    enabled: Boolean(organizationId && enabled),
+    queryKey: ["asaas-automation-status", organizationId],
+    refetchInterval: (current) => (current.state.data?.queued_count ? 15_000 : 60_000),
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("organization_asaas_automation_status", {
+        _organization_id: organizationId!,
+      });
+      if (error) throw error;
+      return ((data ?? [])[0] ?? null) as AsaasAutomationStatus | null;
     },
   });
 }
