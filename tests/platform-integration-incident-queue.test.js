@@ -4,10 +4,17 @@ import { describe, test } from "node:test";
 
 describe("fila de incidentes da administração da plataforma", () => {
   test("consulta e ações são exclusivas do administrador da plataforma", async () => {
-    const [migration, databaseTest] = await Promise.all([
+    const [migration, notificationFix, databaseTest] = await Promise.all([
       readFile(
         new URL(
           "../supabase/migrations/20261014120000_platform_integration_incident_queue.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+      readFile(
+        new URL(
+          "../supabase/migrations/20261014130000_integration_notification_variable_fix.sql",
           import.meta.url,
         ),
         "utf8",
@@ -40,6 +47,9 @@ describe("fila de incidentes da administração da plataforma", () => {
     assert.match(databaseTest, /ordinary organization owners cannot open/);
     assert.match(databaseTest, /real provider recovery closes/);
     assert.match(databaseTest, /platform incident actions are audited/);
+    assert.match(notificationFix, /target_integration_key text/);
+    assert.match(notificationFix, /incident\.integration_key = target_integration_key/);
+    assert.doesNotMatch(notificationFix, /incident\.integration_key = integration_key/);
   });
 
   test("interface permite assumir, encerrar, reabrir e consultar o histórico", async () => {
