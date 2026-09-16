@@ -410,6 +410,10 @@ export function IntegrationHealthPanel({
                   responsável e encerre quando a ação for concluída; itens não reprocessáveis seguem
                   para Análise manual.
                 </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Proprietários e administradores recebem avisos quando uma falha surge e quando o
+                  serviço volta a funcionar.
+                </p>
               </div>
               {incidents.isLoading && <Skeleton className="h-24 rounded-xl" />}
               {incidents.isError && (
