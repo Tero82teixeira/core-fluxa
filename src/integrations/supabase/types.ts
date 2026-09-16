@@ -3669,6 +3669,75 @@ export type Database = {
           },
         ]
       }
+      integration_incidents: {
+        Row: {
+          assigned_to: string | null
+          attempts: number
+          created_at: string
+          description: string
+          error_code: string
+          failed_at: string
+          id: string
+          integration_key: string
+          label: string
+          organization_id: string
+          resolved_at: string | null
+          retryable: boolean
+          source_failure_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          attempts?: number
+          created_at?: string
+          description: string
+          error_code: string
+          failed_at: string
+          id?: string
+          integration_key: string
+          label: string
+          organization_id: string
+          resolved_at?: string | null
+          retryable?: boolean
+          source_failure_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          attempts?: number
+          created_at?: string
+          description?: string
+          error_code?: string
+          failed_at?: string
+          id?: string
+          integration_key?: string
+          label?: string
+          organization_id?: string
+          resolved_at?: string | null
+          retryable?: boolean
+          source_failure_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_incidents_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_incidents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_runtime_heartbeats: {
         Row: {
           function_name: string
@@ -4819,6 +4888,51 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      platform_integration_incident_notes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          integration_key: string
+          note: string
+          organization_id: string
+          source_failure_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          integration_key: string
+          note: string
+          organization_id: string
+          source_failure_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          integration_key?: string
+          note?: string
+          organization_id?: string
+          source_failure_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_integration_incident_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_integration_incident_notes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       process_checklist_items: {
         Row: {
@@ -6797,6 +6911,15 @@ export type Database = {
           updated_at: string
         }[]
       }
+      manage_integration_incident: {
+        Args: {
+          _action: string
+          _failure_id: string
+          _integration_key: string
+          _organization_id: string
+        }
+        Returns: undefined
+      }
       mark_all_client_portal_notifications_read: {
         Args: never
         Returns: number
@@ -6844,6 +6967,17 @@ export type Database = {
         Returns: undefined
       }
       next_process_code: { Args: { _org: string }; Returns: string }
+      organization_asaas_automation_status: {
+        Args: { _organization_id: string }
+        Returns: {
+          failed_count: number
+          last_run_at: string
+          next_attempt_at: string
+          processed_count: number
+          queued_count: number
+          succeeded_count: number
+        }[]
+      }
       organization_has_commercial_access: {
         Args: { _org: string }
         Returns: boolean
@@ -6890,6 +7024,25 @@ export type Database = {
           status: string
         }[]
       }
+      organization_integration_incidents: {
+        Args: { _organization_id: string }
+        Returns: {
+          assigned_name: string
+          assigned_to: string
+          attempts: number
+          description: string
+          error_code: string
+          failed_at: string
+          failure_id: string
+          incident_id: string
+          integration_key: string
+          is_active_failure: boolean
+          label: string
+          retryable: boolean
+          status: string
+          updated_at: string
+        }[]
+      }
       organization_integration_report: {
         Args: { _from?: string; _organization_id: string; _to?: string }
         Returns: {
@@ -6917,6 +7070,65 @@ export type Database = {
           status: string
         }[]
       }
+      platform_add_integration_incident_note: {
+        Args: {
+          _failure_id: string
+          _integration_key: string
+          _note: string
+          _organization_id: string
+        }
+        Returns: string
+      }
+      platform_integration_incident_activity: {
+        Args: {
+          _failure_id: string
+          _integration_key: string
+          _limit?: number
+          _organization_id: string
+        }
+        Returns: {
+          actor_name: string
+          created_at: string
+          detail: string
+          event_id: string
+          event_type: string
+        }[]
+      }
+      platform_integration_incidents: {
+        Args: { _include_resolved?: boolean; _limit?: number }
+        Returns: {
+          assigned_name: string
+          assigned_to: string
+          attempts: number
+          error_code: string
+          failed_at: string
+          failure_id: string
+          incident_id: string
+          integration_key: string
+          is_active_failure: boolean
+          label: string
+          organization_id: string
+          organization_name: string
+          retryable: boolean
+          status: string
+          updated_at: string
+        }[]
+      }
+      platform_integration_overview: {
+        Args: never
+        Returns: {
+          connection_errors: number
+          failed_charge_jobs: number
+          failed_messages: number
+          issue_count: number
+          last_failure_at: string
+          open_incidents: number
+          organization_id: string
+          organization_name: string
+          status: string
+          unassigned_incidents: number
+        }[]
+      }
       platform_kiwify_event_health: {
         Args: { _limit?: number }
         Returns: {
@@ -6929,6 +7141,15 @@ export type Database = {
           processed_at: string
           received_at: string
         }[]
+      }
+      platform_manage_integration_incident: {
+        Args: {
+          _action: string
+          _failure_id: string
+          _integration_key: string
+          _organization_id: string
+        }
+        Returns: undefined
       }
       platform_organizations: {
         Args: never
