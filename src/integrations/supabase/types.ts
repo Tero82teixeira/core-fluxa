@@ -1896,7 +1896,6 @@ export type Database = {
       commercial_opportunities: {
         Row: {
           archived_at: string | null
-          contact_status: string
           client_id: string | null
           created_at: string
           created_by: string
@@ -1904,7 +1903,6 @@ export type Database = {
           id: string
           lost_at: string | null
           lost_reason: string | null
-          last_contact_at: string | null
           next_action_at: string | null
           organization_id: string
           owner_id: string | null
@@ -1917,7 +1915,6 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
-          contact_status?: string
           client_id?: string | null
           created_at?: string
           created_by: string
@@ -1925,7 +1922,6 @@ export type Database = {
           id?: string
           lost_at?: string | null
           lost_reason?: string | null
-          last_contact_at?: string | null
           next_action_at?: string | null
           organization_id: string
           owner_id?: string | null
@@ -1938,7 +1934,6 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
-          contact_status?: string
           client_id?: string | null
           created_at?: string
           created_by?: string
@@ -1946,7 +1941,6 @@ export type Database = {
           id?: string
           lost_at?: string | null
           lost_reason?: string | null
-          last_contact_at?: string | null
           next_action_at?: string | null
           organization_id?: string
           owner_id?: string | null
@@ -1978,64 +1972,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      commercial_opportunity_contact_history: {
-        Row: {
-          channel: string
-          contacted_at: string
-          created_by: string
-          id: string
-          next_contact_at: string | null
-          notes: string
-          opportunity_id: string
-          organization_id: string
-          status: string
-        }
-        Insert: {
-          channel: string
-          contacted_at?: string
-          created_by: string
-          id?: string
-          next_contact_at?: string | null
-          notes: string
-          opportunity_id: string
-          organization_id: string
-          status: string
-        }
-        Update: {
-          channel?: string
-          contacted_at?: string
-          created_by?: string
-          id?: string
-          next_contact_at?: string | null
-          notes?: string
-          opportunity_id?: string
-          organization_id?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "commercial_opportunity_contact_history_opportunity_id_fkey"
-            columns: ["opportunity_id"]
-            isOneToOne: false
-            referencedRelation: "commercial_opportunities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commercial_opportunity_contact_history_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commercial_opportunity_contact_history_scope_fkey"
-            columns: ["organization_id", "opportunity_id"]
-            isOneToOne: false
-            referencedRelation: "commercial_opportunities"
-            referencedColumns: ["organization_id", "id"]
           },
         ]
       }
@@ -3733,75 +3669,6 @@ export type Database = {
           },
         ]
       }
-      integration_incidents: {
-        Row: {
-          assigned_to: string | null
-          attempts: number
-          created_at: string
-          description: string
-          error_code: string
-          failed_at: string
-          id: string
-          integration_key: string
-          label: string
-          organization_id: string
-          resolved_at: string | null
-          retryable: boolean
-          source_failure_id: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          assigned_to?: string | null
-          attempts?: number
-          created_at?: string
-          description: string
-          error_code: string
-          failed_at: string
-          id?: string
-          integration_key: string
-          label: string
-          organization_id: string
-          resolved_at?: string | null
-          retryable?: boolean
-          source_failure_id: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          assigned_to?: string | null
-          attempts?: number
-          created_at?: string
-          description?: string
-          error_code?: string
-          failed_at?: string
-          id?: string
-          integration_key?: string
-          label?: string
-          organization_id?: string
-          resolved_at?: string | null
-          retryable?: boolean
-          source_failure_id?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "integration_incidents_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "integration_incidents_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       integration_runtime_heartbeats: {
         Row: {
           function_name: string
@@ -4952,133 +4819,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      platform_integration_incident_notes: {
-        Row: {
-          created_at: string
-          created_by: string
-          id: string
-          integration_key: string
-          note: string
-          organization_id: string
-          source_failure_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          id?: string
-          integration_key: string
-          note: string
-          organization_id: string
-          source_failure_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          id?: string
-          integration_key?: string
-          note?: string
-          organization_id?: string
-          source_failure_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "platform_integration_incident_notes_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_integration_incident_notes_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      platform_trial_contact_history: {
-        Row: {
-          channel: string
-          contacted_at: string
-          created_by: string
-          id: string
-          next_contact_at: string | null
-          notes: string
-          organization_id: string
-          status: string
-        }
-        Insert: {
-          channel: string
-          contacted_at?: string
-          created_by: string
-          id?: string
-          next_contact_at?: string | null
-          notes: string
-          organization_id: string
-          status: string
-        }
-        Update: {
-          channel?: string
-          contacted_at?: string
-          created_by?: string
-          id?: string
-          next_contact_at?: string | null
-          notes?: string
-          organization_id?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "platform_trial_contact_history_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      platform_trial_follow_ups: {
-        Row: {
-          created_at: string
-          last_contact_at: string | null
-          next_contact_at: string | null
-          notes: string | null
-          organization_id: string
-          status: string
-          updated_at: string
-          updated_by: string
-        }
-        Insert: {
-          created_at?: string
-          last_contact_at?: string | null
-          next_contact_at?: string | null
-          notes?: string | null
-          organization_id: string
-          status?: string
-          updated_at?: string
-          updated_by: string
-        }
-        Update: {
-          created_at?: string
-          last_contact_at?: string | null
-          next_contact_at?: string | null
-          notes?: string | null
-          organization_id?: string
-          status?: string
-          updated_at?: string
-          updated_by?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "platform_trial_follow_ups_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       process_checklist_items: {
         Row: {
@@ -6563,19 +6303,6 @@ export type Database = {
           zip_code: string
         }[]
       }
-      commercial_opportunity_contacts: {
-        Args: { _opportunity_id: string; _organization_id: string }
-        Returns: {
-          channel: string
-          contacted_at: string
-          created_by: string
-          created_by_name: string
-          id: string
-          next_contact_at: string
-          notes: string
-          status: string
-        }[]
-      }
       communication_assert_role: {
         Args: { _administrative?: boolean; _org: string }
         Returns: undefined
@@ -7111,32 +6838,12 @@ export type Database = {
         }
         Returns: string
       }
-      manage_integration_incident: {
-        Args: {
-          _action: string
-          _failure_id: string
-          _integration_key: string
-          _organization_id: string
-        }
-        Returns: undefined
-      }
       monitoring_assert_admin: { Args: { _org: string }; Returns: undefined }
       monitoring_assert_source: {
         Args: { _id: string; _org: string; _type: string }
         Returns: undefined
       }
       next_process_code: { Args: { _org: string }; Returns: string }
-      organization_asaas_automation_status: {
-        Args: { _organization_id: string }
-        Returns: {
-          failed_count: number
-          last_run_at: string
-          next_attempt_at: string
-          processed_count: number
-          queued_count: number
-          succeeded_count: number
-        }[]
-      }
       organization_has_commercial_access: {
         Args: { _org: string }
         Returns: boolean
@@ -7183,25 +6890,6 @@ export type Database = {
           status: string
         }[]
       }
-      organization_integration_incidents: {
-        Args: { _organization_id: string }
-        Returns: {
-          assigned_name: string
-          assigned_to: string
-          attempts: number
-          description: string
-          error_code: string
-          failed_at: string
-          failure_id: string
-          incident_id: string
-          integration_key: string
-          is_active_failure: boolean
-          label: string
-          retryable: boolean
-          status: string
-          updated_at: string
-        }[]
-      }
       organization_integration_report: {
         Args: { _from?: string; _organization_id: string; _to?: string }
         Returns: {
@@ -7242,114 +6930,22 @@ export type Database = {
           received_at: string
         }[]
       }
-      platform_add_integration_incident_note: {
-        Args: {
-          _failure_id: string
-          _integration_key: string
-          _note: string
-          _organization_id: string
-        }
-        Returns: string
-      }
-      platform_integration_incident_activity: {
-        Args: {
-          _failure_id: string
-          _integration_key: string
-          _limit?: number
-          _organization_id: string
-        }
-        Returns: {
-          actor_name: string
-          created_at: string
-          detail: string
-          event_id: string
-          event_type: string
-        }[]
-      }
-      platform_integration_overview: {
-        Args: never
-        Returns: {
-          connection_errors: number
-          failed_charge_jobs: number
-          failed_messages: number
-          issue_count: number
-          last_failure_at: string
-          open_incidents: number
-          organization_id: string
-          organization_name: string
-          status: string
-          unassigned_incidents: number
-        }[]
-      }
-      platform_integration_incidents: {
-        Args: { _include_resolved?: boolean; _limit?: number }
-        Returns: {
-          assigned_name: string
-          assigned_to: string
-          attempts: number
-          error_code: string
-          failed_at: string
-          failure_id: string
-          incident_id: string
-          integration_key: string
-          is_active_failure: boolean
-          label: string
-          organization_id: string
-          organization_name: string
-          retryable: boolean
-          status: string
-          updated_at: string
-        }[]
-      }
-      platform_manage_integration_incident: {
-        Args: {
-          _action: string
-          _failure_id: string
-          _integration_key: string
-          _organization_id: string
-        }
-        Returns: undefined
-      }
       platform_organizations: {
         Args: never
         Returns: {
           archived_at: string
-          client_count: number
           commercial_status: string
           created_at: string
           days_remaining: number
-          document_count: number
           effective_status: string
-          follow_up_notes: string
-          follow_up_status: string
-          last_activity_at: string
-          last_contact_at: string
           legal_name: string
-          next_contact_at: string
           onboarding_completed: boolean
           organization_id: string
-          organization_phone: string
-          organization_whatsapp: string
           owner_email: string
           owner_name: string
-          process_count: number
-          task_count: number
           trade_name: string
           trial_ends_at: string
           trial_started_at: string
-        }[]
-      }
-      platform_trial_contact_history: {
-        Args: { _organization_id: string }
-        Returns: {
-          channel: string
-          contacted_at: string
-          created_by: string
-          created_by_name: string
-          id: string
-          next_contact_at: string
-          notes: string
-          status: string
         }[]
       }
       platform_support_open_count: { Args: never; Returns: number }
@@ -7613,17 +7209,6 @@ export type Database = {
         }
         Returns: string
       }
-      save_commercial_opportunity_contact: {
-        Args: {
-          _channel: string
-          _next_contact_at?: string
-          _notes: string
-          _opportunity_id: string
-          _organization_id: string
-          _status: string
-        }
-        Returns: undefined
-      }
       save_commercial_proposal: {
         Args: { _organization_id: string; _payload: Json; _proposal_id: string }
         Returns: string
@@ -7683,17 +7268,6 @@ export type Database = {
           _title: string
         }
         Returns: Json
-      }
-      save_platform_trial_follow_up: {
-        Args: {
-          _channel?: string
-          _next_contact_at?: string
-          _notes?: string
-          _organization_id: string
-          _register_contact?: boolean
-          _status: string
-        }
-        Returns: undefined
       }
       seed_default_document_types: {
         Args: { _org: string }
