@@ -7212,6 +7212,35 @@ export type Database = {
           unassigned_incidents: number
         }[]
       }
+      platform_integration_incidents: {
+        Args: { _include_resolved?: boolean; _limit?: number }
+        Returns: {
+          assigned_name: string
+          assigned_to: string
+          attempts: number
+          error_code: string
+          failed_at: string
+          failure_id: string
+          incident_id: string
+          integration_key: string
+          is_active_failure: boolean
+          label: string
+          organization_id: string
+          organization_name: string
+          retryable: boolean
+          status: string
+          updated_at: string
+        }[]
+      }
+      platform_manage_integration_incident: {
+        Args: {
+          _action: string
+          _failure_id: string
+          _integration_key: string
+          _organization_id: string
+        }
+        Returns: undefined
+      }
       platform_organizations: {
         Args: never
         Returns: {
