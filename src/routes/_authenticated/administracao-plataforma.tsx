@@ -61,6 +61,7 @@ import {
 } from "@/lib/commercial-follow-up";
 import type { Tables } from "@/integrations/supabase/types";
 import { CommercialFollowUpDialog } from "@/components/commercial/commercial-follow-up-dialog";
+import { PlatformIntegrationIncidentActivityDialog } from "@/components/platform/platform-integration-incident-activity-dialog";
 import {
   usePlatformIntegrationIncidents,
   usePlatformManageIntegrationIncident,
@@ -1238,42 +1239,45 @@ function PlatformIntegrationIncidentQueue({
                           {integrationIncidentAgeLabel(incident.failed_at, now)}
                         </p>
                       </td>
-                      <td className="px-3 py-3 text-right">
-                        {incident.status === "open" && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={manage.isPending}
-                            onClick={() => void runAction(incident, "acknowledge")}
-                          >
-                            <UserCheck className="size-4" aria-hidden />
-                            Assumir
-                          </Button>
-                        )}
-                        {incident.status === "in_progress" && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={manage.isPending}
-                            onClick={() => void runAction(incident, "resolve")}
-                          >
-                            <CheckCircle2 className="size-4" aria-hidden />
-                            Encerrar acompanhamento
-                          </Button>
-                        )}
-                        {incident.status === "resolved" && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={manage.isPending}
-                            onClick={() => void runAction(incident, "reopen")}
-                          >
-                            <RotateCcw className="size-4" aria-hidden />
-                            Reabrir
-                          </Button>
-                        )}
+                      <td className="px-3 py-3">
+                        <div className="flex flex-wrap justify-end gap-1">
+                          <PlatformIntegrationIncidentActivityDialog incident={incident} />
+                          {incident.status === "open" && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={manage.isPending}
+                              onClick={() => void runAction(incident, "acknowledge")}
+                            >
+                              <UserCheck className="size-4" aria-hidden />
+                              Assumir
+                            </Button>
+                          )}
+                          {incident.status === "in_progress" && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={manage.isPending}
+                              onClick={() => void runAction(incident, "resolve")}
+                            >
+                              <CheckCircle2 className="size-4" aria-hidden />
+                              Encerrar acompanhamento
+                            </Button>
+                          )}
+                          {incident.status === "resolved" && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={manage.isPending}
+                              onClick={() => void runAction(incident, "reopen")}
+                            >
+                              <RotateCcw className="size-4" aria-hidden />
+                              Reabrir
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
