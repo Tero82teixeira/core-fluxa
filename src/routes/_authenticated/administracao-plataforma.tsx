@@ -11,6 +11,7 @@ import {
   Clock3,
   CreditCard,
   HandCoins,
+  PlugZap,
   RefreshCw,
   ShieldAlert,
 } from "lucide-react";
@@ -138,6 +139,19 @@ type PlatformKiwifyEvent = {
   diagnostic_code: string | null;
 };
 
+type PlatformIntegrationOverview = {
+  organization_id: string;
+  organization_name: string;
+  status: "critical" | "attention" | "healthy";
+  issue_count: number;
+  failed_charge_jobs: number;
+  failed_messages: number;
+  connection_errors: number;
+  open_incidents: number;
+  unassigned_incidents: number;
+  last_failure_at: string | null;
+};
+
 const statusTone: Record<EffectiveCommercialStatus, string> = {
   trial: "border-info/30 bg-info/10 text-info",
   active: "border-success/30 bg-success/10 text-success",
@@ -187,12 +201,25 @@ function usePlatformKiwifyEvents(enabled: boolean) {
   });
 }
 
+function usePlatformIntegrationOverview(enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryKey: ["platform-integration-overview"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("platform_integration_overview");
+      if (error) throw error;
+      return (data ?? []) as PlatformIntegrationOverview[];
+    },
+  });
+}
+
 function PlatformAdministration() {
   const { platformAdmin } = useWorkspace();
   const queryClient = useQueryClient();
   const organizations = usePlatformOrganizations(platformAdmin);
   const subscriptions = usePlatformSubscriptions(platformAdmin);
   const kiwifyEvents = usePlatformKiwifyEvents(platformAdmin);
+  const integrationOverview = usePlatformIntegrationOverview(platformAdmin);
   const [search, setSearch] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState<PlatformSubscriptionFilter>("all");
   const [trialFilter, setTrialFilter] = useState<TrialEngagementFilter>("all");
@@ -353,6 +380,8 @@ function PlatformAdministration() {
       </div>
 
       <KiwifyEventHealthPanel query={kiwifyEvents} />
+
+      <PlatformIntegrationHealthPanel query={integrationOverview} />
 
       <Card>
         <CardHeader className="gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -768,6 +797,140 @@ function KiwifyEventHealthPanel({ query }: { query: ReturnType<typeof usePlatfor
                     </td>
                     <td className="px-3 py-3 text-muted-foreground">
                       {kiwifyDiagnosticLabel(event.diagnostic_code) ?? "Atualização concluída"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const integrationStatusTone: Record<PlatformIntegrationOverview["status"], string> = {
+  critical: "border-destructive/30 bg-destructive/10 text-destructive",
+  attention: "border-warning/30 bg-warning/10 text-warning",
+  healthy: "border-success/30 bg-success/10 text-success",
+};
+
+function PlatformIntegrationHealthPanel({
+  query,
+}: {
+  query: ReturnType<typeof usePlatformIntegrationOverview>;
+}) {
+  const organizations = query.data ?? [];
+  const affected = organizations.filter((organization) => organization.issue_count > 0);
+  const healthy = organizations.length - affected.length;
+
+  return (
+    <Card>
+      <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <PlugZap className="size-5 text-brand" aria-hidden />
+            Saúde das integrações por empresa
+          </CardTitle>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Identifique rapidamente quais empresas precisam de ajuda operacional.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={query.isFetching}
+          onClick={() => void query.refetch()}
+        >
+          <RefreshCw className={cn("size-4", query.isFetching && "animate-spin")} aria-hidden />
+          Atualizar
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2 text-sm">
+          <Badge variant="outline" className={integrationStatusTone.critical}>
+            {organizations.filter((item) => item.status === "critical").length} crítica(s)
+          </Badge>
+          <Badge variant="outline" className={integrationStatusTone.attention}>
+            {organizations.filter((item) => item.status === "attention").length} em atenção
+          </Badge>
+          <Badge variant="outline" className={integrationStatusTone.healthy}>
+            {healthy} saudável(is)
+          </Badge>
+        </div>
+
+        {query.isLoading && (
+          <p className="text-sm text-muted-foreground">Conferindo integrações das empresas…</p>
+        )}
+        {query.isError && (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            Não foi possível consultar a saúde das integrações. Tente atualizar em instantes.
+          </p>
+        )}
+        {!query.isLoading && !query.isError && organizations.length === 0 && (
+          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            Nenhuma empresa ativa foi encontrada.
+          </p>
+        )}
+        {!query.isLoading &&
+          !query.isError &&
+          organizations.length > 0 &&
+          affected.length === 0 && (
+            <p className="rounded-lg border border-success/30 bg-success/5 p-4 text-sm text-success">
+              Todas as empresas estão sem falhas ativas nas integrações.
+            </p>
+          )}
+        {affected.length > 0 && (
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full min-w-[860px] text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+                  <th className="px-3 py-2.5 font-medium">Prioridade</th>
+                  <th className="px-3 py-2.5 font-medium">Empresa</th>
+                  <th className="px-3 py-2.5 font-medium">Sinais ativos</th>
+                  <th className="px-3 py-2.5 font-medium">Detalhamento</th>
+                  <th className="px-3 py-2.5 font-medium">Última ocorrência</th>
+                </tr>
+              </thead>
+              <tbody>
+                {affected.map((organization) => (
+                  <tr key={organization.organization_id} className="border-b last:border-0">
+                    <td className="px-3 py-3">
+                      <Badge
+                        variant="outline"
+                        className={integrationStatusTone[organization.status]}
+                      >
+                        {organization.status === "critical" ? "Crítica" : "Atenção"}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-3 font-medium">{organization.organization_name}</td>
+                    <td className="px-3 py-3">{organization.issue_count}</td>
+                    <td className="px-3 py-3 text-muted-foreground">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        {organization.failed_charge_jobs > 0 && (
+                          <span>{organization.failed_charge_jobs} cobrança(s)</span>
+                        )}
+                        {organization.failed_messages > 0 && (
+                          <span>{organization.failed_messages} mensagem(ns)</span>
+                        )}
+                        {organization.connection_errors > 0 && (
+                          <span>{organization.connection_errors} conexão(ões)</span>
+                        )}
+                        {organization.open_incidents > 0 && (
+                          <span>{organization.open_incidents} incidente(s)</span>
+                        )}
+                        {organization.unassigned_incidents > 0 && (
+                          <span className="font-medium text-destructive">
+                            {organization.unassigned_incidents} Sem responsável
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">
+                      {organization.last_failure_at
+                        ? formatDateTime(organization.last_failure_at)
+                        : "Não informada"}
                     </td>
                   </tr>
                 ))}
