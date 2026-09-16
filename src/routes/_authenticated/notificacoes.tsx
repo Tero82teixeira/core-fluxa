@@ -36,6 +36,7 @@ const filters = [
   ["document", "Documentos"],
   ["monitoring", "Monitoramentos"],
   ["team", "Equipe"],
+  ["integration", "Integrações"],
   ["system", "Sistema"],
 ];
 
