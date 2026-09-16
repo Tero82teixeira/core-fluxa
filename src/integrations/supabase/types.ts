@@ -7261,7 +7261,7 @@ export type Database = {
         Returns: {
           actor_name: string
           created_at: string
-          detail: string | null
+          detail: string
           event_id: string
           event_type: string
         }[]
