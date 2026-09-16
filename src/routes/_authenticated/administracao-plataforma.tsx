@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
+  AlertTriangle,
   Archive,
   ArchiveRestore,
   Building2,
@@ -14,6 +15,7 @@ import {
   PlugZap,
   RefreshCw,
   RotateCcw,
+  Search,
   ShieldAlert,
   UserCheck,
 } from "lucide-react";
@@ -26,6 +28,12 @@ import { describeError } from "@/lib/errors";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { brl } from "@/lib/finance";
 import { cn } from "@/lib/utils";
+import {
+  comparePlatformIntegrationPriority,
+  integrationIncidentAgeLabel,
+  platformIntegrationPriority,
+  type PlatformIntegrationPriority,
+} from "@/lib/platform-integration-priority";
 import { subscriptionStatusLabel } from "@/lib/billing";
 import {
   kiwifyDiagnosticLabel,
@@ -973,6 +981,20 @@ const platformIncidentStatusTone: Record<PlatformIntegrationIncident["status"], 
   resolved: "border-success/30 bg-success/10 text-success",
 };
 
+const platformIncidentPriorityLabel: Record<PlatformIntegrationPriority, string> = {
+  critical: "Crítica",
+  high: "Prioridade alta",
+  normal: "Normal",
+  recovered: "Recuperada",
+};
+
+const platformIncidentPriorityTone: Record<PlatformIntegrationPriority, string> = {
+  critical: "border-destructive/30 bg-destructive/10 text-destructive",
+  high: "border-warning/30 bg-warning/10 text-warning",
+  normal: "border-info/30 bg-info/10 text-info",
+  recovered: "border-success/30 bg-success/10 text-success",
+};
+
 function PlatformIntegrationIncidentQueue({
   query,
   includeResolved,
@@ -984,6 +1006,40 @@ function PlatformIntegrationIncidentQueue({
 }) {
   const manage = usePlatformManageIntegrationIncident();
   const incidents = query.data ?? [];
+  const [search, setSearch] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<PlatformIntegrationPriority | "all">("all");
+  const now = new Date();
+  const incidentRows = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase("pt-BR");
+    return incidents
+      .filter((incident) => {
+        const priority = platformIntegrationPriority(incident, now);
+        return (
+          (priorityFilter === "all" || priority === priorityFilter) &&
+          (!term ||
+            [
+              incident.organization_name,
+              incident.label,
+              incident.error_code,
+              incident.assigned_name,
+            ]
+              .filter(Boolean)
+              .some((value) => String(value).toLocaleLowerCase("pt-BR").includes(term)))
+        );
+      })
+      .sort((left, right) => comparePlatformIntegrationPriority(left, right, now));
+  }, [incidents, now, priorityFilter, search]);
+  const prioritySummary = {
+    critical: incidents.filter(
+      (incident) => platformIntegrationPriority(incident, now) === "critical",
+    ).length,
+    high: incidents.filter((incident) => platformIntegrationPriority(incident, now) === "high")
+      .length,
+    unassigned: incidents.filter(
+      (incident) => incident.status !== "resolved" && !incident.assigned_to,
+    ).length,
+    inProgress: incidents.filter((incident) => incident.status === "in_progress").length,
+  };
 
   const runAction = async (
     incident: PlatformIntegrationIncident,
@@ -1043,6 +1099,60 @@ function PlatformIntegrationIncidentQueue({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+            <p className="text-xs text-muted-foreground">Críticas</p>
+            <p className="mt-1 text-xl font-semibold text-destructive">
+              {prioritySummary.critical}
+            </p>
+          </div>
+          <div className="rounded-lg border border-warning/30 bg-warning/5 p-3">
+            <p className="text-xs text-muted-foreground">Prioridade alta</p>
+            <p className="mt-1 text-xl font-semibold text-warning">{prioritySummary.high}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Sem responsável</p>
+            <p className="mt-1 text-xl font-semibold">{prioritySummary.unassigned}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Em acompanhamento</p>
+            <p className="mt-1 text-xl font-semibold">{prioritySummary.inProgress}</p>
+          </div>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,24rem)_13rem]">
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <Input
+              className="pl-9"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar empresa, integração ou diagnóstico…"
+              aria-label="Buscar incidentes de integração"
+            />
+          </div>
+          <Select
+            value={priorityFilter}
+            onValueChange={(value) =>
+              setPriorityFilter(value as PlatformIntegrationPriority | "all")
+            }
+          >
+            <SelectTrigger aria-label="Filtrar prioridade dos incidentes">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as prioridades</SelectItem>
+              <SelectItem value="critical">Críticas</SelectItem>
+              <SelectItem value="high">Prioridade alta</SelectItem>
+              <SelectItem value="normal">Normais</SelectItem>
+              <SelectItem value="recovered">Recuperadas</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {query.isLoading && (
           <p className="text-sm text-muted-foreground">Carregando fila operacional…</p>
         )}
@@ -1056,12 +1166,21 @@ function PlatformIntegrationIncidentQueue({
             Nenhuma ocorrência aguardando acompanhamento.
           </p>
         )}
-        {incidents.length > 0 && (
+        {!query.isLoading &&
+          !query.isError &&
+          incidents.length > 0 &&
+          incidentRows.length === 0 && (
+            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              Nenhuma ocorrência corresponde aos filtros selecionados.
+            </p>
+          )}
+        {incidentRows.length > 0 && (
           <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full min-w-[1040px] text-sm">
+            <table className="w-full min-w-[1160px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                   <th className="px-3 py-2.5 font-medium">Situação</th>
+                  <th className="px-3 py-2.5 font-medium">Prioridade</th>
                   <th className="px-3 py-2.5 font-medium">Empresa</th>
                   <th className="px-3 py-2.5 font-medium">Integração</th>
                   <th className="px-3 py-2.5 font-medium">Diagnóstico</th>
@@ -1071,78 +1190,94 @@ function PlatformIntegrationIncidentQueue({
                 </tr>
               </thead>
               <tbody>
-                {incidents.map((incident) => (
-                  <tr
-                    key={`${incident.organization_id}:${incident.integration_key}:${incident.failure_id}`}
-                    className="border-b last:border-0"
-                  >
-                    <td className="px-3 py-3">
-                      <div className="space-y-1.5">
-                        <Badge
-                          variant="outline"
-                          className={platformIncidentStatusTone[incident.status]}
-                        >
-                          {platformIncidentStatusLabel[incident.status]}
+                {incidentRows.map((incident) => {
+                  const priority = platformIntegrationPriority(incident, now);
+                  return (
+                    <tr
+                      key={`${incident.organization_id}:${incident.integration_key}:${incident.failure_id}`}
+                      className="border-b last:border-0"
+                    >
+                      <td className="px-3 py-3">
+                        <div className="space-y-1.5">
+                          <Badge
+                            variant="outline"
+                            className={platformIncidentStatusTone[incident.status]}
+                          >
+                            {platformIncidentStatusLabel[incident.status]}
+                          </Badge>
+                          {incident.is_active_failure && (
+                            <p className="text-xs font-medium text-destructive">
+                              Falha ainda ativa
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <Badge variant="outline" className={platformIncidentPriorityTone[priority]}>
+                          {priority === "critical" && (
+                            <AlertTriangle className="mr-1 size-3" aria-hidden />
+                          )}
+                          {platformIncidentPriorityLabel[priority]}
                         </Badge>
-                        {incident.is_active_failure && (
-                          <p className="text-xs font-medium text-destructive">Falha ainda ativa</p>
+                      </td>
+                      <td className="px-3 py-3 font-medium">{incident.organization_name}</td>
+                      <td className="px-3 py-3">{incident.label}</td>
+                      <td className="px-3 py-3">
+                        <p className="font-mono text-xs">{incident.error_code}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {incident.attempts} tentativa(s)
+                          {incident.retryable ? " · nova tentativa disponível" : ""}
+                        </p>
+                      </td>
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {incident.assigned_name ?? "Ainda não atribuído"}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">
+                        <p>{formatDateTime(incident.failed_at)}</p>
+                        <p className="mt-1 text-xs">
+                          {integrationIncidentAgeLabel(incident.failed_at, now)}
+                        </p>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        {incident.status === "open" && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={manage.isPending}
+                            onClick={() => void runAction(incident, "acknowledge")}
+                          >
+                            <UserCheck className="size-4" aria-hidden />
+                            Assumir
+                          </Button>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 font-medium">{incident.organization_name}</td>
-                    <td className="px-3 py-3">{incident.label}</td>
-                    <td className="px-3 py-3">
-                      <p className="font-mono text-xs">{incident.error_code}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {incident.attempts} tentativa(s)
-                        {incident.retryable ? " · nova tentativa disponível" : ""}
-                      </p>
-                    </td>
-                    <td className="px-3 py-3 text-muted-foreground">
-                      {incident.assigned_name ?? "Ainda não atribuído"}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">
-                      {formatDateTime(incident.failed_at)}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      {incident.status === "open" && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          disabled={manage.isPending}
-                          onClick={() => void runAction(incident, "acknowledge")}
-                        >
-                          <UserCheck className="size-4" aria-hidden />
-                          Assumir
-                        </Button>
-                      )}
-                      {incident.status === "in_progress" && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={manage.isPending}
-                          onClick={() => void runAction(incident, "resolve")}
-                        >
-                          <CheckCircle2 className="size-4" aria-hidden />
-                          Encerrar acompanhamento
-                        </Button>
-                      )}
-                      {incident.status === "resolved" && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={manage.isPending}
-                          onClick={() => void runAction(incident, "reopen")}
-                        >
-                          <RotateCcw className="size-4" aria-hidden />
-                          Reabrir
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                        {incident.status === "in_progress" && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={manage.isPending}
+                            onClick={() => void runAction(incident, "resolve")}
+                          >
+                            <CheckCircle2 className="size-4" aria-hidden />
+                            Encerrar acompanhamento
+                          </Button>
+                        )}
+                        {incident.status === "resolved" && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={manage.isPending}
+                            onClick={() => void runAction(incident, "reopen")}
+                          >
+                            <RotateCcw className="size-4" aria-hidden />
+                            Reabrir
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
