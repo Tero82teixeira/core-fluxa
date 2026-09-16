@@ -4953,6 +4953,51 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_integration_incident_notes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          integration_key: string
+          note: string
+          organization_id: string
+          source_failure_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          integration_key: string
+          note: string
+          organization_id: string
+          source_failure_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          integration_key?: string
+          note?: string
+          organization_id?: string
+          source_failure_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_integration_incident_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_integration_incident_notes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_trial_contact_history: {
         Row: {
           channel: string
@@ -7195,6 +7240,30 @@ export type Database = {
           outcome: string
           processed_at: string
           received_at: string
+        }[]
+      }
+      platform_add_integration_incident_note: {
+        Args: {
+          _failure_id: string
+          _integration_key: string
+          _note: string
+          _organization_id: string
+        }
+        Returns: string
+      }
+      platform_integration_incident_activity: {
+        Args: {
+          _failure_id: string
+          _integration_key: string
+          _limit?: number
+          _organization_id: string
+        }
+        Returns: {
+          actor_name: string
+          created_at: string
+          detail: string | null
+          event_id: string
+          event_type: string
         }[]
       }
       platform_integration_overview: {
