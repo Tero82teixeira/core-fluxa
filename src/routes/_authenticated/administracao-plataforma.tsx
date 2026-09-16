@@ -13,7 +13,9 @@ import {
   HandCoins,
   PlugZap,
   RefreshCw,
+  RotateCcw,
   ShieldAlert,
+  UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,6 +53,11 @@ import {
 } from "@/lib/commercial-follow-up";
 import type { Tables } from "@/integrations/supabase/types";
 import { CommercialFollowUpDialog } from "@/components/commercial/commercial-follow-up-dialog";
+import {
+  usePlatformIntegrationIncidents,
+  usePlatformManageIntegrationIncident,
+  type PlatformIntegrationIncident,
+} from "@/hooks/use-platform-integration-incidents";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -224,8 +231,13 @@ function PlatformAdministration() {
   const [subscriptionFilter, setSubscriptionFilter] = useState<PlatformSubscriptionFilter>("all");
   const [trialFilter, setTrialFilter] = useState<TrialEngagementFilter>("all");
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [includeResolvedIncidents, setIncludeResolvedIncidents] = useState(false);
   const [suspendTarget, setSuspendTarget] = useState<PlatformOrganization | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<PlatformOrganization | null>(null);
+  const platformIncidents = usePlatformIntegrationIncidents(
+    platformAdmin,
+    includeResolvedIncidents,
+  );
 
   const update = useMutation({
     mutationFn: async ({
@@ -382,6 +394,12 @@ function PlatformAdministration() {
       <KiwifyEventHealthPanel query={kiwifyEvents} />
 
       <PlatformIntegrationHealthPanel query={integrationOverview} />
+
+      <PlatformIntegrationIncidentQueue
+        query={platformIncidents}
+        includeResolved={includeResolvedIncidents}
+        onIncludeResolvedChange={setIncludeResolvedIncidents}
+      />
 
       <Card>
         <CardHeader className="gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -931,6 +949,197 @@ function PlatformIntegrationHealthPanel({
                       {organization.last_failure_at
                         ? formatDateTime(organization.last_failure_at)
                         : "Não informada"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const platformIncidentStatusLabel: Record<PlatformIntegrationIncident["status"], string> = {
+  open: "Nova",
+  in_progress: "Em acompanhamento",
+  resolved: "Encerrada",
+};
+
+const platformIncidentStatusTone: Record<PlatformIntegrationIncident["status"], string> = {
+  open: "border-destructive/30 bg-destructive/10 text-destructive",
+  in_progress: "border-warning/30 bg-warning/10 text-warning",
+  resolved: "border-success/30 bg-success/10 text-success",
+};
+
+function PlatformIntegrationIncidentQueue({
+  query,
+  includeResolved,
+  onIncludeResolvedChange,
+}: {
+  query: ReturnType<typeof usePlatformIntegrationIncidents>;
+  includeResolved: boolean;
+  onIncludeResolvedChange: (value: boolean) => void;
+}) {
+  const manage = usePlatformManageIntegrationIncident();
+  const incidents = query.data ?? [];
+
+  const runAction = async (
+    incident: PlatformIntegrationIncident,
+    action: "acknowledge" | "resolve" | "reopen",
+  ) => {
+    try {
+      await manage.mutateAsync({
+        organizationId: incident.organization_id,
+        integrationKey: incident.integration_key,
+        failureId: incident.failure_id,
+        action,
+      });
+      toast.success(
+        action === "resolve"
+          ? "Acompanhamento encerrado."
+          : action === "reopen"
+            ? "Acompanhamento reaberto."
+            : "Ocorrência assumida.",
+      );
+    } catch (error) {
+      toast.error(describeError(error));
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <UserCheck className="size-5 text-brand" aria-hidden />
+            Fila operacional das integrações
+          </CardTitle>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Assuma e acompanhe ocorrências sem acessar dados internos das empresas.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-pressed={includeResolved}
+            onClick={() => onIncludeResolvedChange(!includeResolved)}
+          >
+            {includeResolved ? "Ocultar encerrados" : "Incluir encerrados"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={query.isFetching}
+            onClick={() => void query.refetch()}
+          >
+            <RefreshCw className={cn("size-4", query.isFetching && "animate-spin")} aria-hidden />
+            Atualizar
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {query.isLoading && (
+          <p className="text-sm text-muted-foreground">Carregando fila operacional…</p>
+        )}
+        {query.isError && (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            Não foi possível consultar os incidentes das integrações.
+          </p>
+        )}
+        {!query.isLoading && !query.isError && incidents.length === 0 && (
+          <p className="rounded-lg border border-success/30 bg-success/5 p-4 text-sm text-success">
+            Nenhuma ocorrência aguardando acompanhamento.
+          </p>
+        )}
+        {incidents.length > 0 && (
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full min-w-[1040px] text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+                  <th className="px-3 py-2.5 font-medium">Situação</th>
+                  <th className="px-3 py-2.5 font-medium">Empresa</th>
+                  <th className="px-3 py-2.5 font-medium">Integração</th>
+                  <th className="px-3 py-2.5 font-medium">Diagnóstico</th>
+                  <th className="px-3 py-2.5 font-medium">Responsável</th>
+                  <th className="px-3 py-2.5 font-medium">Ocorrência</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incidents.map((incident) => (
+                  <tr
+                    key={`${incident.organization_id}:${incident.integration_key}:${incident.failure_id}`}
+                    className="border-b last:border-0"
+                  >
+                    <td className="px-3 py-3">
+                      <div className="space-y-1.5">
+                        <Badge
+                          variant="outline"
+                          className={platformIncidentStatusTone[incident.status]}
+                        >
+                          {platformIncidentStatusLabel[incident.status]}
+                        </Badge>
+                        {incident.is_active_failure && (
+                          <p className="text-xs font-medium text-destructive">Falha ainda ativa</p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 font-medium">{incident.organization_name}</td>
+                    <td className="px-3 py-3">{incident.label}</td>
+                    <td className="px-3 py-3">
+                      <p className="font-mono text-xs">{incident.error_code}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {incident.attempts} tentativa(s)
+                        {incident.retryable ? " · nova tentativa disponível" : ""}
+                      </p>
+                    </td>
+                    <td className="px-3 py-3 text-muted-foreground">
+                      {incident.assigned_name ?? "Ainda não atribuído"}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">
+                      {formatDateTime(incident.failed_at)}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      {incident.status === "open" && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={manage.isPending}
+                          onClick={() => void runAction(incident, "acknowledge")}
+                        >
+                          <UserCheck className="size-4" aria-hidden />
+                          Assumir
+                        </Button>
+                      )}
+                      {incident.status === "in_progress" && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={manage.isPending}
+                          onClick={() => void runAction(incident, "resolve")}
+                        >
+                          <CheckCircle2 className="size-4" aria-hidden />
+                          Encerrar acompanhamento
+                        </Button>
+                      )}
+                      {incident.status === "resolved" && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={manage.isPending}
+                          onClick={() => void runAction(incident, "reopen")}
+                        >
+                          <RotateCcw className="size-4" aria-hidden />
+                          Reabrir
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
