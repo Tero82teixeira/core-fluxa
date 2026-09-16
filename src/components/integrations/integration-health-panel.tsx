@@ -1,17 +1,20 @@
 import {
   Activity,
+  CheckCircle2,
   ExternalLink,
   FlaskConical,
   RefreshCw,
   RotateCcw,
   ShieldCheck,
   TriangleAlert,
+  UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   useAsaasAutomationStatus,
-  useIntegrationFailures,
+  useIntegrationIncidents,
+  useManageIntegrationIncident,
   useTestIntegrationConnection,
 } from "@/hooks/use-integration-actions";
 import { useIntegrationHealth } from "@/hooks/use-integration-health";
@@ -143,7 +146,8 @@ export function IntegrationHealthPanel({
   enabled: boolean;
 }) {
   const query = useIntegrationHealth(organizationId, enabled);
-  const failures = useIntegrationFailures(organizationId, enabled);
+  const incidents = useIntegrationIncidents(organizationId, enabled);
+  const manageIncident = useManageIntegrationIncident(organizationId);
   const automation = useAsaasAutomationStatus(organizationId, enabled);
   const connectionTest = useTestIntegrationConnection(organizationId);
   const retryJob = useRetryAsaasChargeJob(organizationId);
@@ -175,12 +179,32 @@ export function IntegrationHealthPanel({
     retryJob.mutate(failureId, {
       onSuccess: () => {
         toast.success("Cobrança recolocada na fila com segurança.");
-        void failures.refetch();
+        void incidents.refetch();
         void query.refetch();
         void automation.refetch();
       },
       onError: () => toast.error("Não foi possível recolocar esta cobrança na fila."),
     });
+  };
+  const changeIncident = (
+    integrationKey: string,
+    failureId: string,
+    action: "acknowledge" | "resolve" | "reopen",
+  ) => {
+    manageIncident.mutate(
+      { integrationKey, failureId, action },
+      {
+        onSuccess: () =>
+          toast.success(
+            action === "resolve"
+              ? "Acompanhamento encerrado."
+              : action === "reopen"
+                ? "Acompanhamento reaberto."
+                : "Incidente atribuído a você.",
+          ),
+        onError: () => toast.error("Não foi possível atualizar o acompanhamento."),
+      },
+    );
   };
 
   return (
@@ -380,52 +404,121 @@ export function IntegrationHealthPanel({
 
             <section className="space-y-3">
               <div>
-                <h3 className="font-semibold">Falhas recentes e reprocessamento</h3>
+                <h3 className="font-semibold">Acompanhamento de incidentes</h3>
                 <p className="text-sm text-muted-foreground">
-                  Cobranças podem voltar à fila sem duplicar o pagamento. Falhas de mensagens ficam
-                  disponíveis para análise manual.
+                  Falhas recentes e reprocessamento aparecem aqui. Assuma a ocorrência, acompanhe o
+                  responsável e encerre quando a ação for concluída; itens não reprocessáveis seguem
+                  para Análise manual.
                 </p>
               </div>
-              {failures.isLoading && <Skeleton className="h-24 rounded-xl" />}
-              {failures.isError && (
+              {incidents.isLoading && <Skeleton className="h-24 rounded-xl" />}
+              {incidents.isError && (
                 <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-                  Não foi possível carregar as falhas recentes.
+                  Não foi possível carregar os incidentes de integração.
                 </p>
               )}
-              {!failures.isLoading && !failures.isError && (failures.data ?? []).length === 0 && (
-                <p className="rounded-lg border border-success/30 bg-success/10 p-4 text-sm">
-                  Nenhuma falha de integração aguarda tratamento.
-                </p>
-              )}
+              {!incidents.isLoading &&
+                !incidents.isError &&
+                (incidents.data ?? []).length === 0 && (
+                  <p className="rounded-lg border border-success/30 bg-success/10 p-4 text-sm">
+                    Nenhum incidente de integração aguarda tratamento.
+                  </p>
+                )}
               <div className="space-y-2">
-                {(failures.data ?? []).map((failure) => (
+                {(incidents.data ?? []).map((incident) => (
                   <div
-                    key={`${failure.integration_key}-${failure.failure_id}`}
-                    className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
+                    key={`${incident.integration_key}-${incident.failure_id}`}
+                    className="flex flex-col gap-3 rounded-xl border p-4 lg:flex-row lg:items-center lg:justify-between"
                   >
                     <div className="min-w-0">
-                      <p className="font-medium">{failure.label}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{incident.label}</p>
+                        <Badge
+                          variant="outline"
+                          className={
+                            incident.status === "resolved"
+                              ? statusTone.healthy
+                              : incident.status === "in_progress"
+                                ? statusTone.pending
+                                : statusTone.attention
+                          }
+                        >
+                          {incident.status === "resolved"
+                            ? "Encerrado"
+                            : incident.status === "in_progress"
+                              ? "Em acompanhamento"
+                              : "Sem responsável"}
+                        </Badge>
+                      </div>
                       <p className="truncate text-sm text-muted-foreground">
-                        {failure.description} · {integrationDiagnosticMessage(failure.error_code)}
+                        {incident.description} · {integrationDiagnosticMessage(incident.error_code)}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {formatDateTime(failure.failed_at)} · {failure.attempts} tentativa(s)
+                        {formatDateTime(incident.failed_at)} · {incident.attempts} tentativa(s)
+                        {incident.assigned_name ? ` · responsável: ${incident.assigned_name}` : ""}
                       </p>
+                      {incident.status === "resolved" && incident.is_active_failure && (
+                        <p className="mt-1 text-xs font-medium text-warning">
+                          A ocorrência foi encerrada, mas a falha técnica ainda aparece na origem.
+                        </p>
+                      )}
                     </div>
-                    {failure.retryable ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={retryJob.isPending}
-                        onClick={() => retryFailure(failure.failure_id)}
-                      >
-                        <RotateCcw className="size-3.5" aria-hidden />
-                        Reprocessar
-                      </Button>
-                    ) : (
-                      <Badge variant="outline">Análise manual</Badge>
-                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {incident.retryable && incident.is_active_failure && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={retryJob.isPending}
+                          onClick={() => retryFailure(incident.failure_id)}
+                        >
+                          <RotateCcw className="size-3.5" aria-hidden />
+                          Reprocessar
+                        </Button>
+                      )}
+                      {incident.status === "open" ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={manageIncident.isPending}
+                          onClick={() =>
+                            changeIncident(
+                              incident.integration_key,
+                              incident.failure_id,
+                              "acknowledge",
+                            )
+                          }
+                        >
+                          <UserCheck className="size-3.5" aria-hidden />
+                          Assumir incidente
+                        </Button>
+                      ) : incident.status === "in_progress" ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={manageIncident.isPending}
+                          onClick={() =>
+                            changeIncident(incident.integration_key, incident.failure_id, "resolve")
+                          }
+                        >
+                          <CheckCircle2 className="size-3.5" aria-hidden />
+                          Encerrar acompanhamento
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={manageIncident.isPending}
+                          onClick={() =>
+                            changeIncident(incident.integration_key, incident.failure_id, "reopen")
+                          }
+                        >
+                          <RotateCcw className="size-3.5" aria-hidden />
+                          Reabrir
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
