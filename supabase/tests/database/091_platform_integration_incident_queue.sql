@@ -191,6 +191,8 @@ SELECT lives_ok(
   )$$,
   'platform administrator can reopen historical follow-up'
 );
+RESET ROLE;
+
 SELECT is(
   (
     SELECT count(*)::integer
@@ -204,7 +206,6 @@ SELECT is(
   2,
   'platform incident actions are audited'
 );
-RESET ROLE;
 
 SELECT * FROM finish();
 ROLLBACK;
