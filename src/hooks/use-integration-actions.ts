@@ -13,6 +13,15 @@ export type IntegrationFailure = {
   retryable: boolean;
 };
 
+export type IntegrationIncident = IntegrationFailure & {
+  incident_id: string | null;
+  status: "open" | "in_progress" | "resolved";
+  assigned_to: string | null;
+  assigned_name: string | null;
+  updated_at: string;
+  is_active_failure: boolean;
+};
+
 export type WebhookEvent = {
   event_record_id: string;
   provider: "asaas" | "kiwify" | "whatsapp" | "email";
@@ -82,6 +91,48 @@ export function useIntegrationFailures(organizationId: string | null, enabled: b
       });
       if (error) throw error;
       return (data ?? []) as IntegrationFailure[];
+    },
+  });
+}
+
+export function useIntegrationIncidents(organizationId: string | null, enabled: boolean) {
+  return useQuery({
+    enabled: Boolean(organizationId && enabled),
+    queryKey: ["integration-incidents", organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("organization_integration_incidents", {
+        _organization_id: organizationId!,
+      });
+      if (error) throw error;
+      return (data ?? []) as IntegrationIncident[];
+    },
+  });
+}
+
+export function useManageIntegrationIncident(organizationId: string | null) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      integrationKey,
+      failureId,
+      action,
+    }: {
+      integrationKey: string;
+      failureId: string;
+      action: "acknowledge" | "resolve" | "reopen";
+    }) => {
+      if (!organizationId) throw new Error("ORGANIZATION_REQUIRED");
+      const { error } = await supabase.rpc("manage_integration_incident", {
+        _organization_id: organizationId,
+        _integration_key: integrationKey,
+        _failure_id: failureId,
+        _action: action,
+      });
+      if (error) throw error;
+    },
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: ["integration-incidents", organizationId] });
+      void client.invalidateQueries({ queryKey: ["integration-health", organizationId] });
     },
   });
 }

@@ -3733,6 +3733,75 @@ export type Database = {
           },
         ]
       }
+      integration_incidents: {
+        Row: {
+          assigned_to: string | null
+          attempts: number
+          created_at: string
+          description: string
+          error_code: string
+          failed_at: string
+          id: string
+          integration_key: string
+          label: string
+          organization_id: string
+          resolved_at: string | null
+          retryable: boolean
+          source_failure_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          attempts?: number
+          created_at?: string
+          description: string
+          error_code: string
+          failed_at: string
+          id?: string
+          integration_key: string
+          label: string
+          organization_id: string
+          resolved_at?: string | null
+          retryable?: boolean
+          source_failure_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          attempts?: number
+          created_at?: string
+          description?: string
+          error_code?: string
+          failed_at?: string
+          id?: string
+          integration_key?: string
+          label?: string
+          organization_id?: string
+          resolved_at?: string | null
+          retryable?: boolean
+          source_failure_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_incidents_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_incidents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_runtime_heartbeats: {
         Row: {
           function_name: string
@@ -6997,6 +7066,15 @@ export type Database = {
         }
         Returns: string
       }
+      manage_integration_incident: {
+        Args: {
+          _action: string
+          _failure_id: string
+          _integration_key: string
+          _organization_id: string
+        }
+        Returns: undefined
+      }
       monitoring_assert_admin: { Args: { _org: string }; Returns: undefined }
       monitoring_assert_source: {
         Args: { _id: string; _org: string; _type: string }
@@ -7058,6 +7136,25 @@ export type Database = {
           pending_count: number
           reported_version: string
           status: string
+        }[]
+      }
+      organization_integration_incidents: {
+        Args: { _organization_id: string }
+        Returns: {
+          assigned_name: string
+          assigned_to: string
+          attempts: number
+          description: string
+          error_code: string
+          failed_at: string
+          failure_id: string
+          incident_id: string
+          integration_key: string
+          is_active_failure: boolean
+          label: string
+          retryable: boolean
+          status: string
+          updated_at: string
         }[]
       }
       organization_integration_report: {
