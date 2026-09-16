@@ -7197,6 +7197,21 @@ export type Database = {
           received_at: string
         }[]
       }
+      platform_integration_overview: {
+        Args: never
+        Returns: {
+          connection_errors: number
+          failed_charge_jobs: number
+          failed_messages: number
+          issue_count: number
+          last_failure_at: string
+          open_incidents: number
+          organization_id: string
+          organization_name: string
+          status: string
+          unassigned_incidents: number
+        }[]
+      }
       platform_organizations: {
         Args: never
         Returns: {
