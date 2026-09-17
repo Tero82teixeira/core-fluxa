@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -16,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { CLIENT_STATUS } from "@/lib/domain";
 import { digits, isValidCNPJ, maskCEP, maskCNPJ, maskCPF, maskPhone } from "@/lib/format";
 import { useCnpjLookup } from "@/hooks/use-cnpj-lookup";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import {
   UF_LIST,
   validateClientForm,
@@ -51,18 +53,25 @@ export function ClientForm({
   pending,
   onSubmit,
   onCancel,
+  onSaved,
   externalErrors,
 }: {
   initial: ClientFormValues;
   submitLabel: string;
   pending: boolean;
-  onSubmit: (values: ClientFormValues) => void;
+  onSubmit: (values: ClientFormValues) => Promise<boolean>;
   onCancel?: () => void;
+  onSaved?: () => void;
   externalErrors?: FieldErrors;
 }) {
   const [values, setValues] = useState<ClientFormValues>(initial);
   const [errors, setErrors] = useState<FieldErrors>({});
   const cnpjLookup = useCnpjLookup();
+  const isDirty = useMemo(
+    () => JSON.stringify(values) !== JSON.stringify(initial),
+    [initial, values],
+  );
+  const markSaved = useUnsavedChanges(isDirty);
   const isPJ = values.person_type === "pj";
   const shown: FieldErrors = { ...errors, ...externalErrors };
 
@@ -79,13 +88,17 @@ export function ClientForm({
     );
   };
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (pending) return;
     const found = validateClientForm(values);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-    onSubmit(values);
+    const saved = await onSubmit(values);
+    if (saved) {
+      markSaved();
+      onSaved?.();
+    }
   };
 
   return (
@@ -330,6 +343,11 @@ export function ClientForm({
       </div>
 
       <div className="grid gap-2 sm:flex sm:flex-wrap">
+        {isDirty && (
+          <Badge className="w-fit self-center" variant="outline">
+            Alterações não salvas
+          </Badge>
+        )}
         <Button className="w-full sm:w-auto" type="submit" disabled={pending} aria-busy={pending}>
           {pending && <Loader2 className="size-4 animate-spin" aria-hidden />}
           {pending ? "Salvando…" : submitLabel}

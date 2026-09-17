@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { usePermissions } from "@/lib/permissions";
 import { useClients } from "@/hooks/use-operations";
 import { useAllServiceTypes, useCreateProcess, useSeedChecklist } from "@/hooks/use-mutations";
 import { describeError } from "@/lib/errors";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import {
   KANBAN_STAGES,
   PRIORITY,
@@ -20,6 +21,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -78,6 +80,22 @@ function NewProcess() {
     value: "",
     owner_name: "",
   });
+  const initialForm = useMemo(
+    () => ({
+      client_id: clientId ?? "",
+      service_type_id: "",
+      title: "",
+      description: "",
+      stage: "novo" as ProcessStage,
+      priority: "media" as PriorityLevel,
+      due_date: "",
+      value: "",
+      owner_name: displayName ?? "",
+    }),
+    [clientId, displayName],
+  );
+  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
+  const markSaved = useUnsavedChanges(isDirty);
 
   useEffect(() => {
     if (displayName && !form.owner_name)
@@ -132,6 +150,7 @@ function NewProcess() {
         }
       }
       toast.success(`Processo ${created.code} criado.`);
+      markSaved();
       navigate({ to: "/processos/$processId", params: { processId: created.id } });
     } catch (error) {
       toast.error(describeError(error, "processo"));
@@ -155,7 +174,10 @@ function NewProcess() {
       <Card>
         <CardContent className="p-4 sm:p-6">
           <h1 className="page-title">Novo processo</h1>
-          <p className="page-subtitle mt-1">O número interno é gerado automaticamente ao salvar.</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <p className="page-subtitle">O número interno é gerado automaticamente ao salvar.</p>
+            {isDirty && <Badge variant="outline">Alterações não salvas</Badge>}
+          </div>
 
           <form onSubmit={submit} className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">

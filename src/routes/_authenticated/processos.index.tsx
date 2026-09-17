@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, GripVertical, LayoutGrid, Rows3 } from "lucide-react";
 import { toast } from "sonner";
@@ -42,6 +42,8 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ErrorState, LoadingState } from "@/components/shared/async-state";
+import { ActiveFilters } from "@/components/shared/active-filters";
+import { clearRememberedFilters, useFilterMemory } from "@/hooks/use-filter-memory";
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
 
 type Search = { etapa?: string; responsavel?: string; cliente?: string };
@@ -106,11 +108,80 @@ function ProcessesPage() {
   const [page, setPage] = useState(0);
   const [dragging, setDragging] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<ProcessStage | null>(null);
+  const restoringFilters = useRef(false);
+  const filterMemoryScope = `processes:${organizationId ?? "none"}`;
+
+  const rememberedFilters = useMemo(
+    () => ({
+      view,
+      term,
+      clientId,
+      serviceTypeId,
+      stage,
+      priority,
+      owner,
+      financial,
+      deadline,
+      archived,
+      sort,
+      page,
+    }),
+    [
+      view,
+      term,
+      clientId,
+      serviceTypeId,
+      stage,
+      priority,
+      owner,
+      financial,
+      deadline,
+      archived,
+      sort,
+      page,
+    ],
+  );
+
+  useFilterMemory(filterMemoryScope, rememberedFilters, (remembered) => {
+    restoringFilters.current = true;
+    if (["kanban", "tabela"].includes(String(remembered.view)))
+      setView(remembered.view as "kanban" | "tabela");
+    if (typeof remembered.term === "string") setTerm(remembered.term);
+    if (!search.cliente && typeof remembered.clientId === "string")
+      setClientId(remembered.clientId);
+    if (typeof remembered.serviceTypeId === "string")
+      setServiceTypeId(remembered.serviceTypeId);
+    if (
+      !search.etapa &&
+      typeof remembered.stage === "string" &&
+      (remembered.stage === "todos" || remembered.stage in PROCESS_STAGE)
+    )
+      setStage(remembered.stage);
+    if (
+      typeof remembered.priority === "string" &&
+      (remembered.priority === "todos" || remembered.priority in PRIORITY)
+    )
+      setPriority(remembered.priority);
+    if (!search.responsavel && typeof remembered.owner === "string") setOwner(remembered.owner);
+    if (
+      typeof remembered.financial === "string" &&
+      (remembered.financial === "todos" || remembered.financial in FINANCIAL_STATUS)
+    )
+      setFinancial(remembered.financial);
+    if (["todos", "atrasados", "hoje", "semana", "sem_prazo"].includes(String(remembered.deadline)))
+      setDeadline(remembered.deadline as ProcessFilters["deadline"]);
+    if (typeof remembered.archived === "boolean") setArchived(remembered.archived);
+    if (["due", "recent", "code"].includes(String(remembered.sort)))
+      setSort(remembered.sort as ProcessFilters["sort"]);
+    if (typeof remembered.page === "number" && remembered.page >= 0) setPage(remembered.page);
+  });
 
   useEffect(() => {
+    const preservePage = restoringFilters.current;
     const timer = setTimeout(() => {
       setDebounced(term);
-      setPage(0);
+      if (!preservePage) setPage(0);
+      restoringFilters.current = false;
     }, 350);
     return () => clearTimeout(timer);
   }, [term]);
@@ -149,6 +220,32 @@ function ProcessesPage() {
   const rows = list.data?.rows ?? [];
   const count = list.data?.count ?? 0;
   const pages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+  const activeFilterCount = [
+    term.trim().length > 0,
+    clientId !== "todos",
+    serviceTypeId !== "todos",
+    stage !== "todos",
+    priority !== "todos",
+    owner !== "todos",
+    financial !== "todos",
+    deadline !== "todos",
+    archived,
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    clearRememberedFilters(filterMemoryScope);
+    setTerm("");
+    setDebounced("");
+    setClientId("todos");
+    setServiceTypeId("todos");
+    setStage("todos");
+    setPriority("todos");
+    setOwner("todos");
+    setFinancial("todos");
+    setDeadline("todos");
+    setArchived(false);
+    setPage(0);
+  };
 
   const all = board.data ?? [];
   const owners = useMemo(
@@ -386,6 +483,8 @@ function ProcessesPage() {
           {archived ? "Vendo arquivados" : "Ver arquivados"}
         </Button>
       </div>
+
+      <ActiveFilters count={activeFilterCount} onClear={clearFilters} />
 
       {view === "kanban" ? board.isLoading ? (
         <LoadingState label="Carregando quadro de processos" rows={5} />
