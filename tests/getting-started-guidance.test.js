@@ -2,20 +2,20 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const guide = readFileSync(
-  "src/components/onboarding/getting-started-card.tsx",
-  "utf8",
-);
+const guide = readFileSync("src/components/onboarding/getting-started-card.tsx", "utf8");
 const myDay = readFileSync("src/routes/_authenticated/meu-dia.tsx", "utf8");
 const navigation = readFileSync("src/lib/navigation.ts", "utf8");
 const sidebar = readFileSync("src/components/layout/app-sidebar.tsx", "utf8");
 const header = readFileSync("src/components/layout/app-header.tsx", "utf8");
 
-test("Meu Dia presents a real five-step setup sequence to managers", () => {
+test("Meu Dia presents a complete setup sequence to managers", () => {
   assert.match(myDay, /<GettingStartedCard \/>/);
   for (const label of [
     "Complete os dados da empresa",
     "Cadastre o primeiro cliente",
+    "Crie o primeiro processo",
+    "Adicione o primeiro documento",
+    "Planeje a primeira tarefa",
     "Convide sua equipe",
     "Prepare o financeiro",
     "Conecte o Asaas",
@@ -28,6 +28,9 @@ test("Meu Dia presents a real five-step setup sequence to managers", () => {
 
 test("setup progress comes from tenant data and keeps optional services non-blocking", () => {
   assert.match(guide, /countRows\("clients", organizationId!\)/);
+  assert.match(guide, /countRows\("processes", organizationId!\)/);
+  assert.match(guide, /countRows\("documents", organizationId!\)/);
+  assert.match(guide, /countRows\("tasks", organizationId!\)/);
   assert.match(guide, /countRows\("organization_members", organizationId!\)/);
   assert.match(guide, /countRows\("financial_accounts", organizationId!\)/);
   assert.match(guide, /asaas\.data\?\.status === "connected"/);
@@ -50,7 +53,14 @@ test("the sidebar removes advanced modules from operational profiles", () => {
     /operacional: \[[\s\S]*?"\/comunicacao"[\s\S]*?"\/notificacoes"[\s\S]*?"\/ajuda"[\s\S]*?\]/,
   );
   const operational = navigation.match(/operacional: \[([\s\S]*?)\],\n  atendimento:/)?.[1] ?? "";
-  for (const hidden of ["/financeiro", "/relatorios", "/equipe", "/automacoes", "/configuracoes", "/assinatura"]) {
+  for (const hidden of [
+    "/financeiro",
+    "/relatorios",
+    "/equipe",
+    "/automacoes",
+    "/configuracoes",
+    "/assinatura",
+  ]) {
     assert.doesNotMatch(operational, new RegExp(hidden));
   }
 });
@@ -62,7 +72,6 @@ test("owners and administrators preserve the complete navigation", () => {
   );
   assert.match(navigation, /return true;/);
 });
-
 
 test("quick-create actions also respect operational responsibility", () => {
   assert.match(header, /visible: can\("clients\.create"\)/);

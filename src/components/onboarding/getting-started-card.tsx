@@ -8,6 +8,9 @@ import {
   ChevronUp,
   Circle,
   CreditCard,
+  FilePlus2,
+  FileText,
+  ListTodo,
   Sparkles,
   UserPlus,
   UsersRound,
@@ -24,7 +27,14 @@ import { cn } from "@/lib/utils";
 
 const db = supabase as any;
 
-type SetupRoute = "/configuracoes" | "/clientes/novo" | "/equipe" | "/financeiro";
+type SetupRoute =
+  | "/configuracoes"
+  | "/clientes/novo"
+  | "/processos/novo"
+  | "/documentos"
+  | "/tarefas"
+  | "/equipe"
+  | "/financeiro";
 
 type SetupStep = {
   key: string;
@@ -38,7 +48,8 @@ type SetupStep = {
 };
 
 async function countRows(
-  table: "clients" | "organization_members" | "financial_accounts",
+  table:
+    "clients" | "processes" | "documents" | "tasks" | "organization_members" | "financial_accounts",
   organizationId: string,
 ) {
   let query = db
@@ -63,18 +74,20 @@ async function countRows(
 
 export function GettingStartedCard() {
   const { organizationId, user, role, onboardingCompleted } = useWorkspace();
-  const management =
-    role === "proprietario" || role === "administrador" || role === "superadmin";
+  const management = role === "proprietario" || role === "administrador" || role === "superadmin";
   const status = useQuery({
     enabled: Boolean(organizationId && management),
     queryKey: ["getting-started", organizationId],
     queryFn: async () => {
-      const [clients, members, accounts] = await Promise.all([
+      const [clients, processes, documents, tasks, members, accounts] = await Promise.all([
         countRows("clients", organizationId!),
+        countRows("processes", organizationId!),
+        countRows("documents", organizationId!),
+        countRows("tasks", organizationId!),
         countRows("organization_members", organizationId!),
         countRows("financial_accounts", organizationId!),
       ]);
-      return { clients, members, accounts };
+      return { clients, processes, documents, tasks, members, accounts };
     },
   });
   const asaas = useAsaasConnection(management ? organizationId : null);
@@ -120,6 +133,33 @@ export function GettingStartedCard() {
         icon: UserPlus,
       },
       {
+        key: "process",
+        title: "Crie o primeiro processo",
+        description: "Organize uma demanda com etapas, responsável e prazo.",
+        action: "Criar processo",
+        to: "/processos/novo",
+        complete: (status.data?.processes ?? 0) > 0,
+        icon: FilePlus2,
+      },
+      {
+        key: "document",
+        title: "Adicione o primeiro documento",
+        description: "Centralize arquivos, validade e acompanhamento documental.",
+        action: "Abrir documentos",
+        to: "/documentos",
+        complete: (status.data?.documents ?? 0) > 0,
+        icon: FileText,
+      },
+      {
+        key: "task",
+        title: "Planeje a primeira tarefa",
+        description: "Registre o próximo trabalho com responsável e prazo.",
+        action: "Abrir tarefas",
+        to: "/tarefas",
+        complete: (status.data?.tasks ?? 0) > 0,
+        icon: ListTodo,
+      },
+      {
         key: "team",
         title: "Convide sua equipe",
         description: "Cada pessoa verá somente o necessário para sua função.",
@@ -154,7 +194,10 @@ export function GettingStartedCard() {
       onboardingCompleted,
       status.data?.accounts,
       status.data?.clients,
+      status.data?.documents,
       status.data?.members,
+      status.data?.processes,
+      status.data?.tasks,
     ],
   );
 
@@ -175,7 +218,9 @@ export function GettingStartedCard() {
             <div className="min-w-0">
               <p className="font-semibold">Primeiros passos</p>
               <p className="text-sm text-muted-foreground">
-                {loading ? "Verificando sua configuração…" : `${completed} de ${steps.length} etapas concluídas`}
+                {loading
+                  ? "Verificando sua configuração…"
+                  : `${completed} de ${steps.length} etapas concluídas`}
               </p>
             </div>
           </div>
@@ -198,7 +243,8 @@ export function GettingStartedCard() {
               Primeiros passos no FLUXA
             </CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Siga esta sequência para deixar a empresa pronta sem precisar conhecer todos os módulos.
+              Siga esta sequência para deixar a empresa pronta sem precisar conhecer todos os
+              módulos.
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={() => changeCollapsed(true)}>
@@ -228,7 +274,8 @@ export function GettingStartedCard() {
               key={step.key}
               className={cn(
                 "grid gap-3 rounded-xl border p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center",
-                step.complete && "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/20",
+                step.complete &&
+                  "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/20",
               )}
             >
               <span className="relative grid size-10 place-items-center rounded-xl bg-muted text-muted-foreground">
