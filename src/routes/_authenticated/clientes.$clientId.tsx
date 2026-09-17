@@ -146,7 +146,7 @@ function ClientDetail() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
       <Card>
-        <CardContent className="flex flex-wrap items-start justify-between gap-5 p-6">
+        <CardContent className="flex flex-wrap items-start justify-between gap-5 p-4 sm:p-6">
           <div className="flex min-w-0 items-start gap-4">
             <Avatar className="size-14 shrink-0">
               <AvatarFallback className="text-sm">{initials(data.name)}</AvatarFallback>
@@ -181,7 +181,7 @@ function ClientDetail() {
               </dl>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
             {data.email && (
               <Button variant="outline" asChild>
                 <a href={`mailto:${data.email}`}>
@@ -243,24 +243,24 @@ function ClientDetail() {
       </section>
 
       <Tabs defaultValue={canManageClientPortal && search.tab === "portal" ? "portal" : "visao"}>
-        <TabsList className="h-auto flex-wrap gap-1.5 p-1.5">
-          <TabsTrigger value="visao" className="px-4 py-2 text-sm">
+        <TabsList className="h-auto w-full max-w-full justify-start gap-1.5 overflow-x-auto p-1.5">
+          <TabsTrigger value="visao" className="shrink-0 px-4 py-2 text-sm">
             Visão geral
           </TabsTrigger>
-          <TabsTrigger value="processos" className="px-4 py-2 text-sm">
+          <TabsTrigger value="processos" className="shrink-0 px-4 py-2 text-sm">
             Processos ({related.length})
           </TabsTrigger>
-          <TabsTrigger value="documentos" className="px-4 py-2 text-sm">
+          <TabsTrigger value="documentos" className="shrink-0 px-4 py-2 text-sm">
             Documentos
           </TabsTrigger>
-          <TabsTrigger value="tarefas" className="px-4 py-2 text-sm">
+          <TabsTrigger value="tarefas" className="shrink-0 px-4 py-2 text-sm">
             Tarefas ({relatedTasks.length})
           </TabsTrigger>
-          <TabsTrigger value="historico" className="px-4 py-2 text-sm">
+          <TabsTrigger value="historico" className="shrink-0 px-4 py-2 text-sm">
             Histórico
           </TabsTrigger>
           {canManageClientPortal && (
-            <TabsTrigger value="portal" className="px-4 py-2 text-sm">
+            <TabsTrigger value="portal" className="shrink-0 px-4 py-2 text-sm">
               Portal do Cliente
             </TabsTrigger>
           )}
@@ -285,7 +285,7 @@ function ClientDetail() {
 
         <TabsContent value="visao" className="mt-4">
           <Card>
-            <CardContent className="grid gap-6 p-6 md:grid-cols-2">
+            <CardContent className="grid gap-6 p-4 sm:p-6 md:grid-cols-2">
               <div>
                 <h2 className="text-sm font-semibold">Dados cadastrais</h2>
                 <Separator className="my-3" />

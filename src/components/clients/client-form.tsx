@@ -5,7 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { CLIENT_STATUS } from "@/lib/domain";
 import { digits, isValidCNPJ, maskCEP, maskCNPJ, maskCPF, maskPhone } from "@/lib/format";
@@ -60,7 +66,8 @@ export function ClientForm({
   const isPJ = values.person_type === "pj";
   const shown: FieldErrors = { ...errors, ...externalErrors };
 
-  const set = (patch: Partial<ClientFormValues>) => setValues((current) => ({ ...current, ...patch }));
+  const set = (patch: Partial<ClientFormValues>) =>
+    setValues((current) => ({ ...current, ...patch }));
 
   const fillCompanyFromCnpj = async (value: string) => {
     const found = await cnpjLookup.search(value);
@@ -112,7 +119,12 @@ export function ClientForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="name" label={isPJ ? "Razão social" : "Nome completo"} error={shown.name} className="sm:col-span-2">
+        <Field
+          id="name"
+          label={isPJ ? "Razão social" : "Nome completo"}
+          error={shown.name}
+          className="sm:col-span-2"
+        >
           <Input
             id="name"
             maxLength={160}
@@ -141,11 +153,19 @@ export function ClientForm({
               const document = event.target.value;
               set({ document });
               setErrors((current) => ({ ...current, document: undefined }));
-              if (isPJ && digits(document).length === 14 && isValidCNPJ(document)) void fillCompanyFromCnpj(document);
+              if (isPJ && digits(document).length === 14 && isValidCNPJ(document))
+                void fillCompanyFromCnpj(document);
             }}
           />
-          {isPJ && cnpjLookup.loading && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="size-3.5 animate-spin" />Consultando CNPJ…</p>}
-          {isPJ && !cnpjLookup.loading && cnpjLookup.message && <p className="text-xs text-muted-foreground">{cnpjLookup.message}</p>}
+          {isPJ && cnpjLookup.loading && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="size-3.5 animate-spin" />
+              Consultando CNPJ…
+            </p>
+          )}
+          {isPJ && !cnpjLookup.loading && cnpjLookup.message && (
+            <p className="text-xs text-muted-foreground">{cnpjLookup.message}</p>
+          )}
         </Field>
 
         {isPJ ? (
@@ -211,10 +231,20 @@ export function ClientForm({
           />
         </Field>
         <Field id="street" label="Endereço" error={shown.street} className="sm:col-span-3">
-          <Input id="street" maxLength={160} value={values.street} onChange={(e) => set({ street: e.target.value })} />
+          <Input
+            id="street"
+            maxLength={160}
+            value={values.street}
+            onChange={(e) => set({ street: e.target.value })}
+          />
         </Field>
         <Field id="number" label="Número" error={shown.number}>
-          <Input id="number" maxLength={20} value={values.number} onChange={(e) => set({ number: e.target.value })} />
+          <Input
+            id="number"
+            maxLength={20}
+            value={values.number}
+            onChange={(e) => set({ number: e.target.value })}
+          />
         </Field>
         <Field id="complement" label="Complemento" className="sm:col-span-3">
           <Input
@@ -225,20 +255,35 @@ export function ClientForm({
           />
         </Field>
         <Field id="district" label="Bairro" className="sm:col-span-3">
-          <Input id="district" maxLength={80} value={values.district} onChange={(e) => set({ district: e.target.value })} />
+          <Input
+            id="district"
+            maxLength={80}
+            value={values.district}
+            onChange={(e) => set({ district: e.target.value })}
+          />
         </Field>
         <Field id="city" label="Cidade" className="sm:col-span-4">
-          <Input id="city" maxLength={80} value={values.city} onChange={(e) => set({ city: e.target.value })} />
+          <Input
+            id="city"
+            maxLength={80}
+            value={values.city}
+            onChange={(e) => set({ city: e.target.value })}
+          />
         </Field>
         <Field id="state" label="UF" error={shown.state} className="sm:col-span-2">
-          <Select value={values.state || "none"} onValueChange={(value) => set({ state: value === "none" ? "" : value })}>
+          <Select
+            value={values.state || "none"}
+            onValueChange={(value) => set({ state: value === "none" ? "" : value })}
+          >
             <SelectTrigger id="state" className="h-10" aria-label="UF">
               <SelectValue placeholder="UF" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Não informado</SelectItem>
               {UF_LIST.map((uf) => (
-                <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                <SelectItem key={uf} value={uf}>
+                  {uf}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -266,7 +311,9 @@ export function ClientForm({
               {Object.entries(CLIENT_STATUS)
                 .filter(([key]) => key !== "arquivado")
                 .map(([key, meta]) => (
-                  <SelectItem key={key} value={key}>{meta.label}</SelectItem>
+                  <SelectItem key={key} value={key}>
+                    {meta.label}
+                  </SelectItem>
                 ))}
             </SelectContent>
           </Select>
@@ -282,13 +329,19 @@ export function ClientForm({
         </Field>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={pending} aria-busy={pending}>
+      <div className="grid gap-2 sm:flex sm:flex-wrap">
+        <Button className="w-full sm:w-auto" type="submit" disabled={pending} aria-busy={pending}>
           {pending && <Loader2 className="size-4 animate-spin" aria-hidden />}
           {pending ? "Salvando…" : submitLabel}
         </Button>
         {onCancel && (
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
+          <Button
+            className="w-full sm:w-auto"
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            disabled={pending}
+          >
             Cancelar
           </Button>
         )}

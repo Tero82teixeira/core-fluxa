@@ -6,7 +6,13 @@ import { useWorkspace } from "@/lib/workspace";
 import { usePermissions } from "@/lib/permissions";
 import { useCreateClient } from "@/hooks/use-mutations";
 import { describeError } from "@/lib/errors";
-import { duplicateDocumentMessage, emptyClientForm, toClientPayload, type ClientFormValues, type FieldErrors } from "@/lib/validators";
+import {
+  duplicateDocumentMessage,
+  emptyClientForm,
+  toClientPayload,
+  type ClientFormValues,
+  type FieldErrors,
+} from "@/lib/validators";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { ClientForm } from "@/components/clients/client-form";
@@ -15,9 +21,15 @@ export const Route = createFileRoute("/_authenticated/clientes/novo")({
   head: () => ({
     meta: [
       { title: "Novo cliente — FLUXA" },
-      { name: "description", content: "Cadastre um cliente PF ou PJ com documento, contatos e endereço." },
+      {
+        name: "description",
+        content: "Cadastre um cliente PF ou PJ com documento, contatos e endereço.",
+      },
       { property: "og:title", content: "Novo cliente — FLUXA" },
-      { property: "og:description", content: "Cadastre um cliente PF ou PJ com documento, contatos e endereço." },
+      {
+        property: "og:description",
+        content: "Cadastre um cliente PF ou PJ com documento, contatos e endereço.",
+      },
     ],
   }),
   component: NewClient,
@@ -66,7 +78,7 @@ function NewClient() {
   return (
     <div className="mx-auto w-full max-w-4xl p-4 sm:p-6">
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <h1 className="page-title">Novo cliente</h1>
           <p className="page-subtitle mt-1">Dados cadastrais, contato e endereço.</p>
           <div className="mt-6">
