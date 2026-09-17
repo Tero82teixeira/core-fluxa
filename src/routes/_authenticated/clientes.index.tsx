@@ -25,10 +25,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CLIENT_STATUS } from "@/lib/domain";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState, LoadingState } from "@/components/shared/async-state";
 import { formatDate, initials, maskDocument, maskPhone } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
@@ -186,13 +186,14 @@ function ClientsPage() {
       </div>
 
       {query.isLoading ? (
-        <Card>
-          <CardContent className="space-y-3 p-6">
-            {[0, 1, 2, 3, 4].map((row) => (
-              <Skeleton key={row} className="h-12 w-full" />
-            ))}
-          </CardContent>
-        </Card>
+        <LoadingState label="Carregando clientes" rows={5} />
+      ) : query.isError ? (
+        <ErrorState
+          title="Não foi possível carregar os clientes"
+          description="Verifique sua conexão e tente carregar a carteira novamente."
+          onRetry={() => void query.refetch()}
+          retrying={query.isFetching}
+        />
       ) : rows.length === 0 ? (
         <Card>
           <CardContent className="p-0">
