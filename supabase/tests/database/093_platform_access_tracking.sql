@@ -31,7 +31,10 @@ VALUES
 ('1e930000-0000-0000-0000-000000000002','access-admin@fluxa.test','{}','authenticated','authenticated','',now());
 INSERT INTO public.profiles(id,full_name,email) VALUES
 ('1e930000-0000-0000-0000-000000000001','Advogado Testador','access-owner@fluxa.test'),
-('1e930000-0000-0000-0000-000000000002','Admin FLUXA','access-admin@fluxa.test');
+('1e930000-0000-0000-0000-000000000002','Admin FLUXA','access-admin@fluxa.test')
+ON CONFLICT (id) DO UPDATE SET
+  full_name=excluded.full_name,
+  email=excluded.email;
 INSERT INTO public.organizations(
   id,legal_name,created_by,commercial_status,trial_started_at,trial_ends_at
 ) VALUES
