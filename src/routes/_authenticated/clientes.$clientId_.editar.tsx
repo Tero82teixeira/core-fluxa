@@ -92,15 +92,16 @@ function EditClient() {
     try {
       await updateClient.mutateAsync({ id: clientId, values: toClientPayload(values) });
       toast.success("Cadastro atualizado.");
-      navigate({ to: "/clientes/$clientId", params: { clientId } });
+      return true;
     } catch (error) {
       const message = describeError(error, "cliente");
       if (/duplic|já existe|unique/i.test(message)) {
         setExternalErrors({ document: duplicateDocumentMessage(values.person_type) });
         toast.error(duplicateDocumentMessage(values.person_type));
-        return;
+        return false;
       }
       toast.error(message);
+      return false;
     }
   };
 
@@ -117,6 +118,7 @@ function EditClient() {
               pending={updateClient.isPending}
               externalErrors={externalErrors}
               onSubmit={submit}
+              onSaved={() => navigate({ to: "/clientes/$clientId", params: { clientId } })}
               onCancel={() => navigate({ to: "/clientes/$clientId", params: { clientId } })}
             />
           </div>

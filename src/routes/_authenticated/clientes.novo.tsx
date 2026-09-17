@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { useWorkspace } from "@/lib/workspace";
 import { usePermissions } from "@/lib/permissions";
@@ -41,25 +41,28 @@ function NewClient() {
   const permissions = usePermissions();
   const createClient = useCreateClient(organizationId);
   const [externalErrors, setExternalErrors] = useState<FieldErrors>({});
+  const createdClientId = useRef<string | null>(null);
 
   const submit = async (values: ClientFormValues) => {
     if (!organizationId) {
       toast.error("Selecione uma empresa antes de cadastrar clientes.");
-      return;
+      return false;
     }
     setExternalErrors({});
     try {
       const created = await createClient.mutateAsync(toClientPayload(values));
+      createdClientId.current = created.id;
       toast.success("Cliente cadastrado.");
-      navigate({ to: "/clientes/$clientId", params: { clientId: created.id } });
+      return true;
     } catch (error) {
       const message = describeError(error, "cliente");
       if (/duplic|já existe|unique/i.test(message)) {
         setExternalErrors({ document: duplicateDocumentMessage(values.person_type) });
         toast.error(duplicateDocumentMessage(values.person_type));
-        return;
+        return false;
       }
       toast.error(message);
+      return false;
     }
   };
 
@@ -88,6 +91,11 @@ function NewClient() {
               pending={createClient.isPending}
               externalErrors={externalErrors}
               onSubmit={submit}
+              onSaved={() => {
+                const createdId = createdClientId.current;
+                if (createdId)
+                  navigate({ to: "/clientes/$clientId", params: { clientId: createdId } });
+              }}
               onCancel={() => navigate({ to: "/clientes" })}
             />
           </div>
