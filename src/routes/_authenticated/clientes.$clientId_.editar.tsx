@@ -25,7 +25,10 @@ export const Route = createFileRoute("/_authenticated/clientes/$clientId_/editar
       { title: "Editar cliente — FLUXA" },
       { name: "description", content: "Atualize dados cadastrais, contato e endereço do cliente." },
       { property: "og:title", content: "Editar cliente — FLUXA" },
-      { property: "og:description", content: "Atualize dados cadastrais, contato e endereço do cliente." },
+      {
+        property: "og:description",
+        content: "Atualize dados cadastrais, contato e endereço do cliente.",
+      },
     ],
   }),
   component: EditClient,
@@ -104,7 +107,7 @@ function EditClient() {
   return (
     <div className="mx-auto w-full max-w-4xl p-4 sm:p-6">
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <h1 className="page-title">Editar cliente</h1>
           <p className="page-subtitle mt-1">{data.name}</p>
           <div className="mt-6">

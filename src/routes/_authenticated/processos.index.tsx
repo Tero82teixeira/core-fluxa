@@ -5,7 +5,12 @@ import { toast } from "sonner";
 
 import { useWorkspace } from "@/lib/workspace";
 import { usePermissions } from "@/lib/permissions";
-import { useClients, useProcesses, useProcessesPage, type ProcessFilters } from "@/hooks/use-operations";
+import {
+  useClients,
+  useProcesses,
+  useProcessesPage,
+  type ProcessFilters,
+} from "@/hooks/use-operations";
 import { useMoveProcessStage, useServiceTypes } from "@/hooks/use-mutations";
 import { describeError } from "@/lib/errors";
 import {
@@ -21,8 +26,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
 
@@ -37,9 +55,15 @@ export const Route = createFileRoute("/_authenticated/processos/")({
   head: () => ({
     meta: [
       { title: "Processos — FLUXA" },
-      { name: "description", content: "Kanban e lista de processos com etapas, prazos, prioridades e responsáveis." },
+      {
+        name: "description",
+        content: "Kanban e lista de processos com etapas, prazos, prioridades e responsáveis.",
+      },
       { property: "og:title", content: "Processos — FLUXA" },
-      { property: "og:description", content: "Kanban e lista de processos com etapas, prazos, prioridades e responsáveis." },
+      {
+        property: "og:description",
+        content: "Kanban e lista de processos com etapas, prazos, prioridades e responsáveis.",
+      },
     ],
   }),
   component: ProcessesPage,
@@ -106,7 +130,19 @@ function ProcessesPage() {
       page,
       pageSize: PAGE_SIZE,
     }),
-    [debounced, clientId, serviceTypeId, stage, priority, owner, financial, deadline, archived, sort, page],
+    [
+      debounced,
+      clientId,
+      serviceTypeId,
+      stage,
+      priority,
+      owner,
+      financial,
+      deadline,
+      archived,
+      sort,
+      page,
+    ],
   );
 
   const list = useProcessesPage(organizationId, filters);
@@ -116,7 +152,10 @@ function ProcessesPage() {
 
   const all = board.data ?? [];
   const owners = useMemo(
-    () => Array.from(new Set(all.map((process) => process.owner_name).filter(Boolean) as string[])).sort(),
+    () =>
+      Array.from(
+        new Set(all.map((process) => process.owner_name).filter(Boolean) as string[]),
+      ).sort(),
     [all],
   );
 
@@ -164,26 +203,35 @@ function ProcessesPage() {
     const process = all.find((item) => item.id === id);
     if (!process || process.stage === target) return;
     try {
-      await moveStage.mutateAsync({ processId: process.id, from: process.stage, to: target, code: process.code });
+      await moveStage.mutateAsync({
+        processId: process.id,
+        from: process.stage,
+        to: target,
+        code: process.code,
+      });
       toast.success(`${process.code} movido para ${PROCESS_STAGE[target].label}.`);
     } catch (error) {
       toast.error(describeError(error, "etapa"));
     }
   };
 
-  const resetPage = <T,>(setter: (value: T) => void) => (value: T) => {
-    setter(value);
-    setPage(0);
-  };
+  const resetPage =
+    <T,>(setter: (value: T) => void) =>
+    (value: T) => {
+      setter(value);
+      setPage(0);
+    };
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 sm:p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h1 className="page-title">Processos</h1>
-          <p className="page-subtitle">Etapas, prazos, prioridades e responsáveis em um único painel.</p>
+          <p className="page-subtitle">
+            Etapas, prazos, prioridades e responsáveis em um único painel.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <Button
             variant="outline"
             size="icon"
@@ -195,7 +243,12 @@ function ProcessesPage() {
             {view === "kanban" ? <Rows3 className="size-4" /> : <LayoutGrid className="size-4" />}
           </Button>
           {permissions.canCreate && (
-            <Button onClick={() => navigate({ to: "/processos/novo" })}>Novo processo</Button>
+            <Button
+              className="flex-1 sm:flex-none"
+              onClick={() => navigate({ to: "/processos/novo" })}
+            >
+              Novo processo
+            </Button>
           )}
         </div>
       </header>
@@ -215,7 +268,9 @@ function ProcessesPage() {
           <SelectContent>
             <SelectItem value="todos">Todos os clientes</SelectItem>
             {(clients.data ?? []).map((client) => (
-              <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -226,7 +281,9 @@ function ProcessesPage() {
           <SelectContent>
             <SelectItem value="todos">Todos os serviços</SelectItem>
             {(serviceTypes.data ?? []).map((type) => (
-              <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+              <SelectItem key={type.id} value={type.id}>
+                {type.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -237,7 +294,9 @@ function ProcessesPage() {
           <SelectContent>
             <SelectItem value="todos">Todas as etapas</SelectItem>
             {Object.entries(PROCESS_STAGE).map(([key, meta]) => (
-              <SelectItem key={key} value={key}>{meta.label}</SelectItem>
+              <SelectItem key={key} value={key}>
+                {meta.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -248,7 +307,9 @@ function ProcessesPage() {
           <SelectContent>
             <SelectItem value="todos">Todas prioridades</SelectItem>
             {Object.entries(PRIORITY).map(([key, meta]) => (
-              <SelectItem key={key} value={key}>{meta.label}</SelectItem>
+              <SelectItem key={key} value={key}>
+                {meta.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -259,22 +320,34 @@ function ProcessesPage() {
           <SelectContent>
             <SelectItem value="todos">Todos os responsáveis</SelectItem>
             {owners.map((name) => (
-              <SelectItem key={name} value={name}>{name}</SelectItem>
+              <SelectItem key={name} value={name}>
+                {name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={financial} onValueChange={resetPage(setFinancial)}>
-          <SelectTrigger aria-label="Filtrar por situação financeira" className="h-10 w-full sm:w-48">
+          <SelectTrigger
+            aria-label="Filtrar por situação financeira"
+            className="h-10 w-full sm:w-48"
+          >
             <SelectValue placeholder="Financeiro" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todo o financeiro</SelectItem>
             {Object.entries(FINANCIAL_STATUS).map(([key, meta]) => (
-              <SelectItem key={key} value={key}>{meta.label}</SelectItem>
+              <SelectItem key={key} value={key}>
+                {meta.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={deadline} onValueChange={resetPage((value: string) => setDeadline(value as ProcessFilters["deadline"]))}>
+        <Select
+          value={deadline}
+          onValueChange={resetPage((value: string) =>
+            setDeadline(value as ProcessFilters["deadline"]),
+          )}
+        >
           <SelectTrigger aria-label="Filtrar por prazo" className="h-10 w-full sm:w-44">
             <SelectValue placeholder="Prazo" />
           </SelectTrigger>
@@ -287,7 +360,10 @@ function ProcessesPage() {
           </SelectContent>
         </Select>
         {view === "tabela" && (
-          <Select value={sort} onValueChange={resetPage((value: string) => setSort(value as ProcessFilters["sort"]))}>
+          <Select
+            value={sort}
+            onValueChange={resetPage((value: string) => setSort(value as ProcessFilters["sort"]))}
+          >
             <SelectTrigger aria-label="Ordenar processos" className="h-10 w-full sm:w-52">
               <SelectValue placeholder="Ordenar" />
             </SelectTrigger>
@@ -305,7 +381,7 @@ function ProcessesPage() {
             setPage(0);
             setView("tabela");
           }}
-          className="sm:ml-auto"
+          className="w-full sm:ml-auto sm:w-auto"
         >
           {archived ? "Vendo arquivados" : "Ver arquivados"}
         </Button>
@@ -314,7 +390,8 @@ function ProcessesPage() {
       {view === "kanban" ? (
         <>
           <p className="helper-text">
-            Arraste os cards entre as colunas — cada movimentação é registrada na linha do tempo do processo.
+            Arraste os cards entre as colunas — cada movimentação é registrada na linha do tempo do
+            processo.
           </p>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -331,7 +408,9 @@ function ProcessesPage() {
                     event.preventDefault();
                     setDropTarget(column);
                   }}
-                  onDragLeave={() => setDropTarget((current) => (current === column ? null : current))}
+                  onDragLeave={() =>
+                    setDropTarget((current) => (current === column ? null : current))
+                  }
                   onDrop={() => void drop(column)}
                   className={`min-w-0 rounded-xl border bg-card transition ${
                     dropTarget === column
@@ -367,7 +446,9 @@ function ProcessesPage() {
                           onDragStart={() => setDragging(process.id)}
                           onDragEnd={() => setDragging(null)}
                           className={`rounded-lg border border-border bg-background p-3.5 transition ${
-                            dragging === process.id ? "opacity-50" : "hover:border-brand/40 hover:shadow-sm"
+                            dragging === process.id
+                              ? "opacity-50"
+                              : "hover:border-brand/40 hover:shadow-sm"
                           }`}
                         >
                           <div className="flex items-start gap-2">
@@ -382,9 +463,12 @@ function ProcessesPage() {
                               params={{ processId: process.id }}
                               className="min-w-0 flex-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
-                              <p className="truncate text-sm font-semibold">{process.clients?.name}</p>
+                              <p className="truncate text-sm font-semibold">
+                                {process.clients?.name}
+                              </p>
                               <p className="truncate text-xs text-muted-foreground">
-                                {process.code} · {process.title ?? process.service_types?.name ?? "Processo"}
+                                {process.code} ·{" "}
+                                {process.title ?? process.service_types?.name ?? "Processo"}
                               </p>
                               <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                                 <StatusBadge
@@ -404,7 +488,9 @@ function ProcessesPage() {
                               </div>
                               <div className="mt-2.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                                 <span className="truncate">{process.owner_name ?? "—"}</span>
-                                <span className="shrink-0">Prazo {formatDate(process.due_date)}</span>
+                                <span className="shrink-0">
+                                  Prazo {formatDate(process.due_date)}
+                                </span>
                               </div>
                             </Link>
                           </div>
@@ -441,7 +527,7 @@ function ProcessesPage() {
         </Card>
       ) : (
         <>
-          <Card>
+          <Card className="hidden md:block">
             <CardContent className="overflow-x-auto p-0">
               <Table>
                 <TableHeader>
@@ -498,7 +584,10 @@ function ProcessesPage() {
                   ))}
                   {rows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                      <TableCell
+                        colSpan={7}
+                        className="py-10 text-center text-sm text-muted-foreground"
+                      >
                         Nenhum processo corresponde aos filtros aplicados.
                       </TableCell>
                     </TableRow>
@@ -508,15 +597,70 @@ function ProcessesPage() {
             </CardContent>
           </Card>
 
+          <div className="grid gap-3 md:hidden">
+            {rows.map((process) => (
+              <Card key={process.id}>
+                <CardContent className="p-4">
+                  <Link
+                    to="/processos/$processId"
+                    params={{ processId: process.id }}
+                    className="block min-w-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold">{process.code}</span>
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                          {process.clients?.name ?? "Cliente não informado"}
+                        </span>
+                      </span>
+                      <StatusBadge
+                        label={PROCESS_STAGE[process.stage].label}
+                        tone={PROCESS_STAGE[process.stage].tone}
+                      />
+                    </div>
+                    <p className="mt-3 line-clamp-2 text-sm">
+                      {process.title ?? process.service_types?.name ?? "Processo"}
+                    </p>
+                    <dl className="mt-3 grid grid-cols-2 gap-2 border-t pt-3 text-xs">
+                      <div className="min-w-0">
+                        <dt className="text-muted-foreground">Responsável</dt>
+                        <dd className="truncate font-medium">{process.owner_name ?? "—"}</dd>
+                      </div>
+                      <div className="text-right">
+                        <dt className="text-muted-foreground">Prazo</dt>
+                        <dd className="font-medium">{formatDate(process.due_date)}</dd>
+                      </div>
+                    </dl>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+            {rows.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                  Nenhum processo corresponde aos filtros aplicados.
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="helper-text">
               {count} {count === 1 ? "processo" : "processos"} · página {page + 1} de {pages}
             </p>
             <div className="flex gap-2">
-              <Button variant="outline" disabled={page === 0} onClick={() => setPage((value) => value - 1)}>
+              <Button
+                variant="outline"
+                disabled={page === 0}
+                onClick={() => setPage((value) => value - 1)}
+              >
                 Anterior
               </Button>
-              <Button variant="outline" disabled={page + 1 >= pages} onClick={() => setPage((value) => value + 1)}>
+              <Button
+                variant="outline"
+                disabled={page + 1 >= pages}
+                onClick={() => setPage((value) => value + 1)}
+              >
                 Próxima
               </Button>
             </div>

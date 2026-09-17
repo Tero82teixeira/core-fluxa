@@ -10,8 +10,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CLIENT_STATUS } from "@/lib/domain";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -22,9 +35,15 @@ export const Route = createFileRoute("/_authenticated/clientes/")({
   head: () => ({
     meta: [
       { title: "Clientes — FLUXA" },
-      { name: "description", content: "Carteira de clientes com busca, filtros e histórico de relacionamento." },
+      {
+        name: "description",
+        content: "Carteira de clientes com busca, filtros e histórico de relacionamento.",
+      },
       { property: "og:title", content: "Clientes — FLUXA" },
-      { property: "og:description", content: "Carteira de clientes com busca, filtros e histórico de relacionamento." },
+      {
+        property: "og:description",
+        content: "Carteira de clientes com busca, filtros e histórico de relacionamento.",
+      },
     ],
   }),
   component: ClientsPage,
@@ -55,7 +74,16 @@ function ClientsPage() {
   }, [term]);
 
   const filters = useMemo<ClientFilters>(
-    () => ({ term: debounced, status, personType, owner, sort, archived, page, pageSize: PAGE_SIZE }),
+    () => ({
+      term: debounced,
+      status,
+      personType,
+      owner,
+      sort,
+      archived,
+      page,
+      pageSize: PAGE_SIZE,
+    }),
     [debounced, status, personType, owner, sort, archived, page],
   );
 
@@ -64,22 +92,25 @@ function ClientsPage() {
   const count = query.data?.count ?? 0;
   const pages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
-  const resetPage = <T,>(setter: (value: T) => void) => (value: T) => {
-    setter(value);
-    setPage(0);
-  };
+  const resetPage =
+    <T,>(setter: (value: T) => void) =>
+    (value: T) => {
+      setter(value);
+      setPage(0);
+    };
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 p-4 sm:p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h1 className="page-title">Clientes</h1>
           <p className="page-subtitle">
-            {count} {count === 1 ? "cliente encontrado" : "clientes encontrados"} com os filtros atuais.
+            {count} {count === 1 ? "cliente encontrado" : "clientes encontrados"} com os filtros
+            atuais.
           </p>
         </div>
         {permissions.canCreate && (
-          <Button asChild>
+          <Button className="w-full sm:w-auto" asChild>
             <Link to="/clientes/novo">Novo cliente</Link>
           </Button>
         )}
@@ -100,7 +131,9 @@ function ClientsPage() {
           <SelectContent>
             <SelectItem value="todos">Todos os status</SelectItem>
             {Object.entries(CLIENT_STATUS).map(([key, meta]) => (
-              <SelectItem key={key} value={key}>{meta.label}</SelectItem>
+              <SelectItem key={key} value={key}>
+                {meta.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -121,11 +154,16 @@ function ClientsPage() {
           <SelectContent>
             <SelectItem value="todos">Todos os responsáveis</SelectItem>
             {(owners.data ?? []).map((name) => (
-              <SelectItem key={name} value={name}>{name}</SelectItem>
+              <SelectItem key={name} value={name}>
+                {name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={sort} onValueChange={resetPage((value: string) => setSort(value as ClientFilters["sort"]))}>
+        <Select
+          value={sort}
+          onValueChange={resetPage((value: string) => setSort(value as ClientFilters["sort"]))}
+        >
           <SelectTrigger aria-label="Ordenar lista" className="h-10 w-full sm:w-52">
             <SelectValue placeholder="Ordenar" />
           </SelectTrigger>
@@ -141,7 +179,7 @@ function ClientsPage() {
             setArchived(!archived);
             setPage(0);
           }}
-          className="sm:ml-auto"
+          className="w-full sm:ml-auto sm:w-auto"
         >
           {archived ? "Vendo arquivados" : "Ver arquivados"}
         </Button>
@@ -190,10 +228,14 @@ function ClientsPage() {
                           className="flex min-w-0 items-center gap-3"
                         >
                           <Avatar className="size-8">
-                            <AvatarFallback className="text-xs">{initials(client.name)}</AvatarFallback>
+                            <AvatarFallback className="text-xs">
+                              {initials(client.name)}
+                            </AvatarFallback>
                           </Avatar>
                           <span className="min-w-0">
-                            <span className="block truncate text-sm font-medium">{client.name}</span>
+                            <span className="block truncate text-sm font-medium">
+                              {client.name}
+                            </span>
                             <span className="block truncate text-xs text-muted-foreground">
                               {client.person_type === "pj" ? "Pessoa jurídica" : "Pessoa física"} ·{" "}
                               {client.city ?? "—"}/{client.state ?? "—"}
@@ -233,7 +275,11 @@ function ClientsPage() {
             {rows.map((client) => (
               <Card key={client.id}>
                 <CardContent className="p-4">
-                  <Link to="/clientes/$clientId" params={{ clientId: client.id }} className="flex items-center gap-3">
+                  <Link
+                    to="/clientes/$clientId"
+                    params={{ clientId: client.id }}
+                    className="flex items-center gap-3"
+                  >
                     <Avatar className="size-9">
                       <AvatarFallback className="text-xs">{initials(client.name)}</AvatarFallback>
                     </Avatar>
@@ -258,7 +304,11 @@ function ClientsPage() {
               Página {page + 1} de {pages}
             </p>
             <div className="flex gap-2">
-              <Button variant="outline" disabled={page === 0} onClick={() => setPage((value) => value - 1)}>
+              <Button
+                variant="outline"
+                disabled={page === 0}
+                onClick={() => setPage((value) => value - 1)}
+              >
                 Anterior
               </Button>
               <Button
