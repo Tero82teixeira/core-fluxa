@@ -40,6 +40,7 @@ import {
   nextTaskArchiveView,
   taskDateKey,
   taskIndicators,
+  type TaskDeadlineFilter,
 } from "@/lib/tasks";
 import { describeError } from "@/lib/errors";
 import { formatDate, formatDateOnly } from "@/lib/format";
@@ -60,6 +61,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ErrorState, LoadingState } from "@/components/shared/async-state";
+import { ActiveFilters } from "@/components/shared/active-filters";
+import { clearRememberedFilters, useFilterMemory } from "@/hooks/use-filter-memory";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 export const Route = createFileRoute("/_authenticated/tarefas")({ component: TasksPage });
 type View = "list" | "board" | "calendar";
@@ -77,6 +81,23 @@ const blank: TaskFormValues = {
   monitoring_item_id: "",
 };
 
+const DISCARD_TASK_MESSAGE = "Esta tarefa possui alterações não salvas. Deseja descartá-las?";
+
+function taskFormFingerprint(values: TaskFormValues) {
+  return JSON.stringify({
+    title: values.title ?? "",
+    description: values.description ?? "",
+    priority: values.priority,
+    status: values.status ?? "pendente",
+    due_at: values.due_at?.slice(0, 10) ?? "",
+    assignee_id: values.assignee_id ?? "",
+    client_id: values.client_id ?? "",
+    process_id: values.process_id ?? "",
+    document_id: values.document_id ?? "",
+    monitoring_item_id: values.monitoring_item_id ?? "",
+  });
+}
+
 function TasksPage() {
   const { organizationId } = useWorkspace();
   const permissions = usePermissions();
@@ -88,24 +109,100 @@ function TasksPage() {
   const changeStatus = useChangeTaskStatus(organizationId);
   const archive = useArchiveTask(organizationId);
   const [view, setView] = useState<View>("list");
+  const [term, setTerm] = useState("");
   const [status, setStatus] = useState<TaskStatus | "open" | "all">("open");
   const [priority, setPriority] = useState<PriorityLevel | "all">("all");
+  const [assignee, setAssignee] = useState("all");
+  const [deadline, setDeadline] = useState<TaskDeadlineFilter>("all");
   const [showArchived, setShowArchived] = useState(false);
   const [editing, setEditing] = useState<TaskRow | "new" | null>(null);
   const [detail, setDetail] = useState<TaskRow | null>(null);
   const [form, setForm] = useState<TaskFormValues>(blank);
-  const rows = filterTasks(tasks.data ?? [], { status, priority, archived: showArchived });
+  const [initialForm, setInitialForm] = useState<TaskFormValues>(blank);
+  const filterMemoryScope = `tasks:${organizationId ?? "none"}`;
+  const rememberedFilters = useMemo(
+    () => ({ view, term, status, priority, assignee, deadline, showArchived }),
+    [view, term, status, priority, assignee, deadline, showArchived],
+  );
+
+  useFilterMemory(filterMemoryScope, rememberedFilters, (remembered) => {
+    if (["list", "board", "calendar"].includes(String(remembered.view)))
+      setView(remembered.view as View);
+    if (typeof remembered.term === "string") setTerm(remembered.term);
+    if (
+      typeof remembered.status === "string" &&
+      (["open", "all"].includes(remembered.status) || remembered.status in TASK_STATUS)
+    )
+      setStatus(remembered.status as TaskStatus | "open" | "all");
+    if (
+      typeof remembered.priority === "string" &&
+      (remembered.priority === "all" || remembered.priority in PRIORITY)
+    )
+      setPriority(remembered.priority as PriorityLevel | "all");
+    if (typeof remembered.assignee === "string") setAssignee(remembered.assignee);
+    if (["all", "overdue", "today", "week", "without_due"].includes(String(remembered.deadline)))
+      setDeadline(remembered.deadline as TaskDeadlineFilter);
+    if (typeof remembered.showArchived === "boolean") setShowArchived(remembered.showArchived);
+  });
+
+  const rows = filterTasks(tasks.data ?? [], {
+    term,
+    status,
+    priority,
+    assignee,
+    deadline,
+    archived: showArchived,
+  });
   const indicators = taskIndicators(tasks.data ?? []);
   const columns = groupTasksByStatus(rows);
   const owners = team.data ?? [];
+  const assigneeNames = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          [
+            ...owners.map((member) => member.full_name ?? member.email),
+            ...(tasks.data ?? []).map((task) => task.assignee_name),
+          ].filter(Boolean) as string[],
+        ),
+      ).sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [owners, tasks.data],
+  );
+  const taskFormDirty =
+    Boolean(editing) && taskFormFingerprint(form) !== taskFormFingerprint(initialForm);
+  const markTaskSaved = useUnsavedChanges(taskFormDirty);
+  const activeFilterCount = [
+    term.trim().length > 0,
+    status !== "open",
+    priority !== "all",
+    assignee !== "all",
+    deadline !== "all",
+    showArchived,
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    clearRememberedFilters(filterMemoryScope);
+    setTerm("");
+    setStatus("open");
+    setPriority("all");
+    setAssignee("all");
+    setDeadline("all");
+    setShowArchived(false);
+  };
   const toggleArchived = () => {
     const next = nextTaskArchiveView(showArchived);
     setShowArchived(next.archived);
     setStatus(next.status);
   };
   const openForm = (task?: TaskRow) => {
+    const nextForm = task ? { ...task } : { ...blank };
     setEditing(task ?? "new");
-    setForm(task ? { ...task } : blank);
+    setForm(nextForm);
+    setInitialForm(nextForm);
+  };
+  const closeForm = () => {
+    if (taskFormDirty && !window.confirm(DISCARD_TASK_MESSAGE)) return;
+    setEditing(null);
   };
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -116,6 +213,7 @@ function TasksPage() {
         id: editing === "new" ? undefined : editing?.id,
         values: { ...form, title: form.title.trim() },
       });
+      markTaskSaved();
       toast.success(editing === "new" ? "Tarefa criada." : "Tarefa atualizada.");
       setEditing(null);
     } catch (error) {
@@ -181,8 +279,15 @@ function TasksPage() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
+        <Input
+          value={term}
+          onChange={(event) => setTerm(event.target.value)}
+          aria-label="Buscar tarefas"
+          placeholder="Buscar tarefa, cliente, processo ou responsável"
+          className="h-10 w-full lg:max-w-xs"
+        />
         <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-          <SelectTrigger className="w-full lg:w-44">
+          <SelectTrigger aria-label="Filtrar tarefas por status" className="w-full lg:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -196,7 +301,7 @@ function TasksPage() {
           </SelectContent>
         </Select>
         <Select value={priority} onValueChange={(v) => setPriority(v as typeof priority)}>
-          <SelectTrigger className="w-full lg:w-44">
+          <SelectTrigger aria-label="Filtrar tarefas por prioridade" className="w-full lg:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -208,6 +313,35 @@ function TasksPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={assignee} onValueChange={setAssignee}>
+          <SelectTrigger aria-label="Filtrar tarefas por responsável" className="w-full lg:w-48">
+            <SelectValue placeholder="Responsável" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os responsáveis</SelectItem>
+            <SelectItem value="unassigned">Sem responsável</SelectItem>
+            {assigneeNames.map((name) => (
+              <SelectItem key={name} value={name}>
+                {name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={deadline}
+          onValueChange={(value) => setDeadline(value as TaskDeadlineFilter)}
+        >
+          <SelectTrigger aria-label="Filtrar tarefas por prazo" className="w-full lg:w-44">
+            <SelectValue placeholder="Prazo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Qualquer prazo</SelectItem>
+            <SelectItem value="overdue">Atrasadas</SelectItem>
+            <SelectItem value="today">Vencem hoje</SelectItem>
+            <SelectItem value="week">Próximos 7 dias</SelectItem>
+            <SelectItem value="without_due">Sem prazo</SelectItem>
+          </SelectContent>
+        </Select>
         <Button
           className="w-full sm:col-span-2 lg:w-auto"
           variant={showArchived ? "secondary" : "outline"}
@@ -217,6 +351,13 @@ function TasksPage() {
           {showArchived ? "Arquivadas" : "Ver arquivadas"}
         </Button>
       </div>
+      <ActiveFilters count={activeFilterCount} onClear={clearFilters} />
+      {!tasks.isLoading && !tasks.isError && (
+        <p className="helper-text" aria-live="polite">
+          {rows.length} {rows.length === 1 ? "tarefa encontrada" : "tarefas encontradas"} com os
+          filtros atuais.
+        </p>
+      )}
       {tasks.isLoading ? (
         <LoadingState label="Carregando tarefas" rows={5} />
       ) : tasks.isError ? (
@@ -314,7 +455,7 @@ function TasksPage() {
       )}
       <TaskForm
         open={Boolean(editing)}
-        onOpenChange={(o: boolean) => !o && setEditing(null)}
+        onOpenChange={(o: boolean) => !o && closeForm()}
         form={form}
         setForm={setForm}
         onSubmit={submit}
@@ -322,6 +463,7 @@ function TasksPage() {
         processes={processes.data ?? []}
         owners={owners}
         pending={save.isPending}
+        dirty={taskFormDirty}
       />
       <TaskDetail
         task={detail}
@@ -387,12 +529,16 @@ function TaskForm({
   processes,
   owners,
   pending,
+  dirty,
 }: any) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{form.id ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
+          <div className="flex flex-wrap items-center gap-2">
+            <DialogTitle>{form.id ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
+            {dirty && <Badge variant="secondary">Alterações não salvas</Badge>}
+          </div>
         </DialogHeader>
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
           <div className="sm:col-span-2">
