@@ -59,6 +59,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { ErrorState, LoadingState } from "@/components/shared/async-state";
 
 export const Route = createFileRoute("/_authenticated/tarefas")({ component: TasksPage });
 type View = "list" | "board" | "calendar";
@@ -122,6 +123,7 @@ function TasksPage() {
     }
   };
   const updateStatus = async (task: TaskRow, next: TaskStatus) => {
+    if (changeStatus.isPending) return;
     try {
       await changeStatus.mutateAsync({ task, status: next });
       toast.success(next === "concluida" ? "Tarefa concluída." : "Status atualizado.");
@@ -216,9 +218,14 @@ function TasksPage() {
         </Button>
       </div>
       {tasks.isLoading ? (
-        <Card>
-          <CardContent className="p-8">Carregando tarefas…</CardContent>
-        </Card>
+        <LoadingState label="Carregando tarefas" rows={5} />
+      ) : tasks.isError ? (
+        <ErrorState
+          title="Não foi possível carregar as tarefas"
+          description="Tente novamente para recuperar a lista, o quadro e a agenda."
+          onRetry={() => void tasks.refetch()}
+          retrying={tasks.isFetching}
+        />
       ) : view === "board" ? (
         <div className="grid gap-3 lg:grid-cols-4">
           {TASK_BOARD_STATUSES.map((col) => (
@@ -251,7 +258,7 @@ function TasksPage() {
                     className="mt-1 size-4 sm:mt-0"
                     type="checkbox"
                     aria-label={`Concluir ${task.title}`}
-                    disabled={!permissions.canManageTasks}
+                    disabled={!permissions.canManageTasks || changeStatus.isPending}
                     checked={task.status === "concluida"}
                     onChange={(e) =>
                       updateStatus(task, e.target.checked ? "concluida" : "pendente")
@@ -275,6 +282,7 @@ function TasksPage() {
                           size="icon"
                           variant="ghost"
                           aria-label="Editar"
+                          disabled={save.isPending || archive.isPending}
                           onClick={() => openForm(task)}
                         >
                           <Pencil className="size-4" />
@@ -283,6 +291,7 @@ function TasksPage() {
                           size="icon"
                           variant="ghost"
                           aria-label={task.archived_at ? "Restaurar" : "Arquivar"}
+                          disabled={archive.isPending}
                           onClick={() => archive.mutate({ task, archived: !task.archived_at })}
                         >
                           {task.archived_at ? (
@@ -314,7 +323,12 @@ function TasksPage() {
         owners={owners}
         pending={save.isPending}
       />
-      <TaskDetail task={detail} onClose={() => setDetail(null)} onStatus={updateStatus} />
+      <TaskDetail
+        task={detail}
+        onClose={() => setDetail(null)}
+        onStatus={updateStatus}
+        statusPending={changeStatus.isPending}
+      />
     </div>
   );
 }
@@ -521,10 +535,12 @@ function TaskDetail({
   task,
   onClose,
   onStatus,
+  statusPending,
 }: {
   task: TaskRow | null;
   onClose: () => void;
   onStatus: (t: TaskRow, s: TaskStatus) => void;
+  statusPending: boolean;
 }) {
   const { organizationId } = useWorkspace();
   const comments = useTaskComments(task?.id ?? null);
@@ -542,7 +558,13 @@ function TaskDetail({
             <div className="flex flex-wrap gap-2">
               <StatusBadge {...TASK_STATUS[task.status]} />
               {TASK_BOARD_STATUSES.map((s) => (
-                <Button key={s} size="sm" variant="outline" onClick={() => onStatus(task, s)}>
+                <Button
+                  key={s}
+                  size="sm"
+                  variant="outline"
+                  disabled={statusPending}
+                  onClick={() => onStatus(task, s)}
+                >
                   {TASK_STATUS[s].label}
                 </Button>
               ))}

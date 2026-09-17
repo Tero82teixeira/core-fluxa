@@ -25,7 +25,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -42,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { ErrorState, LoadingState } from "@/components/shared/async-state";
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
 
 type Search = { etapa?: string; responsavel?: string; cliente?: string };
@@ -387,7 +387,16 @@ function ProcessesPage() {
         </Button>
       </div>
 
-      {view === "kanban" ? (
+      {view === "kanban" ? board.isLoading ? (
+        <LoadingState label="Carregando quadro de processos" rows={5} />
+      ) : board.isError ? (
+        <ErrorState
+          title="Não foi possível carregar o quadro de processos"
+          description="Tente novamente para recuperar as etapas e os processos do quadro."
+          onRetry={() => void board.refetch()}
+          retrying={board.isFetching}
+        />
+      ) : (
         <>
           <p className="helper-text">
             Arraste os cards entre as colunas — cada movimentação é registrada na linha do tempo do
@@ -518,13 +527,14 @@ function ProcessesPage() {
           )}
         </>
       ) : list.isLoading ? (
-        <Card>
-          <CardContent className="space-y-3 p-6">
-            {[0, 1, 2, 3, 4].map((row) => (
-              <Skeleton key={row} className="h-12 w-full" />
-            ))}
-          </CardContent>
-        </Card>
+        <LoadingState label="Carregando lista de processos" rows={5} />
+      ) : list.isError ? (
+        <ErrorState
+          title="Não foi possível carregar a lista de processos"
+          description="Tente novamente para recuperar os processos com os filtros atuais."
+          onRetry={() => void list.refetch()}
+          retrying={list.isFetching}
+        />
       ) : (
         <>
           <Card className="hidden md:block">
