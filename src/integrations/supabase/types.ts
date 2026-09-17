@@ -4495,6 +4495,48 @@ export type Database = {
           },
         ]
       }
+      organization_access_sessions: {
+        Row: {
+          first_access_at: string
+          id: string
+          last_access_at: string
+          organization_id: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          first_access_at?: string
+          id?: string
+          last_access_at?: string
+          organization_id: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          first_access_at?: string
+          id?: string
+          last_access_at?: string
+          organization_id?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_access_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_access_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           automatic_task_capacity: number
@@ -7316,6 +7358,7 @@ export type Database = {
       platform_organizations: {
         Args: never
         Returns: {
+          access_count: number
           archived_at: string
           client_count: number
           commercial_status: string
@@ -7323,9 +7366,13 @@ export type Database = {
           days_remaining: number
           document_count: number
           effective_status: string
+          first_access_at: string
           follow_up_notes: string
           follow_up_status: string
           last_activity_at: string
+          last_access_at: string
+          last_access_user_email: string
+          last_access_user_name: string
           last_contact_at: string
           legal_name: string
           next_contact_at: string
@@ -7341,6 +7388,10 @@ export type Database = {
           trial_ends_at: string
           trial_started_at: string
         }[]
+      }
+      record_organization_access: {
+        Args: { _organization_id: string }
+        Returns: undefined
       }
       platform_support_open_count: { Args: never; Returns: number }
       platform_support_requests: {
