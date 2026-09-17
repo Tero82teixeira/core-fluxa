@@ -45,6 +45,14 @@ describe("módulo de tarefas", () => {
     assert.equal(isTaskOverdue(task(), new Date("2026-08-02")), true));
   test("não marca tarefa concluída como atrasada", () =>
     assert.equal(isTaskOverdue(task({ status: "concluida" }), new Date("2026-08-02")), false));
+  test("não marca como atrasada uma tarefa que vence hoje", () =>
+    assert.equal(
+      isTaskOverdue(
+        task({ due_at: "2026-08-02T00:00:00.000Z" }),
+        new Date("2026-08-02T18:00:00.000Z"),
+      ),
+      false,
+    ));
   test("não marca tarefa sem prazo como atrasada", () =>
     assert.equal(isTaskOverdue(task({ due_at: null }), new Date("2026-08-02")), false));
   test("extrai dia UTC da agenda", () =>
@@ -66,6 +74,36 @@ describe("módulo de tarefas", () => {
       filterTasks([task(), task({ assignee_name: "Bia" })], { assignee: "Bia" }).length,
       1,
     ));
+  test("filtra tarefas sem responsável", () =>
+    assert.equal(
+      filterTasks([task(), task({ assignee_name: null })], { assignee: "unassigned" }).length,
+      1,
+    ));
+  test("busca por título, cliente, processo e responsável sem diferenciar acentos", () => {
+    const searchable = task({
+      title: "Revisão contratual",
+      description: "Conferir anexos",
+      clients: { name: "Empresa Órbita" },
+      processes: { code: "PROC-204" },
+    });
+    assert.equal(filterTasks([searchable], { term: "revisao" }).length, 1);
+    assert.equal(filterTasks([searchable], { term: "orbita" }).length, 1);
+    assert.equal(filterTasks([searchable], { term: "PROC-204" }).length, 1);
+    assert.equal(filterTasks([searchable], { term: "ana" }).length, 1);
+  });
+  test("filtra prazos atrasados, de hoje, próximos sete dias e ausentes", () => {
+    const now = new Date("2026-08-10T12:00:00.000Z");
+    const rows = [
+      task({ due_at: "2026-08-09T10:00:00.000Z" }),
+      task({ due_at: "2026-08-10T18:00:00.000Z" }),
+      task({ due_at: "2026-08-15T10:00:00.000Z" }),
+      task({ due_at: null }),
+    ];
+    assert.equal(filterTasks(rows, { deadline: "overdue" }, now).length, 1);
+    assert.equal(filterTasks(rows, { deadline: "today" }, now).length, 1);
+    assert.equal(filterTasks(rows, { deadline: "week" }, now).length, 2);
+    assert.equal(filterTasks(rows, { deadline: "without_due" }, now).length, 1);
+  });
   test("filtra arquivadas", () =>
     assert.equal(
       filterTasks([task(), task({ archived_at: "2026-08-01" })], { archived: true }).length,
@@ -88,6 +126,20 @@ describe("módulo de tarefas", () => {
       /const toggleArchived = \(\) => \{[\s\S]*?const next = nextTaskArchiveView\(showArchived\);[\s\S]*?setShowArchived\(next\.archived\);[\s\S]*?setStatus\(next\.status\);[\s\S]*?\};/,
     );
     assert.match(tasksRoute, /onClick=\{toggleArchived\}/);
+  });
+  test("tela lembra busca, filtros e visualização por organização", () => {
+    assert.match(tasksRoute, /tasks:\$\{organizationId \?\? "none"\}/);
+    assert.match(tasksRoute, /useFilterMemory/);
+    assert.match(tasksRoute, /remembered\.view/);
+    assert.match(tasksRoute, /remembered\.deadline/);
+    assert.match(tasksRoute, /ActiveFilters/);
+    assert.match(tasksRoute, /Limpar filtros|clearFilters/);
+  });
+  test("formulário avisa antes de descartar alterações", () => {
+    assert.match(tasksRoute, /useUnsavedChanges\(taskFormDirty\)/);
+    assert.match(tasksRoute, /Alterações não salvas/);
+    assert.match(tasksRoute, /window\.confirm\(DISCARD_TASK_MESSAGE\)/);
+    assert.match(tasksRoute, /markTaskSaved\(\);/);
   });
   test("calcula indicadores", () =>
     assert.deepEqual(
