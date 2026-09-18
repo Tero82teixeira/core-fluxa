@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { GettingStartedCard } from "@/components/onboarding/getting-started-card";
+import { GettingStartedCard } from "@/components/getting-started-card";
 import { cn } from "@/lib/utils";
 import type { Tone } from "@/lib/domain";
 import { useWorkspace } from "@/lib/workspace";
@@ -29,6 +29,7 @@ import { useOperationalMonitoring } from "@/hooks/use-monitoring-center";
 import { useFinance } from "@/hooks/use-finance";
 import { useCommunicationThreads } from "@/hooks/use-communication";
 import { useDocumentsSummary } from "@/hooks/use-documents";
+import { useGettingStarted } from "@/hooks/use-getting-started";
 import { useCommercialOpportunityAlerts } from "@/hooks/use-reports";
 import { monitoringAttention, financeSummary, communicationSummary } from "@/lib/command-center";
 import { effectivePriority } from "@/lib/monitoring";
@@ -257,6 +258,7 @@ function Central() {
   const communication = useCommunicationThreads(organizationId);
   const documents = useDocumentsSummary(organizationId);
   const activity = useRecentActivity(canProcesses ? organizationId : null);
+  const gettingStarted = useGettingStarted(organizationId, role === "proprietario");
   const opportunities = useCommercialOpportunityAlerts(organizationId);
   const taskStats = taskIndicators(tasks.data ?? []);
   const openTasks = (tasks.data ?? []).filter((t) => t.status !== "concluida");
@@ -268,9 +270,7 @@ function Central() {
     (a) => !["resolvido", "ignorado"].includes(a.monitoring_status),
   );
   const opportunityRows = (opportunities.data ?? []).filter((row: any) => row.next_action_at);
-  const overdueOpportunities = opportunityRows.filter(
-    (row: any) => row.next_action_at.slice(0, 10) <= today(),
-  );
+  const overdueOpportunities = opportunityRows.filter((row: any) => row.next_action_at.slice(0, 10) <= today());
   const org =
     membership?.organizations?.trade_name || membership?.organizations?.legal_name || "Organização";
   const metrics: Array<[string, number, string, LucideIcon, Level, VisualTone]> = [
@@ -284,14 +284,7 @@ function Central() {
       "amber",
     ],
     ["Retornos atrasados", cs.overdue, "/comunicacao", MessageCircle, "atencao", "cyan"],
-    [
-      "Ações comerciais vencidas",
-      overdueOpportunities.length,
-      "/relatorios?tipo=commercial",
-      BriefcaseBusiness,
-      "atencao",
-      "amber",
-    ],
+    ["Ações comerciais vencidas", overdueOpportunities.length, "/relatorios?tipo=commercial", BriefcaseBusiness, "atencao", "amber"],
     [
       "Documentos vencendo",
       documents.data?.expiring ?? 0,
@@ -341,16 +334,7 @@ function Central() {
         "emerald",
       ],
     );
-  const queries = [
-    tasks,
-    processes,
-    monitoring,
-    finance,
-    communication,
-    documents,
-    activity,
-    opportunities,
-  ];
+  const queries = [tasks, processes, monitoring, finance, communication, documents, activity, opportunities];
   const refreshing = queries.some((q) => q.isFetching);
   const refresh = () => queries.forEach((q) => void q.refetch());
   const updated = Math.max(
@@ -425,7 +409,9 @@ function Central() {
           </Button>
         </div>
       </header>
-      <GettingStartedCard />
+      {role === "proprietario" && gettingStarted.data && (
+        <GettingStartedCard progress={gettingStarted.data} />
+      )}
       <section
         aria-label="Indicadores principais"
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
@@ -543,30 +529,18 @@ function Central() {
           action="Abrir funil comercial"
           loading={opportunities.isLoading}
           error={opportunities.isError}
-          summary={
-            <Stats
-              items={[
-                ["Vencidas/hoje", overdueOpportunities.length],
-                ["Agendadas", opportunityRows.length],
-              ]}
-            />
-          }
+          summary={<Stats items={[["Vencidas/hoje", overdueOpportunities.length], ["Agendadas", opportunityRows.length]]} />}
         >
           {opportunityRows.length ? (
             <ul className="divide-y">
-              {[...opportunityRows]
-                .sort((a: any, b: any) => a.next_action_at.localeCompare(b.next_action_at))
-                .slice(0, 5)
-                .map((opportunity: any) => (
-                  <Row
-                    key={opportunity.id}
-                    title={opportunity.title}
-                    meta={
-                      opportunity.owner_id ? "Responsável definido" : "Sem responsável definido"
-                    }
-                    right={new Date(opportunity.next_action_at).toLocaleString("pt-BR")}
-                  />
-                ))}
+              {[...opportunityRows].sort((a: any, b: any) => a.next_action_at.localeCompare(b.next_action_at)).slice(0, 5).map((opportunity: any) => (
+                <Row
+                  key={opportunity.id}
+                  title={opportunity.title}
+                  meta={opportunity.owner_id ? "Responsável definido" : "Sem responsável definido"}
+                  right={new Date(opportunity.next_action_at).toLocaleString("pt-BR")}
+                />
+              ))}
             </ul>
           ) : (
             <Empty>Nenhuma próxima ação comercial cadastrada.</Empty>
@@ -801,10 +775,7 @@ function Central() {
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-2 pt-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           {can("clients.create") && (
-            <Button
-              className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight"
-              asChild
-            >
+            <Button className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
               <Link to="/clientes/novo">
                 <Plus aria-hidden />
                 Novo cliente
@@ -812,43 +783,28 @@ function Central() {
             </Button>
           )}
           {can("processes.create") && (
-            <Button
-              className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight"
-              asChild
-            >
+            <Button className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
               <Link to="/processos/novo">
                 <Plus aria-hidden />
                 Novo processo
               </Link>
             </Button>
           )}
-          <Button
-            variant="outline"
-            className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight"
-            asChild
-          >
+          <Button variant="outline" className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
             <Link to="/tarefas">
               <Plus aria-hidden />
               Nova tarefa
             </Link>
           </Button>
           {canFinance && (
-            <Button
-              variant="outline"
-              className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight"
-              asChild
-            >
+            <Button variant="outline" className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
               <Link to="/financeiro">
                 <Plus aria-hidden />
                 Novo lançamento
               </Link>
             </Button>
           )}
-          <Button
-            variant="outline"
-            className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight"
-            asChild
-          >
+          <Button variant="outline" className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
             <Link to="/comunicacao">
               <Plus aria-hidden />
               Nova conversa

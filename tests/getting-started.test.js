@@ -3,48 +3,42 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const central = readFileSync("src/routes/_authenticated/central.tsx", "utf8");
-const card = readFileSync("src/components/onboarding/getting-started-card.tsx", "utf8");
+const card = readFileSync("src/components/getting-started-card.tsx", "utf8");
+const hook = readFileSync("src/hooks/use-getting-started.ts", "utf8");
 
-test("Central usa o mesmo guia de primeiros passos do Meu Dia", () => {
-  assert.match(central, /components\/onboarding\/getting-started-card/);
-  assert.match(central, /<GettingStartedCard \/>/);
-  assert.doesNotMatch(central, /useGettingStarted/);
+test("Central mostra primeiros passos somente ao proprietário", () => {
+  assert.match(central, /useGettingStarted\(organizationId, role === "proprietario"\)/);
+  assert.match(central, /role === "proprietario" && gettingStarted\.data/);
+  assert.match(central, /<GettingStartedCard progress=\{gettingStarted\.data\}/);
 });
 
 test("checklist acompanha ações reais da operação", () => {
   for (const label of [
-    "Complete os dados da empresa",
+    "Empresa configurada",
     "Cadastre o primeiro cliente",
     "Crie o primeiro processo",
-    "Adicione o primeiro documento",
     "Planeje a primeira tarefa",
   ]) {
     assert.ok(card.includes(label), label);
   }
-  assert.match(card, /status\.data\?\.clients/);
-  assert.match(card, /status\.data\?\.processes/);
-  assert.match(card, /status\.data\?\.documents/);
-  assert.match(card, /status\.data\?\.tasks/);
-  assert.match(card, /step\.complete \?/);
+  assert.match(card, /progress\.clients > 0/);
+  assert.match(card, /progress\.processes > 0/);
+  assert.match(card, /progress\.tasks > 0/);
+  assert.match(card, /if \(!next\) return null/);
+  assert.match(card, /step\.done \?/);
+  assert.doesNotMatch(card, /to="\/onboarding"/);
 });
 
 test("contagens são isoladas pela empresa e não carregam listas completas", () => {
-  for (const table of [
-    "clients",
-    "processes",
-    "documents",
-    "tasks",
-    "organization_members",
-    "financial_accounts",
-  ]) {
-    assert.ok(card.includes(`countRows("${table}", organizationId!)`), table);
+  for (const table of ["clients", "processes", "tasks", "organization_members"]) {
+    assert.ok(hook.includes(`countRows("${table}", organizationId)`), table);
   }
-  assert.match(card, /select\("id", \{ count: "exact", head: true \}\)/);
-  assert.match(card, /eq\("organization_id", organizationId\)/);
+  assert.match(hook, /select\("id", \{ count: "exact", head: true \}\)/);
+  assert.match(hook, /eq\("organization_id", organizationId\)/);
 });
 
 test("convite de equipe é opcional", () => {
-  assert.match(card, /status\.data\?\.members/);
-  assert.match(card, /optional: true,[\s\S]*icon: UsersRound/);
-  assert.match(card, /to: "\/equipe"/);
+  assert.match(card, /progress\.team <= 1/);
+  assert.match(card, /O convite é opcional/);
+  assert.match(card, /to="\/equipe"/);
 });
