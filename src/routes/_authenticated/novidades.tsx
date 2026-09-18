@@ -73,34 +73,51 @@ function ProductUpdatesPage() {
   const featured = updates.filter((update) => update.featured).slice(0, 3);
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-8 p-4 sm:p-6">
-      <header className="overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/15 via-background to-background p-5 sm:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="mx-auto w-full max-w-[1600px] space-y-8 p-4 sm:p-6 lg:p-8">
+      <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-fuchsia-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-8">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-fuchsia-400/15 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:40px_40px]"
+          aria-hidden
+        />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
-            <Badge variant="secondary" className="mb-3">
-              <Sparkles className="mr-1 size-3" /> Central de novidades
-            </Badge>
-            <h1 className="page-title">Novidades</h1>
-            <p className="page-subtitle mt-2">
+            <div className="flex items-center gap-3">
+              <span className="grid size-12 place-items-center rounded-2xl bg-fuchsia-400 text-slate-950 shadow-lg shadow-fuchsia-400/20 ring-1 ring-white/10">
+                <Sparkles className="size-5.5" aria-hidden />
+              </span>
+              <div>
+                <p className="text-xs font-semibold tracking-[0.14em] text-fuchsia-300 uppercase">
+                  Evolução contínua
+                </p>
+                <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+                  Novidades
+                </h1>
+              </div>
+            </div>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
               Acompanhe tudo o que está chegando e evoluindo na FLUXA.
             </p>
           </div>
-          <div className="rounded-xl border bg-background/80 px-4 py-3 text-center shadow-sm">
-            <strong className="block text-2xl">{updates.length}</strong>
-            <span className="text-xs text-muted-foreground">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-3 text-center shadow-lg shadow-black/10">
+            <strong className="block text-2xl text-white">{updates.length}</strong>
+            <span className="text-xs text-slate-300">
               {updates.length === 1 ? "novidade" : "novidades"}
             </span>
           </div>
         </div>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_190px_190px_170px]">
+        <div className="relative mt-6 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_190px_190px_170px]">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <Input
               aria-label="Buscar novidades"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar nas novidades…"
-              className="bg-background pl-9"
+              className="h-10 rounded-xl border-white/15 bg-white/[0.08] pl-9 text-white placeholder:text-slate-400"
             />
           </div>
           <Filter
@@ -173,7 +190,7 @@ function ProductUpdatesPage() {
                   className="absolute left-1 top-6 size-2 rounded-full bg-primary ring-4 ring-background sm:left-[104px]"
                   aria-hidden
                 />
-                <Card className="min-w-0 sm:ml-6">
+                <Card className="min-w-0 rounded-2xl border-border/70 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel sm:ml-6">
                   <CardContent className="p-4 sm:p-5">
                     <div className="flex flex-wrap items-center gap-2">
                       <TypeBadge update={update} />
@@ -229,7 +246,10 @@ function Filter({
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger aria-label={label} className="w-full bg-background">
+      <SelectTrigger
+        aria-label={label}
+        className="h-10 w-full rounded-xl border-white/15 bg-white/[0.08] text-white"
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -260,7 +280,7 @@ function UpdateCard({
   onOpen: (update: ProductUpdate) => void;
 }) {
   return (
-    <Card className="flex min-w-0 flex-col border-primary/20 shadow-sm">
+    <Card className="flex min-w-0 flex-col rounded-2xl border-primary/20 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel">
       <CardHeader>
         <div className="flex flex-wrap gap-2">
           <TypeBadge update={update} />
