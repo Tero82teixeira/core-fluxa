@@ -113,11 +113,11 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="flex min-h-screen w-full bg-sidebar">
         <AppSidebar onSignOut={onSignOut} />
-        <SidebarInset className="min-w-0">
+        <SidebarInset className="min-w-0 overflow-hidden border-border/70 shadow-2xl shadow-black/10 md:border">
           <AppHeader onSignOut={onSignOut} />
-          <main className="min-w-0 flex-1 pb-24 sm:pb-28">
+          <main className="min-w-0 bg-muted/20 flex-1 pb-24 sm:pb-28">
             <Outlet />
           </main>
         </SidebarInset>

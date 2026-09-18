@@ -27,22 +27,22 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const NAV_ICON_TONE: Record<string, string> = {
-  "/meu-dia": "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",
-  "/central": "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
-  "/clientes": "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300",
-  "/processos": "bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300",
-  "/documentos": "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300",
-  "/monitoramento": "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300",
-  "/tarefas": "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",
-  "/comunicacao": "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300",
-  "/financeiro": "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300",
-  "/relatorios": "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/60 dark:text-fuchsia-300",
-  "/equipe": "bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300",
-  "/automacoes": "bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300",
-  "/configuracoes": "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  "/assinatura": "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
-  "/ajuda": "bg-lime-100 text-lime-700 dark:bg-lime-950/60 dark:text-lime-300",
-  "/novidades": "bg-pink-100 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300",
+  "/meu-dia": "bg-amber-400/10 text-amber-300",
+  "/central": "bg-blue-400/12 text-blue-300",
+  "/clientes": "bg-cyan-400/10 text-cyan-300",
+  "/processos": "bg-violet-400/10 text-violet-300",
+  "/documentos": "bg-indigo-400/10 text-indigo-300",
+  "/monitoramento": "bg-orange-400/10 text-orange-300",
+  "/tarefas": "bg-amber-400/10 text-amber-300",
+  "/comunicacao": "bg-sky-400/10 text-sky-300",
+  "/financeiro": "bg-emerald-400/10 text-emerald-300",
+  "/relatorios": "bg-fuchsia-400/10 text-fuchsia-300",
+  "/equipe": "bg-teal-400/10 text-teal-300",
+  "/automacoes": "bg-purple-400/10 text-purple-300",
+  "/configuracoes": "bg-slate-400/10 text-slate-300",
+  "/assinatura": "bg-blue-400/12 text-blue-300",
+  "/ajuda": "bg-lime-400/10 text-lime-300",
+  "/novidades": "bg-pink-400/10 text-pink-300",
 };
 
 export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
@@ -57,14 +57,18 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="px-3 py-4">
+    <Sidebar
+      collapsible="icon"
+      variant="inset"
+      className="border-0 [&_[data-sidebar=sidebar]]:overflow-hidden [&_[data-sidebar=sidebar]]:rounded-2xl [&_[data-sidebar=sidebar]]:border [&_[data-sidebar=sidebar]]:border-white/[0.06] [&_[data-sidebar=sidebar]]:shadow-2xl [&_[data-sidebar=sidebar]]:shadow-black/20"
+    >
+      <SidebarHeader className="border-b border-sidebar-border/80 px-3 py-4">
         <Link
           to="/meu-dia"
           onClick={closeOnMobile}
           className="flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20">
             <Sparkles className="size-4.5" aria-hidden />
           </span>
           {!collapsed && (
@@ -72,7 +76,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
               <span className="block truncate font-display text-base font-semibold tracking-tight">
                 FLUXA
               </span>
-              <span className="block truncate text-xs text-muted-foreground">
+              <span className="block truncate text-xs text-sidebar-foreground/50">
                 {organizationDisplayName(membership?.organizations, "Central de processos")}
               </span>
             </span>
@@ -94,7 +98,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
               {collapsed ? (
                 <div className="mx-auto my-1 h-px w-6 bg-sidebar-border" aria-hidden />
               ) : (
-                <SidebarGroupLabel className="text-[0.68rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                <SidebarGroupLabel className="text-[0.65rem] font-semibold tracking-[0.15em] text-sidebar-foreground/40 uppercase">
                   {group.label}
                 </SidebarGroupLabel>
               )}
@@ -121,7 +125,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
                           asChild={!locked}
                           isActive={active}
                           tooltip={item.label}
-                          className="group/menu-button h-10 text-sm data-[active=true]:bg-sidebar-primary/10 data-[active=true]:font-semibold data-[active=true]:text-sidebar-primary"
+                          className="group/menu-button relative h-10 rounded-xl text-sm text-sidebar-foreground/75 hover:bg-white/[0.06] hover:text-white data-[active=true]:bg-blue-500/15 data-[active=true]:font-semibold data-[active=true]:text-blue-200 data-[active=true]:shadow-[inset_3px_0_0_0_rgb(96_165_250)]"
                         >
                           {locked ? (
                             <span
@@ -156,13 +160,13 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
         })}
       </SidebarContent>
 
-      <SidebarFooter className="gap-1 border-t border-sidebar-border px-2 py-3">
+      <SidebarFooter className="gap-1 border-t border-sidebar-border/80 bg-black/[0.08] px-2 py-3">
         <SidebarMenu className="gap-0.5">
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={toggleTheme}
               tooltip={theme === "dark" ? "Modo claro" : "Modo escuro"}
-              className="h-10 gap-3 text-sm"
+              className="h-9 gap-3 rounded-xl text-sm text-sidebar-foreground/65 hover:bg-white/[0.06] hover:text-white"
             >
               {theme === "dark" ? (
                 <Sun className="size-4.5 shrink-0" aria-hidden />
@@ -176,7 +180,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
             <SidebarMenuButton
               onClick={onSignOut}
               tooltip="Sair da conta"
-              className="h-10 gap-3 text-sm"
+              className="h-9 gap-3 rounded-xl text-sm text-sidebar-foreground/65 hover:bg-rose-400/10 hover:text-rose-300"
             >
               <LogOut className="size-4.5 shrink-0" aria-hidden />
               <span className="truncate">Sair</span>
@@ -186,7 +190,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
 
         <div
           className={cn(
-            "mt-2 flex items-center gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/50 p-2",
+            "mt-2 flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.045] p-2.5",
             collapsed && "justify-center border-0 bg-transparent p-0",
           )}
         >
@@ -198,10 +202,10 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{displayName}</p>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="truncate text-xs text-sidebar-foreground/50">
                 {loading ? "Carregando…" : role ? ROLE[role].label : "Configurando acesso…"}
               </p>
-              <p className="mt-1 flex min-w-0 items-center gap-1 border-t border-sidebar-border/70 pt-1 text-xs text-sidebar-primary">
+              <p className="mt-1.5 flex min-w-0 items-center gap-1 border-t border-white/[0.07] pt-1.5 text-xs text-blue-300">
                 <Building2 className="size-3 shrink-0" aria-hidden />
                 <span className="shrink-0 font-medium">Empresa:</span>
                 <span className="truncate">
