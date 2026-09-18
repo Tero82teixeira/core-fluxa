@@ -176,7 +176,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!active) throw new Error("BOOTSTRAP_MEMBERSHIP_NOT_FOUND");
     if (!active.organizations) throw new Error("BOOTSTRAP_ORGANIZATION_NOT_FOUND");
 
-    return { profile: nextProfile, list: nextList, platformAdmin: Boolean(platformAdminResult.data) };
+    return {
+      profile: nextProfile,
+      list: nextList,
+      platformAdmin: Boolean(platformAdminResult.data),
+    };
   }, []);
 
   /** Carregamento completo: bootstrap (uma vez) + consultas + validação. */
@@ -288,6 +292,29 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const selectedOrganizationId = selection.userId === userId ? selection.organizationId : null;
   const membership = resolveSessionMembership(list, userId, selectedOrganizationId);
   const permissions = useRolePermissions(membership?.role);
+  const recordedAccesses = useRef(new Set<string>());
+
+  // One server-side row per authenticated session. The RPC also deduplicates
+  // calls, so reloads and React remounts never inflate the access counter.
+  useEffect(() => {
+    const organizationId = membership?.organization_id;
+    if (status !== "ready" || !userId || !organizationId) return;
+
+    const accessKey = `${userId}:${organizationId}`;
+    if (recordedAccesses.current.has(accessKey)) return;
+    recordedAccesses.current.add(accessKey);
+
+    void supabase
+      .rpc("record_organization_access", { _organization_id: organizationId })
+      .then(({ error: accessError }) => {
+        if (!accessError) return;
+        recordedAccesses.current.delete(accessKey);
+        console.warn("[Workspace] não foi possível registrar o acesso", {
+          code: accessError.code,
+          organizationId,
+        });
+      });
+  }, [membership?.organization_id, status, userId]);
 
   const value = useMemo<WorkspaceContextValue>(() => {
     const granted = new Set(permissions.data ?? []);
@@ -316,7 +343,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         commercialOrganization?.commercial_status === "trial"
           ? trialDaysRemaining(commercialOrganization.trial_ends_at)
           : null,
-      commercialAccess: commercialOrganization ? hasCommercialAccess(commercialOrganization) : false,
+      commercialAccess: commercialOrganization
+        ? hasCommercialAccess(commercialOrganization)
+        : false,
       platformAdmin,
       bootstrapError:
         status === "error" ? (error ?? "Não foi possível configurar seu acesso.") : null,

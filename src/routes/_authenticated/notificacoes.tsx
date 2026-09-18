@@ -24,6 +24,8 @@ import {
   useNotifications,
 } from "@/hooks/use-notifications";
 import { PushNotificationSettings } from "@/components/notifications/push-notification-settings";
+import { ErrorState, LoadingState } from "@/components/shared/async-state";
+import { EmptyState } from "@/components/shared/empty-state";
 
 export const Route = createFileRoute("/_authenticated/notificacoes")({
   component: NotificationsPage,
@@ -52,9 +54,14 @@ function NotificationsPage() {
   const canCreateTest = role === "proprietario" || role === "administrador";
   const rows = filterNotifications(query.data ?? [], filter);
   const open = async (notification: Notification) => {
-    await mark.mutateAsync({ _notification: notification.id });
-    const destination = notificationDestination(notification);
-    if (destination) await navigate({ to: destination });
+    if (mark.isPending) return;
+    try {
+      await mark.mutateAsync({ _notification: notification.id });
+      const destination = notificationDestination(notification);
+      if (destination) await navigate({ to: destination });
+    } catch {
+      toast.error("Não foi possível abrir a notificação. Tente novamente.");
+    }
   };
   const createTestNotification = () =>
     createTest.mutate(undefined, {
@@ -103,23 +110,26 @@ function NotificationsPage() {
         </SelectContent>
       </Select>
       {query.isLoading ? (
-        <Card>
-          <CardContent className="flex items-center gap-2 p-8">
-            <Loader2 className="size-4 animate-spin" />
-            Carregando notificações…
-          </CardContent>
-        </Card>
+        <LoadingState label="Carregando notificações" rows={4} />
       ) : query.isError ? (
-        <Card>
-          <CardContent className="p-8 text-destructive">
-            Não foi possível carregar as notificações.
-          </CardContent>
-        </Card>
+        <ErrorState
+          title="Não foi possível carregar as notificações"
+          description="Tente novamente para recuperar as atualizações do seu workspace."
+          onRetry={() => void query.refetch()}
+          retrying={query.isFetching}
+        />
       ) : rows.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-2 p-10 text-center text-muted-foreground">
-            <Bell className="size-8" />
-            <p>Nenhuma notificação encontrada.</p>
+          <CardContent className="p-0">
+            <EmptyState
+              icon={Bell}
+              title="Nenhuma notificação encontrada"
+              description={
+                filter === "all"
+                  ? "As novas atualizações do seu workspace aparecerão aqui."
+                  : "Troque o filtro para consultar outras notificações."
+              }
+            />
           </CardContent>
         </Card>
       ) : (
@@ -127,7 +137,11 @@ function NotificationsPage() {
           {rows.map((item) => (
             <Card key={item.id} className={!item.read_at ? "border-brand/40 bg-brand/5" : ""}>
               <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-                <button className="min-w-0 flex-1 text-left" onClick={() => void open(item)}>
+                <button
+                  className="min-w-0 flex-1 text-left disabled:cursor-wait disabled:opacity-60"
+                  disabled={mark.isPending}
+                  onClick={() => void open(item)}
+                >
                   <span className="flex items-center gap-2 font-medium">
                     {!item.read_at && <span className="size-2 rounded-full bg-brand" />}
                     {item.title}
@@ -145,6 +159,7 @@ function NotificationsPage() {
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={mark.isPending}
                     onClick={() => mark.mutate({ _notification: item.id })}
                   >
                     Marcar como lida
