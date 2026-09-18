@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, Circle, Loader2, Plus, Trash2 } from "lucide-react";
+import { BriefcaseBusiness, CheckCircle2, Circle, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -141,13 +141,19 @@ function ProcessDetail() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
-      <Card>
-        <CardContent className="space-y-6 p-4 sm:p-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
+      <Card className="relative overflow-hidden rounded-3xl border-violet-500/15 bg-gradient-to-br from-violet-500/10 via-card to-indigo-500/10 shadow-[0_28px_70px_-42px_rgba(76,29,149,0.45)]">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-violet-400/10 blur-3xl"
+          aria-hidden
+        />
+        <CardContent className="relative space-y-6 p-5 sm:p-7">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <div className="min-w-0">
-              <p className="field-label">Cliente</p>
-              <h1 className="page-title mt-1 truncate">
+              <p className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.14em] text-violet-600 uppercase dark:text-violet-300">
+                <BriefcaseBusiness className="size-3.5" aria-hidden /> Fluxo operacional
+              </p>
+              <h1 className="mt-2 truncate font-display text-2xl font-semibold tracking-tight">
                 <Link
                   to="/clientes/$clientId"
                   params={{ clientId: data.client_id }}
@@ -156,7 +162,7 @@ function ProcessDetail() {
                   {data.clients?.name}
                 </Link>
               </h1>
-              <p className="page-subtitle mt-1.5">
+              <p className="mt-1.5 text-sm text-muted-foreground">
                 {data.service_types?.name ?? data.title} · Responsável {data.owner_name}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -201,7 +207,7 @@ function ProcessDetail() {
                 <SelectTrigger
                   id="stage-select"
                   aria-label="Alterar etapa do processo"
-                  className="h-10 w-full"
+                  className="h-10 w-full rounded-xl bg-background/80"
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -213,7 +219,11 @@ function ProcessDetail() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={() => setNoteOpen((open) => !open)}>
+              <Button
+                className="rounded-xl"
+                variant="outline"
+                onClick={() => setNoteOpen((open) => !open)}
+              >
                 Registrar movimentação
               </Button>
               {noteOpen && (
@@ -260,7 +270,7 @@ function ProcessDetail() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-2xl border-border/70 shadow-soft">
         <CardContent className="p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="section-title">Progresso do fluxo</h2>
@@ -308,7 +318,7 @@ function ProcessDetail() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Tabs defaultValue="timeline">
-          <TabsList className="h-auto w-full max-w-full justify-start gap-1.5 overflow-x-auto p-1.5">
+          <TabsList className="h-auto w-full max-w-full justify-start gap-1.5 overflow-x-auto rounded-2xl border border-border/70 bg-card p-2 shadow-soft">
             <TabsTrigger value="timeline" className="shrink-0 px-4 py-2 text-sm">
               Linha do tempo
             </TabsTrigger>
@@ -331,7 +341,7 @@ function ProcessDetail() {
           </TabsContent>
 
           <TabsContent value="timeline">
-            <Card>
+            <Card className="rounded-2xl border-border/70 shadow-soft">
               <CardContent className="p-4 sm:p-6">
                 <ul className="space-y-4">
                   {(movements.data ?? []).map((movement) => (
@@ -359,7 +369,7 @@ function ProcessDetail() {
           </TabsContent>
 
           <TabsContent value="documentos">
-            <Card>
+            <Card className="rounded-2xl border-border/70 shadow-soft">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between text-sm">
                   <span className="card-title">Checklist operacional</span>
@@ -493,7 +503,7 @@ function ProcessDetail() {
           </TabsContent>
 
           <TabsContent value="tarefas">
-            <Card>
+            <Card className="rounded-2xl border-border/70 shadow-soft">
               <CardContent className="p-4 sm:p-6">
                 <form
                   className="mb-4 flex flex-wrap gap-2"
@@ -578,7 +588,7 @@ function ProcessDetail() {
         </Tabs>
 
         <div className="space-y-4">
-          <Card>
+          <Card className="rounded-2xl border-border/70 shadow-soft">
             <CardContent className="p-5">
               <h2 className="section-title">Resumo</h2>
               <dl className="mt-3 space-y-2 text-sm">
@@ -602,7 +612,7 @@ function ProcessDetail() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="rounded-2xl border-border/70 shadow-soft">
             <CardContent className="p-5">
               <h2 className="section-title">Próxima ação sugerida</h2>
               <p className="mt-2 text-sm text-muted-foreground">{data.description ?? "—"}</p>

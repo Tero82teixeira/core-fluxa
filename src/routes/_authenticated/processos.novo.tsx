@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { BriefcaseBusiness, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWorkspace } from "@/lib/workspace";
@@ -170,23 +170,51 @@ function NewProcess() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl p-4 sm:p-6">
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <h1 className="page-title">Novo processo</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <p className="page-subtitle">O número interno é gerado automaticamente ao salvar.</p>
-            {isDirty && <Badge variant="outline">Alterações não salvas</Badge>}
+    <div className="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-6 lg:p-8">
+      <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-violet-400/15 blur-3xl"
+          aria-hidden
+        />
+        <div className="relative flex items-center gap-3">
+          <span className="grid size-12 place-items-center rounded-2xl bg-violet-400 text-slate-950 shadow-lg shadow-violet-400/20">
+            <BriefcaseBusiness className="size-5.5" aria-hidden />
+          </span>
+          <div>
+            <p className="text-xs font-semibold tracking-[0.14em] text-violet-300 uppercase">
+              Novo fluxo operacional
+            </p>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">Novo processo</h1>
+          </div>
+        </div>
+        <div className="relative mt-4 flex flex-wrap items-center gap-2">
+          <p className="max-w-2xl text-sm leading-6 text-slate-300">
+            Defina cliente, serviço, prazo e responsável. O número interno será gerado ao salvar.
+          </p>
+          {isDirty && (
+            <Badge className="border-white/15 bg-white/[0.06] text-white" variant="outline">
+              Alterações não salvas
+            </Badge>
+          )}
+        </div>
+      </header>
+      <Card className="rounded-2xl border-border/70 shadow-soft">
+        <CardContent className="p-4 sm:p-6 lg:p-7">
+          <div className="mb-6">
+            <p className="text-sm font-semibold">Informações do processo</p>
+            <p className="helper-text mt-1">
+              O tipo de serviço pode sugerir prazo, valor e checklist automaticamente.
+            </p>
           </div>
 
-          <form onSubmit={submit} className="mt-6 grid gap-4 sm:grid-cols-2">
+          <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Cliente</Label>
               <Select
                 value={form.client_id}
                 onValueChange={(value) => setForm({ ...form, client_id: value })}
               >
-                <SelectTrigger className="h-10" aria-label="Cliente do processo">
+                <SelectTrigger className="h-10 rounded-xl" aria-label="Cliente do processo">
                   <SelectValue
                     placeholder={clients.isLoading ? "Carregando…" : "Selecione o cliente"}
                   />
@@ -204,7 +232,7 @@ function NewProcess() {
             <div className="space-y-1.5">
               <Label>Tipo de serviço</Label>
               <Select value={form.service_type_id} onValueChange={applyServiceType}>
-                <SelectTrigger className="h-10" aria-label="Tipo de serviço">
+                <SelectTrigger className="h-10 rounded-xl" aria-label="Tipo de serviço">
                   <SelectValue placeholder="Opcional" />
                 </SelectTrigger>
                 <SelectContent>
@@ -239,7 +267,7 @@ function NewProcess() {
                 value={form.stage}
                 onValueChange={(value) => setForm({ ...form, stage: value as ProcessStage })}
               >
-                <SelectTrigger className="h-10" aria-label="Etapa inicial">
+                <SelectTrigger className="h-10 rounded-xl" aria-label="Etapa inicial">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -258,7 +286,7 @@ function NewProcess() {
                 value={form.priority}
                 onValueChange={(value) => setForm({ ...form, priority: value as PriorityLevel })}
               >
-                <SelectTrigger className="h-10" aria-label="Prioridade">
+                <SelectTrigger className="h-10 rounded-xl" aria-label="Prioridade">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -312,7 +340,7 @@ function NewProcess() {
               />
             </div>
 
-            <div className="grid gap-2 sm:col-span-2 sm:flex">
+            <div className="grid gap-2 sm:col-span-2 sm:flex border-t border-border/70 pt-5">
               <Button
                 className="w-full sm:w-auto"
                 type="submit"

@@ -109,8 +109,8 @@ function ProductUpdatesPage() {
             </span>
           </div>
         </div>
-        <div className="relative mt-6 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_190px_190px_170px]">
-          <div className="relative">
+        <div className="relative mt-6 grid min-w-0 gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_190px_190px_170px]">
+          <div className="relative min-w-0">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <Input
               aria-label="Buscar novidades"
@@ -245,22 +245,24 @@ function Filter({
   allLabel: string;
 }) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger
-        aria-label={label}
-        className="h-10 w-full rounded-xl border-white/15 bg-white/[0.08] text-white"
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">{allLabel}</SelectItem>
-        {items.map(([key, name]) => (
-          <SelectItem key={key} value={key}>
-            {name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="min-w-0">
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger
+          aria-label={label}
+          className="h-10 w-full min-w-0 rounded-xl border-white/15 bg-white/[0.08] text-white"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{allLabel}</SelectItem>
+          {items.map(([key, name]) => (
+            <SelectItem key={key} value={key}>
+              {name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 

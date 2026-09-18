@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Building2, CheckCircle2, Loader2, MapPin, Settings2 } from "lucide-react";
+import { Building2, CheckCircle2, Loader2, MapPin, Settings2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -20,9 +20,15 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({
     meta: [
       { title: "Configurar empresa — FLUXA" },
-      { name: "description", content: "Configure os dados da sua empresa para começar a operar na FLUXA." },
+      {
+        name: "description",
+        content: "Configure os dados da sua empresa para começar a operar na FLUXA.",
+      },
       { property: "og:title", content: "Configurar empresa — FLUXA" },
-      { property: "og:description", content: "Configure os dados da sua empresa para começar a operar na FLUXA." },
+      {
+        property: "og:description",
+        content: "Configure os dados da sua empresa para começar a operar na FLUXA.",
+      },
     ],
   }),
   component: Onboarding,
@@ -52,7 +58,11 @@ function Onboarding() {
   const [saving, setSaving] = useState(false);
   const cnpjLookup = useCnpjLookup();
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ document?: string; phone?: string; whatsapp?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{
+    document?: string;
+    phone?: string;
+    whatsapp?: string;
+  }>({});
   const hydratedOrganization = useRef<string | null>(null);
 
   useEffect(() => setStep(onboardingStep), [onboardingStep]);
@@ -64,8 +74,19 @@ function Onboarding() {
     phone: "",
     whatsapp: "",
   });
-  const [place, setPlace] = useState({ zip_code: "", street: "", number: "", district: "", city: "", state: "" });
-  const [operation, setOperation] = useState({ main_services: "", clients_range: "", employees_range: "" });
+  const [place, setPlace] = useState({
+    zip_code: "",
+    street: "",
+    number: "",
+    district: "",
+    city: "",
+    state: "",
+  });
+  const [operation, setOperation] = useState({
+    main_services: "",
+    clients_range: "",
+    employees_range: "",
+  });
 
   useEffect(() => {
     const organization = membership?.organizations;
@@ -107,11 +128,13 @@ function Onboarding() {
       membership.organizations &&
       organizationId &&
       membership.organization_id === organizationId
-    ) return organizationId;
+    )
+      return organizationId;
 
-    throw new Error("Seu vínculo com a empresa ainda não está pronto. Use “Tentar novamente” para reconfigurar o acesso.");
+    throw new Error(
+      "Seu vínculo com a empresa ainda não está pronto. Use “Tentar novamente” para reconfigurar o acesso.",
+    );
   };
-
 
   const validateCompany = () => {
     const next: typeof fieldErrors = {};
@@ -126,8 +149,10 @@ function Onboarding() {
       )
     )
       next.document = "Informe um CPF ou CNPJ válido.";
-    if (company.phone && (phoneLength < 10 || phoneLength > 11)) next.phone = "Informe o telefone com DDD.";
-    if (company.whatsapp && (whatsappLength < 10 || whatsappLength > 11)) next.whatsapp = "Informe o WhatsApp com DDD.";
+    if (company.phone && (phoneLength < 10 || phoneLength > 11))
+      next.phone = "Informe o telefone com DDD.";
+    if (company.whatsapp && (whatsappLength < 10 || whatsappLength > 11))
+      next.whatsapp = "Informe o WhatsApp com DDD.";
     setFieldErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -230,7 +255,8 @@ function Onboarding() {
       console.error("Erro no vínculo da empresa", {
         message: caught instanceof Error ? caught.message : undefined,
         code: typeof caught === "object" && caught && "code" in caught ? caught.code : undefined,
-        details: typeof caught === "object" && caught && "details" in caught ? caught.details : undefined,
+        details:
+          typeof caught === "object" && caught && "details" in caught ? caught.details : undefined,
         hint: typeof caught === "object" && caught && "hint" in caught ? caught.hint : undefined,
         userId: user?.id,
         organizationId,
@@ -257,31 +283,63 @@ function Onboarding() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5 p-4 sm:p-6">
-      <header className="space-y-1">
-        <h1 className="page-title">Configuração da empresa</h1>
-        <p className="page-subtitle">
+    <div className="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-6 lg:p-8">
+      <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-blue-400/15 blur-3xl"
+          aria-hidden
+        />
+        <div className="relative flex items-center gap-3">
+          <span className="grid size-12 place-items-center rounded-2xl bg-blue-400 text-slate-950 shadow-lg shadow-blue-400/20">
+            <Sparkles className="size-5.5" aria-hidden />
+          </span>
+          <div>
+            <p className="text-xs font-semibold tracking-[0.14em] text-blue-300 uppercase">
+              Primeiros passos
+            </p>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">
+              Configuração da empresa
+            </h1>
+          </div>
+        </div>
+        <p className="relative mt-4 max-w-2xl text-sm leading-6 text-slate-300">
           Conclua estas quatro etapas rápidas para liberar os módulos. Depois, você poderá alterar
           os dados em Configurações.
         </p>
       </header>
 
-      <div className="space-y-2">
-        <Progress value={((step + 1) / STEPS.length) * 100} className="h-1.5" />
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      <div className="space-y-3 rounded-2xl border border-border/70 bg-card p-4 shadow-soft sm:p-5">
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <span className="font-semibold">Seu progresso</span>
+          <span className="text-muted-foreground">
+            Etapa {step + 1} de {STEPS.length}
+          </span>
+        </div>
+        <Progress value={((step + 1) / STEPS.length) * 100} className="h-2" />
+        <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
           {STEPS.map((item, index) => (
-            <span key={item.title} aria-current={index === step ? "step" : undefined} className={index === step ? "font-semibold text-brand" : ""}>
+            <span
+              key={item.title}
+              aria-current={index === step ? "step" : undefined}
+              className={`rounded-xl border px-3 py-2 ${
+                index === step
+                  ? "border-blue-500/35 bg-blue-500/10 font-semibold text-blue-700 dark:text-blue-300"
+                  : index < step
+                    ? "border-emerald-500/25 bg-emerald-500/8 text-emerald-700 dark:text-emerald-300"
+                    : "border-border/70 bg-muted/20"
+              }`}
+            >
               {index + 1}. {item.title}
             </span>
           ))}
         </div>
       </div>
 
-      <Card>
-        <CardContent className="space-y-5 p-6">
+      <Card className="rounded-2xl border-border/70 shadow-soft">
+        <CardContent className="space-y-5 p-4 [&_input]:rounded-xl [&_textarea]:rounded-xl sm:p-6 lg:p-7">
           <div className="flex items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-xl border border-brand/30 bg-brand/10">
-              <Icon className="size-5 text-brand" aria-hidden />
+            <span className="grid size-11 place-items-center rounded-xl border border-blue-500/30 bg-blue-500/10">
+              <Icon className="size-5 text-blue-600 dark:text-blue-300" aria-hidden />
             </span>
             <div>
               <h2 className="card-title">{STEPS[step].title}</h2>
@@ -290,7 +348,10 @@ function Onboarding() {
           </div>
 
           {(error || bootstrapError) && (
-            <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
               {error ?? bootstrapError}
             </p>
           )}
@@ -298,36 +359,76 @@ function Onboarding() {
           {step === 0 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Nome fantasia *" className="sm:col-span-2">
-                <Input value={company.trade_name} maxLength={120} onChange={(e) => setCompany({ ...company, trade_name: e.target.value })} />
+                <Input
+                  value={company.trade_name}
+                  maxLength={120}
+                  onChange={(e) => setCompany({ ...company, trade_name: e.target.value })}
+                />
                 <p className="text-xs text-muted-foreground">Campo obrigatório.</p>
               </Field>
               <Field label="Razão social (opcional)" className="sm:col-span-2">
-                <Input value={company.legal_name} maxLength={160} onChange={(e) => setCompany({ ...company, legal_name: e.target.value })} />
+                <Input
+                  value={company.legal_name}
+                  maxLength={160}
+                  onChange={(e) => setCompany({ ...company, legal_name: e.target.value })}
+                />
               </Field>
               <Field label="CPF ou CNPJ">
-                <Input value={maskDocument(company.document)} inputMode="numeric" maxLength={18} aria-invalid={Boolean(fieldErrors.document)} onChange={(e) => {
-                  const document = e.target.value;
-                  setCompany({ ...company, document });
-                  setFieldErrors((current) => ({ ...current, document: undefined }));
-                  if (digits(document).length === 14 && isValidCNPJ(document)) void fillCompanyFromCnpj(document);
-                }} />
-                {fieldErrors.document && <p className="text-sm text-destructive">{fieldErrors.document}</p>}
-                {cnpjLookup.loading && <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Loader2 className="size-3.5 animate-spin" />Consultando CNPJ…</p>}
-                {!cnpjLookup.loading && cnpjLookup.message && <p className="text-xs text-muted-foreground">{cnpjLookup.message}</p>}
+                <Input
+                  value={maskDocument(company.document)}
+                  inputMode="numeric"
+                  maxLength={18}
+                  aria-invalid={Boolean(fieldErrors.document)}
+                  onChange={(e) => {
+                    const document = e.target.value;
+                    setCompany({ ...company, document });
+                    setFieldErrors((current) => ({ ...current, document: undefined }));
+                    if (digits(document).length === 14 && isValidCNPJ(document))
+                      void fillCompanyFromCnpj(document);
+                  }}
+                />
+                {fieldErrors.document && (
+                  <p className="text-sm text-destructive">{fieldErrors.document}</p>
+                )}
+                {cnpjLookup.loading && (
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Consultando CNPJ…
+                  </p>
+                )}
+                {!cnpjLookup.loading && cnpjLookup.message && (
+                  <p className="text-xs text-muted-foreground">{cnpjLookup.message}</p>
+                )}
               </Field>
               <Field label="Telefone">
-                <Input value={maskPhone(company.phone)} inputMode="numeric" maxLength={15} aria-invalid={Boolean(fieldErrors.phone)} onChange={(e) => {
-                  setCompany({ ...company, phone: e.target.value });
-                  setFieldErrors((current) => ({ ...current, phone: undefined }));
-                }} />
-                {fieldErrors.phone && <p className="text-sm text-destructive">{fieldErrors.phone}</p>}
+                <Input
+                  value={maskPhone(company.phone)}
+                  inputMode="numeric"
+                  maxLength={15}
+                  aria-invalid={Boolean(fieldErrors.phone)}
+                  onChange={(e) => {
+                    setCompany({ ...company, phone: e.target.value });
+                    setFieldErrors((current) => ({ ...current, phone: undefined }));
+                  }}
+                />
+                {fieldErrors.phone && (
+                  <p className="text-sm text-destructive">{fieldErrors.phone}</p>
+                )}
               </Field>
               <Field label="WhatsApp">
-                <Input value={maskPhone(company.whatsapp)} inputMode="numeric" maxLength={15} aria-invalid={Boolean(fieldErrors.whatsapp)} onChange={(e) => {
-                  setCompany({ ...company, whatsapp: e.target.value });
-                  setFieldErrors((current) => ({ ...current, whatsapp: undefined }));
-                }} />
-                {fieldErrors.whatsapp && <p className="text-sm text-destructive">{fieldErrors.whatsapp}</p>}
+                <Input
+                  value={maskPhone(company.whatsapp)}
+                  inputMode="numeric"
+                  maxLength={15}
+                  aria-invalid={Boolean(fieldErrors.whatsapp)}
+                  onChange={(e) => {
+                    setCompany({ ...company, whatsapp: e.target.value });
+                    setFieldErrors((current) => ({ ...current, whatsapp: undefined }));
+                  }}
+                />
+                {fieldErrors.whatsapp && (
+                  <p className="text-sm text-destructive">{fieldErrors.whatsapp}</p>
+                )}
               </Field>
             </div>
           )}
@@ -335,22 +436,46 @@ function Onboarding() {
           {step === 1 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="CEP">
-                <Input value={place.zip_code} maxLength={12} onChange={(e) => setPlace({ ...place, zip_code: e.target.value })} />
+                <Input
+                  value={place.zip_code}
+                  maxLength={12}
+                  onChange={(e) => setPlace({ ...place, zip_code: e.target.value })}
+                />
               </Field>
               <Field label="Endereço">
-                <Input value={place.street} maxLength={160} onChange={(e) => setPlace({ ...place, street: e.target.value })} />
+                <Input
+                  value={place.street}
+                  maxLength={160}
+                  onChange={(e) => setPlace({ ...place, street: e.target.value })}
+                />
               </Field>
               <Field label="Número">
-                <Input value={place.number} maxLength={12} onChange={(e) => setPlace({ ...place, number: e.target.value })} />
+                <Input
+                  value={place.number}
+                  maxLength={12}
+                  onChange={(e) => setPlace({ ...place, number: e.target.value })}
+                />
               </Field>
               <Field label="Bairro">
-                <Input value={place.district} maxLength={80} onChange={(e) => setPlace({ ...place, district: e.target.value })} />
+                <Input
+                  value={place.district}
+                  maxLength={80}
+                  onChange={(e) => setPlace({ ...place, district: e.target.value })}
+                />
               </Field>
               <Field label="Cidade">
-                <Input value={place.city} maxLength={80} onChange={(e) => setPlace({ ...place, city: e.target.value })} />
+                <Input
+                  value={place.city}
+                  maxLength={80}
+                  onChange={(e) => setPlace({ ...place, city: e.target.value })}
+                />
               </Field>
               <Field label="Estado (UF)">
-                <Input value={place.state} maxLength={2} onChange={(e) => setPlace({ ...place, state: e.target.value })} />
+                <Input
+                  value={place.state}
+                  maxLength={2}
+                  onChange={(e) => setPlace({ ...place, state: e.target.value })}
+                />
               </Field>
             </div>
           )}
@@ -366,10 +491,18 @@ function Onboarding() {
                 />
               </Field>
               <Field label="Quantidade aproximada de clientes">
-                <Input value={operation.clients_range} maxLength={40} onChange={(e) => setOperation({ ...operation, clients_range: e.target.value })} />
+                <Input
+                  value={operation.clients_range}
+                  maxLength={40}
+                  onChange={(e) => setOperation({ ...operation, clients_range: e.target.value })}
+                />
               </Field>
               <Field label="Quantidade de usuários">
-                <Input value={operation.employees_range} maxLength={40} onChange={(e) => setOperation({ ...operation, employees_range: e.target.value })} />
+                <Input
+                  value={operation.employees_range}
+                  maxLength={40}
+                  onChange={(e) => setOperation({ ...operation, employees_range: e.target.value })}
+                />
               </Field>
             </div>
           )}
@@ -385,19 +518,36 @@ function Onboarding() {
                 <Summary label="Razão social" value={company.legal_name || company.trade_name} />
                 <Summary label="Documento" value={maskDocument(company.document)} />
                 <Summary label="Telefone" value={maskPhone(company.phone)} />
-                <Summary label="Cidade / UF" value={[place.city, place.state].filter(Boolean).join(" / ")} />
+                <Summary
+                  label="Cidade / UF"
+                  value={[place.city, place.state].filter(Boolean).join(" / ")}
+                />
                 <Summary label="Serviços" value={operation.main_services} />
               </dl>
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-            <Button variant="ghost" disabled={step === 0 || saving} onClick={() => setStep((s) => Math.max(0, s - 1))}>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-5">
+            <Button
+              className="rounded-xl"
+              variant="ghost"
+              disabled={step === 0 || saving}
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+            >
               Voltar
             </Button>
-            <Button onClick={advance} disabled={saving || !ready} aria-busy={saving}>
+            <Button
+              className="w-full rounded-xl sm:w-auto"
+              onClick={advance}
+              disabled={saving || !ready}
+              aria-busy={saving}
+            >
               {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
-              {saving ? "Salvando…" : step === 3 ? "Concluir configuração e entrar" : "Salvar e continuar"}
+              {saving
+                ? "Salvando…"
+                : step === 3
+                  ? "Concluir configuração e entrar"
+                  : "Salvar e continuar"}
             </Button>
           </div>
         </CardContent>
@@ -405,7 +555,15 @@ function Onboarding() {
     </div>
   );
 }
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+function Field({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={`space-y-1.5 ${className ?? ""}`}>
       <Label>{label}</Label>
@@ -416,7 +574,7 @@ function Field({ label, children, className }: { label: string; children: React.
 
 function Summary({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border p-3">
+    <div className="rounded-xl border border-border/70 bg-muted/15 p-3">
       <dt className="field-label">{label}</dt>
       <dd className="mt-1 text-sm">{value || "—"}</dd>
     </div>
