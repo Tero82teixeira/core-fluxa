@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Users } from "lucide-react";
+import { Archive, Search, SlidersHorizontal, UserPlus, Users } from "lucide-react";
 
 import { useWorkspace } from "@/lib/workspace";
 import { usePermissions } from "@/lib/permissions";
@@ -147,90 +147,158 @@ function ClientsPage() {
     };
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-5 p-4 sm:p-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="page-title">Clientes</h1>
-          <p className="page-subtitle">
-            {count} {count === 1 ? "cliente encontrado" : "clientes encontrados"} com os filtros
-            atuais.
-          </p>
+    <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+      <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-cyan-500/15 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:40px_40px]"
+          aria-hidden
+        />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="grid size-12 place-items-center rounded-2xl bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/20 ring-1 ring-white/10">
+                <Users className="size-5.5" aria-hidden />
+              </span>
+              <div>
+                <p className="text-xs font-semibold tracking-[0.14em] text-cyan-300 uppercase">
+                  Carteira de relacionamento
+                </p>
+                <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+                  Clientes
+                </h1>
+              </div>
+            </div>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
+              Encontre contatos, acompanhe responsáveis e mantenha cada relacionamento organizado.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+              <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 font-medium text-white">
+                {count} {count === 1 ? "cliente encontrado" : "clientes encontrados"}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                {activeFilterCount > 0
+                  ? `${activeFilterCount} filtro(s) ativo(s)`
+                  : "Visão completa"}
+              </span>
+            </div>
+          </div>
+          {permissions.canCreate && (
+            <Button
+              className="min-h-10 w-full rounded-xl bg-white text-slate-950 shadow-lg shadow-black/10 hover:bg-slate-100 sm:w-auto"
+              asChild
+            >
+              <Link to="/clientes/novo">
+                <UserPlus className="size-4" aria-hidden />
+                Novo cliente
+              </Link>
+            </Button>
+          )}
         </div>
-        {permissions.canCreate && (
-          <Button className="w-full sm:w-auto" asChild>
-            <Link to="/clientes/novo">Novo cliente</Link>
-          </Button>
-        )}
       </header>
 
-      <div className="flex flex-wrap items-center gap-2.5">
-        <Input
-          value={term}
-          onChange={(event) => setTerm(event.target.value)}
-          aria-label="Buscar clientes"
-          placeholder="Buscar por nome, documento, e-mail ou telefone"
-          className="h-10 w-full sm:max-w-xs"
-        />
-        <Select value={status} onValueChange={resetPage(setStatus)}>
-          <SelectTrigger aria-label="Filtrar por status" className="h-10 w-full sm:w-44">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os status</SelectItem>
-            {Object.entries(CLIENT_STATUS).map(([key, meta]) => (
-              <SelectItem key={key} value={key}>
-                {meta.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={personType} onValueChange={resetPage(setPersonType)}>
-          <SelectTrigger aria-label="Filtrar por tipo de pessoa" className="h-10 w-full sm:w-40">
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">PF e PJ</SelectItem>
-            <SelectItem value="pf">Pessoa física</SelectItem>
-            <SelectItem value="pj">Pessoa jurídica</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={owner} onValueChange={resetPage(setOwner)}>
-          <SelectTrigger aria-label="Filtrar por responsável" className="h-10 w-full sm:w-48">
-            <SelectValue placeholder="Responsável" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os responsáveis</SelectItem>
-            {(owners.data ?? []).map((name) => (
-              <SelectItem key={name} value={name}>
-                {name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={sort}
-          onValueChange={resetPage((value: string) => setSort(value as ClientFilters["sort"]))}
-        >
-          <SelectTrigger aria-label="Ordenar lista" className="h-10 w-full sm:w-52">
-            <SelectValue placeholder="Ordenar" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="name">Nome (A–Z)</SelectItem>
-            <SelectItem value="recent">Interação mais recente</SelectItem>
-            <SelectItem value="created">Cadastro mais recente</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          variant={archived ? "default" : "outline"}
-          onClick={() => {
-            setArchived(!archived);
-            setPage(0);
-          }}
-          className="w-full sm:ml-auto sm:w-auto"
-        >
-          {archived ? "Vendo arquivados" : "Ver arquivados"}
-        </Button>
-      </div>
+      <Card className="rounded-2xl border-border/70 bg-card shadow-soft">
+        <CardContent className="p-4 sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="grid size-8 place-items-center rounded-lg bg-primary/8 text-primary">
+                <SlidersHorizontal className="size-4" aria-hidden />
+              </span>
+              Busca e filtros
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {activeFilterCount > 0 ? `${activeFilterCount} ativo(s)` : "Sem filtros"}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="relative w-full sm:max-w-sm">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                value={term}
+                onChange={(event) => setTerm(event.target.value)}
+                aria-label="Buscar clientes"
+                placeholder="Nome, documento, e-mail ou telefone"
+                className="h-10 w-full rounded-xl border-border/70 bg-muted/20 pl-9"
+              />
+            </div>
+            <Select value={status} onValueChange={resetPage(setStatus)}>
+              <SelectTrigger
+                aria-label="Filtrar por status"
+                className="h-10 w-full rounded-xl sm:w-44"
+              >
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os status</SelectItem>
+                {Object.entries(CLIENT_STATUS).map(([key, meta]) => (
+                  <SelectItem key={key} value={key}>
+                    {meta.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={personType} onValueChange={resetPage(setPersonType)}>
+              <SelectTrigger
+                aria-label="Filtrar por tipo de pessoa"
+                className="h-10 w-full rounded-xl sm:w-40"
+              >
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">PF e PJ</SelectItem>
+                <SelectItem value="pf">Pessoa física</SelectItem>
+                <SelectItem value="pj">Pessoa jurídica</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={owner} onValueChange={resetPage(setOwner)}>
+              <SelectTrigger
+                aria-label="Filtrar por responsável"
+                className="h-10 w-full rounded-xl sm:w-48"
+              >
+                <SelectValue placeholder="Responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os responsáveis</SelectItem>
+                {(owners.data ?? []).map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={sort}
+              onValueChange={resetPage((value: string) => setSort(value as ClientFilters["sort"]))}
+            >
+              <SelectTrigger aria-label="Ordenar lista" className="h-10 w-full rounded-xl sm:w-52">
+                <SelectValue placeholder="Ordenar" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Nome (A–Z)</SelectItem>
+                <SelectItem value="recent">Interação mais recente</SelectItem>
+                <SelectItem value="created">Cadastro mais recente</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant={archived ? "default" : "outline"}
+              onClick={() => {
+                setArchived(!archived);
+                setPage(0);
+              }}
+              className="w-full rounded-xl sm:ml-auto sm:w-auto"
+            >
+              <Archive className="size-4" aria-hidden />
+              {archived ? "Vendo arquivados" : "Ver arquivados"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <ActiveFilters count={activeFilterCount} onClear={clearFilters} />
 
@@ -244,7 +312,7 @@ function ClientsPage() {
           retrying={query.isFetching}
         />
       ) : rows.length === 0 ? (
-        <Card>
+        <Card className="rounded-2xl border-border/70 shadow-soft">
           <CardContent className="p-0">
             <EmptyState
               icon={Users}
@@ -255,10 +323,10 @@ function ClientsPage() {
         </Card>
       ) : (
         <>
-          <Card className="hidden md:block">
+          <Card className="hidden overflow-hidden rounded-2xl border-border/70 shadow-soft md:block">
             <CardContent className="overflow-x-auto p-0">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/20">
                   <TableRow>
                     <TableHead>Cliente</TableHead>
                     <TableHead className="hidden md:table-cell">Documento</TableHead>
@@ -270,15 +338,15 @@ function ClientsPage() {
                 </TableHeader>
                 <TableBody>
                   {rows.map((client) => (
-                    <TableRow key={client.id}>
+                    <TableRow key={client.id} className="transition-colors hover:bg-muted/20">
                       <TableCell>
                         <Link
                           to="/clientes/$clientId"
                           params={{ clientId: client.id }}
                           className="flex min-w-0 items-center gap-3"
                         >
-                          <Avatar className="size-8">
-                            <AvatarFallback className="text-xs">
+                          <Avatar className="size-9 rounded-xl ring-1 ring-border/70">
+                            <AvatarFallback className="rounded-xl bg-primary/8 text-xs font-semibold text-primary">
                               {initials(client.name)}
                             </AvatarFallback>
                           </Avatar>
@@ -323,15 +391,17 @@ function ClientsPage() {
 
           <div className="grid gap-3 md:hidden">
             {rows.map((client) => (
-              <Card key={client.id}>
-                <CardContent className="p-4">
+              <Card key={client.id} className="rounded-2xl border-border/70 shadow-soft">
+                <CardContent className="p-4.5">
                   <Link
                     to="/clientes/$clientId"
                     params={{ clientId: client.id }}
                     className="flex items-center gap-3"
                   >
-                    <Avatar className="size-9">
-                      <AvatarFallback className="text-xs">{initials(client.name)}</AvatarFallback>
+                    <Avatar className="size-10 rounded-xl ring-1 ring-border/70">
+                      <AvatarFallback className="rounded-xl bg-primary/8 text-xs font-semibold text-primary">
+                        {initials(client.name)}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{client.name}</p>
@@ -349,13 +419,14 @@ function ClientsPage() {
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft">
             <p className="helper-text">
               Página {page + 1} de {pages}
             </p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
+                className="rounded-xl"
                 disabled={page === 0}
                 onClick={() => setPage((value) => value - 1)}
               >
@@ -363,6 +434,7 @@ function ClientsPage() {
               </Button>
               <Button
                 variant="outline"
+                className="rounded-xl"
                 disabled={page + 1 >= pages}
                 onClick={() => setPage((value) => value + 1)}
               >

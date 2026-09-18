@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
+  ArrowRight,
   BriefcaseBusiness,
   Building2,
   CalendarCheck2,
@@ -12,6 +13,7 @@ import {
   Loader2,
   MessageSquare,
   RefreshCw,
+  Sparkles,
   UserRoundCheck,
 } from "lucide-react";
 
@@ -90,30 +92,43 @@ function MyDayPage() {
   const refresh = () => queries.forEach((query) => void query.refetch());
 
   return (
-    <main className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6">
-      <header className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.11] via-card to-amber-500/[0.08] p-5 shadow-sm sm:p-6">
+    <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+      <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7">
         <div
-          className="pointer-events-none absolute -right-10 -top-20 size-52 rounded-full bg-amber-400/10 blur-3xl"
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-amber-400/15 blur-3xl"
           aria-hidden
         />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:40px_40px]"
+          aria-hidden
+        />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <span className="grid size-11 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+              <span className="grid size-12 place-items-center rounded-2xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/20 ring-1 ring-white/10">
                 <CalendarCheck2 className="size-5" aria-hidden />
               </span>
               <div>
-                <p className="text-xs font-semibold tracking-[0.12em] text-primary uppercase">
+                <p className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.14em] text-amber-300 uppercase">
+                  <Sparkles className="size-3.5" aria-hidden />
                   Prioridades pessoais
                 </p>
-                <h1 className="page-title">Meu Dia</h1>
+                <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+                  Meu Dia
+                </h1>
               </div>
             </div>
-            <p className="page-subtitle mt-2">
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
               Olá, {displayName}. Comece pelo que exige sua atenção agora.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={refresh} disabled={refreshing}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refresh}
+            disabled={refreshing}
+            className="min-h-10 rounded-xl border-white/15 bg-white/[0.07] text-white shadow-sm hover:bg-white/[0.12] hover:text-white"
+          >
             <RefreshCw className={cn("size-4", refreshing && "animate-spin")} aria-hidden />
             Atualizar
           </Button>
@@ -124,39 +139,59 @@ function MyDayPage() {
 
       <section
         aria-label="Resumo do meu dia"
-        className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8"
+        className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8"
       >
-        <Metric label="Atrasados" value={data.summary.overdue} icon={AlertTriangle} critical />
-        <Metric label="Para hoje" value={data.summary.today} icon={Clock3} />
-        <Metric label="Minhas tarefas" value={data.summary.assignedTasks} icon={CheckSquare2} />
+        <Metric label="Atrasados" value={data.summary.overdue} icon={AlertTriangle} tone="rose" />
+        <Metric label="Para hoje" value={data.summary.today} icon={Clock3} tone="amber" />
+        <Metric
+          label="Minhas tarefas"
+          value={data.summary.assignedTasks}
+          icon={CheckSquare2}
+          tone="blue"
+        />
         <Metric
           label="Atendimentos"
           value={data.summary.assignedCommunications}
           icon={MessageSquare}
+          tone="cyan"
         />
-        <Metric label="Sem responsável" value={data.summary.triage} icon={UserRoundCheck} />
+        <Metric
+          label="Sem responsável"
+          value={data.summary.triage}
+          icon={UserRoundCheck}
+          tone="violet"
+        />
         {canReviewDocuments && (
-          <Metric label="Para analisar" value={data.summary.documents} icon={FileCheck2} />
+          <Metric
+            label="Para analisar"
+            value={data.summary.documents}
+            icon={FileCheck2}
+            tone="indigo"
+          />
         )}
         <Metric
           label="Retornos comerciais"
           value={data.summary.commercial}
           icon={BriefcaseBusiness}
+          tone="emerald"
         />
         {platformAdmin && (
           <Metric
             label="Testes para contatar"
             value={data.summary.platformTrials}
             icon={Building2}
+            tone="sky"
           />
         )}
       </section>
 
-      <Card className="overflow-hidden shadow-sm">
-        <CardHeader className="border-b bg-muted/15">
+      <Card className="overflow-hidden rounded-2xl border-border/70 bg-card shadow-soft">
+        <CardHeader className="border-b border-border/60 bg-muted/10">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-lg">Fila de prioridades</CardTitle>
+              <CardTitle className="font-display text-lg tracking-tight">
+                Fila de prioridades
+              </CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
                 Itens atrasados, de hoje e aguardando sua ação aparecem primeiro.
               </p>
@@ -185,7 +220,7 @@ function MyDayPage() {
               </p>
             </div>
           ) : (
-            <ul className="divide-y">
+            <ul className="divide-y divide-border/60">
               {data.items.slice(0, 20).map((item) => {
                 const Icon = kindIcon[item.kind];
                 const state = urgency[item.urgency];
@@ -193,9 +228,9 @@ function MyDayPage() {
                   <li key={item.id}>
                     <Link
                       to={item.href}
-                      className="grid gap-3 p-4 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center"
+                      className="grid gap-3 p-4 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:px-5"
                     >
-                      <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary">
+                      <span className="grid size-10 place-items-center rounded-xl border border-primary/10 bg-primary/8 text-primary shadow-sm">
                         <Icon className="size-4.5" aria-hidden />
                       </span>
                       <span className="min-w-0">
@@ -238,34 +273,69 @@ function Metric({
   label,
   value,
   icon: Icon,
-  critical = false,
+  tone,
 }: {
   label: string;
   value: number;
   icon: typeof Clock3;
-  critical?: boolean;
+  tone: "rose" | "amber" | "blue" | "cyan" | "violet" | "indigo" | "emerald" | "sky";
 }) {
+  const tones = {
+    rose: {
+      accent: "bg-rose-500",
+      icon: "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300",
+      value: "text-rose-700 dark:text-rose-300",
+    },
+    amber: {
+      accent: "bg-amber-500",
+      icon: "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",
+      value: "text-amber-700 dark:text-amber-300",
+    },
+    blue: {
+      accent: "bg-blue-500",
+      icon: "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
+      value: "text-blue-700 dark:text-blue-300",
+    },
+    cyan: {
+      accent: "bg-cyan-500",
+      icon: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300",
+      value: "text-cyan-700 dark:text-cyan-300",
+    },
+    violet: {
+      accent: "bg-violet-500",
+      icon: "bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300",
+      value: "text-violet-700 dark:text-violet-300",
+    },
+    indigo: {
+      accent: "bg-indigo-500",
+      icon: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300",
+      value: "text-indigo-700 dark:text-indigo-300",
+    },
+    emerald: {
+      accent: "bg-emerald-500",
+      icon: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300",
+      value: "text-emerald-700 dark:text-emerald-300",
+    },
+    sky: {
+      accent: "bg-sky-500",
+      icon: "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300",
+      value: "text-sky-700 dark:text-sky-300",
+    },
+  }[tone];
   return (
-    <Card
-      className={cn(
-        "shadow-sm",
-        critical && value > 0 && "border-destructive/30 bg-destructive/[0.03]",
-      )}
-    >
-      <CardContent className="p-4">
+    <Card className="relative overflow-hidden rounded-2xl border-border/70 bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel">
+      <span
+        className={cn("absolute left-4 top-0 h-1 w-8 rounded-b-full", tones.accent)}
+        aria-hidden
+      />
+      <CardContent className="p-4 pt-5">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-medium text-muted-foreground">{label}</p>
-          <Icon
-            className={cn("size-4 text-primary", critical && value > 0 && "text-destructive")}
-            aria-hidden
-          />
+          <span className={cn("grid size-8 place-items-center rounded-lg", tones.icon)}>
+            <Icon className="size-4" aria-hidden />
+          </span>
         </div>
-        <p
-          className={cn(
-            "mt-2 text-2xl font-semibold tabular-nums",
-            critical && value > 0 && "text-destructive",
-          )}
-        >
+        <p className={cn("mt-2 font-display text-2xl font-semibold tabular-nums", tones.value)}>
           {value}
         </p>
       </CardContent>
@@ -283,10 +353,20 @@ function Shortcut({
   icon: typeof Clock3;
 }) {
   return (
-    <Button variant="outline" className="min-h-12 justify-start" asChild>
+    <Button
+      variant="outline"
+      className="group min-h-14 justify-start rounded-xl border-border/70 bg-card px-4 shadow-soft hover:border-primary/20 hover:bg-card hover:shadow-panel"
+      asChild
+    >
       <Link to={href}>
-        <Icon className="size-4" aria-hidden />
-        {label}
+        <span className="grid size-8 place-items-center rounded-lg bg-primary/8 text-primary">
+          <Icon className="size-4" aria-hidden />
+        </span>
+        <span className="flex-1 text-left">{label}</span>
+        <ArrowRight
+          className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+          aria-hidden
+        />
       </Link>
     </Button>
   );
