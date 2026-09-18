@@ -39,3 +39,10 @@ test("seletor de Processos evita sobreposição entre Quadro e Lista", () => {
   assert.match(processes, /sm:w-60 sm:shrink-0/);
   assert.match(processes, /min-w-0 whitespace-nowrap rounded-lg/);
 });
+
+test("cabeçalho de Processos preserva a proporção em larguras intermediárias", () => {
+  assert.match(processes, /gap-4 xl:flex-row xl:items-end xl:justify-between/);
+  assert.match(processes, /min-w-0 xl:flex-1/);
+  assert.match(processes, /sm:justify-end xl:w-auto xl:shrink-0/);
+  assert.doesNotMatch(processes, /gap-5 lg:flex-row lg:items-end lg:justify-between/);
+});
