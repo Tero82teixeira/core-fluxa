@@ -74,7 +74,7 @@ function DetailCard({
   description: string;
 }) {
   return (
-    <Card>
+    <Card className="rounded-2xl border-border/70 shadow-soft">
       <CardContent className="flex flex-col items-start gap-3 p-4 sm:flex-row">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
           <Icon className="size-5" aria-hidden />
@@ -103,7 +103,7 @@ function SubscriptionPage() {
   if (!canReadSubscription) {
     return (
       <div className="mx-auto w-full max-w-3xl p-4 sm:p-6">
-        <Card>
+        <Card className="rounded-2xl border-border/70 shadow-soft">
           <CardContent className="flex gap-3 p-6">
             <ShieldCheck className="size-6 shrink-0 text-muted-foreground" aria-hidden />
             <div>
@@ -135,7 +135,7 @@ function SubscriptionPage() {
   if (query.isError) {
     return (
       <div className="mx-auto w-full max-w-3xl p-4 sm:p-6">
-        <Card>
+        <Card className="rounded-2xl border-border/70 shadow-soft">
           <CardContent className="flex gap-3 p-6 text-sm text-muted-foreground">
             <TriangleAlert className="size-5 shrink-0 text-destructive" aria-hidden />
             Não foi possível carregar a assinatura. Tente novamente em alguns instantes.
@@ -154,20 +154,53 @@ function SubscriptionPage() {
     checkout.canSubscribe && canRestartKiwifyCheckout(status, subscription?.access_until ?? null);
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="page-title">Minha assinatura</h1>
-          <p className="page-subtitle">
-            Consulte o plano, as cobranças e o período de acesso da sua empresa.
-          </p>
+    <div className="mx-auto w-full max-w-[1400px] space-y-6 p-4 sm:p-6 lg:p-8">
+      <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-emerald-400/15 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:40px_40px]"
+          aria-hidden
+        />
+        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="grid size-12 place-items-center rounded-2xl bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-400/20 ring-1 ring-white/10">
+                <CreditCard className="size-5.5" aria-hidden />
+              </span>
+              <div>
+                <p className="text-xs font-semibold tracking-[0.14em] text-emerald-300 uppercase">
+                  Plano e faturamento
+                </p>
+                <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+                  Minha assinatura
+                </h1>
+              </div>
+            </div>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
+              Consulte o plano, as cobranças e o período de acesso da sua empresa.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+              <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 font-medium text-white">
+                {FLUXA_PLAN_NAME}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                {currency.format(FLUXA_MONTHLY_PRICE)} por mês
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                {displayStatus}
+              </span>
+            </div>
+          </div>
+          <Badge variant="outline" className="h-9 border-white/15 bg-white/[0.06] px-3 text-white">
+            Pagamentos processados pela Kiwify
+          </Badge>
         </div>
-        <Badge variant="outline" className="h-8 px-3">
-          Pagamentos processados pela Kiwify
-        </Badge>
       </header>
 
-      <Card className={statusTone(isTrial ? null : status)}>
+      <Card className={`rounded-2xl shadow-soft ${statusTone(isTrial ? null : status)}`}>
         <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
           <div className="flex items-center gap-3">
             <span className="grid size-12 place-items-center rounded-full bg-background/80 shadow-sm">
@@ -234,7 +267,7 @@ function SubscriptionPage() {
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="rounded-2xl border-border/70 shadow-soft">
           <CardHeader>
             <CardTitle className="text-base">Dados de cobrança</CardTitle>
           </CardHeader>
@@ -257,7 +290,7 @@ function SubscriptionPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-2xl border-border/70 shadow-soft">
           <CardHeader>
             <CardTitle className="text-base">Gerenciamento e suporte</CardTitle>
           </CardHeader>

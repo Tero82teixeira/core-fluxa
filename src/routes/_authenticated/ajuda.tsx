@@ -79,32 +79,51 @@ function HelpPage() {
     Boolean,
   );
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-8 p-4 sm:p-6">
-      <header className="rounded-2xl bg-gradient-to-br from-primary/15 via-background to-background p-5 sm:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="mx-auto w-full max-w-[1600px] space-y-8 p-4 sm:p-6 lg:p-8">
+      <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-8">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-cyan-400/15 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:40px_40px]"
+          aria-hidden
+        />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
-            <Badge className="mb-3" variant="secondary">
-              <LifeBuoy className="mr-1 size-3" />
-              Central de conhecimento
-            </Badge>
-            <h1 className="page-title">Ajuda e Suporte</h1>
-            <p className="page-subtitle mt-2 max-w-2xl">
+            <div className="flex items-center gap-3">
+              <span className="grid size-12 place-items-center rounded-2xl bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/20 ring-1 ring-white/10">
+                <LifeBuoy className="size-5.5" aria-hidden />
+              </span>
+              <div>
+                <p className="text-xs font-semibold tracking-[0.14em] text-cyan-300 uppercase">
+                  Central de conhecimento
+                </p>
+                <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+                  Ajuda e Suporte
+                </h1>
+              </div>
+            </div>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
               Encontre respostas para usar a FLUXA e acompanhe solicitações internas com segurança.
             </p>
           </div>
-          <Button onClick={() => setSupportOpen(true)}>
+          <Button
+            className="w-full bg-white text-slate-950 hover:bg-slate-100 sm:w-auto"
+            onClick={() => setSupportOpen(true)}
+          >
             <LifeBuoy />
             Solicitar suporte
           </Button>
         </div>
         <div className="relative mt-6 max-w-3xl">
-          <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400" />
           <Input
             aria-label="Como podemos ajudar?"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Como podemos ajudar?"
-            className="h-12 bg-background pl-12 text-base"
+            className="h-12 rounded-xl border-white/15 bg-white/[0.08] pl-12 text-base text-white placeholder:text-slate-400 focus-visible:ring-cyan-300"
           />
         </div>
       </header>
@@ -176,7 +195,7 @@ function HelpPage() {
                 type="button"
                 key={a.id}
                 onClick={(event) => openHelpArticle(event, a, setSelected)}
-                className="flex w-full items-center justify-between rounded-lg border bg-card p-3 text-left hover:bg-accent"
+                className="flex w-full items-center justify-between rounded-xl border border-border/70 bg-card p-3 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:bg-accent hover:shadow-panel"
               >
                 <span>
                   <strong className="block text-sm">{a.title}</strong>
@@ -195,7 +214,7 @@ function HelpPage() {
                 type="button"
                 key={a.id}
                 onClick={(event) => openHelpArticle(event, a, setSelected)}
-                className="w-full rounded-lg border bg-card p-3 text-left text-sm font-medium hover:bg-accent"
+                className="w-full rounded-xl border border-border/70 bg-card p-3 text-left text-sm font-medium shadow-soft transition-all hover:-translate-y-0.5 hover:bg-accent hover:shadow-panel"
               >
                 {a.question}
               </button>
@@ -277,7 +296,7 @@ function ArticleCard({
   onOpen: (a: HelpArticle) => void;
 }) {
   return (
-    <Card className="transition hover:-translate-y-0.5 hover:shadow-md">
+    <Card className="rounded-2xl border-border/70 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel">
       <CardHeader>
         <Badge variant="outline" className="w-fit">
           {article.category}

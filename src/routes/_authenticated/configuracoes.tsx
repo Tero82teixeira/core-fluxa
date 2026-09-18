@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Building2, Lock, Save } from "lucide-react";
+import { Building2, Lock, Save, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { useWorkspace } from "@/lib/workspace";
 import { useSession } from "@/hooks/use-session";
@@ -108,7 +108,7 @@ function Toggle({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 bg-muted/15 p-3">
       <Label>{label}</Label>
       <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />
     </div>
@@ -136,7 +136,7 @@ function SettingSelect({
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-xl border px-3 py-1 text-sm shadow-xs focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
       >
         {options.map(([option, text]) => (
           <option key={option} value={option}>
@@ -149,7 +149,7 @@ function SettingSelect({
 }
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card>
+    <Card className="rounded-2xl border-border/70 shadow-soft">
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
@@ -223,24 +223,65 @@ function SettingsPage() {
   const notify =
     d.notification_preferences ?? ORGANIZATION_SETTINGS_DEFAULTS.notification_preferences;
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="page-title">Configurações</h1>
-          <p className="page-subtitle">
-            Central de Administração de {d.trade_name || d.legal_name}.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {dirty && <Badge variant="outline">Alterações não salvas</Badge>}
-          <Button onClick={save} disabled={!canEdit || !dirty || update.isPending}>
-            <Save className="size-4" />
-            {update.isPending ? "Salvando…" : "Salvar alterações"}
-          </Button>
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
+      <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-teal-400/15 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:40px_40px]"
+          aria-hidden
+        />
+        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="grid size-12 place-items-center rounded-2xl bg-teal-400 text-slate-950 shadow-lg shadow-teal-400/20 ring-1 ring-white/10">
+                <Settings2 className="size-5.5" aria-hidden />
+              </span>
+              <div>
+                <p className="text-xs font-semibold tracking-[0.14em] text-teal-300 uppercase">
+                  Administração central
+                </p>
+                <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+                  Configurações
+                </h1>
+              </div>
+            </div>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
+              Central de Administração de {d.trade_name || d.legal_name}.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+              <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 font-medium text-white">
+                {tabs.length} áreas configuráveis
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                {canEdit ? "Edição autorizada" : "Somente leitura"}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                {dirty ? "Alterações pendentes" : "Tudo salvo"}
+              </span>
+            </div>
+          </div>
+          <div className="flex w-full items-center gap-2 xl:w-auto xl:justify-end">
+            {dirty && (
+              <Badge className="border-white/15 bg-white/[0.06] text-white" variant="outline">
+                Alterações não salvas
+              </Badge>
+            )}
+            <Button
+              className="flex-1 bg-white text-slate-950 hover:bg-slate-100 sm:flex-none"
+              onClick={save}
+              disabled={!canEdit || !dirty || update.isPending}
+            >
+              <Save className="size-4" />
+              {update.isPending ? "Salvando…" : "Salvar alterações"}
+            </Button>
+          </div>
         </div>
       </header>
       {!canEdit && (
-        <Card>
+        <Card className="rounded-2xl border-border/70 shadow-soft">
           <CardContent className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
             <Lock className="size-4" />
             Seu papel possui acesso somente para leitura. As permissões também são verificadas no
@@ -249,9 +290,9 @@ function SettingsPage() {
         </Card>
       )}
       <Tabs defaultValue="geral">
-        <TabsList className="h-auto w-full flex-wrap justify-start">
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-1.5 rounded-2xl border border-border/70 bg-card p-2 shadow-soft">
           {tabs.map(([key, label]) => (
-            <TabsTrigger key={key} value={key}>
+            <TabsTrigger className="rounded-xl px-4 py-2" key={key} value={key}>
               {label}
             </TabsTrigger>
           ))}
