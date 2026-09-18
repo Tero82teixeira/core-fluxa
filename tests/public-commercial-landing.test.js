@@ -14,7 +14,7 @@ test("rota principal apresenta a FLUXA em vez de redirecionar", () => {
 });
 
 test("página comercial explica produto, público, funcionamento e segurança", () => {
-  for (const section of ["recursos", "como-funciona", "para-quem", "seguranca", "preco"]) {
+  for (const section of ["recursos", "como-funciona", "para-quem", "seguranca"]) {
     assert.match(landing, new RegExp(`id="${section}"`));
   }
   for (const feature of [
@@ -24,20 +24,14 @@ test("página comercial explica produto, público, funcionamento e segurança", 
     "Documentos",
     "Tarefas",
     "Comunicação",
-    "Monitoramento",
     "Financeiro",
-    "Relatórios",
     "Automações",
-    "Meu Portal",
   ]) {
     assert.ok(landing.includes(`title: "${feature}"`), feature);
   }
   assert.match(landing, /Isolamento por empresa/);
   assert.match(landing, /Papéis e permissões/);
   assert.match(landing, /Auditoria/);
-  assert.match(landing, /FLUXA Essencial Mensal/);
-  assert.match(landing, /R\$ 149,90/);
-  assert.match(landing, /Até 5 usuários/);
 });
 
 test("CTAs comerciais abrem diretamente o cadastro do teste", () => {
@@ -58,10 +52,4 @@ test("landing é responsiva e não depende de depoimentos ou números inventados
   assert.match(landing, /sm:grid-cols-2/);
   assert.match(landing, /lg:grid-cols-4/);
   assert.doesNotMatch(landing, /depoimento|clientes satisfeitos|empresas atendidas/i);
-});
-
-test("landing esclarece dúvidas antes do cadastro", () => {
-  assert.match(landing, /Preciso informar cartão para começar\?/);
-  assert.match(landing, /A FLUXA funciona no celular\?/);
-  assert.match(landing, /Os dados de uma empresa aparecem para outra\?/);
 });

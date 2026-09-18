@@ -5,8 +5,8 @@ import { FileText, FolderOpen, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ErrorState, LoadingState } from "@/components/shared/async-state";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DocumentCard } from "@/components/documents/document-list";
 import { DocumentUploadDialog } from "@/components/documents/document-upload-dialog";
@@ -209,14 +209,17 @@ function Page() {
       </Card>
 
       {documents.isLoading ? (
-        <LoadingState label="Carregando documentos" rows={4} />
+        <div className="space-y-3">
+          {[0, 1, 2].map((key) => (
+            <Skeleton key={key} className="h-24 w-full" />
+          ))}
+        </div>
       ) : documents.isError ? (
-        <ErrorState
-          title="Não foi possível carregar os documentos"
-          description="Tente novamente para recuperar o repositório com os filtros atuais."
-          onRetry={() => void documents.refetch()}
-          retrying={documents.isFetching}
-        />
+        <Card>
+          <CardContent className="p-6 text-sm text-destructive">
+            Não foi possível carregar os documentos. Atualize a página e tente novamente.
+          </CardContent>
+        </Card>
       ) : rows.length === 0 ? (
         <Card>
           <CardContent className="p-0">

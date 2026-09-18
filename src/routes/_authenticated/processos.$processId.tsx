@@ -3,12 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2, Circle, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  useProcess,
-  useProcessChecklist,
-  useProcessMovements,
-  useTasks,
-} from "@/hooks/use-operations";
+import { useProcess, useProcessChecklist, useProcessMovements, useTasks } from "@/hooks/use-operations";
 import { useWorkspace } from "@/lib/workspace";
 import {
   useAddProcessNote,
@@ -28,13 +23,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentScopePanel } from "@/components/documents/document-scope-panel";
 import { DocumentUploadDialog } from "@/components/documents/document-upload-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,15 +49,9 @@ export const Route = createFileRoute("/_authenticated/processos/$processId")({
   head: () => ({
     meta: [
       { title: "Detalhe do processo — FLUXA" },
-      {
-        name: "description",
-        content: "Linha do tempo, checklist documental, prazos e financeiro do processo.",
-      },
+      { name: "description", content: "Linha do tempo, checklist documental, prazos e financeiro do processo." },
       { property: "og:title", content: "Detalhe do processo — FLUXA" },
-      {
-        property: "og:description",
-        content: "Linha do tempo, checklist documental, prazos e financeiro do processo.",
-      },
+      { property: "og:description", content: "Linha do tempo, checklist documental, prazos e financeiro do processo." },
     ],
   }),
   component: ProcessDetail,
@@ -104,27 +87,16 @@ function ProcessDetail() {
   }
 
   if (!process.data) {
-    return (
-      <p className="p-6 text-sm text-muted-foreground">Processo não encontrado nesta empresa.</p>
-    );
+    return <p className="p-6 text-sm text-muted-foreground">Processo não encontrado nesta empresa.</p>;
   }
 
   const data = process.data;
   const days = daysUntil(data.due_date);
   const deadlineLabel =
-    days === null
-      ? "Sem prazo"
-      : days < 0
-        ? `Atrasado ${Math.abs(days)} dia(s)`
-        : days === 0
-          ? "Vence hoje"
-          : `Faltam ${days} dia(s)`;
-  const deadlineTone =
-    days === null ? "neutral" : days < 0 ? "danger" : days <= 2 ? "warning" : "success";
+    days === null ? "Sem prazo" : days < 0 ? `Atrasado ${Math.abs(days)} dia(s)` : days === 0 ? "Vence hoje" : `Faltam ${days} dia(s)`;
+  const deadlineTone = days === null ? "neutral" : days < 0 ? "danger" : days <= 2 ? "warning" : "success";
   const checklistItems = checklist.data ?? [];
-  const checklistDone = checklistItems.filter(
-    (item) => item.status === "aprovado" || item.status === "recebido",
-  ).length;
+  const checklistDone = checklistItems.filter((item) => item.status === "aprovado" || item.status === "recebido").length;
   const docsTotal = checklistItems.length || data.documents_total;
   const docsReceived = checklistItems.length ? checklistDone : data.documents_received;
   const docsPct = docsTotal ? Math.round((docsReceived / docsTotal) * 100) : 0;
@@ -143,7 +115,7 @@ function ProcessDetail() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
       <Card>
-        <CardContent className="space-y-6 p-4 sm:p-6">
+        <CardContent className="space-y-6 p-6">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <div className="min-w-0">
               <p className="field-label">Cliente</p>
@@ -160,18 +132,10 @@ function ProcessDetail() {
                 {data.service_types?.name ?? data.title} · Responsável {data.owner_name}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <StatusBadge
-                  label={PROCESS_STAGE[data.stage].label}
-                  tone={PROCESS_STAGE[data.stage].tone}
-                />
-                <StatusBadge
-                  label={PRIORITY[data.priority].label}
-                  tone={PRIORITY[data.priority].tone}
-                />
+                <StatusBadge label={PROCESS_STAGE[data.stage].label} tone={PROCESS_STAGE[data.stage].tone} />
+                <StatusBadge label={PRIORITY[data.priority].label} tone={PRIORITY[data.priority].tone} />
                 <StatusBadge label={deadlineLabel} tone={deadlineTone} />
-                <span className="text-sm text-muted-foreground">
-                  Prazo {formatDate(data.due_date)}
-                </span>
+                <span className="text-sm text-muted-foreground">Prazo {formatDate(data.due_date)}</span>
               </div>
               <p className="mt-3 max-w-2xl text-sm text-muted-foreground">{data.description}</p>
             </div>
@@ -186,30 +150,19 @@ function ProcessDetail() {
                   const to = value as ProcessStage;
                   if (to === data.stage) return;
                   try {
-                    await moveStage.mutateAsync({
-                      processId,
-                      from: data.stage,
-                      to,
-                      code: data.code,
-                    });
+                    await moveStage.mutateAsync({ processId, from: data.stage, to, code: data.code });
                     toast.success(`${data.code} agora está em ${PROCESS_STAGE[to].label}.`);
                   } catch (error) {
                     toast.error(describeError(error, "etapa"));
                   }
                 }}
               >
-                <SelectTrigger
-                  id="stage-select"
-                  aria-label="Alterar etapa do processo"
-                  className="h-10 w-full"
-                >
+                <SelectTrigger id="stage-select" aria-label="Alterar etapa do processo" className="h-10 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {KANBAN_STAGES.map((stage) => (
-                    <SelectItem key={stage} value={stage}>
-                      {PROCESS_STAGE[stage].label}
-                    </SelectItem>
+                    <SelectItem key={stage} value={stage}>{PROCESS_STAGE[stage].label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -272,8 +225,7 @@ function ProcessDetail() {
             {KANBAN_STAGES.map((stage, index) => {
               const isCurrent = index === currentIndex;
               const isDone = index < currentIndex;
-              const pending =
-                isCurrent && (data.stage === "exigencia" || data.stage === "aguardando_documentos");
+              const pending = isCurrent && (data.stage === "exigencia" || data.stage === "aguardando_documentos");
               return (
                 <li
                   key={stage}
@@ -300,27 +252,18 @@ function ProcessDetail() {
             })}
           </ol>
           <p className="helper-text mt-3">
-            Verde: etapa concluída · Azul: etapa atual · Vermelho: etapa com pendência · Cinza:
-            etapa futura.
+            Verde: etapa concluída · Azul: etapa atual · Vermelho: etapa com pendência · Cinza: etapa futura.
           </p>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Tabs defaultValue="timeline">
-          <TabsList className="h-auto w-full max-w-full justify-start gap-1.5 overflow-x-auto p-1.5">
-            <TabsTrigger value="timeline" className="shrink-0 px-4 py-2 text-sm">
-              Linha do tempo
-            </TabsTrigger>
-            <TabsTrigger value="documentos" className="shrink-0 px-4 py-2 text-sm">
-              Checklist ({checklistItems.length})
-            </TabsTrigger>
-            <TabsTrigger value="arquivos" className="shrink-0 px-4 py-2 text-sm">
-              Documentos
-            </TabsTrigger>
-            <TabsTrigger value="tarefas" className="shrink-0 px-4 py-2 text-sm">
-              Tarefas ({relatedTasks.length})
-            </TabsTrigger>
+          <TabsList className="h-auto flex-wrap gap-1.5 p-1.5">
+            <TabsTrigger value="timeline" className="px-4 py-2 text-sm">Linha do tempo</TabsTrigger>
+            <TabsTrigger value="documentos" className="px-4 py-2 text-sm">Checklist ({checklistItems.length})</TabsTrigger>
+            <TabsTrigger value="arquivos" className="px-4 py-2 text-sm">Documentos</TabsTrigger>
+            <TabsTrigger value="tarefas" className="px-4 py-2 text-sm">Tarefas ({relatedTasks.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="arquivos">
@@ -330,17 +273,18 @@ function ProcessDetail() {
             />
           </TabsContent>
 
+
+
           <TabsContent value="timeline">
             <Card>
-              <CardContent className="p-4 sm:p-6">
+              <CardContent className="p-6">
                 <ul className="space-y-4">
                   {(movements.data ?? []).map((movement) => (
                     <li key={movement.id} className="border-l-2 border-border pl-4">
                       <p className="text-sm font-medium">{movement.description}</p>
                       {movement.from_stage && movement.to_stage && (
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {PROCESS_STAGE[movement.from_stage].label} →{" "}
-                          {PROCESS_STAGE[movement.to_stage].label}
+                          {PROCESS_STAGE[movement.from_stage].label} → {PROCESS_STAGE[movement.to_stage].label}
                         </p>
                       )}
                       <p className="mt-0.5 text-xs text-muted-foreground">
@@ -349,9 +293,7 @@ function ProcessDetail() {
                     </li>
                   ))}
                   {(movements.data ?? []).length === 0 && (
-                    <li className="text-sm text-muted-foreground">
-                      Nenhuma movimentação registrada.
-                    </li>
+                    <li className="text-sm text-muted-foreground">Nenhuma movimentação registrada.</li>
                   )}
                 </ul>
               </CardContent>
@@ -360,12 +302,10 @@ function ProcessDetail() {
 
           <TabsContent value="documentos">
             <Card>
-              <CardContent className="p-4 sm:p-6">
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between text-sm">
                   <span className="card-title">Checklist operacional</span>
-                  <span className="text-muted-foreground">
-                    {docsReceived}/{docsTotal} concluídos
-                  </span>
+                  <span className="text-muted-foreground">{docsReceived}/{docsTotal} concluídos</span>
                 </div>
                 <Progress value={docsPct} className="mt-3 h-1.5" />
 
@@ -397,11 +337,7 @@ function ProcessDetail() {
                       maxLength={160}
                       className="h-10 min-w-0 flex-1"
                     />
-                    <Button
-                      className="w-full sm:w-auto"
-                      type="submit"
-                      disabled={createChecklistItem.isPending}
-                    >
+                    <Button type="submit" disabled={createChecklistItem.isPending}>
                       <Plus className="size-4" aria-hidden /> Adicionar
                     </Button>
                   </form>
@@ -417,7 +353,7 @@ function ProcessDetail() {
                           {item.due_date ? ` · Prazo ${formatDate(item.due_date)}` : ""}
                         </p>
                       </div>
-                      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
+                      <div className="flex shrink-0 items-center gap-2">
                         <Select
                           value={item.status}
                           disabled={!permissions.canEdit || updateChecklistItem.isPending}
@@ -435,17 +371,12 @@ function ProcessDetail() {
                             }
                           }}
                         >
-                          <SelectTrigger
-                            className="h-9 min-w-0 flex-1 sm:w-44 sm:flex-none"
-                            aria-label={`Status do item ${item.title}`}
-                          >
+                          <SelectTrigger className="h-9 w-44" aria-label={`Status do item ${item.title}`}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {Object.entries(CHECKLIST_LABEL).map(([key, label]) => (
-                              <SelectItem key={key} value={key}>
-                                {label}
-                              </SelectItem>
+                              <SelectItem key={key} value={key}>{label}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -459,6 +390,7 @@ function ProcessDetail() {
                           </Button>
                         )}
                         {permissions.canEdit && (
+
                           <Button
                             variant="ghost"
                             size="icon"
@@ -494,7 +426,7 @@ function ProcessDetail() {
 
           <TabsContent value="tarefas">
             <Card>
-              <CardContent className="p-4 sm:p-6">
+              <CardContent className="p-6">
                 <form
                   className="mb-4 flex flex-wrap gap-2"
                   onSubmit={async (event) => {
@@ -522,11 +454,7 @@ function ProcessDetail() {
                     maxLength={160}
                     className="h-10 min-w-0 flex-1"
                   />
-                  <Button
-                    className="w-full sm:w-auto"
-                    type="submit"
-                    disabled={createTask.isPending}
-                  >
+                  <Button type="submit" disabled={createTask.isPending}>
                     <Plus className="size-4" aria-hidden /> Adicionar
                   </Button>
                 </form>
@@ -552,9 +480,7 @@ function ProcessDetail() {
                           }}
                         />
                         <span className="min-w-0">
-                          <span
-                            className={`block truncate text-sm font-medium ${task.status === "concluida" ? "text-muted-foreground line-through" : ""}`}
-                          >
+                          <span className={`block truncate text-sm font-medium ${task.status === "concluida" ? "text-muted-foreground line-through" : ""}`}>
                             {task.title}
                           </span>
                           <span className="text-xs text-muted-foreground">
@@ -562,10 +488,7 @@ function ProcessDetail() {
                           </span>
                         </span>
                       </label>
-                      <StatusBadge
-                        label={TASK_STATUS[task.status].label}
-                        tone={TASK_STATUS[task.status].tone}
-                      />
+                      <StatusBadge label={TASK_STATUS[task.status].label} tone={TASK_STATUS[task.status].tone} />
                     </li>
                   ))}
                   {relatedTasks.length === 0 && (

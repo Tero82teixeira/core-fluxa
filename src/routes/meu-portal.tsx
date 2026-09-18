@@ -37,24 +37,12 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -110,11 +98,7 @@ import { PIPELINE_STAGES, PROCESS_STAGE, type Tone } from "@/lib/domain";
 import { describeError } from "@/lib/errors";
 import { civilDateKey, formatDate, formatDateTime } from "@/lib/format";
 import { PortalFaq } from "@/components/client-portal/portal-faq";
-import {
-  PortalCallbackCenter,
-  PortalConversationRating,
-  PortalPushPrompt,
-} from "@/components/client-portal/portal-experience";
+import { PortalCallbackCenter, PortalConversationRating, PortalPushPrompt } from "@/components/client-portal/portal-experience";
 import type { ClientPortalFaqArticle } from "@/hooks/use-client-portal-faq";
 import { usePortalAsaasCharges, type PortalAsaasCharge } from "@/hooks/use-asaas";
 
@@ -145,7 +129,9 @@ function MyClientPortal() {
   const notifications = useClientPortalNotifications(contentEnabled, user?.id ?? null);
   const charges = usePortalAsaasCharges(contentEnabled, user?.id ?? null);
   const markNotificationRead = useMarkClientPortalNotificationRead(user?.id ?? null);
-  const markConversationNotificationsRead = useMarkClientPortalNotificationsRead(user?.id ?? null);
+  const markConversationNotificationsRead = useMarkClientPortalNotificationsRead(
+    user?.id ?? null,
+  );
   const markAllNotificationsRead = useMarkAllClientPortalNotificationsRead(user?.id ?? null);
   const [activeTab, setActiveTab] = useState<PortalTab>("inicio");
   const [highlightedEntity, setHighlightedEntity] = useState<string | null>(null);
@@ -153,13 +139,7 @@ function MyClientPortal() {
     contentEnabled,
     user?.id ?? null,
   );
-  const requestedThreadId = useMemo(
-    () =>
-      typeof window === "undefined"
-        ? null
-        : new URLSearchParams(window.location.search).get("thread"),
-    [],
-  );
+  const requestedThreadId = useMemo(() => typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("thread"), []);
   const requestedPayment = useMemo(
     () =>
       typeof window === "undefined"
@@ -178,17 +158,21 @@ function MyClientPortal() {
   const [openingDocument, setOpeningDocument] = useState<string | null>(null);
   const [downloadingDocument, setDownloadingDocument] = useState<string | null>(null);
   const [documentSearch, setDocumentSearch] = useState("");
-  const [documentStatusFilter, setDocumentStatusFilter] =
-    useState<DocumentPortalStatusFilter>("todos");
-  const [documentProcessFilter, setDocumentProcessFilter] = useState("todos");
-  const [documentCategoryFilter, setDocumentCategoryFilter] = useState<DocumentCategory | "todas">(
-    "todas",
+  const [documentStatusFilter, setDocumentStatusFilter] = useState<DocumentPortalStatusFilter>(
+    "todos",
   );
+  const [documentProcessFilter, setDocumentProcessFilter] = useState("todos");
+  const [documentCategoryFilter, setDocumentCategoryFilter] = useState<
+    DocumentCategory | "todas"
+  >("todas");
   const [requestSearch, setRequestSearch] = useState("");
-  const [requestStatusFilter, setRequestStatusFilter] =
-    useState<RequestPortalStatusFilter>("todos");
+  const [requestStatusFilter, setRequestStatusFilter] = useState<RequestPortalStatusFilter>(
+    "todos",
+  );
   const [uploadingRequest, setUploadingRequest] = useState<string | null>(null);
-  const [selectedCommunicationId, setSelectedCommunicationId] = useState<string | null>(null);
+  const [selectedCommunicationId, setSelectedCommunicationId] = useState<string | null>(
+    null,
+  );
   const communicationEntries = useClientPortalCommunicationEntries(
     selectedCommunicationId,
     user?.id ?? null,
@@ -219,13 +203,11 @@ function MyClientPortal() {
   const communicationFileInputRef = useRef<HTMLInputElement>(null);
   const quickChatFileInputRef = useRef<HTMLInputElement>(null);
   const selectedCommunication =
-    communicationThreads.data?.find((thread) => thread.thread_id === selectedCommunicationId) ??
-    null;
+    communicationThreads.data?.find(
+      (thread) => thread.thread_id === selectedCommunicationId,
+    ) ?? null;
   useEffect(() => {
-    if (
-      requestedThreadId &&
-      communicationThreads.data?.some((thread) => thread.thread_id === requestedThreadId)
-    ) {
+    if (requestedThreadId && communicationThreads.data?.some((thread) => thread.thread_id === requestedThreadId)) {
       setActiveTab("comunicacao");
       setSelectedCommunicationId(requestedThreadId);
     }
@@ -273,9 +255,8 @@ function MyClientPortal() {
   }, [documents.data]);
   const documentCategoryOptions = useMemo(
     () =>
-      [...new Set((documents.data ?? []).map((document) => document.category))].sort(
-        (left, right) =>
-          DOCUMENT_CATEGORY[left].label.localeCompare(DOCUMENT_CATEGORY[right].label, "pt-BR"),
+      [...new Set((documents.data ?? []).map((document) => document.category))].sort((left, right) =>
+        DOCUMENT_CATEGORY[left].label.localeCompare(DOCUMENT_CATEGORY[right].label, "pt-BR"),
       ),
     [documents.data],
   );
@@ -400,8 +381,7 @@ function MyClientPortal() {
         notification.entity_type !== "communication" ||
         !notification.entity_id ||
         seenThreads.has(notification.entity_id)
-      )
-        continue;
+      ) continue;
       seenThreads.add(notification.entity_id);
       items.push({
         id: `message:${notification.entity_id}`,
@@ -417,10 +397,7 @@ function MyClientPortal() {
     }
 
     return items
-      .sort(
-        (left, right) =>
-          left.priority - right.priority || left.sortDate.localeCompare(right.sortDate),
-      )
+      .sort((left, right) => left.priority - right.priority || left.sortDate.localeCompare(right.sortDate))
       .slice(0, 5);
   }, [notifications.data, requests.data]);
   usePortalChatRealtime({
@@ -440,12 +417,20 @@ function MyClientPortal() {
   useEffect(() => {
     if (!selectedCommunicationId) return;
     const frame = window.requestAnimationFrame(() => {
-      for (const timeline of [communicationTimelineRef.current, quickChatTimelineRef.current]) {
+      for (const timeline of [
+        communicationTimelineRef.current,
+        quickChatTimelineRef.current,
+      ]) {
         if (timeline) timeline.scrollTop = timeline.scrollHeight;
       }
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [activeTab, quickChatOpen, selectedCommunicationId, communicationEntries.data]);
+  }, [
+    activeTab,
+    quickChatOpen,
+    selectedCommunicationId,
+    communicationEntries.data,
+  ]);
 
   useEffect(() => {
     const conversationIsVisible = quickChatOpen || activeTab === "comunicacao";
@@ -485,8 +470,7 @@ function MyClientPortal() {
       !(communicationEntries.data ?? []).some(
         (entry) => entry.author_kind === "company" && !entry.read_at,
       )
-    )
-      return;
+    ) return;
     void markCommunicationRead.mutateAsync(selectedCommunicationId);
   }, [
     activeTab,
@@ -741,7 +725,7 @@ function MyClientPortal() {
       </header>
 
       <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pt-6 pb-28 sm:px-6 sm:pt-8">
-        <section className="relative overflow-hidden rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/15 via-background to-background p-4 shadow-xl shadow-primary/5 sm:p-8">
+        <section className="relative overflow-hidden rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/15 via-background to-background p-6 shadow-xl shadow-primary/5 sm:p-8">
           <div className="absolute -top-20 -right-16 size-64 rounded-full bg-primary/10 blur-3xl" />
           <div className="absolute -bottom-24 left-1/3 size-52 rounded-full bg-primary/5 blur-3xl" />
           <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
@@ -762,13 +746,11 @@ function MyClientPortal() {
             {activeAccesses.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 <span className="rounded-full border bg-background/75 px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur">
-                  {activeAccesses.length}{" "}
-                  {activeAccesses.length === 1 ? "acesso ativo" : "acessos ativos"}
+                  {activeAccesses.length} {activeAccesses.length === 1 ? "acesso ativo" : "acessos ativos"}
                 </span>
                 {unreadNotifications > 0 && (
                   <span className="rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm">
-                    {unreadNotifications}{" "}
-                    {unreadNotifications === 1 ? "novo aviso" : "novos avisos"}
+                    {unreadNotifications} {unreadNotifications === 1 ? "novo aviso" : "novos avisos"}
                   </span>
                 )}
               </div>
@@ -800,7 +782,7 @@ function MyClientPortal() {
             }}
           >
             <PortalPushPrompt enabled={contentEnabled} />
-            <TabsList className="sticky top-[73px] z-30 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-2xl border border-primary/10 bg-background/90 p-2 shadow-lg shadow-primary/5 backdrop-blur-xl sm:grid sm:grid-cols-4 sm:overflow-visible lg:grid-cols-8">
+            <TabsList className="sticky top-[73px] z-30 grid h-auto w-full grid-cols-2 gap-1 rounded-2xl border border-primary/10 bg-background/90 p-2 shadow-lg shadow-primary/5 backdrop-blur-xl sm:grid-cols-4 lg:grid-cols-8">
               <TabsTrigger value="inicio" className={PORTAL_TAB_CLASS}>
                 <Home className="size-4" aria-hidden /> Início
               </TabsTrigger>
@@ -862,11 +844,9 @@ function MyClientPortal() {
                 <SummaryCard
                   icon={CreditCard}
                   label="Cobranças em aberto"
-                  value={
-                    (charges.data ?? []).filter((charge) =>
-                      ["pending", "confirmed", "overdue"].includes(charge.status),
-                    ).length
-                  }
+                  value={(charges.data ?? []).filter((charge) =>
+                    ["pending", "confirmed", "overdue"].includes(charge.status),
+                  ).length}
                   loading={charges.isLoading}
                 />
                 <SummaryCard
@@ -933,9 +913,7 @@ function MyClientPortal() {
                             {item.entityType === "communication" ? "Nova mensagem" : "Pendência"}
                           </span>
                           <span className="mt-2 line-clamp-1 font-semibold">{item.title}</span>
-                          <span className="mt-1 line-clamp-2 text-sm opacity-80">
-                            {item.detail}
-                          </span>
+                          <span className="mt-1 line-clamp-2 text-sm opacity-80">{item.detail}</span>
                           <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold">
                             {item.label} <ArrowRight className="size-3.5" aria-hidden />
                           </span>
@@ -971,7 +949,9 @@ function MyClientPortal() {
                               <button
                                 type="button"
                                 className="flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors hover:bg-muted/50"
-                                onClick={() => focusPortalEntity(deadline.entityType, deadline.id)}
+                                onClick={() =>
+                                  focusPortalEntity(deadline.entityType, deadline.id)
+                                }
                               >
                                 <span className="min-w-0">
                                   <span className="block truncate text-sm font-medium">
@@ -1020,7 +1000,9 @@ function MyClientPortal() {
                             <button
                               type="button"
                               className="w-full rounded-xl border p-3 text-left transition-colors hover:bg-muted/50"
-                              onClick={() => focusPortalEntity("communication", thread.thread_id)}
+                              onClick={() =>
+                                focusPortalEntity("communication", thread.thread_id)
+                              }
                             >
                               <span className="block truncate text-sm font-medium">
                                 {thread.subject}
@@ -1116,7 +1098,9 @@ function MyClientPortal() {
                             documentsLoading={documents.isLoading}
                             access={access}
                             identityScope={user?.id ?? null}
-                            highlighted={highlightedEntity === `process:${process.process_id}`}
+                            highlighted={
+                              highlightedEntity === `process:${process.process_id}`
+                            }
                             openingDocument={openingDocument}
                             onOpenDocument={openDocument}
                           />
@@ -1176,38 +1160,24 @@ function MyClientPortal() {
                             setDocumentStatusFilter(value as DocumentPortalStatusFilter)
                           }
                         >
-                          <SelectTrigger aria-label="Filtrar por situação">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger aria-label="Filtrar por situação"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="todos">Todas as situações</SelectItem>
                             <SelectItem value="vencendo">Vencendo em 30 dias</SelectItem>
-                            {(
-                              Object.entries(DOCUMENT_STATUS) as [
-                                DocumentStatus,
-                                { label: string },
-                              ][]
-                            ).map(([value, meta]) => (
-                              <SelectItem key={value} value={value}>
-                                {meta.label}
-                              </SelectItem>
-                            ))}
+                            {(Object.entries(DOCUMENT_STATUS) as [DocumentStatus, { label: string }][]).map(
+                              ([value, meta]) => (
+                                <SelectItem key={value} value={value}>{meta.label}</SelectItem>
+                              ),
+                            )}
                           </SelectContent>
                         </Select>
-                        <Select
-                          value={documentProcessFilter}
-                          onValueChange={setDocumentProcessFilter}
-                        >
-                          <SelectTrigger aria-label="Filtrar por processo">
-                            <SelectValue />
-                          </SelectTrigger>
+                        <Select value={documentProcessFilter} onValueChange={setDocumentProcessFilter}>
+                          <SelectTrigger aria-label="Filtrar por processo"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="todos">Todos os processos</SelectItem>
                             <SelectItem value="sem_processo">Documentos gerais</SelectItem>
                             {documentProcessOptions.map(([value, label]) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
-                              </SelectItem>
+                              <SelectItem key={value} value={value}>{label}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -1217,9 +1187,7 @@ function MyClientPortal() {
                             setDocumentCategoryFilter(value as DocumentCategory | "todas")
                           }
                         >
-                          <SelectTrigger aria-label="Filtrar por categoria">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger aria-label="Filtrar por categoria"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="todas">Todas as categorias</SelectItem>
                             {documentCategoryOptions.map((category) => (
@@ -1307,9 +1275,7 @@ function MyClientPortal() {
                               : "bg-background")
                           }
                           onClick={() =>
-                            setRequestStatusFilter((current) =>
-                              current === status ? "todos" : status,
-                            )
+                            setRequestStatusFilter((current) => current === status ? "todos" : status)
                           }
                         >
                           <span className="text-2xl font-semibold">{requestSummary[status]}</span>
@@ -1323,10 +1289,7 @@ function MyClientPortal() {
 
                   <div className="grid gap-2 rounded-xl border bg-muted/20 p-3 md:grid-cols-[minmax(0,1fr)_220px]">
                     <div className="relative">
-                      <Search
-                        className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                        aria-hidden
-                      />
+                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
                       <Input
                         className="pl-9"
                         placeholder="Buscar pendência"
@@ -1336,13 +1299,9 @@ function MyClientPortal() {
                     </div>
                     <Select
                       value={requestStatusFilter}
-                      onValueChange={(value) =>
-                        setRequestStatusFilter(value as RequestPortalStatusFilter)
-                      }
+                      onValueChange={(value) => setRequestStatusFilter(value as RequestPortalStatusFilter)}
                     >
-                      <SelectTrigger aria-label="Filtrar pendências por situação">
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger aria-label="Filtrar pendências por situação"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todos">Todas as situações</SelectItem>
                         {PORTAL_REQUEST_SUMMARY.map((status) => (
@@ -1375,8 +1334,7 @@ function MyClientPortal() {
                       {filteredRequests.map((request) => {
                         const requestStatus = PORTAL_REQUEST_STATUS[request.status];
                         const deadline = portalRequestDeadline(request.due_date, request.status);
-                        const canUpload =
-                          request.status === "pending" || request.status === "revision_requested";
+                        const canUpload = request.status === "pending" || request.status === "revision_requested";
                         return (
                           <li
                             id={portalEntityElementId("document_request", request.request_id)}
@@ -1395,41 +1353,22 @@ function MyClientPortal() {
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="font-semibold">{request.title}</h3>
-                                  <StatusBadge
-                                    label={requestStatus.label}
-                                    tone={requestStatus.tone}
-                                  />
-                                  {deadline && (
-                                    <StatusBadge label={deadline.label} tone={deadline.tone} />
-                                  )}
+                                  <StatusBadge label={requestStatus.label} tone={requestStatus.tone} />
+                                  {deadline && <StatusBadge label={deadline.label} tone={deadline.tone} />}
                                 </div>
                                 {request.description && (
-                                  <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
-                                    {request.description}
-                                  </p>
+                                  <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{request.description}</p>
                                 )}
                                 <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                                  {request.process_code && (
-                                    <span>Processo {request.process_code}</span>
-                                  )}
-                                  <span>
-                                    {request.due_date
-                                      ? `Prazo: ${formatDate(request.due_date)}`
-                                      : "Sem prazo definido"}
-                                  </span>
-                                  {request.submitted_file_name && (
-                                    <span>Enviado: {request.submitted_file_name}</span>
-                                  )}
-                                  {request.submission_count > 0 && (
-                                    <span>{request.submission_count} envio(s)</span>
-                                  )}
+                                  {request.process_code && <span>Processo {request.process_code}</span>}
+                                  <span>{request.due_date ? `Prazo: ${formatDate(request.due_date)}` : "Sem prazo definido"}</span>
+                                  {request.submitted_file_name && <span>Enviado: {request.submitted_file_name}</span>}
+                                  {request.submission_count > 0 && <span>{request.submission_count} envio(s)</span>}
                                 </p>
                                 {request.company_feedback && (
                                   <div className="mt-3 rounded-lg border border-warning/30 bg-warning/5 p-3">
                                     <p className="text-xs font-semibold">Retorno da empresa</p>
-                                    <p className="mt-1 whitespace-pre-wrap text-sm">
-                                      {request.company_feedback}
-                                    </p>
+                                    <p className="mt-1 whitespace-pre-wrap text-sm">{request.company_feedback}</p>
                                     {request.feedback_at && (
                                       <p className="mt-1 text-xs text-muted-foreground">
                                         Atualizado em {formatDateTime(request.feedback_at)}
@@ -1438,9 +1377,7 @@ function MyClientPortal() {
                                   </div>
                                 )}
                                 {request.organization_name && request.client_name && (
-                                  <p className="mt-2 text-xs text-muted-foreground">
-                                    {request.client_name} · {request.organization_name}
-                                  </p>
+                                  <p className="mt-2 text-xs text-muted-foreground">{request.client_name} · {request.organization_name}</p>
                                 )}
                               </div>
                               {canUpload && (
@@ -1453,23 +1390,11 @@ function MyClientPortal() {
                                     onChange={(event) => {
                                       const file = event.currentTarget.files?.[0];
                                       event.currentTarget.value = "";
-                                      if (file)
-                                        void uploadRequestedDocument(
-                                          request.request_id,
-                                          request.status,
-                                          file,
-                                        );
+                                      if (file) void uploadRequestedDocument(request.request_id, request.status, file);
                                     }}
                                   />
-                                  <span
-                                    className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 aria-disabled:pointer-events-none aria-disabled:opacity-50"
-                                    aria-disabled={uploadingRequest !== null}
-                                  >
-                                    {uploadingRequest === request.request_id ? (
-                                      <Loader2 className="size-4 animate-spin" aria-hidden />
-                                    ) : (
-                                      <Upload className="size-4" aria-hidden />
-                                    )}
+                                  <span className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 aria-disabled:pointer-events-none aria-disabled:opacity-50" aria-disabled={uploadingRequest !== null}>
+                                    {uploadingRequest === request.request_id ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Upload className="size-4" aria-hidden />}
                                     {uploadingRequest === request.request_id
                                       ? "Enviando…"
                                       : request.status === "revision_requested"
@@ -1492,11 +1417,7 @@ function MyClientPortal() {
             </TabsContent>
 
             <TabsContent value="comunicacao" className="space-y-4">
-              <PortalCallbackCenter
-                accesses={activeAccesses}
-                threads={communicationThreads.data ?? []}
-                identityScope={user?.id ?? null}
-              />
+              <PortalCallbackCenter accesses={activeAccesses} threads={communicationThreads.data ?? []} identityScope={user?.id ?? null} />
               <Card className={PORTAL_PANEL_CLASS}>
                 <CardContent className="space-y-4 p-4 sm:p-6">
                   <div>
@@ -1644,8 +1565,12 @@ function MyClientPortal() {
                             </p>
                           </div>
                           <StatusBadge
-                            label={PORTAL_COMMUNICATION_STATUS[selectedCommunication.status].label}
-                            tone={PORTAL_COMMUNICATION_STATUS[selectedCommunication.status].tone}
+                            label={
+                              PORTAL_COMMUNICATION_STATUS[selectedCommunication.status].label
+                            }
+                            tone={
+                              PORTAL_COMMUNICATION_STATUS[selectedCommunication.status].tone
+                            }
                           />
                         </div>
 
@@ -1709,10 +1634,7 @@ function MyClientPortal() {
                             <p className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
                               Esta conversa foi encerrada e está disponível somente para leitura.
                             </p>
-                            <PortalConversationRating
-                              threadId={selectedCommunication.thread_id}
-                              identityScope={user?.id ?? null}
-                            />
+                            <PortalConversationRating threadId={selectedCommunication.thread_id} identityScope={user?.id ?? null} />
                           </div>
                         ) : (
                           <div className="space-y-3 border-t pt-4">
@@ -1749,7 +1671,8 @@ function MyClientPortal() {
                               </Button>
                               <Button
                                 disabled={
-                                  !communicationReply.trim() || addCommunicationEntry.isPending
+                                  !communicationReply.trim() ||
+                                  addCommunicationEntry.isPending
                                 }
                                 onClick={() => void sendCommunicationReply()}
                               >
@@ -2225,7 +2148,7 @@ function portalRequestDeadline(
 }
 
 const PORTAL_TAB_CLASS =
-  "shrink-0 gap-2 rounded-xl px-3 py-2.5 text-xs transition-all sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md";
+  "gap-2 rounded-xl py-2.5 text-xs transition-all sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md";
 const PORTAL_PANEL_CLASS =
   "overflow-hidden border-primary/10 bg-background/90 shadow-lg shadow-primary/5";
 
@@ -2312,7 +2235,9 @@ function PortalDocumentCard({
               {DOCUMENT_CATEGORY[document.category].label}
             </span>
             {document.document_type_name && (
-              <span className="rounded-full bg-muted px-2 py-1">{document.document_type_name}</span>
+              <span className="rounded-full bg-muted px-2 py-1">
+                {document.document_type_name}
+              </span>
             )}
             <span className="rounded-full bg-muted px-2 py-1">
               Versão atual: v{document.current_version}
@@ -2329,7 +2254,12 @@ function PortalDocumentCard({
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        <Button variant="outline" size="sm" disabled={opening} onClick={() => void onPreview()}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={opening}
+          onClick={() => void onPreview()}
+        >
           {opening ? (
             <Loader2 className="size-4 animate-spin" aria-hidden />
           ) : (
@@ -2440,8 +2370,9 @@ function PortalProcessCard({
   const stage = PROCESS_STAGE[process.stage];
   const pipelineIndex = PIPELINE_STAGES.findIndex((step) => step.key.includes(process.stage));
   const effectiveIndex = process.stage === "arquivado" ? PIPELINE_STAGES.length - 1 : pipelineIndex;
-  const progress =
-    effectiveIndex >= 0 ? Math.round(((effectiveIndex + 1) / PIPELINE_STAGES.length) * 100) : 0;
+  const progress = effectiveIndex >= 0
+    ? Math.round(((effectiveIndex + 1) / PIPELINE_STAGES.length) * 100)
+    : 0;
 
   return (
     <li
@@ -2465,7 +2396,10 @@ function PortalProcessCard({
                 </p>
                 <h3 className="mt-1 truncate font-semibold">{process.title}</h3>
               </div>
-              <StatusBadge label={stage?.label ?? process.stage} tone={stage?.tone ?? "neutral"} />
+              <StatusBadge
+                label={stage?.label ?? process.stage}
+                tone={stage?.tone ?? "neutral"}
+              />
             </div>
 
             <div className="mt-4">
@@ -2520,7 +2454,7 @@ function PortalProcessCard({
                   <span className="text-xs text-muted-foreground">
                     {effectiveIndex >= 0
                       ? `Etapa ${effectiveIndex + 1} de ${PIPELINE_STAGES.length}`
-                      : (stage?.label ?? process.stage)}
+                      : stage?.label ?? process.stage}
                   </span>
                 </div>
                 <ol className="mt-4 flex flex-wrap gap-2">
@@ -2559,9 +2493,7 @@ function PortalProcessCard({
                     <h4 className="text-sm font-semibold">Atualizações compartilhadas</h4>
                   </div>
                   {timeline.isLoading ? (
-                    <div className="mt-4">
-                      <LoadingRows />
-                    </div>
+                    <div className="mt-4"><LoadingRows /></div>
                   ) : timeline.isError ? (
                     <div className="mt-4">
                       <ContentError retry={() => void timeline.refetch()} />
@@ -2573,10 +2505,7 @@ function PortalProcessCard({
                   ) : (
                     <ol className="mt-4 space-y-4">
                       {timeline.data?.map((movement) => (
-                        <li
-                          key={movement.movement_id}
-                          className="relative border-l-2 border-primary/25 pl-4"
-                        >
+                        <li key={movement.movement_id} className="relative border-l-2 border-primary/25 pl-4">
                           <span className="absolute -left-[5px] top-1 size-2 rounded-full bg-primary" />
                           <p className="text-sm font-medium">{movement.description}</p>
                           {movement.from_stage && movement.to_stage && (
@@ -2603,9 +2532,7 @@ function PortalProcessCard({
                     )}
                   </div>
                   {documentsLoading ? (
-                    <div className="mt-4">
-                      <LoadingRows />
-                    </div>
+                    <div className="mt-4"><LoadingRows /></div>
                   ) : documents.length === 0 ? (
                     <p className="mt-4 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
                       Nenhum documento deste processo foi compartilhado.
@@ -2628,7 +2555,10 @@ function PortalProcessCard({
                                 {document.original_file_name}
                               </p>
                             </div>
-                            <StatusBadge label={documentStatus.label} tone={documentStatus.tone} />
+                            <StatusBadge
+                              label={documentStatus.label}
+                              tone={documentStatus.tone}
+                            />
                             <Button
                               size="icon"
                               variant="ghost"
