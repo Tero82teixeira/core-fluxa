@@ -52,7 +52,15 @@ function ExpirationHint({ date }: { date: string | null }) {
   if (!date) return <span className="text-muted-foreground">Sem validade</span>;
   const info = daysUntilLabel(date);
   return (
-    <span className={info.critical ? "font-medium text-destructive" : info.warning ? "font-medium text-warning" : ""}>
+    <span
+      className={
+        info.critical
+          ? "font-medium text-destructive"
+          : info.warning
+            ? "font-medium text-warning"
+            : ""
+      }
+    >
       {formatDate(date)} · {info.label}
     </span>
   );
@@ -82,7 +90,10 @@ export function DocumentCard({
   const openFile = async (download?: boolean) => {
     setBusy(true);
     try {
-      const url = await createDocumentUrl(document.file_path, download ? document.original_file_name : undefined);
+      const url = await createDocumentUrl(
+        document.file_path,
+        download ? document.original_file_name : undefined,
+      );
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (error) {
       toast.error(describeError(error, "documento"));
@@ -105,7 +116,11 @@ export function DocumentCard({
     try {
       await review.mutateAsync({ document, status: next, reason: motive });
       toast.success(
-        next === "aprovado" ? "Documento aprovado." : next === "rejeitado" ? "Documento rejeitado." : "Documento em análise.",
+        next === "aprovado"
+          ? "Documento aprovado."
+          : next === "rejeitado"
+            ? "Documento rejeitado."
+            : "Documento em análise.",
       );
       setRejectOpen(false);
       setReason("");
@@ -115,10 +130,10 @@ export function DocumentCard({
   };
 
   return (
-    <li className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-start sm:justify-between">
+    <li className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card p-4 shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-panel sm:flex-row sm:items-start sm:justify-between sm:p-5">
       <div className="flex min-w-0 gap-3">
-        <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-muted/60">
-          <FileText className="size-4 text-muted-foreground" aria-hidden />
+        <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl border border-cyan-500/15 bg-cyan-500/8">
+          <FileText className="size-4.5 text-cyan-600" aria-hidden />
         </span>
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -146,7 +161,11 @@ export function DocumentCard({
           {showLinks && (document.clients || document.processes) && (
             <p className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
               {document.clients && (
-                <Link to="/clientes/$clientId" params={{ clientId: document.clients.id }} className="hover:underline">
+                <Link
+                  to="/clientes/$clientId"
+                  params={{ clientId: document.clients.id }}
+                  className="hover:underline"
+                >
                   {document.clients.name}
                 </Link>
               )}
@@ -182,7 +201,11 @@ export function DocumentCard({
           }}
         />
         <Button variant="outline" size="sm" onClick={() => void openFile(false)} disabled={busy}>
-          {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Eye className="size-4" aria-hidden />}
+          {busy ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <Eye className="size-4" aria-hidden />
+          )}
           Abrir
         </Button>
         <DropdownMenu>
@@ -199,14 +222,20 @@ export function DocumentCard({
               <History className="size-4" aria-hidden /> Ver versões
             </DropdownMenuItem>
             {permissions.canUploadDocuments && (
-              <DropdownMenuItem onSelect={() => fileRef.current?.click()} disabled={newVersion.isPending}>
+              <DropdownMenuItem
+                onSelect={() => fileRef.current?.click()}
+                disabled={newVersion.isPending}
+              >
                 <Upload className="size-4" aria-hidden /> Enviar nova versão
               </DropdownMenuItem>
             )}
             {permissions.canReviewDocuments && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => void setStatus("aprovado")} disabled={review.isPending}>
+                <DropdownMenuItem
+                  onSelect={() => void setStatus("aprovado")}
+                  disabled={review.isPending}
+                >
                   <Check className="size-4" aria-hidden /> Aprovar
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setRejectOpen(true)} disabled={review.isPending}>
@@ -225,7 +254,9 @@ export function DocumentCard({
                         archived: !document.archived_at,
                         title: document.title,
                       });
-                      toast.success(document.archived_at ? "Documento restaurado." : "Documento arquivado.");
+                      toast.success(
+                        document.archived_at ? "Documento restaurado." : "Documento arquivado.",
+                      );
                     } catch (error) {
                       toast.error(describeError(error, "documento"));
                     }
@@ -244,7 +275,9 @@ export function DocumentCard({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rejeitar documento</DialogTitle>
-            <DialogDescription>Informe o motivo — ele fica registrado no histórico do processo.</DialogDescription>
+            <DialogDescription>
+              Informe o motivo — ele fica registrado no histórico do processo.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
             <Label htmlFor={`reason-${document.id}`}>Motivo da rejeição</Label>
@@ -271,7 +304,12 @@ export function DocumentCard({
         </DialogContent>
       </Dialog>
 
-      <VersionsDialog documentId={document.id} open={historyOpen} onOpenChange={setHistoryOpen} enabled={historyOpen} />
+      <VersionsDialog
+        documentId={document.id}
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        enabled={historyOpen}
+      />
     </li>
   );
 }
@@ -293,7 +331,9 @@ function VersionsDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Histórico de versões</DialogTitle>
-          <DialogDescription>Todas as substituições ficam registradas e podem ser abertas.</DialogDescription>
+          <DialogDescription>
+            Todas as substituições ficam registradas e podem ser abertas.
+          </DialogDescription>
         </DialogHeader>
         {versions.isLoading ? (
           <p className="text-sm text-muted-foreground">Carregando…</p>

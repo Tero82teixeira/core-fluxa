@@ -376,12 +376,12 @@ function ProcessesPage() {
             </div>
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
-            <div className="grid grid-cols-2 rounded-xl border border-white/10 bg-white/[0.06] p-1">
+            <div className="grid w-full min-w-0 grid-cols-2 overflow-hidden rounded-xl border border-white/10 bg-white/[0.06] p-1 sm:w-60 sm:shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "rounded-lg text-slate-300 hover:bg-white/10 hover:text-white",
+                  "min-w-0 whitespace-nowrap rounded-lg px-3 text-slate-300 hover:bg-white/10 hover:text-white",
                   view === "kanban" &&
                     "bg-white text-slate-950 shadow-sm hover:bg-white hover:text-slate-950",
                 )}
@@ -394,7 +394,7 @@ function ProcessesPage() {
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "rounded-lg text-slate-300 hover:bg-white/10 hover:text-white",
+                  "min-w-0 whitespace-nowrap rounded-lg px-3 text-slate-300 hover:bg-white/10 hover:text-white",
                   view === "tabela" &&
                     "bg-white text-slate-950 shadow-sm hover:bg-white hover:text-slate-950",
                 )}
