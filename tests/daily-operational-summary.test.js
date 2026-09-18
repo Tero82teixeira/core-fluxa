@@ -60,7 +60,7 @@ test("summary action is isolated from event rules and exposed by the scheduled U
   assert.match(page, /SCHEDULED_AUTOMATION_ACTIONS\.map/);
   assert.match(page, /disabled=\{form\.action_type === "send_operational_summary"\}/);
   assert.match(page, /Cada responsável recebe somente/);
-  assert.match(page, /preferências de Configurações serão respeitadas/);
+  assert.match(page, /preferências de\s+Configurações serão respeitadas/);
 });
 
 test("daily summary renders professional Portuguese labels", () => {

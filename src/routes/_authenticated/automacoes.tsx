@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   Plus,
   Search,
+  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -127,7 +128,8 @@ function Page() {
   const [scheduledEditing, setScheduledEditing] = useState<AutomationRule | null | undefined>();
   const [history, setHistory] = useState<AutomationRule | null>(null);
   const scheduleByRule = useMemo(
-    () => new Map((schedules.data ?? []).map((schedule) => [schedule.automation_rule_id, schedule])),
+    () =>
+      new Map((schedules.data ?? []).map((schedule) => [schedule.automation_rule_id, schedule])),
     [schedules.data],
   );
   const filtered = useMemo(
@@ -151,29 +153,66 @@ function Page() {
     }
   };
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold">
-            <Bot className="size-6 text-primary" />
-            Automações
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Crie regras internas seguras para reduzir tarefas repetitivas.
-          </p>
-        </div>
-        {allowed && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setEditing(null)}>
-              <Plus />
-              Nova por evento
-            </Button>
-            <Button onClick={() => setScheduledEditing(null)}>
-              <CalendarClock />
-              Nova por horário
-            </Button>
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
+      <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-violet-400/15 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:40px_40px]"
+          aria-hidden
+        />
+        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="grid size-12 place-items-center rounded-2xl bg-violet-400 text-slate-950 shadow-lg shadow-violet-400/20 ring-1 ring-white/10">
+                <Bot className="size-5.5" aria-hidden />
+              </span>
+              <div>
+                <p className="text-xs font-semibold tracking-[0.14em] text-violet-300 uppercase">
+                  Operação inteligente
+                </p>
+                <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+                  Automações
+                </h1>
+              </div>
+            </div>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
+              Crie regras internas seguras para reduzir tarefas repetitivas.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+              <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 font-medium text-white">
+                {active} ativa(s)
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                {executions.data?.length ?? 0} execução(ões) recente(s)
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                {failed} falha(s) recente(s)
+              </span>
+            </div>
           </div>
-        )}
+          {allowed && (
+            <div className="flex w-full flex-wrap gap-2 xl:w-auto xl:justify-end">
+              <Button
+                className="flex-1 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white sm:flex-none"
+                variant="outline"
+                onClick={() => setEditing(null)}
+              >
+                <Plus />
+                Nova por evento
+              </Button>
+              <Button
+                className="flex-1 bg-white text-slate-950 hover:bg-slate-100 sm:flex-none"
+                onClick={() => setScheduledEditing(null)}
+              >
+                <CalendarClock />
+                Nova por horário
+              </Button>
+            </div>
+          )}
+        </div>
       </header>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {[
@@ -182,50 +221,68 @@ function Page() {
           ["Inativas", (rules.data?.length ?? 0) - active],
           ["Execuções recentes", executions.data?.length ?? 0],
           ["Falhas recentes", failed],
-        ].map(([label, value]) => (
-          <Card key={label}>
+        ].map(([label, value], index) => (
+          <Card
+            key={label}
+            className="relative overflow-hidden rounded-2xl border-border/70 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel"
+          >
+            <span
+              className={`absolute inset-x-0 top-0 h-1 ${["bg-violet-500", "bg-emerald-500", "bg-slate-400", "bg-blue-500", "bg-rose-500"][index]}`}
+              aria-hidden
+            />
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
             </CardHeader>
-            <CardContent className="text-2xl font-semibold">{value}</CardContent>
+            <CardContent className="metric-value">{value}</CardContent>
           </Card>
         ))}
       </section>
-      <div className="grid gap-3 md:grid-cols-[1fr_180px_240px]">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome…"
-            aria-label="Buscar automações"
-          />
+      <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-soft sm:p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <span className="grid size-8 place-items-center rounded-lg bg-primary/8 text-primary">
+              <SlidersHorizontal className="size-4" aria-hidden />
+            </span>
+            Busca e filtros
+          </div>
+          <span className="text-xs text-muted-foreground">{filtered.length} regra(s)</span>
         </div>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger aria-label="Filtrar status">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="active">Ativas</SelectItem>
-            <SelectItem value="inactive">Inativas</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={trigger} onValueChange={setTrigger}>
-          <SelectTrigger aria-label="Filtrar gatilho">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os gatilhos</SelectItem>
-            {AUTOMATION_TRIGGERS.map((t) => (
-              <SelectItem key={t} value={t}>
-                {TRIGGER_LABELS[t]}
-              </SelectItem>
-            ))}
-            <SelectItem value="scheduled">Por horário</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="grid gap-3 md:grid-cols-[1fr_180px_240px]">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
+            <Input
+              className="h-10 rounded-xl pl-9"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome…"
+              aria-label="Buscar automações"
+            />
+          </div>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="h-10 rounded-xl" aria-label="Filtrar status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="active">Ativas</SelectItem>
+              <SelectItem value="inactive">Inativas</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={trigger} onValueChange={setTrigger}>
+            <SelectTrigger className="h-10 rounded-xl" aria-label="Filtrar gatilho">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os gatilhos</SelectItem>
+              {AUTOMATION_TRIGGERS.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {TRIGGER_LABELS[t]}
+                </SelectItem>
+              ))}
+              <SelectItem value="scheduled">Por horário</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       {rules.isLoading ? (
         <div className="flex justify-center p-12">
@@ -250,7 +307,10 @@ function Page() {
       ) : (
         <div className="space-y-3">
           {filtered.map((r) => (
-            <Card key={r.id}>
+            <Card
+              key={r.id}
+              className="rounded-2xl border-border/70 shadow-soft transition-shadow hover:shadow-panel"
+            >
               <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -387,7 +447,7 @@ function Page() {
       <ScheduledAutomationForm
         open={scheduledEditing !== undefined}
         rule={scheduledEditing ?? null}
-        schedule={scheduledEditing ? scheduleByRule.get(scheduledEditing.id) ?? null : null}
+        schedule={scheduledEditing ? (scheduleByRule.get(scheduledEditing.id) ?? null) : null}
         organizationId={organizationId}
         onClose={() => setScheduledEditing(undefined)}
       />
@@ -849,9 +909,7 @@ function AutomationForm({
   );
 }
 
-const defaultScheduledConfig = (
-  action: ScheduledAutomationAction,
-): Record<string, unknown> => {
+const defaultScheduledConfig = (action: ScheduledAutomationAction): Record<string, unknown> => {
   if (action === "create_task") {
     return {
       title: "Nova tarefa programada",
@@ -881,8 +939,7 @@ function scheduledInput(
       ? {
           ...storedConfig,
           assignee_mode:
-            storedConfig.assignee_mode ??
-            (storedConfig.assignee_id ? "fixed_user" : "unassigned"),
+            storedConfig.assignee_mode ?? (storedConfig.assignee_id ? "fixed_user" : "unassigned"),
         }
       : storedConfig;
   return {
@@ -913,9 +970,7 @@ function ScheduledAutomationForm({
   onClose: () => void;
 }) {
   const initialParts = scheduledWallTimeParts(schedule?.next_execution_at, schedule?.timezone);
-  const [form, setForm] = useState<ScheduledAutomationInput>(() =>
-    scheduledInput(rule, schedule),
-  );
+  const [form, setForm] = useState<ScheduledAutomationInput>(() => scheduledInput(rule, schedule));
   const [startDate, setStartDate] = useState(initialParts.date);
   const [startTime, setStartTime] = useState(initialParts.time);
   const create = useCreateScheduledAutomation(organizationId);
@@ -951,11 +1006,7 @@ function ScheduledAutomationForm({
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const nextExecution = scheduledWallTimeToIso(
-      startDate,
-      startTime,
-      form.timezone,
-    );
+    const nextExecution = scheduledWallTimeToIso(startDate, startTime, form.timezone);
     if (!nextExecution) {
       toast.error("Escolha uma primeira execução futura.");
       return;
@@ -1132,8 +1183,7 @@ function ScheduledAutomationForm({
                   action_config: defaultScheduledConfig(action),
                   schedule_type:
                     action === "send_operational_summary" ? "daily" : form.schedule_type,
-                  interval_days:
-                    action === "send_operational_summary" ? null : form.interval_days,
+                  interval_days: action === "send_operational_summary" ? null : form.interval_days,
                 });
               }}
             >
@@ -1248,11 +1298,13 @@ function ScheduledAutomationForm({
                       <SelectValue placeholder="Selecione um membro ativo" />
                     </SelectTrigger>
                     <SelectContent>
-                      {members.data?.filter((member) => member.is_active).map((member) => (
-                        <SelectItem key={member.user_id} value={member.user_id}>
-                          {member.full_name || member.email || "Usuário"}
-                        </SelectItem>
-                      ))}
+                      {members.data
+                        ?.filter((member) => member.is_active)
+                        .map((member) => (
+                          <SelectItem key={member.user_id} value={member.user_id}>
+                            {member.full_name || member.email || "Usuário"}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1318,11 +1370,13 @@ function ScheduledAutomationForm({
                     <SelectValue placeholder="Selecione um membro ativo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {members.data?.filter((member) => member.is_active).map((member) => (
-                      <SelectItem key={member.user_id} value={member.user_id}>
-                        {member.full_name || member.email || "Usuário"}
-                      </SelectItem>
-                    ))}
+                    {members.data
+                      ?.filter((member) => member.is_active)
+                      .map((member) => (
+                        <SelectItem key={member.user_id} value={member.user_id}>
+                          {member.full_name || member.email || "Usuário"}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -1342,10 +1396,10 @@ function ScheduledAutomationForm({
           )}
           {form.action_type === "send_operational_summary" && (
             <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-              O sistema reunirá tarefas atrasadas, processos parados, documentos vencendo,
-              retornos, contas vencidas e alertas críticos. Cada responsável recebe somente
-              o próprio resumo; itens sem responsável vão para proprietários e
-              administradores. As preferências de Configurações serão respeitadas.
+              O sistema reunirá tarefas atrasadas, processos parados, documentos vencendo, retornos,
+              contas vencidas e alertas críticos. Cada responsável recebe somente o próprio resumo;
+              itens sem responsável vão para proprietários e administradores. As preferências de
+              Configurações serão respeitadas.
             </div>
           )}
           <Button className="w-full" disabled={pending}>
