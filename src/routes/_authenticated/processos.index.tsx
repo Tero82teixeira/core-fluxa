@@ -345,8 +345,8 @@ function ProcessesPage() {
           className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:40px_40px]"
           aria-hidden
         />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
+        <div className="relative flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div className="min-w-0 xl:flex-1">
             <div className="flex items-center gap-3">
               <span className="grid size-12 place-items-center rounded-2xl bg-violet-400 text-slate-950 shadow-lg shadow-violet-400/20 ring-1 ring-white/10">
                 <BriefcaseBusiness className="size-5.5" aria-hidden />
@@ -375,7 +375,7 @@ function ProcessesPage() {
               </span>
             </div>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end xl:w-auto xl:shrink-0">
             <div className="grid w-full min-w-0 grid-cols-2 overflow-hidden rounded-xl border border-white/10 bg-white/[0.06] p-1 sm:w-60 sm:shrink-0">
               <Button
                 variant="ghost"
