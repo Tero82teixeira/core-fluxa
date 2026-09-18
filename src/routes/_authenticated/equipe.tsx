@@ -1,6 +1,16 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BellOff, BellRing, Copy, MailPlus, Search, ShieldCheck, Smartphone, UsersRound } from "lucide-react";
+import {
+  BellOff,
+  BellRing,
+  Copy,
+  MailPlus,
+  Search,
+  ShieldCheck,
+  SlidersHorizontal,
+  Smartphone,
+  UsersRound,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -100,7 +110,9 @@ function TeamPage() {
         const term = query.toLocaleLowerCase("pt-BR");
         return (
           (!term ||
-            `${member.full_name} ${member.email} ${member.distribution_sector} ${member.distribution_function}`.toLocaleLowerCase("pt-BR").includes(term)) &&
+            `${member.full_name} ${member.email} ${member.distribution_sector} ${member.distribution_function}`
+              .toLocaleLowerCase("pt-BR")
+              .includes(term)) &&
           (roleFilter === "all" || member.role === roleFilter) &&
           (status === "all" || (status === "active") === member.is_active)
         );
@@ -129,10 +141,7 @@ function TeamPage() {
 
   async function saveDistribution() {
     if (!distributionMember) return;
-    if (
-      distributionEnabled &&
-      (!distributionSector.trim() || !distributionFunction.trim())
-    ) {
+    if (distributionEnabled && (!distributionSector.trim() || !distributionFunction.trim())) {
       toast.error("Informe o setor e a função operacional.");
       return;
     }
@@ -215,25 +224,65 @@ function TeamPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-5 p-4 sm:p-6">
-      <header>
-        <h1 className="page-title">Equipe</h1>
-        <p className="page-subtitle">
-          Membros, carga operacional, funções e convites da empresa ativa.
-        </p>
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
+      <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-blue-400/15 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:40px_40px]"
+          aria-hidden
+        />
+        <div className="relative">
+          <div className="flex items-center gap-3">
+            <span className="grid size-12 place-items-center rounded-2xl bg-blue-400 text-slate-950 shadow-lg shadow-blue-400/20 ring-1 ring-white/10">
+              <UsersRound className="size-5.5" aria-hidden />
+            </span>
+            <div>
+              <p className="text-xs font-semibold tracking-[0.14em] text-blue-300 uppercase">
+                Gestão de pessoas
+              </p>
+              <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+                Equipe
+              </h1>
+            </div>
+          </div>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
+            Membros, carga operacional, funções e convites da empresa ativa.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+            <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 font-medium text-white">
+              {rows.filter((m) => m.is_active).length} membro(s) ativo(s)
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+              {usedSeats} de {TEAM_MEMBER_LIMIT} vagas usadas
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+              {pending.length} convite(s) pendente(s)
+            </span>
+          </div>
+        </div>
       </header>
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {stats.map(([label, value]) => (
-          <Card key={label}>
+        {stats.map(([label, value], index) => (
+          <Card
+            key={label}
+            className="relative overflow-hidden rounded-2xl border-border/70 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel"
+          >
+            <span
+              className={`absolute inset-x-0 top-0 h-1 ${["bg-blue-500", "bg-emerald-500", "bg-slate-400", "bg-amber-500", "bg-indigo-500", "bg-violet-500", "bg-cyan-500", "bg-fuchsia-500"][index]}`}
+              aria-hidden
+            />
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="mt-1 text-2xl font-semibold">{value}</p>
+              <p className="metric-value mt-1">{value}</p>
             </CardContent>
           </Card>
         ))}
       </section>
       {permissions.canInviteMembers && (
-        <Card>
+        <Card className="rounded-2xl border-border/70 shadow-soft">
           <CardContent className="p-5">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-2 rounded-lg border bg-muted/30 p-3">
               <div>
@@ -309,13 +358,22 @@ function TeamPage() {
           </CardContent>
         </Card>
       )}
-      <Card>
+      <Card className="rounded-2xl border-border/70 shadow-soft">
         <CardContent className="p-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="grid size-8 place-items-center rounded-lg bg-primary/8 text-primary">
+                <SlidersHorizontal className="size-4" aria-hidden />
+              </span>
+              Busca e filtros
+            </div>
+            <span className="text-xs text-muted-foreground">{filtered.length} membro(s)</span>
+          </div>
           <div className="grid gap-3 md:grid-cols-[1fr_200px_200px]">
             <div className="relative">
               <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
               <Input
-                className="pl-9"
+                className="h-10 rounded-xl pl-9"
                 aria-label="Buscar por nome ou e-mail"
                 placeholder="Buscar nome ou e-mail"
                 value={query}
@@ -324,7 +382,7 @@ function TeamPage() {
             </div>
             <select
               aria-label="Filtrar função"
-              className="h-9 rounded-md border bg-background px-3 text-sm"
+              className="h-10 rounded-xl border bg-background px-3 text-sm"
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
             >
@@ -337,7 +395,7 @@ function TeamPage() {
             </select>
             <select
               aria-label="Filtrar status"
-              className="h-9 rounded-md border bg-background px-3 text-sm"
+              className="h-10 rounded-xl border bg-background px-3 text-sm"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
@@ -350,14 +408,15 @@ function TeamPage() {
       </Card>
       <div className="space-y-3">
         {filtered.map((member) => (
-          <Card key={member.id}>
+          <Card
+            key={member.id}
+            className="rounded-2xl border-border/70 shadow-soft transition-shadow hover:shadow-panel"
+          >
             <CardContent className="space-y-4 p-4 sm:p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="break-words font-semibold">
-                      {member.full_name || "Sem nome"}
-                    </p>
+                    <p className="break-words font-semibold">{member.full_name || "Sem nome"}</p>
                     <span className="rounded-full border bg-muted/40 px-2 py-0.5 text-xs">
                       {ROLE[member.role].label}
                     </span>
@@ -380,18 +439,18 @@ function TeamPage() {
                 </div>
                 {permissions.canManageTeam && (
                   <div className="flex shrink-0 flex-wrap gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => openDistribution(member)}>
-                    Configurar distribuição
-                  </Button>
-                  {member.role !== "visualizador" && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => openPortalDistribution(member)}
-                    >
-                      Configurar atendimento
+                    <Button size="sm" variant="secondary" onClick={() => openDistribution(member)}>
+                      Configurar distribuição
                     </Button>
-                  )}
+                    {member.role !== "visualizador" && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openPortalDistribution(member)}
+                      >
+                        Configurar atendimento
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -400,9 +459,7 @@ function TeamPage() {
                 <div className="rounded-xl border bg-muted/20 p-3">
                   <p className="text-xs text-muted-foreground">Tarefas abertas</p>
                   <p className="mt-1 text-lg font-semibold">{member.openTasks}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {member.lateTasks} atrasada(s)
-                  </p>
+                  <p className="text-xs text-muted-foreground">{member.lateTasks} atrasada(s)</p>
                 </div>
                 <div className="rounded-xl border bg-muted/20 p-3">
                   <p className="text-xs text-muted-foreground">Processos</p>
@@ -440,60 +497,67 @@ function TeamPage() {
                     {member.openCommunications}/{member.portal_communication_capacity} conversas
                   </p>
                 </div>
-                {permissions.canManageTeam && (() => {
-                  const alertStatus = pushStatusByUser.get(member.user_id);
-                  const activeDevices = alertStatus?.active_device_count ?? 0;
-                  const statusLabel = pushStatus.isLoading
-                    ? "Verificando…"
-                    : pushStatus.isError
-                      ? "Indisponível"
-                      : activeDevices > 0
-                        ? `${activeDevices} aparelho(s) ativo(s)`
-                        : alertStatus?.ever_registered
-                          ? "Sem aparelho ativo"
-                          : "Não configurado";
-                  return (
-                    <div className="rounded-xl border bg-muted/20 p-3">
-                      <p className="text-xs text-muted-foreground">Alertas no aparelho</p>
-                      <p className="mt-1 flex items-center gap-1.5 text-sm font-medium">
-                        {activeDevices > 0 ? (
-                          <BellRing className="size-4 text-success" />
-                        ) : (
-                          <BellOff className="size-4 text-muted-foreground" />
-                        )}
-                        {statusLabel}
-                      </p>
-                      {alertStatus?.last_activated_at && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Atualizado em {new Date(alertStatus.last_activated_at).toLocaleDateString("pt-BR")}
+                {permissions.canManageTeam &&
+                  (() => {
+                    const alertStatus = pushStatusByUser.get(member.user_id);
+                    const activeDevices = alertStatus?.active_device_count ?? 0;
+                    const statusLabel = pushStatus.isLoading
+                      ? "Verificando…"
+                      : pushStatus.isError
+                        ? "Indisponível"
+                        : activeDevices > 0
+                          ? `${activeDevices} aparelho(s) ativo(s)`
+                          : alertStatus?.ever_registered
+                            ? "Sem aparelho ativo"
+                            : "Não configurado";
+                    return (
+                      <div className="rounded-xl border bg-muted/20 p-3">
+                        <p className="text-xs text-muted-foreground">Alertas no aparelho</p>
+                        <p className="mt-1 flex items-center gap-1.5 text-sm font-medium">
+                          {activeDevices > 0 ? (
+                            <BellRing className="size-4 text-success" />
+                          ) : (
+                            <BellOff className="size-4 text-muted-foreground" />
+                          )}
+                          {statusLabel}
                         </p>
-                      )}
-                      {member.is_active && activeDevices === 0 && !pushStatus.isLoading && !pushStatus.isError && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="mt-2 h-7 px-2 text-xs"
-                          disabled={remindPushActivation.isPending}
-                          onClick={async () => {
-                            try {
-                              const created = await remindPushActivation.mutateAsync(member.user_id);
-                              toast.success(
-                                created
-                                  ? "Lembrete enviado dentro do sistema."
-                                  : "Este membro já recebeu um lembrete hoje.",
-                              );
-                            } catch {
-                              toast.error("Não foi possível enviar o lembrete.");
-                            }
-                          }}
-                        >
-                          <Smartphone className="size-3.5" />
-                          Lembrar de ativar
-                        </Button>
-                      )}
-                    </div>
-                  );
-                })()}
+                        {alertStatus?.last_activated_at && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Atualizado em{" "}
+                            {new Date(alertStatus.last_activated_at).toLocaleDateString("pt-BR")}
+                          </p>
+                        )}
+                        {member.is_active &&
+                          activeDevices === 0 &&
+                          !pushStatus.isLoading &&
+                          !pushStatus.isError && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="mt-2 h-7 px-2 text-xs"
+                              disabled={remindPushActivation.isPending}
+                              onClick={async () => {
+                                try {
+                                  const created = await remindPushActivation.mutateAsync(
+                                    member.user_id,
+                                  );
+                                  toast.success(
+                                    created
+                                      ? "Lembrete enviado dentro do sistema."
+                                      : "Este membro já recebeu um lembrete hoje.",
+                                  );
+                                } catch {
+                                  toast.error("Não foi possível enviar o lembrete.");
+                                }
+                              }}
+                            >
+                              <Smartphone className="size-3.5" />
+                              Lembrar de ativar
+                            </Button>
+                          )}
+                      </div>
+                    );
+                  })()}
               </div>
 
               {permissions.canManageTeam && member.user_id !== user?.id && (
@@ -653,8 +717,8 @@ function TeamPage() {
           <DialogHeader>
             <DialogTitle>Distribuição de atendimentos do portal</DialogTitle>
             <DialogDescription>
-              Pause o recebimento automático em ausências ou defina quantas conversas abertas
-              este membro pode atender. Conversas já atribuídas não serão alteradas.
+              Pause o recebimento automático em ausências ou defina quantas conversas abertas este
+              membro pode atender. Conversas já atribuídas não serão alteradas.
             </DialogDescription>
           </DialogHeader>
           {portalDistributionMember && (
@@ -670,9 +734,7 @@ function TeamPage() {
                 </p>
               </div>
               <div>
-                <Label htmlFor="portal-distribution-capacity">
-                  Limite de conversas abertas
-                </Label>
+                <Label htmlFor="portal-distribution-capacity">Limite de conversas abertas</Label>
                 <Input
                   id="portal-distribution-capacity"
                   type="number"
