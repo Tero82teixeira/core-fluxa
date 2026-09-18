@@ -25,7 +25,7 @@ test("saved filters are isolated by organization and bounded on the device", () 
 });
 
 test("bulk actions require an explicit selection and reuse protected mutations", () => {
-  assert.match(communication, /selectedIds\.size>0/);
+  assert.match(communication, /selectedIds\.size > 0/);
   assert.match(communication, /Selecionar exibidas/);
   assert.match(bulkActions, /useChangeCommunicationStatus/);
   assert.match(bulkActions, /useUpdateCommunicationThread/);

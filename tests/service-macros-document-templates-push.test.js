@@ -21,7 +21,7 @@ test("service macros remain an explicit reviewed action", () => {
   assert.match(migration, /CREATE TABLE public\.communication_macros/);
   assert.match(migration, /MACRO_ACTION_REQUIRED/);
   assert.match(communication, /Macro aplicada\. Revise o rascunho antes de registrar/);
-  assert.match(communication, /setContent\(current=>applyQuickReply/);
+  assert.match(communication, /setContent\(\(current\) => applyQuickReply/);
   assert.doesNotMatch(macroPicker, /add_communication_entry|send|submit/);
 });
 
