@@ -76,6 +76,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const current = NAV_ITEMS.find(
     (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
   );
+  const CurrentIcon = current?.icon;
   const isDetail = Boolean(current) && pathname !== current?.to;
 
   const notifications = useNotifications(organizationId, 5);
@@ -108,22 +109,52 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
     role && ["superadmin", "proprietario", "administrador", "financeiro"].includes(role),
   );
   const quickActions = [
-    { label: "Novo cliente", icon: UserPlus, to: "/clientes/novo" as const, visible: can("clients.create") },
-    { label: "Novo processo", icon: FilePlus2, to: "/processos" as const, visible: can("processes.create") },
+    {
+      label: "Novo cliente",
+      icon: UserPlus,
+      to: "/clientes/novo" as const,
+      visible: can("clients.create"),
+    },
+    {
+      label: "Novo processo",
+      icon: FilePlus2,
+      to: "/processos" as const,
+      visible: can("processes.create"),
+    },
     { label: "Nova tarefa", icon: ListPlus, to: "/tarefas" as const, visible: taskRole },
-    { label: "Adicionar documento", icon: UploadCloud, to: "/documentos" as const, visible: operationalRole },
-    { label: "Registrar pagamento", icon: CreditCard, to: "/financeiro" as const, visible: financeRole },
-    { label: "Criar lembrete", icon: CalendarPlus, to: "/monitoramento" as const, visible: operationalRole },
+    {
+      label: "Adicionar documento",
+      icon: UploadCloud,
+      to: "/documentos" as const,
+      visible: operationalRole,
+    },
+    {
+      label: "Registrar pagamento",
+      icon: CreditCard,
+      to: "/financeiro" as const,
+      visible: financeRole,
+    },
+    {
+      label: "Criar lembrete",
+      icon: CalendarPlus,
+      to: "/monitoramento" as const,
+      visible: operationalRole,
+    },
   ].filter((action) => action.visible);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 sm:px-5">
-        <div className="flex min-w-0 items-center gap-2">
-          <SidebarTrigger className="shrink-0" />
+    <header className="sticky top-0 z-30 border-b border-border/70 bg-card/90 shadow-[0_1px_18px_-12px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+      <div className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 sm:px-5 lg:px-6">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <SidebarTrigger className="size-9 shrink-0 rounded-xl border border-border/80 bg-background shadow-sm hover:bg-muted" />
+          {CurrentIcon && (
+            <span className="hidden size-9 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary sm:grid">
+              <CurrentIcon className="size-4.5" aria-hidden />
+            </span>
+          )}
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
-              <h1 className="min-w-0 flex-1 truncate font-display text-base font-semibold sm:text-lg">
+              <h1 className="min-w-0 flex-1 truncate font-display text-sm font-semibold tracking-tight sm:text-base">
                 {current?.label ?? "FLUXA"}
               </h1>
               {DEMO_MODE && (
@@ -132,6 +163,11 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
                 </span>
               )}
             </div>
+            {!isDetail && (
+              <p className="hidden truncate text-[0.68rem] text-muted-foreground sm:block">
+                {organizationDisplayName(membership?.organizations, "Sua organização")}
+              </p>
+            )}
             {isDetail && current && (
               <Breadcrumb className="hidden sm:block">
                 <BreadcrumbList className="text-xs">
@@ -177,7 +213,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
           <Button
             variant="outline"
             onClick={() => setSearchOpen(true)}
-            className="hidden h-10 w-56 justify-start gap-2 text-muted-foreground lg:flex xl:w-72"
+            className="hidden h-10 w-56 justify-start gap-2 rounded-xl border-border/70 bg-muted/25 text-muted-foreground shadow-none hover:bg-muted/50 lg:flex xl:w-72"
           >
             <Search className="size-4.5" aria-hidden />
             <span className="truncate text-sm">Buscar em tudo…</span>
@@ -186,7 +222,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
           <Button
             variant="ghost"
             size="icon"
-            className="size-10 lg:hidden"
+            className="size-10 rounded-xl lg:hidden"
             aria-label="Busca global"
             onClick={() => setSearchOpen(true)}
           >
@@ -195,7 +231,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="h-10 gap-1.5">
+              <Button className="h-10 gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-600/20 hover:from-blue-500 hover:to-blue-500">
                 <Plus className="size-4" aria-hidden />
                 <span className="hidden sm:inline">Criar</span>
               </Button>
@@ -217,7 +253,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative size-10"
+                className="relative size-10 rounded-xl border border-transparent hover:border-border/70 hover:bg-muted/50"
                 aria-label="Central de notificações"
               >
                 <Bell className="size-4" aria-hidden />
@@ -308,10 +344,10 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="rounded-xl p-0.5 outline-none ring-1 ring-border transition-shadow hover:ring-primary/30 focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Menu do usuário"
               >
-                <Avatar className="size-8">
+                <Avatar className="size-8 rounded-[0.65rem]">
                   <AvatarFallback className="bg-primary text-xs text-primary-foreground">
                     {initials(displayName)}
                   </AvatarFallback>

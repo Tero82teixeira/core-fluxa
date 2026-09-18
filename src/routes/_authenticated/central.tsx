@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { GettingStartedCard } from "@/components/getting-started-card";
+import { GettingStartedCard } from "@/components/onboarding/getting-started-card";
 import { cn } from "@/lib/utils";
 import type { Tone } from "@/lib/domain";
 import { useWorkspace } from "@/lib/workspace";
@@ -29,7 +29,6 @@ import { useOperationalMonitoring } from "@/hooks/use-monitoring-center";
 import { useFinance } from "@/hooks/use-finance";
 import { useCommunicationThreads } from "@/hooks/use-communication";
 import { useDocumentsSummary } from "@/hooks/use-documents";
-import { useGettingStarted } from "@/hooks/use-getting-started";
 import { useCommercialOpportunityAlerts } from "@/hooks/use-reports";
 import { monitoringAttention, financeSummary, communicationSummary } from "@/lib/command-center";
 import { effectivePriority } from "@/lib/monitoring";
@@ -74,56 +73,56 @@ const visualTone: Record<
   { card: string; accent: string; icon: string; value: string; header: string }
 > = {
   blue: {
-    card: "border-blue-200/70 bg-gradient-to-br from-blue-50/90 via-card to-card dark:border-blue-900/60 dark:from-blue-950/30",
+    card: "border-border/70 bg-card",
     accent: "bg-blue-500",
     icon: "bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300",
     value: "text-blue-700 dark:text-blue-300",
     header: "bg-blue-50/80 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300",
   },
   amber: {
-    card: "border-amber-200/70 bg-gradient-to-br from-amber-50/90 via-card to-card dark:border-amber-900/60 dark:from-amber-950/30",
+    card: "border-border/70 bg-card",
     accent: "bg-amber-500",
     icon: "bg-amber-100 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300",
     value: "text-amber-700 dark:text-amber-300",
     header: "bg-amber-50/80 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300",
   },
   rose: {
-    card: "border-rose-200/70 bg-gradient-to-br from-rose-50/90 via-card to-card dark:border-rose-900/60 dark:from-rose-950/30",
+    card: "border-border/70 bg-card",
     accent: "bg-rose-500",
     icon: "bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300",
     value: "text-rose-700 dark:text-rose-300",
     header: "bg-rose-50/80 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300",
   },
   orange: {
-    card: "border-orange-200/70 bg-gradient-to-br from-orange-50/90 via-card to-card dark:border-orange-900/60 dark:from-orange-950/30",
+    card: "border-border/70 bg-card",
     accent: "bg-orange-500",
     icon: "bg-orange-100 text-orange-700 dark:bg-orange-950/70 dark:text-orange-300",
     value: "text-orange-700 dark:text-orange-300",
     header: "bg-orange-50/80 text-orange-700 dark:bg-orange-950/30 dark:text-orange-300",
   },
   cyan: {
-    card: "border-cyan-200/70 bg-gradient-to-br from-cyan-50/90 via-card to-card dark:border-cyan-900/60 dark:from-cyan-950/30",
+    card: "border-border/70 bg-card",
     accent: "bg-cyan-500",
     icon: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/70 dark:text-cyan-300",
     value: "text-cyan-700 dark:text-cyan-300",
     header: "bg-cyan-50/80 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300",
   },
   violet: {
-    card: "border-violet-200/70 bg-gradient-to-br from-violet-50/90 via-card to-card dark:border-violet-900/60 dark:from-violet-950/30",
+    card: "border-border/70 bg-card",
     accent: "bg-violet-500",
     icon: "bg-violet-100 text-violet-700 dark:bg-violet-950/70 dark:text-violet-300",
     value: "text-violet-700 dark:text-violet-300",
     header: "bg-violet-50/80 text-violet-700 dark:bg-violet-950/30 dark:text-violet-300",
   },
   emerald: {
-    card: "border-emerald-200/70 bg-gradient-to-br from-emerald-50/90 via-card to-card dark:border-emerald-900/60 dark:from-emerald-950/30",
+    card: "border-border/70 bg-card",
     accent: "bg-emerald-500",
     icon: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300",
     value: "text-emerald-700 dark:text-emerald-300",
     header: "bg-emerald-50/80 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300",
   },
   indigo: {
-    card: "border-indigo-200/70 bg-gradient-to-br from-indigo-50/90 via-card to-card dark:border-indigo-900/60 dark:from-indigo-950/30",
+    card: "border-border/70 bg-card",
     accent: "bg-indigo-500",
     icon: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300",
     value: "text-indigo-700 dark:text-indigo-300",
@@ -145,7 +144,7 @@ const priorityLabel: Record<string, string> = {
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
+    <p className="rounded-xl border border-dashed bg-muted/15 px-3 py-7 text-center text-sm text-muted-foreground">
       {children}
     </p>
   );
@@ -173,24 +172,24 @@ function Block({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="min-w-0 overflow-hidden border-border/70 shadow-sm">
-      <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b bg-muted/15 pb-3">
+    <Card className="min-w-0 overflow-hidden rounded-2xl border-border/70 bg-card shadow-soft">
+      <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border/60 bg-muted/10 pb-3.5">
         <div className="flex min-w-0 items-center gap-3">
           <span
             className={cn(
-              "grid size-9 shrink-0 place-items-center rounded-xl",
+              "grid size-10 shrink-0 place-items-center rounded-xl shadow-sm",
               visualTone[tone].header,
             )}
           >
             <Icon className="size-4.5" aria-hidden />
           </span>
-          <CardTitle className="truncate text-base">{title}</CardTitle>
+          <CardTitle className="truncate text-[0.95rem] font-semibold">{title}</CardTitle>
         </div>
-        <Button variant="ghost" size="sm" className="shrink-0" asChild>
+        <Button variant="ghost" size="sm" className="shrink-0 rounded-lg text-xs" asChild>
           <Link to={href}>{action}</Link>
         </Button>
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="pt-5">
         {loading ? (
           <div aria-label={`Carregando ${title}`} className="space-y-2">
             <Skeleton className="h-6 w-full" />
@@ -215,7 +214,10 @@ function Stats({ items }: { items: Array<[string, React.ReactNode]> }) {
   return (
     <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
       {items.map(([label, value]) => (
-        <div key={label} className="min-w-0 rounded-lg bg-muted/40 px-3 py-2">
+        <div
+          key={label}
+          className="min-w-0 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5"
+        >
           <dt className="truncate text-xs text-muted-foreground">{label}</dt>
           <dd className="mt-0.5 text-sm font-semibold tabular-nums">{value}</dd>
         </div>
@@ -234,7 +236,7 @@ function Row({
   right?: React.ReactNode;
 }) {
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-2.5">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">{title}</p>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">{meta}</p>
@@ -255,7 +257,6 @@ function Central() {
   const communication = useCommunicationThreads(organizationId);
   const documents = useDocumentsSummary(organizationId);
   const activity = useRecentActivity(canProcesses ? organizationId : null);
-  const gettingStarted = useGettingStarted(organizationId, role === "proprietario");
   const opportunities = useCommercialOpportunityAlerts(organizationId);
   const taskStats = taskIndicators(tasks.data ?? []);
   const openTasks = (tasks.data ?? []).filter((t) => t.status !== "concluida");
@@ -267,7 +268,9 @@ function Central() {
     (a) => !["resolvido", "ignorado"].includes(a.monitoring_status),
   );
   const opportunityRows = (opportunities.data ?? []).filter((row: any) => row.next_action_at);
-  const overdueOpportunities = opportunityRows.filter((row: any) => row.next_action_at.slice(0, 10) <= today());
+  const overdueOpportunities = opportunityRows.filter(
+    (row: any) => row.next_action_at.slice(0, 10) <= today(),
+  );
   const org =
     membership?.organizations?.trade_name || membership?.organizations?.legal_name || "Organização";
   const metrics: Array<[string, number, string, LucideIcon, Level, VisualTone]> = [
@@ -281,7 +284,14 @@ function Central() {
       "amber",
     ],
     ["Retornos atrasados", cs.overdue, "/comunicacao", MessageCircle, "atencao", "cyan"],
-    ["Ações comerciais vencidas", overdueOpportunities.length, "/relatorios?tipo=commercial", BriefcaseBusiness, "atencao", "amber"],
+    [
+      "Ações comerciais vencidas",
+      overdueOpportunities.length,
+      "/relatorios?tipo=commercial",
+      BriefcaseBusiness,
+      "atencao",
+      "amber",
+    ],
     [
       "Documentos vencendo",
       documents.data?.expiring ?? 0,
@@ -331,7 +341,16 @@ function Central() {
         "emerald",
       ],
     );
-  const queries = [tasks, processes, monitoring, finance, communication, documents, activity, opportunities];
+  const queries = [
+    tasks,
+    processes,
+    monitoring,
+    finance,
+    communication,
+    documents,
+    activity,
+    opportunities,
+  ];
   const refreshing = queries.some((q) => q.isFetching);
   const refresh = () => queries.forEach((q) => void q.refetch());
   const updated = Math.max(
@@ -346,36 +365,45 @@ function Central() {
     ].filter(Boolean),
   );
   return (
-    <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
-      <header className="relative grid overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.10] via-card to-sky-500/[0.07] p-5 shadow-sm sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+    <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+      <header className="relative grid overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div
-          className="pointer-events-none absolute -top-16 -right-12 size-48 rounded-full bg-primary/10 blur-3xl"
+          className="pointer-events-none absolute -top-32 -right-20 size-80 rounded-full bg-blue-500/20 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:40px_40px]"
           aria-hidden
         />
         <div className="relative min-w-0">
           <div className="flex items-center gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-              <LayoutDashboard className="size-5" aria-hidden />
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-blue-500 text-white shadow-lg shadow-blue-500/25 ring-1 ring-white/10">
+              <LayoutDashboard className="size-5.5" aria-hidden />
             </span>
             <div>
-              <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-[0.12em] text-primary uppercase">
+              <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-[0.14em] text-blue-300 uppercase">
                 <Sparkles className="size-3.5" aria-hidden />
                 Visão operacional
               </div>
-              <h1 className="page-title">Central de Comando</h1>
+              <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+                Central de Comando
+              </h1>
             </div>
           </div>
-          <p className="page-subtitle mt-1">
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
             Visão geral da operação da organização: prazos, alertas e pendências em um só lugar.
           </p>
-          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-            <span className="font-semibold">{org}</span>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-muted-foreground">{formatDate(new Date().toISOString())}</span>
+          <p className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+            <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 font-medium text-white">
+              {org}
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+              {formatDate(new Date().toISOString())}
+            </span>
           </p>
         </div>
         <div className="relative mt-4 flex flex-wrap items-center gap-3 lg:mt-0 lg:justify-end">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-slate-400">
             Dados atualizados{" "}
             {updated
               ? new Date(updated).toLocaleTimeString("pt-BR", {
@@ -390,16 +418,14 @@ function Central() {
             onClick={refresh}
             disabled={refreshing}
             aria-label="Atualizar dados da Central de Comando"
-            className="min-h-9"
+            className="min-h-10 rounded-xl border-white/15 bg-white/[0.07] text-white shadow-sm hover:bg-white/[0.12] hover:text-white"
           >
             <RefreshCw className={cn("size-4", refreshing && "animate-spin")} aria-hidden />
             Atualizar
           </Button>
         </div>
       </header>
-      {role === "proprietario" && gettingStarted.data && (
-        <GettingStartedCard progress={gettingStarted.data} />
-      )}
+      <GettingStartedCard />
       <section
         aria-label="Indicadores principais"
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
@@ -411,27 +437,30 @@ function Central() {
               key={label}
               to={href}
               aria-label={`${label}: ${value}. Abrir módulo`}
-              className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="group rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <Card
                 className={cn(
-                  "relative h-full overflow-hidden shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg",
+                  "relative h-full overflow-hidden rounded-2xl shadow-soft transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/20 group-hover:shadow-panel",
                   visualTone[tone].card,
                   levelCard[level],
                 )}
               >
                 <span
-                  className={cn("absolute inset-x-0 top-0 h-1", visualTone[tone].accent)}
+                  className={cn(
+                    "absolute top-0 left-5 h-1 w-10 rounded-b-full",
+                    visualTone[tone].accent,
+                  )}
                   aria-hidden
                 />
-                <CardContent className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5">
+                <CardContent className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 p-5 pt-6">
                   <div className="min-w-0">
-                    <p className="min-h-8 text-xs leading-4 font-medium tracking-wide text-muted-foreground uppercase">
+                    <p className="min-h-8 text-xs leading-4 font-medium text-muted-foreground">
                       {label}
                     </p>
                     <strong
                       className={cn(
-                        "mt-1 block text-2xl leading-none font-semibold tabular-nums",
+                        "mt-1 block text-2xl leading-none font-semibold tabular-nums font-display tracking-tight",
                         value === 0 ? "text-emerald-700 dark:text-emerald-300" : levelValue[level],
                       )}
                     >
@@ -448,7 +477,7 @@ function Central() {
                   </div>
                   <span
                     className={cn(
-                      "grid size-10 shrink-0 place-items-center rounded-lg",
+                      "grid size-11 shrink-0 place-items-center rounded-xl border border-current/5 shadow-sm",
                       value === 0 ? visualTone[tone].icon : levelIcon[level],
                     )}
                   >
@@ -514,18 +543,30 @@ function Central() {
           action="Abrir funil comercial"
           loading={opportunities.isLoading}
           error={opportunities.isError}
-          summary={<Stats items={[["Vencidas/hoje", overdueOpportunities.length], ["Agendadas", opportunityRows.length]]} />}
+          summary={
+            <Stats
+              items={[
+                ["Vencidas/hoje", overdueOpportunities.length],
+                ["Agendadas", opportunityRows.length],
+              ]}
+            />
+          }
         >
           {opportunityRows.length ? (
             <ul className="divide-y">
-              {[...opportunityRows].sort((a: any, b: any) => a.next_action_at.localeCompare(b.next_action_at)).slice(0, 5).map((opportunity: any) => (
-                <Row
-                  key={opportunity.id}
-                  title={opportunity.title}
-                  meta={opportunity.owner_id ? "Responsável definido" : "Sem responsável definido"}
-                  right={new Date(opportunity.next_action_at).toLocaleString("pt-BR")}
-                />
-              ))}
+              {[...opportunityRows]
+                .sort((a: any, b: any) => a.next_action_at.localeCompare(b.next_action_at))
+                .slice(0, 5)
+                .map((opportunity: any) => (
+                  <Row
+                    key={opportunity.id}
+                    title={opportunity.title}
+                    meta={
+                      opportunity.owner_id ? "Responsável definido" : "Sem responsável definido"
+                    }
+                    right={new Date(opportunity.next_action_at).toLocaleString("pt-BR")}
+                  />
+                ))}
             </ul>
           ) : (
             <Empty>Nenhuma próxima ação comercial cadastrada.</Empty>
@@ -760,7 +801,10 @@ function Central() {
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-2 pt-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           {can("clients.create") && (
-            <Button className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
+            <Button
+              className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight"
+              asChild
+            >
               <Link to="/clientes/novo">
                 <Plus aria-hidden />
                 Novo cliente
@@ -768,28 +812,43 @@ function Central() {
             </Button>
           )}
           {can("processes.create") && (
-            <Button className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
+            <Button
+              className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight"
+              asChild
+            >
               <Link to="/processos/novo">
                 <Plus aria-hidden />
                 Novo processo
               </Link>
             </Button>
           )}
-          <Button variant="outline" className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
+          <Button
+            variant="outline"
+            className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight"
+            asChild
+          >
             <Link to="/tarefas">
               <Plus aria-hidden />
               Nova tarefa
             </Link>
           </Button>
           {canFinance && (
-            <Button variant="outline" className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
+            <Button
+              variant="outline"
+              className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight"
+              asChild
+            >
               <Link to="/financeiro">
                 <Plus aria-hidden />
                 Novo lançamento
               </Link>
             </Button>
           )}
-          <Button variant="outline" className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight" asChild>
+          <Button
+            variant="outline"
+            className="min-h-11 w-full justify-center whitespace-normal text-center leading-tight"
+            asChild
+          >
             <Link to="/comunicacao">
               <Plus aria-hidden />
               Nova conversa

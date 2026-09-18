@@ -12,6 +12,7 @@ import {
   Clock3,
   CreditCard,
   HandCoins,
+  LogIn,
   PlugZap,
   RefreshCw,
   RotateCcw,
@@ -53,6 +54,11 @@ import {
   trialUsage,
   type TrialEngagementFilter,
 } from "@/lib/platform-trial-engagement";
+import {
+  matchesPlatformAccessFilter,
+  platformAccessStatus,
+  type PlatformAccessFilter,
+} from "@/lib/platform-access";
 import {
   commercialFollowUpStatusLabel,
   contactStatusTone,
@@ -132,6 +138,11 @@ type PlatformOrganization = {
   next_contact_at: string | null;
   last_contact_at: string | null;
   follow_up_notes: string | null;
+  first_access_at: string | null;
+  last_access_at: string | null;
+  access_count: number;
+  last_access_user_name: string | null;
+  last_access_user_email: string | null;
 };
 
 type PlatformSubscription = Pick<
@@ -239,6 +250,7 @@ function PlatformAdministration() {
   const [search, setSearch] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState<PlatformSubscriptionFilter>("all");
   const [trialFilter, setTrialFilter] = useState<TrialEngagementFilter>("all");
+  const [accessFilter, setAccessFilter] = useState<PlatformAccessFilter>("all");
   const [includeArchived, setIncludeArchived] = useState(false);
   const [includeResolvedIncidents, setIncludeResolvedIncidents] = useState(false);
   const [suspendTarget, setSuspendTarget] = useState<PlatformOrganization | null>(null);
@@ -332,10 +344,19 @@ function PlatformAdministration() {
           subscription?.status ?? null,
           subscriptionFilter,
           organization.effective_status,
-        )
+        ) &&
+        matchesPlatformAccessFilter(organization, accessFilter)
       );
     });
-  }, [rows, search, subscriptionFilter, trialFilter, subscriptionsByOrganization, includeArchived]);
+  }, [
+    rows,
+    search,
+    subscriptionFilter,
+    trialFilter,
+    accessFilter,
+    subscriptionsByOrganization,
+    includeArchived,
+  ]);
 
   if (!platformAdmin) {
     return (
@@ -363,6 +384,7 @@ function PlatformAdministration() {
         trialNeedsAttention(row) ||
         (row.effective_status === "trial" && followUpDue(row.next_contact_at)),
     ).length,
+    neverAccessed: activeRows.filter((row) => !row.last_access_at).length,
     ...billing,
   };
 
@@ -375,7 +397,7 @@ function PlatformAdministration() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
         <SummaryCard label="Empresas ativas" value={summary.total} icon={Building2} />
         <SummaryCard label="Em teste" value={summary.trial} icon={Clock3} />
         <SummaryCard
@@ -383,6 +405,7 @@ function PlatformAdministration() {
           value={summary.trialsNeedingAttention}
           icon={Activity}
         />
+        <SummaryCard label="Nunca acessaram" value={summary.neverAccessed} icon={LogIn} />
         <SummaryCard
           label="Assinaturas ativas"
           value={summary.activeSubscriptions}
@@ -418,7 +441,7 @@ function PlatformAdministration() {
               {filtered.length} empresa(s) encontrada(s).
             </p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,20rem)_13rem_13rem_auto]">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,18rem)_12rem_12rem_12rem_auto]">
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -454,6 +477,19 @@ function PlatformAdministration() {
                 <SelectItem value="not_started">Ainda não iniciaram</SelectItem>
               </SelectContent>
             </Select>
+            <Select
+              value={accessFilter}
+              onValueChange={(value) => setAccessFilter(value as PlatformAccessFilter)}
+            >
+              <SelectTrigger aria-label="Filtrar por acesso">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os acessos</SelectItem>
+                <SelectItem value="never">Nunca acessaram</SelectItem>
+                <SelectItem value="inactive">Inativos há 3+ dias</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               type="button"
               variant="outline"
@@ -482,8 +518,125 @@ function PlatformAdministration() {
               <p className="p-6 text-sm text-muted-foreground">Nenhuma empresa encontrada.</p>
             )}
           {filtered.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1540px] text-sm">
+            <div className="grid gap-3 p-3 lg:hidden">
+              {filtered.map((organization) => {
+                const subscription = subscriptionsByOrganization.get(organization.organization_id);
+                return (
+                  <article
+                    key={organization.organization_id}
+                    className={cn(
+                      "rounded-xl border bg-card p-4",
+                      organization.archived_at && "bg-muted/25 text-muted-foreground",
+                    )}
+                  >
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-sm font-semibold">
+                          {organization.trade_name || organization.legal_name}
+                        </h3>
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                          {organization.owner_name || "Responsável não informado"}
+                        </p>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "shrink-0",
+                          organization.archived_at
+                            ? "border-slate-300 bg-slate-100"
+                            : statusTone[organization.effective_status],
+                        )}
+                      >
+                        {organization.archived_at
+                          ? "Arquivada"
+                          : COMMERCIAL_STATUS_LABEL[organization.effective_status]}
+                      </Badge>
+                    </div>
+
+                    <dl className="mt-4 grid grid-cols-2 gap-3 border-y py-3 text-xs">
+                      <div className="min-w-0">
+                        <dt className="text-muted-foreground">Assinatura</dt>
+                        <dd className="mt-0.5 truncate font-medium">
+                          {subscription
+                            ? subscriptionStatusLabel(subscription.status)
+                            : "Não iniciada"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Teste até</dt>
+                        <dd className="mt-0.5 font-medium">
+                          {organization.trial_ends_at
+                            ? formatDate(organization.trial_ends_at)
+                            : "Sem prazo"}
+                        </dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-muted-foreground">Contato</dt>
+                        <dd className="mt-0.5 truncate font-medium">
+                          {commercialFollowUpStatusLabel[organization.follow_up_status]}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Entrada</dt>
+                        <dd className="mt-0.5 font-medium">
+                          {formatDate(organization.created_at)}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <div className="mt-3 rounded-lg bg-muted/40 p-3">
+                      <p className="mb-1 text-xs font-medium text-muted-foreground">Acessos</p>
+                      <AccessDetails organization={organization} />
+                    </div>
+
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <CommercialFollowUpDialog
+                        mode="platform"
+                        organizationId={null}
+                        targetId={organization.organization_id}
+                        title={organization.trade_name || organization.legal_name}
+                        currentStatus={organization.follow_up_status}
+                        nextContactAt={organization.next_contact_at}
+                        summaryNotes={organization.follow_up_notes}
+                        email={organization.owner_email}
+                        whatsapp={organization.organization_whatsapp}
+                        phone={organization.organization_phone}
+                      />
+                      <CommercialActions
+                        organization={organization}
+                        subscription={subscription}
+                        pending={update.isPending || archive.isPending}
+                        onActivate={() =>
+                          update.mutate({
+                            organizationId: organization.organization_id,
+                            action: "activate",
+                          })
+                        }
+                        onExtend={(days) =>
+                          update.mutate({
+                            organizationId: organization.organization_id,
+                            action: "extend_trial",
+                            days,
+                          })
+                        }
+                        onSuspend={() => setSuspendTarget(organization)}
+                        onArchive={() => setArchiveTarget(organization)}
+                        onRestore={() =>
+                          archive.mutate({
+                            organizationId: organization.organization_id,
+                            archived: false,
+                          })
+                        }
+                      />
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+          {filtered.length > 0 && (
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full min-w-[1720px] text-sm">
                 <thead>
                   <tr className="border-y bg-muted/40 text-left text-xs text-muted-foreground">
                     <th className="px-4 py-3 font-medium">Empresa</th>
@@ -493,6 +646,7 @@ function PlatformAdministration() {
                     <th className="px-4 py-3 font-medium">Próxima cobrança</th>
                     <th className="px-4 py-3 font-medium">Teste</th>
                     <th className="px-4 py-3 font-medium">Uso do teste</th>
+                    <th className="px-4 py-3 font-medium">Acessos</th>
                     <th className="px-4 py-3 font-medium">Acompanhamento</th>
                     <th className="px-4 py-3 font-medium">Entrada</th>
                     <th className="px-4 py-3 text-right font-medium">Ações</th>
@@ -568,6 +722,9 @@ function PlatformAdministration() {
                         )}
                       </td>
                       <TrialUsageCell organization={organization} />
+                      <td className="px-4 py-3">
+                        <AccessDetails organization={organization} />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="space-y-2">
                           <Badge
@@ -1383,6 +1540,50 @@ function TrialUsageCell({ organization }: { organization: PlatformOrganization }
           : "Sem atividade registrada"}
       </p>
     </td>
+  );
+}
+
+const accessStatusLabel = {
+  never: "Nunca acessou",
+  active: "Ativo nas últimas 24h",
+  recent: "Acesso recente",
+  inactive: "Inativo há 3+ dias",
+} as const;
+
+const accessStatusTone = {
+  never: "border-warning/30 bg-warning/10 text-warning",
+  active: "border-success/30 bg-success/10 text-success",
+  recent: "border-info/30 bg-info/10 text-info",
+  inactive: "border-destructive/30 bg-destructive/10 text-destructive",
+} as const;
+
+function AccessDetails({ organization }: { organization: PlatformOrganization }) {
+  const status = platformAccessStatus(organization);
+
+  return (
+    <div className="space-y-1">
+      <Badge variant="outline" className={accessStatusTone[status]}>
+        {accessStatusLabel[status]}
+      </Badge>
+      {organization.last_access_at ? (
+        <>
+          <p className="text-xs text-muted-foreground">
+            Último: {formatDateTime(organization.last_access_at)}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Primeiro: {formatDateTime(organization.first_access_at ?? organization.last_access_at)}{" "}
+            · {organization.access_count} sessão(ões)
+          </p>
+          <p className="max-w-52 truncate text-xs text-muted-foreground">
+            {organization.last_access_user_name ||
+              organization.last_access_user_email ||
+              "Usuário não identificado"}
+          </p>
+        </>
+      ) : (
+        <p className="text-xs text-muted-foreground">Aguardando o primeiro login.</p>
+      )}
+    </div>
   );
 }
 
