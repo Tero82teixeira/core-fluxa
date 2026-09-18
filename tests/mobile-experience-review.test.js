@@ -27,9 +27,9 @@ describe("revisão completa da experiência no celular", () => {
       read("../src/routes/_authenticated/processos.index.tsx"),
     ]);
 
-    assert.match(clients, /<Card className="hidden md:block">/);
+    assert.match(clients, /<Card className="hidden [^"]*md:block">/);
     assert.match(clients, /className="grid gap-3 md:hidden"/);
-    assert.match(processes, /<Card className="hidden md:block">/);
+    assert.match(processes, /<Card className="hidden [^"]*md:block">/);
     assert.match(processes, /className="grid gap-3 md:hidden"/);
     assert.match(processes, /Cliente não informado/);
   });
