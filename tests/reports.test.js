@@ -1,70 +1,262 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { readFileSync, readdirSync } from "node:fs";
-import { clientProcessSummary, createCsv, filterMonitoringReport, filterReportRows, groupCount, isActiveMonitoring, isInPeriod, isOverdue, monitoringBuckets, monitoringExportRows, monitoringReportMetrics, periodRange, sanitizeClient } from "../src/lib/reports.ts";
+import {
+  clientProcessSummary,
+  createCsv,
+  filterMonitoringReport,
+  filterReportRows,
+  groupCount,
+  isActiveMonitoring,
+  isInPeriod,
+  isOverdue,
+  monitoringBuckets,
+  monitoringExportRows,
+  monitoringReportMetrics,
+  periodRange,
+  sanitizeClient,
+} from "../src/lib/reports.ts";
 import { permissionsForRole } from "../src/lib/access-control.ts";
 
-const route = readFileSync(new URL("../src/routes/_authenticated/relatorios.tsx", import.meta.url), "utf8");
+const route = readFileSync(
+  new URL("../src/routes/_authenticated/relatorios.tsx", import.meta.url),
+  "utf8",
+);
 const hook = readFileSync(new URL("../src/hooks/use-reports.ts", import.meta.url), "utf8");
-const range = periodRange("custom", new Date("2026-08-17"), { from: "2026-08-01", to: "2026-09-30" });
-const alert = (overrides = {}) => ({ organization_id:"org", source_type:"tarefa", source_id:"source-1", alert_kind:"tarefa_proxima", title:"Prazo", description:null, client_id:"client-1", client_name:"Cliente", process_id:"process-1", process_code:"PROC-1", responsible_id:"user-1", responsible_name:"Ana", source_priority:"media", suggested_priority:"media", relevant_at:"2026-08-20", last_movement_at:"2026-08-15", days_delta:3, reason:"vence em 3 dias", source_status:"pendente", monitoring_status:"novo", assigned_to:null, assigned_name:null, priority_override:null, notes:null, state_updated_at:null, ...overrides });
+const range = periodRange("custom", new Date("2026-08-17"), {
+  from: "2026-08-01",
+  to: "2026-09-30",
+});
+const alert = (overrides = {}) => ({
+  organization_id: "org",
+  source_type: "tarefa",
+  source_id: "source-1",
+  alert_kind: "tarefa_proxima",
+  title: "Prazo",
+  description: null,
+  client_id: "client-1",
+  client_name: "Cliente",
+  process_id: "process-1",
+  process_code: "PROC-1",
+  responsible_id: "user-1",
+  responsible_name: "Ana",
+  source_priority: "media",
+  suggested_priority: "media",
+  relevant_at: "2026-08-20",
+  last_movement_at: "2026-08-15",
+  days_delta: 3,
+  reason: "vence em 3 dias",
+  source_status: "pendente",
+  monitoring_status: "novo",
+  assigned_to: null,
+  assigned_name: null,
+  priority_override: null,
+  notes: null,
+  state_updated_at: null,
+  ...overrides,
+});
 
 describe("módulo de relatórios", () => {
   test("registra a rota autenticada", () => assert.match(route, /\/_authenticated\/relatorios/));
   test("remove estado em breve", () => assert.doesNotMatch(route, /ComingSoon|em breve/i));
   test("exige organização ativa", () => assert.match(route, /if \(!organizationId\)/));
-  test("todas as fontes são isoladas por organization_id", () => assert.match(hook, /eq\("organization_id", organizationId\)/));
+  test("todas as fontes são isoladas por organization_id", () =>
+    assert.match(hook, /eq\("organization_id", organizationId\)/));
   test("limita volume das consultas", () => assert.match(hook, /limit\(LIMIT\)/));
   test("faz consultas paralelas", () => assert.match(hook, /Promise\.all/));
-  test("calcula agrupamentos", () => assert.deepEqual(groupCount([{s:"a"},{s:"a"},{s:"b"}], x=>x.s), {a:2,b:1}));
-  test("identifica tarefa atrasada", () => assert.equal(isOverdue("2026-08-01", "pendente", new Date("2026-08-02")), true));
-  test("não atrasa tarefa concluída", () => assert.equal(isOverdue("2026-08-01", "concluida", new Date("2026-08-02")), false));
-  test("identifica monitoramento vencido", () => assert.equal(monitoringBuckets("2026-08-01", new Date("2026-08-02T12:00:00")).expired, true));
-  test("identifica vencimento em 7 dias", () => assert.equal(monitoringBuckets("2026-08-07", new Date("2026-08-02T12:00:00")).in7, true));
-  test("identifica vencimento em 30 dias", () => assert.equal(monitoringBuckets("2026-08-25", new Date("2026-08-02T12:00:00")).in30, true));
-  test("novo, em análise e acompanhado contam como ativos", () => ["novo", "em_analise", "acompanhado"].forEach(monitoring_status => assert.equal(isActiveMonitoring(alert({ monitoring_status })), true)));
-  test("resolvido e ignorado não contam como ativos", () => ["resolvido", "ignorado"].forEach(monitoring_status => assert.equal(isActiveMonitoring(alert({ monitoring_status })), false)));
-  test("métricas usam relevant_at para vencidos e próximos 30 dias", () => assert.deepEqual(monitoringReportMetrics([alert({ relevant_at:"2026-08-01" }), alert({ relevant_at:"2026-08-25" })], new Date("2026-08-17")), { active:2, overdue:1, in30:1 }));
-  test("filtra monitoramento por cliente", () => assert.equal(filterMonitoringReport([alert()], { range, clientId:"client-1" }).length, 1));
-  test("filtra monitoramento por responsável de origem ou atribuído", () => { assert.equal(filterMonitoringReport([alert()], { range, assigneeId:"user-1" }).length, 1); assert.equal(filterMonitoringReport([alert({ assigned_to:"user-2" })], { range, assigneeId:"user-2" }).length, 1); });
-  test("filtra status por monitoring_status", () => assert.equal(filterMonitoringReport([alert()], { range, status:"novo" }).length, 1));
-  test("filtra monitoramento por processo", () => assert.equal(filterMonitoringReport([alert()], { range, processId:"process-1" }).length, 1));
-  test("prioridade efetiva respeita override no filtro", () => assert.equal(filterMonitoringReport([alert({ priority_override:"critica" })], { range, priority:"critica" }).length, 1));
-  test("exportação recebe colunas do alerta operacional", () => assert.deepEqual(Object.keys(monitoringExportRows([alert()])[0]), ["title","source_type","monitoring_status","priority","responsible","client","process","relevant_at","last_movement_at"]));
-  test("filtra últimos 7 dias", () => assert.equal(isInPeriod("2026-08-02", periodRange("7d", new Date("2026-08-06"))), true));
-  test("filtra período personalizado", () => assert.equal(isInPeriod("2026-07-15", periodRange("custom", new Date("2026-08-06"), {from:"2026-07-01",to:"2026-07-31"})), true));
-  test("filtro de cliente usa a chave explícita de cada coleção", () => {
-    const clients = [{ id:"client-a", name:"A", created_at:"2026-08-10" }, { id:"client-b", name:"B", created_at:"2026-08-10" }];
-    const processes = [{ id:"process-a", client_id:"client-a", opened_at:"2026-08-10" }, { id:"client-a", client_id:"client-b", opened_at:"2026-08-10" }];
-    const tasks = [{ id:"client-a", client_id:"client-b", created_at:"2026-08-10" }];
-    const documents = [{ id:"client-a", client_id:"client-b", created_at:"2026-08-10" }];
-    const allFilters = { range, clientId:"all", assigneeId:"all", status:"all", priority:"all", processId:"all" };
-    assert.deepEqual(filterReportRows(clients, allFilters, { clientKey:"id" }), clients);
-    assert.deepEqual(filterReportRows(clients, { ...allFilters, clientId:"client-a" }, { clientKey:"id" }), [clients[0]]);
-    assert.deepEqual(filterReportRows(processes, { ...allFilters, clientId:"client-a" }, { clientKey:"client_id", dateKey:"opened_at", processOwnId:true }), [processes[0]]);
-    for (const rows of [tasks, documents]) assert.deepEqual(filterReportRows(rows, { ...allFilters, clientId:"client-a" }, { clientKey:"client_id" }), []);
-    assert.deepEqual(filterReportRows(clients, { ...allFilters, clientId:"all" }, { clientKey:"id" }), clients);
-    assert.deepEqual(clientProcessSummary([clients[0]], [processes[0]]), { withProcesses:1, withoutProcesses:0 });
+  test("calcula agrupamentos", () =>
+    assert.deepEqual(
+      groupCount([{ s: "a" }, { s: "a" }, { s: "b" }], (x) => x.s),
+      { a: 2, b: 1 },
+    ));
+  test("identifica tarefa atrasada", () =>
+    assert.equal(isOverdue("2026-08-01", "pendente", new Date("2026-08-02")), true));
+  test("não atrasa tarefa concluída", () =>
+    assert.equal(isOverdue("2026-08-01", "concluida", new Date("2026-08-02")), false));
+  test("identifica monitoramento vencido", () =>
+    assert.equal(monitoringBuckets("2026-08-01", new Date("2026-08-02T12:00:00")).expired, true));
+  test("identifica vencimento em 7 dias", () =>
+    assert.equal(monitoringBuckets("2026-08-07", new Date("2026-08-02T12:00:00")).in7, true));
+  test("identifica vencimento em 30 dias", () =>
+    assert.equal(monitoringBuckets("2026-08-25", new Date("2026-08-02T12:00:00")).in30, true));
+  test("novo, em análise e acompanhado contam como ativos", () =>
+    ["novo", "em_analise", "acompanhado"].forEach((monitoring_status) =>
+      assert.equal(isActiveMonitoring(alert({ monitoring_status })), true),
+    ));
+  test("resolvido e ignorado não contam como ativos", () =>
+    ["resolvido", "ignorado"].forEach((monitoring_status) =>
+      assert.equal(isActiveMonitoring(alert({ monitoring_status })), false),
+    ));
+  test("métricas usam relevant_at para vencidos e próximos 30 dias", () =>
+    assert.deepEqual(
+      monitoringReportMetrics(
+        [alert({ relevant_at: "2026-08-01" }), alert({ relevant_at: "2026-08-25" })],
+        new Date("2026-08-17"),
+      ),
+      { active: 2, overdue: 1, in30: 1 },
+    ));
+  test("filtra monitoramento por cliente", () =>
+    assert.equal(filterMonitoringReport([alert()], { range, clientId: "client-1" }).length, 1));
+  test("filtra monitoramento por responsável de origem ou atribuído", () => {
+    assert.equal(filterMonitoringReport([alert()], { range, assigneeId: "user-1" }).length, 1);
+    assert.equal(
+      filterMonitoringReport([alert({ assigned_to: "user-2" })], { range, assigneeId: "user-2" })
+        .length,
+      1,
+    );
   });
-  test("filtros de cliente, responsável, status e prioridade estão disponíveis", () => ["Cliente","Responsável","Status","Prioridade"].forEach(x=>assert.match(route,new RegExp(x))));
-  test("CSV usa BOM UTF-8 e separador do Excel pt-BR", () => { const csv=createCsv([{nome:"João",total:2}]); assert.equal(csv.charCodeAt(0),0xfeff); assert.match(csv,/"nome";"total"/); });
-  test("CSV escapa aspas", () => assert.match(createCsv([{nome:'A "B"'}]), /A ""B""/));
-  test("exportação usa somente linhas filtradas", () => assert.match(route, /exportRows\(kind,matching\)/));
-  test("operacional pode exportar relatórios", () => assert.equal(permissionsForRole("operacional").canExportReports, true));
+  test("filtra status por monitoring_status", () =>
+    assert.equal(filterMonitoringReport([alert()], { range, status: "novo" }).length, 1));
+  test("filtra monitoramento por processo", () =>
+    assert.equal(filterMonitoringReport([alert()], { range, processId: "process-1" }).length, 1));
+  test("prioridade efetiva respeita override no filtro", () =>
+    assert.equal(
+      filterMonitoringReport([alert({ priority_override: "critica" })], {
+        range,
+        priority: "critica",
+      }).length,
+      1,
+    ));
+  test("exportação recebe colunas do alerta operacional", () =>
+    assert.deepEqual(Object.keys(monitoringExportRows([alert()])[0]), [
+      "title",
+      "source_type",
+      "monitoring_status",
+      "priority",
+      "responsible",
+      "client",
+      "process",
+      "relevant_at",
+      "last_movement_at",
+    ]));
+  test("filtra últimos 7 dias", () =>
+    assert.equal(isInPeriod("2026-08-02", periodRange("7d", new Date("2026-08-06"))), true));
+  test("filtra período personalizado", () =>
+    assert.equal(
+      isInPeriod(
+        "2026-07-15",
+        periodRange("custom", new Date("2026-08-06"), { from: "2026-07-01", to: "2026-07-31" }),
+      ),
+      true,
+    ));
+  test("filtro de cliente usa a chave explícita de cada coleção", () => {
+    const clients = [
+      { id: "client-a", name: "A", created_at: "2026-08-10" },
+      { id: "client-b", name: "B", created_at: "2026-08-10" },
+    ];
+    const processes = [
+      { id: "process-a", client_id: "client-a", opened_at: "2026-08-10" },
+      { id: "client-a", client_id: "client-b", opened_at: "2026-08-10" },
+    ];
+    const tasks = [{ id: "client-a", client_id: "client-b", created_at: "2026-08-10" }];
+    const documents = [{ id: "client-a", client_id: "client-b", created_at: "2026-08-10" }];
+    const allFilters = {
+      range,
+      clientId: "all",
+      assigneeId: "all",
+      status: "all",
+      priority: "all",
+      processId: "all",
+    };
+    assert.deepEqual(filterReportRows(clients, allFilters, { clientKey: "id" }), clients);
+    assert.deepEqual(
+      filterReportRows(clients, { ...allFilters, clientId: "client-a" }, { clientKey: "id" }),
+      [clients[0]],
+    );
+    assert.deepEqual(
+      filterReportRows(
+        processes,
+        { ...allFilters, clientId: "client-a" },
+        { clientKey: "client_id", dateKey: "opened_at", processOwnId: true },
+      ),
+      [processes[0]],
+    );
+    for (const rows of [tasks, documents])
+      assert.deepEqual(
+        filterReportRows(rows, { ...allFilters, clientId: "client-a" }, { clientKey: "client_id" }),
+        [],
+      );
+    assert.deepEqual(
+      filterReportRows(clients, { ...allFilters, clientId: "all" }, { clientKey: "id" }),
+      clients,
+    );
+    assert.deepEqual(clientProcessSummary([clients[0]], [processes[0]]), {
+      withProcesses: 1,
+      withoutProcesses: 0,
+    });
+  });
+  test("filtros de cliente, responsável, status e prioridade estão disponíveis", () =>
+    ["Cliente", "Responsável", "Status", "Prioridade"].forEach((x) =>
+      assert.match(route, new RegExp(x)),
+    ));
+  test("CSV usa BOM UTF-8 e separador do Excel pt-BR", () => {
+    const csv = createCsv([{ nome: "João", total: 2 }]);
+    assert.equal(csv.charCodeAt(0), 0xfeff);
+    assert.match(csv, /"nome";"total"/);
+  });
+  test("CSV escapa aspas", () => assert.match(createCsv([{ nome: 'A "B"' }]), /A ""B""/));
+  test("exportação usa somente linhas filtradas", () =>
+    assert.match(route, /exportRows\(kind, matching\)/));
+  test("operacional pode exportar relatórios", () =>
+    assert.equal(permissionsForRole("operacional").canExportReports, true));
   test("visualizador não pode exportar ou imprimir relatórios", () => {
     assert.equal(permissionsForRole("visualizador").canExportReports, false);
-    assert.match(route, /canExportReports && <div className="no-print flex gap-2"/);
+    assert.match(route, /canExportReports && \([\s\S]*className="no-print flex [^"]*gap-2/);
     assert.match(route, /if \(!canExportReports\) return/);
-    assert.match(route, /canExportReports && <Button variant="outline" onClick=\{\(\)=>exportRows\(kind,matching\)\}/);
+    assert.match(
+      route,
+      /canExportReports && \([\s\S]*<Button[\s\S]*variant="outline"[\s\S]*onClick=\{\(\) => exportRows\(kind, matching\)\}/,
+    );
   });
-  test("visualizador não recebe PII sensível", () => { const row=sanitizeClient({name:"Ana",email:"a@x",phone:"1",document:"2"},"visualizador"); assert.deepEqual(row,{name:"Ana"}); });
-  test("proprietário e administrador preservam campos autorizados", () => { assert.equal(sanitizeClient({email:"a"},"proprietario").email,"a"); assert.equal(sanitizeClient({email:"a"},"administrador").email,"a"); });
-  test("operacional não recebe PII sensível", () => assert.equal("email" in sanitizeClient({email:"a"},"operacional"),false));
-  test("impressão possui cabeçalho e oculta botões", () => { assert.match(route,/print-header/); assert.match(route,/no-print/); });
-  test("gráficos têm estado vazio acessível", () => { assert.match(route,/Sem dados no período/); assert.match(route,/role="img"/); });
-  test("tabelas têm loading, erro e vazio", () => ["Carregando dados reais","Não foi possível carregar","Nenhum registro encontrado"].forEach(x=>assert.match(route,new RegExp(x))));
-  test("não adiciona migration ou Edge Function", () => { const changed=["src/lib/reports.ts","src/hooks/use-reports.ts","src/routes/_authenticated/relatorios.tsx","src/styles.css","tests/reports.test.js"]; assert.equal(changed.some(x=>x.startsWith("supabase/migrations")||x.startsWith("supabase/functions")),false); });
-  test("não usa service role, URL externa nem dado fictício", () => assert.doesNotMatch(route+hook,/service_role|https?:\/\/|mock|faker/i));
-  test("relatórios reutilizam a fonte operacional da Central", () => { assert.match(hook, /fetchOperationalMonitoring/); assert.doesNotMatch(hook, /monitoring_items_status_view/); });
-  test("não adiciona dependência", () => assert.equal(readdirSync(new URL("../",import.meta.url)).includes("package-lock.json"), false));
+  test("visualizador não recebe PII sensível", () => {
+    const row = sanitizeClient(
+      { name: "Ana", email: "a@x", phone: "1", document: "2" },
+      "visualizador",
+    );
+    assert.deepEqual(row, { name: "Ana" });
+  });
+  test("proprietário e administrador preservam campos autorizados", () => {
+    assert.equal(sanitizeClient({ email: "a" }, "proprietario").email, "a");
+    assert.equal(sanitizeClient({ email: "a" }, "administrador").email, "a");
+  });
+  test("operacional não recebe PII sensível", () =>
+    assert.equal("email" in sanitizeClient({ email: "a" }, "operacional"), false));
+  test("impressão possui cabeçalho e oculta botões", () => {
+    assert.match(route, /print-header/);
+    assert.match(route, /no-print/);
+  });
+  test("gráficos têm estado vazio acessível", () => {
+    assert.match(route, /Sem dados no período/);
+    assert.match(route, /role="img"/);
+  });
+  test("tabelas têm loading, erro e vazio", () =>
+    ["Carregando dados reais", "Não foi possível carregar", "Nenhum registro encontrado"].forEach(
+      (x) => assert.match(route, new RegExp(x)),
+    ));
+  test("não adiciona migration ou Edge Function", () => {
+    const changed = [
+      "src/lib/reports.ts",
+      "src/hooks/use-reports.ts",
+      "src/routes/_authenticated/relatorios.tsx",
+      "src/styles.css",
+      "tests/reports.test.js",
+    ];
+    assert.equal(
+      changed.some(
+        (x) => x.startsWith("supabase/migrations") || x.startsWith("supabase/functions"),
+      ),
+      false,
+    );
+  });
+  test("não usa service role, URL externa nem dado fictício", () =>
+    assert.doesNotMatch(route + hook, /service_role|https?:\/\/|mock|faker/i));
+  test("relatórios reutilizam a fonte operacional da Central", () => {
+    assert.match(hook, /fetchOperationalMonitoring/);
+    assert.doesNotMatch(hook, /monitoring_items_status_view/);
+  });
+  test("não adiciona dependência", () =>
+    assert.equal(
+      readdirSync(new URL("../", import.meta.url)).includes("package-lock.json"),
+      false,
+    ));
 });

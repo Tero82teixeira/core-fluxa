@@ -35,9 +35,9 @@ test("a selected model is inserted for human review and never auto-sent", () => 
   assert.match(helper, /current\.trimEnd\(\)/);
   assert.match(picker, /onSelect\(selected\.content\)/);
   assert.doesNotMatch(picker, /mutateAsync|sendReply|submit/);
-  assert.match(communication, /setContent\(current=>applyQuickReply/);
+  assert.match(communication, /setContent\(\(current\) => applyQuickReply/);
   assert.match(quickChat, /setReply\(\(current\) => applyQuickReply/);
-  assert.match(communication, /type!=="nota_interna"&&<QuickReplyPicker/);
+  assert.match(communication, /type !== "nota_interna" && \([\s\S]*<QuickReplyPicker/);
 });
 
 test("message bodies are excluded from audit metadata", () => {

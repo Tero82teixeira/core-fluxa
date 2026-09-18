@@ -128,7 +128,7 @@ const asaasStatus: Record<AsaasCharge["status"], { label: string; tone: Tone }> 
   cancelled: { label: "Cancelada", tone: "neutral" },
   failed: { label: "Falhou", tone: "danger" },
 };
-const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
+const selectClass = "h-10 rounded-xl border border-input bg-background px-3 text-sm";
 
 function FinancePage() {
   const { organizationId, membership, role } = useWorkspace();
@@ -245,12 +245,7 @@ function FinanceDashboard({ organizationId, membership, role, action, payment, d
   const currentBalance = data.accounts
     .filter((item: any) => !item.archived_at)
     .reduce((total: number, item: any) => total + Number(item.current_balance), 0);
-  const forecast = cashFlowForecast(
-    data.transactions,
-    data.payments,
-    currentBalance,
-    now,
-  );
+  const forecast = cashFlowForecast(data.transactions, data.payments, currentBalance, now);
   const profitabilityNames = new Map<string, string>(
     (profitabilityDimension === "client" ? data.clients : data.processes).map((item: any) => [
       item.id,
@@ -273,10 +268,9 @@ function FinanceDashboard({ organizationId, membership, role, action, payment, d
         "cobrancas-asaas",
         data.asaasCharges.map((charge: AsaasCharge) => ({
           Descrição:
-            data.transactions.find((item: any) => item.id === charge.transaction_id)
-              ?.description ?? "Cobrança",
-          Cliente:
-            data.clients.find((item: any) => item.id === charge.client_id)?.name ?? "—",
+            data.transactions.find((item: any) => item.id === charge.transaction_id)?.description ??
+            "Cobrança",
+          Cliente: data.clients.find((item: any) => item.id === charge.client_id)?.name ?? "—",
           Valor: brl(Number(charge.amount)),
           Vencimento: brDate(charge.due_date),
           Status: asaasStatus[charge.status]?.label ?? charge.status,
@@ -290,7 +284,8 @@ function FinanceDashboard({ organizationId, membership, role, action, payment, d
         dre.rows.map((item) => ({
           Linha: item.label,
           Valor: brl(item.amount),
-          "% da receita": item.percentageOfRevenue === null ? "—" : `${item.percentageOfRevenue.toFixed(1)}%`,
+          "% da receita":
+            item.percentageOfRevenue === null ? "—" : `${item.percentageOfRevenue.toFixed(1)}%`,
         })),
       );
       return;
@@ -336,45 +331,83 @@ function FinanceDashboard({ organizationId, membership, role, action, payment, d
     );
   };
   return (
-    <div className="finance-page mx-auto w-full max-w-7xl space-y-5 p-4 sm:p-6">
-      <header className="print-header flex flex-wrap justify-between gap-3">
-        <div>
-          <h1 className="page-title">Financeiro</h1>
-          <p className="page-subtitle">
-            Visão financeira real de{" "}
-            {membership?.organizations?.trade_name || membership?.organizations?.legal_name}.
-          </p>
-          <p className="hidden print:block">
-            Gerado em {new Date().toLocaleString("pt-BR")} · Período{" "}
-            {from ? brDate(from) : "início"} a {to ? brDate(to) : "hoje"}
-          </p>
-        </div>
-        <div className="no-print flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => window.print()}>
-            <Printer />
-            Imprimir / PDF
-          </Button>
-          <Button
-            variant="outline"
-            disabled={tab === "charges" ? !data.asaasCharges.length : !rows.length}
-            onClick={exportRows}
-          >
-            <Download />
-            CSV
-          </Button>
-          {editable && (
-            <TransactionDialog
-              data={data}
-              onSave={async (payload: Record<string, unknown>) => {
-                await action.mutateAsync({ rpc: "create_financial_transaction", payload });
-                toast.success("Lançamento criado.");
-              }}
-            />
-          )}
+    <div className="finance-page mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
+      <header className="print-header relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7 print:bg-white print:p-0 print:text-black print:shadow-none">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-emerald-400/15 blur-3xl print:hidden"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:40px_40px] print:hidden"
+          aria-hidden
+        />
+        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="grid size-12 place-items-center rounded-2xl bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-400/20 ring-1 ring-white/10 print:hidden">
+                <WalletCards className="size-5.5" aria-hidden />
+              </span>
+              <div>
+                <p className="text-xs font-semibold tracking-[0.14em] text-emerald-300 uppercase print:hidden">
+                  Controle financeiro
+                </p>
+                <h1 className="font-display text-2xl font-semibold tracking-tight text-white print:text-black">
+                  Financeiro
+                </h1>
+              </div>
+            </div>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 print:text-black">
+              Visão financeira real de{" "}
+              {membership?.organizations?.trade_name || membership?.organizations?.legal_name}.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-300 print:hidden">
+              <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 font-medium text-white">
+                Saldo {brl(currentBalance)}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                Resultado do mês {brl(monthIncome - monthExpense)}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                {rows.length} lançamento(s) visível(is)
+              </span>
+            </div>
+            <p className="hidden print:block">
+              Gerado em {new Date().toLocaleString("pt-BR")} · Período{" "}
+              {from ? brDate(from) : "início"} a {to ? brDate(to) : "hoje"}
+            </p>
+          </div>
+          <div className="no-print flex w-full flex-wrap gap-2 xl:w-auto xl:justify-end">
+            <Button
+              className="flex-1 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white sm:flex-none"
+              variant="outline"
+              onClick={() => window.print()}
+            >
+              <Printer />
+              Imprimir / PDF
+            </Button>
+            <Button
+              className="flex-1 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white sm:flex-none"
+              variant="outline"
+              disabled={tab === "charges" ? !data.asaasCharges.length : !rows.length}
+              onClick={exportRows}
+            >
+              <Download />
+              CSV
+            </Button>
+            {editable && (
+              <TransactionDialog
+                data={data}
+                onSave={async (payload: Record<string, unknown>) => {
+                  await action.mutateAsync({ rpc: "create_financial_transaction", payload });
+                  toast.success("Lançamento criado.");
+                }}
+              />
+            )}
+          </div>
         </div>
       </header>
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="no-print h-auto flex-wrap">
+        <TabsList className="no-print h-auto w-full flex-wrap justify-start gap-1.5 rounded-2xl border border-border/70 bg-card p-2 shadow-soft">
           {[
             ["overview", "Visão geral"],
             ["receivable", "Contas a receber"],
@@ -389,19 +422,26 @@ function FinanceDashboard({ organizationId, membership, role, action, payment, d
             ["accounts", "Contas"],
             ["recurrences", "Recorrências"],
           ].map(([v, l]) => (
-            <TabsTrigger key={v} value={v}>
+            <TabsTrigger className="rounded-xl px-4 py-2" key={v} value={v}>
               {l}
             </TabsTrigger>
           ))}
         </TabsList>
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[...metrics, ["Resultado do mês", monthIncome - monthExpense]].map(([l, v]) => (
-              <Card key={String(l)}>
+            {[...metrics, ["Resultado do mês", monthIncome - monthExpense]].map(([l, v], index) => (
+              <Card
+                key={String(l)}
+                className="relative overflow-hidden rounded-2xl border-border/70 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel"
+              >
+                <span
+                  className={`absolute inset-x-0 top-0 h-1 ${["bg-blue-500", "bg-emerald-500", "bg-rose-500", "bg-cyan-500", "bg-amber-500", "bg-orange-500", "bg-violet-500", "bg-indigo-500", "bg-teal-500"][index]}`}
+                  aria-hidden
+                />
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm text-muted-foreground">{l}</CardTitle>
                 </CardHeader>
-                <CardContent className="text-2xl font-semibold">{brl(Number(v))}</CardContent>
+                <CardContent className="metric-value">{brl(Number(v))}</CardContent>
               </Card>
             ))}
           </div>
@@ -482,11 +522,7 @@ function FinanceDashboard({ organizationId, membership, role, action, payment, d
           />
         </TabsContent>
         <TabsContent value="charges">
-          <AsaasChargeCenter
-            organizationId={organizationId}
-            data={data}
-            editable={editable}
-          />
+          <AsaasChargeCenter organizationId={organizationId} data={data} editable={editable} />
         </TabsContent>
         <TabsContent value="dre">
           <ManagerialIncomeStatementPanel
@@ -549,7 +585,14 @@ function ManagerialIncomeStatementPanel({
             <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
           </Label>
           <div className="flex items-end">
-            <Button variant="outline" className="w-full" onClick={() => { setFrom(""); setTo(""); }}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setFrom("");
+                setTo("");
+              }}
+            >
               Limpar período
             </Button>
           </div>
@@ -565,24 +608,57 @@ function ManagerialIncomeStatementPanel({
         <MetricCard label="Despesas" value={statement.expense} />
         <MetricCard label="Resultado" value={statement.result} />
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Margem do período</CardTitle></CardHeader>
-          <CardContent className={`text-2xl font-semibold ${statement.result < 0 ? "text-destructive" : ""}`}>
-            {statement.margin === null ? "—" : `${statement.margin.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">Margem do período</CardTitle>
+          </CardHeader>
+          <CardContent
+            className={`text-2xl font-semibold ${statement.result < 0 ? "text-destructive" : ""}`}
+          >
+            {statement.margin === null
+              ? "—"
+              : `${statement.margin.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
           </CardContent>
         </Card>
       </div>
       <Card>
-        <CardHeader><CardTitle>Demonstrativo por competência</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Demonstrativo por competência</CardTitle>
+        </CardHeader>
         <CardContent className="overflow-x-auto px-3 sm:px-6">
           <table className="w-full min-w-[580px] text-sm">
-            <thead><tr className="border-b bg-muted/40"><th className="p-3 text-left">Linha</th><th className="p-3 text-right">Valor</th><th className="p-3 text-right">% da receita</th></tr></thead>
-            <tbody>{statement.rows.map((row) => (
-              <tr key={row.id} className={row.kind === "result" ? "border-t-2 bg-primary/5 font-semibold" : row.kind === "total" ? "border-t font-semibold" : "border-b"}>
-                <td className={row.kind === "expense" ? "p-3 pl-7" : "p-3"}>{row.label}</td>
-                <td className={`p-3 text-right tabular-nums ${row.kind === "result" && row.amount < 0 ? "text-destructive" : ""}`}>{brl(row.amount)}</td>
-                <td className="p-3 text-right tabular-nums">{row.percentageOfRevenue === null ? "—" : `${row.percentageOfRevenue.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}</td>
+            <thead>
+              <tr className="border-b bg-muted/40">
+                <th className="p-3 text-left">Linha</th>
+                <th className="p-3 text-right">Valor</th>
+                <th className="p-3 text-right">% da receita</th>
               </tr>
-            ))}</tbody>
+            </thead>
+            <tbody>
+              {statement.rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className={
+                    row.kind === "result"
+                      ? "border-t-2 bg-primary/5 font-semibold"
+                      : row.kind === "total"
+                        ? "border-t font-semibold"
+                        : "border-b"
+                  }
+                >
+                  <td className={row.kind === "expense" ? "p-3 pl-7" : "p-3"}>{row.label}</td>
+                  <td
+                    className={`p-3 text-right tabular-nums ${row.kind === "result" && row.amount < 0 ? "text-destructive" : ""}`}
+                  >
+                    {brl(row.amount)}
+                  </td>
+                  <td className="p-3 text-right tabular-nums">
+                    {row.percentageOfRevenue === null
+                      ? "—"
+                      : `${row.percentageOfRevenue.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         </CardContent>
       </Card>
@@ -642,7 +718,14 @@ function ProfitabilityPanel({
             <Input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
           </Label>
           <div className="flex items-end">
-            <Button variant="outline" className="w-full" onClick={() => { setFrom(""); setTo(""); }}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setFrom("");
+                setTo("");
+              }}
+            >
               Limpar período
             </Button>
           </div>
@@ -671,9 +754,7 @@ function ProfitabilityPanel({
       )}
       <Card>
         <CardHeader>
-          <CardTitle>
-            Rentabilidade por {dimension === "client" ? "cliente" : "processo"}
-          </CardTitle>
+          <CardTitle>Rentabilidade por {dimension === "client" ? "cliente" : "processo"}</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto px-3 sm:px-6">
           {!rows.length ? (
@@ -684,7 +765,9 @@ function ProfitabilityPanel({
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/40">
-                  <th className="p-3 text-left">{dimension === "client" ? "Cliente" : "Processo"}</th>
+                  <th className="p-3 text-left">
+                    {dimension === "client" ? "Cliente" : "Processo"}
+                  </th>
                   <th className="p-3 text-right">Receitas</th>
                   <th className="p-3 text-right">Despesas</th>
                   <th className="p-3 text-right">Resultado</th>
@@ -694,15 +777,24 @@ function ProfitabilityPanel({
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.id} className={row.unclassified ? "bg-amber-50/60 dark:bg-amber-950/15" : "border-b"}>
+                  <tr
+                    key={row.id}
+                    className={
+                      row.unclassified ? "bg-amber-50/60 dark:bg-amber-950/15" : "border-b"
+                    }
+                  >
                     <td className="p-3 font-medium">{row.name}</td>
                     <td className="p-3 text-right tabular-nums">{brl(row.income)}</td>
                     <td className="p-3 text-right tabular-nums">{brl(row.expense)}</td>
-                    <td className={`p-3 text-right font-semibold tabular-nums ${row.result < 0 ? "text-destructive" : "text-emerald-700 dark:text-emerald-400"}`}>
+                    <td
+                      className={`p-3 text-right font-semibold tabular-nums ${row.result < 0 ? "text-destructive" : "text-emerald-700 dark:text-emerald-400"}`}
+                    >
                       {brl(row.result)}
                     </td>
                     <td className="p-3 text-right tabular-nums">
-                      {row.margin === null ? "—" : `${row.margin.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
+                      {row.margin === null
+                        ? "—"
+                        : `${row.margin.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
                     </td>
                     <td className="p-3 text-right tabular-nums">{row.transactionCount}</td>
                   </tr>
@@ -761,14 +853,18 @@ function CashFlowForecastPanel({
         <Chart title="Fluxo de caixa realizado por mês" data={historical} keys={["fluxo"]} />
       </div>
       <Card>
-        <CardHeader><CardTitle>Detalhamento da previsão</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Detalhamento da previsão</CardTitle>
+        </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {forecast.map((bucket) => (
             <div key={bucket.key} className="rounded-xl border p-4">
               <p className="font-medium">{bucket.label}</p>
               <p className="mt-2 text-sm text-muted-foreground">Entradas: {brl(bucket.income)}</p>
               <p className="text-sm text-muted-foreground">Saídas: {brl(bucket.expense)}</p>
-              <p className={`mt-2 font-semibold ${bucket.net < 0 ? "text-destructive" : "text-emerald-700 dark:text-emerald-400"}`}>
+              <p
+                className={`mt-2 font-semibold ${bucket.net < 0 ? "text-destructive" : "text-emerald-700 dark:text-emerald-400"}`}
+              >
                 Resultado: {brl(bucket.net)}
               </p>
             </div>
@@ -781,8 +877,10 @@ function CashFlowForecastPanel({
 
 function MetricCard({ label, value }: { label: string; value: number }) {
   return (
-    <Card>
-      <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{label}</CardTitle></CardHeader>
+    <Card className="rounded-2xl border-border/70 shadow-soft">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
+      </CardHeader>
       <CardContent className={`text-2xl font-semibold ${value < 0 ? "text-destructive" : ""}`}>
         {brl(value)}
       </CardContent>
@@ -792,7 +890,7 @@ function MetricCard({ label, value }: { label: string; value: number }) {
 
 function Filters(p: any) {
   return (
-    <Card className="no-print mb-4">
+    <Card className="no-print mb-4 rounded-2xl border-border/70 shadow-soft">
       <CardContent className="grid gap-3 pt-6 sm:grid-cols-2 lg:grid-cols-4">
         <Input
           aria-label="Buscar"
@@ -882,7 +980,7 @@ function Transactions({
   const accountName = (transaction: any) =>
     data.accounts.find((account: any) => account.id === transaction.account_id)?.name;
   return (
-    <Card>
+    <Card className="rounded-2xl border-border/70 shadow-soft">
       <CardContent className="px-3 pt-4 sm:px-6 sm:pt-6">
         {!shown.length ? (
           <p className="py-10 text-center text-muted-foreground">
@@ -1070,79 +1168,76 @@ function TransactionActions({
     >
       {editable && open && !transaction.archived_at && (
         <>
-            {transaction.type === "income" && (
-              <AsaasChargeButton
-                organizationId={transaction.organization_id}
-                transaction={transaction}
-                data={data}
-                charge={activeAsaasCharge}
-              />
-            )}
-            {!activeAsaasCharge && (
-              <>
-            <TransactionDialog
+          {transaction.type === "income" && (
+            <AsaasChargeButton
+              organizationId={transaction.organization_id}
+              transaction={transaction}
               data={data}
-              transaction={transaction}
-              paidTotal={paidTotal}
-              onSave={async (payload: Record<string, unknown>) => {
-                await action.mutateAsync({
-                  rpc: "update_financial_transaction",
-                  payload: { id: transaction.id, ...payload },
-                });
-                toast.success("Lançamento atualizado.");
-              }}
+              charge={activeAsaasCharge}
             />
-            <PayDialog
-              transaction={transaction}
-              accounts={data.accounts}
-              payments={transactionPayments}
-              payment={payment}
-            />
-              </>
-            )}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={action.isPending || paidTotal > 0 || Boolean(activeAsaasCharge)}
-                  title={
-                    activeAsaasCharge
-                      ? "Cancele primeiro a cobrança ativa no Asaas."
-                      : paidTotal > 0
-                        ? "Estorne os pagamentos antes de cancelar."
-                        : undefined
+          )}
+          {!activeAsaasCharge && (
+            <>
+              <TransactionDialog
+                data={data}
+                transaction={transaction}
+                paidTotal={paidTotal}
+                onSave={async (payload: Record<string, unknown>) => {
+                  await action.mutateAsync({
+                    rpc: "update_financial_transaction",
+                    payload: { id: transaction.id, ...payload },
+                  });
+                  toast.success("Lançamento atualizado.");
+                }}
+              />
+              <PayDialog
+                transaction={transaction}
+                accounts={data.accounts}
+                payments={transactionPayments}
+                payment={payment}
+              />
+            </>
+          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={action.isPending || paidTotal > 0 || Boolean(activeAsaasCharge)}
+                title={
+                  activeAsaasCharge
+                    ? "Cancele primeiro a cobrança ativa no Asaas."
+                    : paidTotal > 0
+                      ? "Estorne os pagamentos antes de cancelar."
+                      : undefined
+                }
+              >
+                <Ban />
+                Cancelar
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancelar este lançamento?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  “{transaction.description}” permanecerá no histórico e poderá ser arquivado
+                  depois. Esta ação não registra nenhum pagamento.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={action.isPending}
+                  onClick={() =>
+                    runLifecycleAction("cancel_financial_transaction", "Lançamento cancelado.")
                   }
                 >
-                  <Ban />
-                  Cancelar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Cancelar este lançamento?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    “{transaction.description}” permanecerá no histórico e poderá ser arquivado
-                    depois. Esta ação não registra nenhum pagamento.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Voltar</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    disabled={action.isPending}
-                    onClick={() =>
-                      runLifecycleAction(
-                        "cancel_financial_transaction",
-                        "Lançamento cancelado.",
-                      )
-                    }
-                  >
-                    Confirmar cancelamento
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                  Confirmar cancelamento
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       )}
       {editable &&
@@ -1169,10 +1264,7 @@ function TransactionActions({
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   disabled={action.isPending}
                   onClick={() =>
-                    runLifecycleAction(
-                      "archive_financial_transaction",
-                      "Lançamento arquivado.",
-                    )
+                    runLifecycleAction("archive_financial_transaction", "Lançamento arquivado.")
                   }
                 >
                   Confirmar arquivamento
@@ -1202,10 +1294,7 @@ function TransactionActions({
               <AlertDialogAction
                 disabled={action.isPending}
                 onClick={() =>
-                  runLifecycleAction(
-                    "restore_financial_transaction",
-                    "Lançamento restaurado.",
-                  )
+                  runLifecycleAction("restore_financial_transaction", "Lançamento restaurado.")
                 }
               >
                 Confirmar restauração
@@ -1305,8 +1394,7 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
             <div>
               <p className="font-medium">Asaas ainda não conectado</p>
               <p className="text-muted-foreground">
-                Um administrador pode conectar a conta da empresa em Configurações &gt;
-                Financeiro.
+                Um administrador pode conectar a conta da empresa em Configurações &gt; Financeiro.
               </p>
             </div>
           </CardContent>
@@ -1329,7 +1417,9 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
       </div>
       <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base">Tempo de atraso</CardTitle></CardHeader>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Tempo de atraso</CardTitle>
+          </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
             {[
               ["1–7 dias", summary.aging.firstWeek],
@@ -1343,19 +1433,31 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
             ))}
           </CardContent>
         </Card>
-        <Card className={summary.issues ? "border-warning/40 bg-warning/5" : "border-success/30 bg-success/5"}>
-          <CardHeader className="pb-3"><CardTitle className="text-base">Conciliação Asaas</CardTitle></CardHeader>
+        <Card
+          className={
+            summary.issues ? "border-warning/40 bg-warning/5" : "border-success/30 bg-success/5"
+          }
+        >
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Conciliação Asaas</CardTitle>
+          </CardHeader>
           <CardContent>
-            <p className="font-semibold">{summary.issues ? "Precisa de atenção" : "Integração normal"}</p>
+            <p className="font-semibold">
+              {summary.issues ? "Precisa de atenção" : "Integração normal"}
+            </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {summary.issues ? `${summary.issues} item(ns) aguardando correção ou sincronização.` : "Cobranças e lançamentos estão conciliados."}
+              {summary.issues
+                ? `${summary.issues} item(ns) aguardando correção ou sincronização.`
+                : "Cobranças e lançamentos estão conciliados."}
             </p>
           </CardContent>
         </Card>
       </div>
       {failedJobs.length > 0 && (
         <Card className="border-warning/40">
-          <CardHeader className="pb-3"><CardTitle className="text-base">Cobranças automáticas com falha</CardTitle></CardHeader>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Cobranças automáticas com falha</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {failedJobs.slice(0, 5).map((job: any) => {
               const transaction = data.transactions.find(
@@ -1366,8 +1468,7 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
                 .toUpperCase()
                 .includes("INVALID_MOBILEPHONE");
               const contact = client?.whatsapp || client?.phone || "";
-              const needsContactCorrection =
-                phoneFailure && !isValidBrazilianPhone(contact);
+              const needsContactCorrection = phoneFailure && !isValidBrazilianPhone(contact);
               return (
                 <div
                   key={job.id}
@@ -1385,15 +1486,10 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
                     </p>
                   </div>
                   <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
-                    <span className="text-warning">
-                      {asaasErrorMessage(job.last_error_code)}
-                    </span>
+                    <span className="text-warning">{asaasErrorMessage(job.last_error_code)}</span>
                     {editable && client?.id && (
                       <Button size="sm" variant="outline" asChild>
-                        <Link
-                          to="/clientes/$clientId/editar"
-                          params={{ clientId: client.id }}
-                        >
+                        <Link to="/clientes/$clientId/editar" params={{ clientId: client.id }}>
                           <Pencil /> Corrigir cliente
                         </Link>
                       </Button>
@@ -1431,17 +1527,47 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
         <CardHeader className="space-y-4">
           <CardTitle className="text-base">Cobranças enviadas aos clientes</CardTitle>
           <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-            <Input placeholder="Buscar cliente ou cobrança" value={chargeSearch} onChange={(event) => setChargeSearch(event.target.value)} />
-            <select className={selectClass} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <Input
+              placeholder="Buscar cliente ou cobrança"
+              value={chargeSearch}
+              onChange={(event) => setChargeSearch(event.target.value)}
+            />
+            <select
+              className={selectClass}
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
               <option value="all">Todos os status</option>
-              {Object.entries(asaasStatus).map(([value, item]) => <option key={value} value={value}>{item.label}</option>)}
+              {Object.entries(asaasStatus).map(([value, item]) => (
+                <option key={value} value={value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
-            <select className={selectClass} value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}>
+            <select
+              className={selectClass}
+              value={clientFilter}
+              onChange={(event) => setClientFilter(event.target.value)}
+            >
               <option value="all">Todos os clientes</option>
-              {data.clients.map((client: any) => <option key={client.id} value={client.id}>{client.name}</option>)}
+              {data.clients.map((client: any) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
             </select>
-            <Input aria-label="Vencimento inicial" type="date" value={dueFrom} onChange={(event) => setDueFrom(event.target.value)} />
-            <Input aria-label="Vencimento final" type="date" value={dueTo} onChange={(event) => setDueTo(event.target.value)} />
+            <Input
+              aria-label="Vencimento inicial"
+              type="date"
+              value={dueFrom}
+              onChange={(event) => setDueFrom(event.target.value)}
+            />
+            <Input
+              aria-label="Vencimento final"
+              type="date"
+              value={dueTo}
+              onChange={(event) => setDueTo(event.target.value)}
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -1464,10 +1590,11 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
                 </thead>
                 <tbody>
                   {filteredCharges.map((charge) => {
-                    const current = asaasStatus[charge.status] ?? { label: charge.status, tone: "neutral" as Tone };
-                    const cancellable = ["pending", "confirmed", "overdue"].includes(
-                      charge.status,
-                    );
+                    const current = asaasStatus[charge.status] ?? {
+                      label: charge.status,
+                      tone: "neutral" as Tone,
+                    };
+                    const cancellable = ["pending", "confirmed", "overdue"].includes(charge.status);
                     return (
                       <tr key={charge.id} className="border-b">
                         <td className="px-2 py-3 font-medium">{transactionName(charge)}</td>
@@ -1481,10 +1608,21 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
                         </td>
                         <td className="px-2 py-3">
                           <div className="flex justify-end gap-2">
-                            <Button size="sm" variant="ghost" disabled={syncCharge.isPending} onClick={async () => {
-                              try { await syncCharge.mutateAsync(charge.id); toast.success("Cobrança sincronizada."); }
-                              catch (error) { toast.error(asaasErrorMessage(error)); }
-                            }}><RefreshCw /> Sincronizar</Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={syncCharge.isPending}
+                              onClick={async () => {
+                                try {
+                                  await syncCharge.mutateAsync(charge.id);
+                                  toast.success("Cobrança sincronizada.");
+                                } catch (error) {
+                                  toast.error(asaasErrorMessage(error));
+                                }
+                              }}
+                            >
+                              <RefreshCw /> Sincronizar
+                            </Button>
                             <Button asChild size="sm" variant="outline">
                               <a href={charge.invoice_url} target="_blank" rel="noreferrer">
                                 <ExternalLink /> Abrir
@@ -1493,14 +1631,17 @@ function AsaasChargeCenter({ organizationId, data, editable }: any) {
                             {editable && cancellable && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button size="sm" variant="outline">Cancelar</Button>
+                                  <Button size="sm" variant="outline">
+                                    Cancelar
+                                  </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Cancelar cobrança no Asaas?</AlertDialogTitle>
                                     <AlertDialogDescription>
                                       O link deixará de aceitar pagamentos. O lançamento financeiro
-                                      continuará aberto e poderá ser editado ou recebido manualmente.
+                                      continuará aberto e poderá ser editado ou recebido
+                                      manualmente.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
@@ -1681,7 +1822,8 @@ function TransactionDialog({ data, onSave, transaction, paidTotal = 0 }: any) {
                 ...form,
                 client_id: value === "all" ? "" : value,
                 process_id:
-                  value !== "all" && data.processes.some(
+                  value !== "all" &&
+                  data.processes.some(
                     (item: any) => item.id === form.process_id && item.client_id === value,
                   )
                     ? form.process_id
@@ -1702,7 +1844,10 @@ function TransactionDialog({ data, onSave, transaction, paidTotal = 0 }: any) {
                 client_id: process?.client_id || form.client_id,
               });
             }}
-            options={processes.map((item: any) => [item.id, [item.code, item.title].filter(Boolean).join(" · ")])}
+            options={processes.map((item: any) => [
+              item.id,
+              [item.code, item.title].filter(Boolean).join(" · "),
+            ])}
           />
           <p className="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
             Lançamentos sem cliente ou processo continuarão disponíveis e aparecerão como “Não
@@ -1951,13 +2096,12 @@ function Recurrences({ data, editable, action }: any) {
     toast.success("Lançamentos pendentes gerados.");
   };
   return (
-    <Card>
+    <Card className="rounded-2xl border-border/70 shadow-soft">
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
         <div>
           <CardTitle>Lançamentos recorrentes</CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">
-            Recorrências ativas são geradas automaticamente pelo relógio a cada 15
-            minutos.
+            Recorrências ativas são geradas automaticamente pelo relógio a cada 15 minutos.
           </p>
         </div>
         <div className="flex gap-2">
@@ -2091,7 +2235,11 @@ function RecurrenceDialog({ data, action, recurrence }: any) {
             label="Tipo"
             value={form.type}
             set={(v: string) =>
-              setForm({ ...form, type: v, asaas_auto_charge: v === "income" && form.asaas_auto_charge })
+              setForm({
+                ...form,
+                type: v,
+                asaas_auto_charge: v === "income" && form.asaas_auto_charge,
+              })
             }
             options={[
               ["income", "Receita"],
@@ -2187,8 +2335,9 @@ function RecurrenceDialog({ data, action, recurrence }: any) {
                 onChange={(event) => setForm({ ...form, asaas_auto_charge: event.target.checked })}
               />
               <span>
-                <strong className="block">Gerar cobrança automática no Asaas</strong>
-                O lançamento e o link de pagamento serão criados automaticamente. É necessário selecionar um cliente com CPF/CNPJ.
+                <strong className="block">Gerar cobrança automática no Asaas</strong>O lançamento e
+                o link de pagamento serão criados automaticamente. É necessário selecionar um
+                cliente com CPF/CNPJ.
               </span>
             </label>
           )}
@@ -2252,7 +2401,7 @@ function RecurrenceDialog({ data, action, recurrence }: any) {
 }
 function Chart({ title, data, keys = ["receitas", "despesas"] }: any) {
   return (
-    <Card>
+    <Card className="rounded-2xl border-border/70 shadow-soft">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>

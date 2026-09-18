@@ -77,7 +77,10 @@ describe("revisão completa da experiência no celular", () => {
 
     assert.match(central, /max-w-7xl space-y-6 p-4 sm:p-6/);
     assert.match(central, /grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4/);
-    assert.match(finance, /finance-page mx-auto w-full max-w-7xl space-y-5 p-4 sm:p-6/);
+    assert.match(
+      finance,
+      /finance-page mx-auto w-full max-w-\[1600px\] space-y-6 p-4 sm:p-6 lg:p-8/,
+    );
     assert.match(finance, /className="space-y-3 lg:hidden"/);
     assert.match(finance, /className="hidden overflow-x-auto lg:block"/);
   });
