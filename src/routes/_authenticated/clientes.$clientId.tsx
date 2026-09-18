@@ -1,6 +1,15 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Archive, ArrowLeft, Mail, MessageSquare, Pencil, Phone, RotateCcw } from "lucide-react";
+import {
+  Archive,
+  ArrowLeft,
+  Mail,
+  MessageSquare,
+  Pencil,
+  Phone,
+  RotateCcw,
+  UserRound,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { useClient, useClientProcesses, useTasks } from "@/hooks/use-operations";
@@ -144,74 +153,106 @@ function ClientDetail() {
   ].filter(Boolean);
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-6">
-      <Card>
-        <CardContent className="flex flex-wrap items-start justify-between gap-5 p-4 sm:p-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
+      <Card className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)]">
+        <div
+          className="pointer-events-none absolute -right-20 -top-32 size-80 rounded-full bg-cyan-400/15 blur-3xl"
+          aria-hidden
+        />
+        <CardContent className="relative flex flex-wrap items-start justify-between gap-5 p-5 sm:p-7">
           <div className="flex min-w-0 items-start gap-4">
-            <Avatar className="size-14 shrink-0">
-              <AvatarFallback className="text-sm">{initials(data.name)}</AvatarFallback>
+            <Avatar className="size-14 shrink-0 ring-1 ring-white/15">
+              <AvatarFallback className="bg-cyan-400 text-sm font-semibold text-slate-950">
+                {initials(data.name)}
+              </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-[0.14em] text-cyan-300 uppercase">
+                <UserRound className="size-3.5" aria-hidden /> Relacionamento 360°
+              </p>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="page-title truncate">{data.name}</h1>
+                <h1 className="font-display truncate text-2xl font-semibold tracking-tight text-white">
+                  {data.name}
+                </h1>
                 <StatusBadge
                   label={CLIENT_STATUS[data.status].label}
                   tone={CLIENT_STATUS[data.status].tone}
                 />
                 {archived && <StatusBadge label="Arquivado" tone="neutral" />}
               </div>
-              <p className="page-subtitle mt-1.5">
+              <p className="mt-1.5 text-sm text-slate-300">
                 {data.person_type === "pj" ? "Pessoa jurídica" : "Pessoa física"} ·{" "}
                 {data.document ? maskDocument(data.document) : "Sem documento"}
                 {data.trade_name ? ` · ${data.trade_name}` : ""}
               </p>
-              <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-200">
                 <div className="min-w-0">
-                  <dt className="field-label">Telefone</dt>
+                  <dt className="text-xs font-medium text-slate-400">Telefone</dt>
                   <dd className="mt-0.5 truncate">{data.phone ? maskPhone(data.phone) : "—"}</dd>
                 </div>
                 <div className="min-w-0">
-                  <dt className="field-label">E-mail</dt>
+                  <dt className="text-xs font-medium text-slate-400">E-mail</dt>
                   <dd className="mt-0.5 truncate">{data.email ?? "—"}</dd>
                 </div>
                 <div className="min-w-0">
-                  <dt className="field-label">Responsável interno</dt>
+                  <dt className="text-xs font-medium text-slate-400">Responsável interno</dt>
                   <dd className="mt-0.5 truncate">{data.owner_name ?? "—"}</dd>
                 </div>
               </dl>
             </div>
           </div>
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
             {data.email && (
-              <Button variant="outline" asChild>
+              <Button
+                className="border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white"
+                variant="outline"
+                asChild
+              >
                 <a href={`mailto:${data.email}`}>
                   <Mail className="size-4" aria-hidden /> E-mail
                 </a>
               </Button>
             )}
             {data.phone && (
-              <Button variant="outline" asChild>
+              <Button
+                className="border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white"
+                variant="outline"
+                asChild
+              >
                 <a href={`tel:+55${data.phone}`}>
                   <Phone className="size-4" aria-hidden /> Ligar
                 </a>
               </Button>
             )}
             {data.whatsapp && (
-              <Button variant="outline" asChild>
+              <Button
+                className="border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white"
+                variant="outline"
+                asChild
+              >
                 <a href={`https://wa.me/55${data.whatsapp}`} target="_blank" rel="noreferrer">
                   <MessageSquare className="size-4" aria-hidden /> WhatsApp
                 </a>
               </Button>
             )}
             {permissions.canEdit && (
-              <Button variant="outline" asChild>
+              <Button
+                className="border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white"
+                variant="outline"
+                asChild
+              >
                 <Link to="/clientes/$clientId/editar" params={{ clientId }}>
                   <Pencil className="size-4" aria-hidden /> Editar
                 </Link>
               </Button>
             )}
             {permissions.canArchive && (
-              <Button variant="outline" onClick={() => void toggleArchive()} disabled={busy}>
+              <Button
+                className="border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white"
+                variant="outline"
+                onClick={() => void toggleArchive()}
+                disabled={busy}
+              >
                 {archived ? (
                   <RotateCcw className="size-4" aria-hidden />
                 ) : (
@@ -221,7 +262,7 @@ function ClientDetail() {
               </Button>
             )}
             {permissions.canCreate && !archived && (
-              <Button asChild>
+              <Button className="bg-white text-slate-950 hover:bg-slate-100" asChild>
                 <Link to="/processos/novo" search={{ clientId }}>
                   Novo processo
                 </Link>
@@ -233,7 +274,10 @@ function ClientDetail() {
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {summary.map((item) => (
-          <Card key={item.label}>
+          <Card
+            key={item.label}
+            className="rounded-2xl border-border/70 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel"
+          >
             <CardContent className="p-5">
               <p className="field-label">{item.label}</p>
               <p className="metric-value mt-2 text-2xl">{item.value}</p>
@@ -243,7 +287,7 @@ function ClientDetail() {
       </section>
 
       <Tabs defaultValue={canManageClientPortal && search.tab === "portal" ? "portal" : "visao"}>
-        <TabsList className="h-auto w-full max-w-full justify-start gap-1.5 overflow-x-auto p-1.5">
+        <TabsList className="h-auto w-full max-w-full justify-start gap-1.5 overflow-x-auto rounded-2xl border border-border/70 bg-card p-2 shadow-soft">
           <TabsTrigger value="visao" className="shrink-0 px-4 py-2 text-sm">
             Visão geral
           </TabsTrigger>

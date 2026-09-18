@@ -105,11 +105,12 @@ export function ClientForm({
     <form onSubmit={submit} className="space-y-6" noValidate>
       <div className="space-y-1.5">
         <Label>Tipo de pessoa</Label>
-        <div className="flex gap-2">
+        <div className="grid gap-2 sm:grid-cols-2">
           {(["pf", "pj"] as const).map((type) => (
             <Button
               key={type}
               type="button"
+              className="rounded-xl"
               variant={values.person_type === type ? "default" : "outline"}
               onClick={() => {
                 if (values.person_type === type) return;
@@ -131,7 +132,7 @@ export function ClientForm({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 rounded-2xl border border-border/70 bg-muted/10 p-4 sm:grid-cols-2 sm:p-5">
         <Field
           id="name"
           label={isPJ ? "Razão social" : "Nome completo"}
@@ -204,7 +205,7 @@ export function ClientForm({
 
       <Separator />
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 rounded-2xl border border-border/70 bg-muted/10 p-4 sm:grid-cols-2 sm:p-5">
         <Field id="email" label="E-mail" error={shown.email}>
           <Input
             id="email"
@@ -234,7 +235,7 @@ export function ClientForm({
 
       <Separator />
 
-      <div className="grid gap-4 sm:grid-cols-6">
+      <div className="grid gap-4 rounded-2xl border border-border/70 bg-muted/10 p-4 sm:grid-cols-6 sm:p-5">
         <Field id="zip_code" label="CEP" error={shown.zip_code} className="sm:col-span-2">
           <Input
             id="zip_code"
@@ -288,7 +289,7 @@ export function ClientForm({
             value={values.state || "none"}
             onValueChange={(value) => set({ state: value === "none" ? "" : value })}
           >
-            <SelectTrigger id="state" className="h-10" aria-label="UF">
+            <SelectTrigger id="state" className="h-10 rounded-xl" aria-label="UF">
               <SelectValue placeholder="UF" />
             </SelectTrigger>
             <SelectContent>
@@ -305,7 +306,7 @@ export function ClientForm({
 
       <Separator />
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 rounded-2xl border border-border/70 bg-muted/10 p-4 sm:grid-cols-2 sm:p-5">
         <Field id="owner_name" label="Responsável interno">
           <Input
             id="owner_name"
@@ -317,7 +318,7 @@ export function ClientForm({
         <div className="space-y-1.5">
           <Label>Status</Label>
           <Select value={values.status} onValueChange={(value) => set({ status: value })}>
-            <SelectTrigger className="h-10" aria-label="Status do cliente">
+            <SelectTrigger className="h-10 rounded-xl" aria-label="Status do cliente">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
