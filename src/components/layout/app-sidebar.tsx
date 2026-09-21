@@ -24,6 +24,7 @@ import { useWorkspace } from "@/lib/workspace";
 import { ROLE } from "@/lib/domain";
 import { canManageSubscription } from "@/lib/billing";
 import { cn } from "@/lib/utils";
+import { routeVisibleForModules } from "@/lib/organization-segments";
 import { toast } from "sonner";
 
 const NAV_ICON_TONE: Record<string, string> = {
@@ -58,6 +59,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
     onboardingCompleted,
     onboardingExplorationEnabled,
   } = useWorkspace();
+  const organizationSettings = membership?.organizations?.organization_settings;
 
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false);
@@ -97,6 +99,11 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
             (item) =>
               item.group === group.key &&
               navItemVisibleForRole(item.to, role) &&
+              routeVisibleForModules(
+                item.to,
+                organizationSettings?.business_segment,
+                organizationSettings?.enabled_modules,
+              ) &&
               (item.to !== "/assinatura" || canManageSubscription(role)),
           );
           if (items.length === 0) return null;
