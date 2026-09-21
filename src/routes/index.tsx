@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity,
@@ -361,6 +362,291 @@ function ProductPreview() {
   );
 }
 
+
+type QuizOption = {
+  label: string;
+  score: number;
+};
+
+type QuizQuestion = {
+  title: string;
+  helper?: string;
+  options: QuizOption[];
+};
+
+const DIAGNOSTIC_QUESTIONS: QuizQuestion[] = [
+  {
+    title: "Qual é o seu tipo de negócio ou atuação?",
+    helper: "Isso nos ajuda a contextualizar o diagnóstico.",
+    options: [
+      { label: "Advocacia", score: 0 },
+      { label: "Contabilidade", score: 0 },
+      { label: "Engenharia / Arquitetura", score: 0 },
+      { label: "Imobiliária", score: 0 },
+      { label: "Clínica / Saúde", score: 0 },
+      { label: "Consultoria", score: 0 },
+      { label: "Prestação de serviços", score: 0 },
+      { label: "Outro", score: 0 },
+    ],
+  },
+  {
+    title: "Onde ficam as principais informações da sua empresa hoje?",
+    options: [
+      { label: "Tudo centralizado em um sistema", score: 0 },
+      { label: "Em planilhas", score: 2 },
+      { label: "WhatsApp + planilhas", score: 3 },
+      { label: "Em vários sistemas diferentes", score: 2 },
+      { label: "Agenda, papel e anotações", score: 4 },
+    ],
+  },
+  {
+    title: "Você consegue saber rapidamente o que precisa ser feito e quem é o responsável?",
+    options: [
+      { label: "Sim, sempre", score: 0 },
+      { label: "Na maioria das vezes", score: 1 },
+      { label: "Às vezes", score: 2 },
+      { label: "Tenho dificuldade", score: 3 },
+      { label: "Normalmente preciso perguntar para a equipe", score: 4 },
+    ],
+  },
+  {
+    title: "Como sua empresa acompanha prazos e vencimentos importantes?",
+    options: [
+      { label: "Um sistema avisa automaticamente", score: 0 },
+      { label: "Agenda ou calendário", score: 1 },
+      { label: "Planilha", score: 2 },
+      { label: "WhatsApp", score: 3 },
+      { label: "Controle manual ou sem padrão definido", score: 4 },
+    ],
+  },
+  {
+    title: "Se você precisasse saber agora tudo o que está atrasado na empresa, conseguiria?",
+    options: [
+      { label: "Sim, em poucos segundos", score: 0 },
+      { label: "Precisaria consultar algumas ferramentas", score: 1 },
+      { label: "Precisaria falar com a equipe", score: 2 },
+      { label: "Levaria algum tempo", score: 3 },
+      { label: "Não tenho essa visão hoje", score: 4 },
+    ],
+  },
+  {
+    title: "Se sua empresa dobrasse o número de clientes hoje, sua operação conseguiria acompanhar?",
+    options: [
+      { label: "Sim, tranquilamente", score: 0 },
+      { label: "Provavelmente sim", score: 1 },
+      { label: "Teríamos algumas dificuldades", score: 2 },
+      { label: "Seria bastante complicado", score: 3 },
+      { label: "Precisaríamos reorganizar praticamente tudo", score: 4 },
+    ],
+  },
+];
+
+function DiagnosticQuiz() {
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [segment, setSegment] = useState("");
+  const [finished, setFinished] = useState(false);
+
+  const question = DIAGNOSTIC_QUESTIONS[step];
+  const score = answers.reduce((total, value) => total + value, 0);
+  const result =
+    score <= 5
+      ? {
+          eyebrow: "Operação estruturada",
+          title: "Sua empresa possui uma boa base de organização.",
+          description:
+            "Você já demonstra controle sobre pontos importantes da operação. O próximo passo é ganhar ainda mais produtividade, automação e visão centralizada.",
+          accent: "text-emerald-700 dark:text-emerald-300",
+          panel: "border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/60 dark:bg-emerald-950/25",
+        }
+      : score <= 12
+        ? {
+            eyebrow: "Operação em crescimento",
+            title: "Sua operação funciona, mas pode ganhar mais clareza.",
+            description:
+              "Existem pontos que podem dificultar o crescimento quando informações, tarefas e prazos ficam distribuídos entre ferramentas e pessoas.",
+            accent: "text-blue-700 dark:text-blue-300",
+            panel: "border-blue-200/70 bg-blue-50/70 dark:border-blue-900/60 dark:bg-blue-950/25",
+          }
+        : {
+            eyebrow: "Oportunidade de organização",
+            title: "Existe uma grande oportunidade para simplificar sua operação.",
+            description:
+              "Suas respostas indicam dependência maior de controles manuais ou informações espalhadas. Centralizar o fluxo pode trazer mais previsibilidade ao dia a dia.",
+            accent: "text-violet-700 dark:text-violet-300",
+            panel: "border-violet-200/70 bg-violet-50/70 dark:border-violet-900/60 dark:bg-violet-950/25",
+          };
+
+  const choose = (option: QuizOption) => {
+    if (step === 0) setSegment(option.label);
+    const nextAnswers = [...answers, option.score];
+    setAnswers(nextAnswers);
+
+    if (step === DIAGNOSTIC_QUESTIONS.length - 1) {
+      setFinished(true);
+      return;
+    }
+
+    setStep((current) => current + 1);
+  };
+
+  const restart = () => {
+    setStep(0);
+    setAnswers([]);
+    setSegment("");
+    setFinished(false);
+  };
+
+  return (
+    <section id="diagnostico" className="scroll-mt-20 border-b bg-gradient-to-b from-blue-50/70 via-background to-background py-16 sm:py-20">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto mb-9 max-w-3xl text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm dark:border-blue-900 dark:bg-slate-950 dark:text-blue-300">
+            <Building2 className="size-3.5" aria-hidden />
+            Diagnóstico operacional FLUXA
+          </div>
+          <h2 className="mt-5 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+            Sua empresa está realmente organizada?
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+            Responda 6 perguntas rápidas e descubra onde sua operação pode ganhar mais controle,
+            organização e previsibilidade.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground sm:text-sm">
+            <span className="flex items-center gap-1.5">
+              <Clock3 className="size-4 text-blue-600" aria-hidden /> Leva menos de 1 minuto
+            </span>
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="size-4 text-blue-600" aria-hidden /> Gratuito e sem compromisso
+            </span>
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-4xl overflow-hidden rounded-[1.75rem] border bg-card shadow-[0_30px_80px_-45px_rgba(37,99,235,.45)]">
+          {!finished ? (
+            <div className="grid gap-0 lg:grid-cols-[1fr_18rem]">
+              <div className="p-5 sm:p-8">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-xs font-semibold text-primary">
+                    Pergunta {step + 1} de {DIAGNOSTIC_QUESTIONS.length}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {Math.round(((step + 1) / DIAGNOSTIC_QUESTIONS.length) * 100)}% concluído
+                  </span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                    style={{
+                      width: `${((step + 1) / DIAGNOSTIC_QUESTIONS.length) * 100}%`,
+                    }}
+                  />
+                </div>
+
+                <h3 className="mt-7 text-xl font-semibold tracking-tight sm:text-2xl">
+                  {question.title}
+                </h3>
+                {question.helper && (
+                  <p className="mt-2 text-sm text-muted-foreground">{question.helper}</p>
+                )}
+
+                <div className="mt-6 grid gap-2.5">
+                  {question.options.map((option) => (
+                    <button
+                      key={option.label}
+                      type="button"
+                      onClick={() => choose(option)}
+                      className="group flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border bg-background px-4 py-3 text-left text-sm font-medium transition-all hover:border-blue-300 hover:bg-blue-50/70 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:hover:border-blue-800 dark:hover:bg-blue-950/30"
+                    >
+                      <span>{option.label}</span>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-blue-600" aria-hidden />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <aside className="border-t bg-slate-950 p-6 text-white lg:border-t-0 lg:border-l">
+                <div className="flex h-full flex-col">
+                  <span className="grid size-11 place-items-center rounded-2xl bg-blue-500/15 text-blue-300">
+                    <Gauge className="size-5" aria-hidden />
+                  </span>
+                  <h3 className="mt-5 text-lg font-semibold">Diagnóstico que gera visão real</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">
+                    Em poucos passos você identifica pontos fortes e oportunidades para tornar a
+                    operação mais clara e previsível.
+                  </p>
+                  <div className="mt-auto pt-8 text-xs text-slate-500">
+                    {segment ? `Cenário: ${segment}` : "Primeiro, conte um pouco sobre sua atuação."}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          ) : (
+            <div className="p-5 sm:p-8">
+              <div className={`rounded-2xl border p-5 sm:p-7 ${result.panel}`}>
+                <div className="flex items-start gap-4">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white shadow-sm dark:bg-slate-950">
+                    <CheckCircle2 className={`size-5 ${result.accent}`} aria-hidden />
+                  </span>
+                  <div>
+                    <p className={`text-xs font-semibold tracking-[0.14em] uppercase ${result.accent}`}>
+                      {result.eyebrow}
+                    </p>
+                    <h3 className="mt-2 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+                      {result.title}
+                    </h3>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                      {result.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-7 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+                <div>
+                  <p className="text-sm font-semibold">O FLUXA pode reunir em um único fluxo:</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {["Clientes", "Processos", "Tarefas", "Documentos", "Financeiro", "Relatórios", "Automações"].map(
+                      (item) => (
+                        <span
+                          key={item}
+                          className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs font-medium"
+                        >
+                          <Check className="size-3.5 text-blue-600" aria-hidden />
+                          {item}
+                        </span>
+                      ),
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
+                  <TrialLink className="h-11 bg-blue-600 px-5 text-white hover:bg-blue-500">
+                    Começar 14 dias grátis <ArrowRight className="size-4" aria-hidden />
+                  </TrialLink>
+                  <Button type="button" variant="outline" onClick={restart} className="h-11">
+                    Refazer diagnóstico
+                  </Button>
+                </div>
+              </div>
+              <p className="mt-5 text-xs text-muted-foreground">
+                Resultado orientativo com base nas respostas informadas. Nenhuma pontuação é exibida.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 text-center">
+          <a href="#recursos" className="text-sm font-medium text-primary hover:underline">
+            Prefere conhecer o sistema primeiro? Ver recursos da FLUXA
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 function CommercialLanding() {
   return (
     <main className="min-h-dvh overflow-x-hidden bg-background text-foreground">
@@ -460,6 +746,8 @@ function CommercialLanding() {
           </div>
         </section>
       </div>
+
+      <DiagnosticQuiz />
 
       <section className="border-b bg-card">
         <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y px-4 sm:px-6 md:grid-cols-4 md:divide-y-0 lg:px-8">
