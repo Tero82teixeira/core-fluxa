@@ -272,6 +272,7 @@ export function recommendedModulesForSubtype(
 
 const ROUTE_MODULES: Record<string, ModuleKey> = {
   "/clientes": "clients",
+  "/saude/pacientes": "health_patients",
   "/processos": "processes",
   "/documentos": "documents",
   "/tarefas": "tasks",
