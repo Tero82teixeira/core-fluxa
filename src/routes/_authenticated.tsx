@@ -17,6 +17,7 @@ import { PushNotificationOnboarding } from "@/components/notifications/push-noti
 import { CommercialAccessBlocked } from "@/components/commercial-access-blocked";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 import { useAuth } from "@/lib/auth";
+import { routeVisibleForModules } from "@/lib/organization-segments";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -36,6 +37,7 @@ function OnboardingGate() {
     onboardingExplorationEnabled,
     commercialAccess,
     platformAdmin,
+    membership,
   } = useWorkspace();
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,15 +50,35 @@ function OnboardingGate() {
     if (status !== "ready") return;
     if (!commercialAccess) return;
     if (platformAdmin && onPlatformArea) return;
-    if (!onboardingCompleted && !onboardingExplorationEnabled && !onOnboarding)
+    if (!onboardingCompleted && !onboardingExplorationEnabled && !onOnboarding) {
       navigate({ to: "/onboarding", replace: true });
-    if (onboardingCompleted && onOnboarding) navigate({ to: "/meu-dia", replace: true });
+      return;
+    }
+    if (onboardingCompleted && onOnboarding) {
+      navigate({ to: "/meu-dia", replace: true });
+      return;
+    }
+
+    const settings = membership?.organizations?.organization_settings;
+    if (
+      !onOnboarding &&
+      !onPlatformArea &&
+      !routeVisibleForModules(
+        location.pathname,
+        settings?.business_segment,
+        settings?.enabled_modules,
+      )
+    ) {
+      navigate({ to: "/meu-dia", replace: true });
+    }
   }, [
     status,
     onboardingCompleted,
     onboardingExplorationEnabled,
     commercialAccess,
     platformAdmin,
+    membership,
+    location.pathname,
     onOnboarding,
     onPlatformArea,
     navigate,
