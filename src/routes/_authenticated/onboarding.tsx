@@ -8,6 +8,7 @@ import { useWorkspace } from "@/lib/workspace";
 import { describeError } from "@/lib/errors";
 import { digits, isValidCNPJ, isValidCPF, maskDocument, maskPhone } from "@/lib/format";
 import { useCnpjLookup } from "@/hooks/use-cnpj-lookup";
+import { captureProductEvent } from "@/lib/product-analytics";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -245,6 +246,7 @@ function Onboarding() {
       if (step === 3) {
         await updateOnboarding({ step: 3, complete: true });
         await refreshWorkspace();
+        captureProductEvent("organization_onboarding_completed");
         toast.success("Empresa configurada. Bem-vindo ao Meu Dia.");
         navigate({ to: "/meu-dia" });
         return;

@@ -13,6 +13,7 @@ import type {
   TaskStatus,
 } from "@/lib/domain";
 import { PROCESS_STAGE } from "@/lib/domain";
+import { captureProductEvent } from "@/lib/product-analytics";
 
 const db = () => supabase as unknown as { from: (table: string) => any; rpc: (fn: string, args?: any) => any };
 
@@ -136,7 +137,10 @@ export function useCreateClient(organizationId: string | null) {
       });
       return data as { id: string; name: string };
     },
-    onSuccess: () => invalidateClients(queryClient, organizationId),
+    onSuccess: () => {
+      captureProductEvent("client_created");
+      invalidateClients(queryClient, organizationId);
+    },
   });
 }
 
@@ -254,6 +258,7 @@ export function useCreateProcess(organizationId: string | null) {
       return data as { id: string; code: string };
     },
     onSuccess: () => {
+      captureProductEvent("process_created");
       queryClient.invalidateQueries({ queryKey: ["processes", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["activity", organizationId] });
     },
@@ -410,6 +415,7 @@ export function useCreateTask(organizationId: string | null) {
       return data as { id: string };
     },
     onSuccess: () => {
+      captureProductEvent("task_created");
       queryClient.invalidateQueries({ queryKey: ["tasks", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["activity", organizationId] });
     },

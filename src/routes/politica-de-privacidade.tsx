@@ -121,9 +121,12 @@ function PrivacyPolicyPage() {
         <h2>8. Cookies e armazenamento local</h2>
         <p>
           A plataforma pode usar cookies e armazenamento local estritamente necessários para sessão,
-          segurança, preferência de empresa, tema e lembrança do e-mail de acesso. Se tecnologias
-          opcionais de análise ou publicidade forem adicionadas, serão informadas e gerenciadas
-          conforme a legislação aplicável.
+          segurança, preferência de empresa, tema e lembrança do e-mail de acesso. Mediante escolha
+          do usuário, a FLUXA também pode usar o PostHog para medir páginas visitadas e a conclusão
+          de ações essenciais, como cadastro, configuração da empresa e criação de registros. Essa
+          medição não grava a tela e não envia nomes, e-mails, documentos, telefones, arquivos nem o
+          conteúdo dos campos preenchidos. A preferência fica armazenada no navegador e pode ser
+          recusada sem impedir o uso da plataforma.
         </p>
       </section>
 

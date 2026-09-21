@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import { buildLegalAcceptanceMetadata } from "@/lib/legal";
+import { captureProductEvent, resetProductAnalytics } from "@/lib/product-analytics";
 
 /**
  * Fonte única de verdade da autenticação.
@@ -76,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    captureProductEvent("user_signed_in");
   }, []);
 
   const signUp = useCallback(
@@ -100,6 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
       if (error) throw error;
+      captureProductEvent("account_signup_completed", {
+        email_confirmation_required: !data.session,
+      });
       return { needsEmailConfirmation: !data.session };
     },
     [],
@@ -112,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { emailRedirectTo: `${window.location.origin}/central` },
     });
     if (error) throw error;
+    captureProductEvent("confirmation_email_resent");
   }, []);
 
   /**
@@ -127,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         message: error instanceof Error ? error.message : undefined,
       });
     } finally {
+      resetProductAnalytics();
       queryClient.clear();
       appliedUserId.current = null;
       try {

@@ -6,11 +6,11 @@ import { buildLegalAcceptanceMetadata, LEGAL_DOCUMENT_VERSION } from "../src/lib
 
 describe("registro de aceite jurídico", () => {
   test("mantém uma única versão para termos e privacidade", () => {
-    assert.equal(LEGAL_DOCUMENT_VERSION, "2026-08-30");
+    assert.equal(LEGAL_DOCUMENT_VERSION, "2026-09-21");
     assert.deepEqual(buildLegalAcceptanceMetadata("company_signup"), {
       legal_accepted: true,
-      legal_terms_version: "2026-08-30",
-      legal_privacy_version: "2026-08-30",
+      legal_terms_version: "2026-09-21",
+      legal_privacy_version: "2026-09-21",
       legal_acceptance_source: "company_signup",
     });
   });

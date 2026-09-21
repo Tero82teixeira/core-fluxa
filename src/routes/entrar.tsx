@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
+import { captureProductEvent } from "@/lib/product-analytics";
 
 type AuthMode = "login" | "signup";
 type AuthSearch = { mode?: AuthMode };
@@ -324,6 +325,7 @@ function AuthPage() {
         redirectTo: `${window.location.origin}/redefinir-senha`,
       });
       if (error) throw error;
+      captureProductEvent("password_reset_requested");
       toast.success("Enviamos um link de redefinição para o seu e-mail.");
     } catch (error) {
       toast.error(describeAuthError(error));

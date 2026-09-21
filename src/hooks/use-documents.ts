@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { recordAudit } from "@/lib/audit";
 import { useActor } from "@/hooks/use-mutations";
+import { captureProductEvent } from "@/lib/product-analytics";
 import {
   DOCUMENTS_BUCKET,
   buildStoragePath,
@@ -387,6 +388,7 @@ export function useUploadDocument(organizationId: string | null) {
       }
     },
     onSuccess: (_data, variables) => {
+      captureProductEvent("document_uploaded");
       invalidateDocuments(queryClient, organizationId);
       if (variables.process_id) {
         queryClient.invalidateQueries({ queryKey: ["process-checklist", variables.process_id] });

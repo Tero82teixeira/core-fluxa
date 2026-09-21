@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 
-import { LEGAL_LAST_UPDATED_LABEL } from "@/lib/legal";
+import { LEGAL_DOCUMENT_VERSION, LEGAL_LAST_UPDATED_LABEL } from "@/lib/legal";
 
 type LegalPageLayoutProps = {
   title: string;
@@ -39,7 +39,7 @@ export function LegalPageLayout({ title, description, children }: LegalPageLayou
         </h1>
         <p className="mt-4 max-w-3xl leading-7 text-muted-foreground">{description}</p>
         <p className="mt-3 text-sm text-muted-foreground">
-          Versão 2026-08-30 · Atualizado em {LEGAL_LAST_UPDATED_LABEL}
+          Versão {LEGAL_DOCUMENT_VERSION} · Atualizado em {LEGAL_LAST_UPDATED_LABEL}
         </p>
 
         <div className="mt-10 space-y-9 leading-7 text-muted-foreground [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_li]:ml-5 [&_li]:list-disc [&_p+p]:mt-3 [&_ul]:mt-3">
