@@ -14,8 +14,12 @@ import {
   SEGMENT_OPTIONS,
   enabledModulesFromUnknown,
   recommendedModulesForSegment,
+  recommendedModulesForSubtype,
   segmentByKey,
+  subtypeByKey,
+  subtypeOptionsForSegment,
   type BusinessSegment,
+  type BusinessSubtype,
   type ModuleKey,
 } from "@/lib/organization-segments";
 import { describeError } from "@/lib/errors";
@@ -26,8 +30,10 @@ export function SegmentModulesSettings() {
   const { organizationId, membership, role, refreshWorkspace } = useWorkspace();
   const settings = membership?.organizations?.organization_settings;
   const currentSegment = (settings?.business_segment as BusinessSegment | null) ?? null;
+  const currentSubtype = (settings?.business_subtype as BusinessSubtype | null) ?? null;
   const currentEnabled = enabledModulesFromUnknown(settings?.enabled_modules);
   const [segment, setSegment] = useState<BusinessSegment | null>(currentSegment);
+  const [subtype, setSubtype] = useState<BusinessSubtype | null>(currentSubtype);
   const [enabled, setEnabled] = useState<ModuleKey[]>(
     currentEnabled.length ? currentEnabled : currentSegment ? recommendedModulesForSegment(currentSegment) : CORE_MODULES,
   );
@@ -35,13 +41,25 @@ export function SegmentModulesSettings() {
   const canEdit = Boolean(role && managementRoles.has(role));
 
   const recommended = useMemo(
-    () => (segment ? recommendedModulesForSegment(segment) : CORE_MODULES),
-    [segment],
+    () =>
+      segment
+        ? subtype
+          ? recommendedModulesForSubtype(segment, subtype)
+          : recommendedModulesForSegment(segment)
+        : CORE_MODULES,
+    [segment, subtype],
   );
 
   const selectSegment = (value: BusinessSegment) => {
     setSegment(value);
+    setSubtype(null);
     setEnabled(recommendedModulesForSegment(value));
+  };
+
+  const selectSubtype = (value: BusinessSubtype) => {
+    if (!segment) return;
+    setSubtype(value);
+    setEnabled(recommendedModulesForSubtype(segment, value));
   };
 
   const toggleModule = (key: ModuleKey, checked: boolean) => {
@@ -53,12 +71,13 @@ export function SegmentModulesSettings() {
   };
 
   const save = async () => {
-    if (!organizationId || !segment || saving) return;
+    if (!organizationId || !segment || !subtype || saving) return;
     setSaving(true);
     try {
       const { error } = await (supabase as any).rpc("update_organization_segment", {
         _organization_id: organizationId,
         _segment: segment,
+        _subtype: subtype,
         _enabled_modules: enabled,
       });
       if (error) throw error;
@@ -120,6 +139,44 @@ export function SegmentModulesSettings() {
         </CardContent>
       </Card>
 
+      {segment && (
+        <Card className="rounded-2xl border-border/70 shadow-soft">
+          <CardHeader>
+            <CardTitle className="text-base">Tipo de operação</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {subtypeOptionsForSegment(segment).map((option) => {
+                const selected = subtype === option.key;
+                return (
+                  <button
+                    key={option.key}
+                    type="button"
+                    disabled={!canEdit}
+                    onClick={() => selectSubtype(option.key)}
+                    className={`rounded-2xl border p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-70 ${
+                      selected
+                        ? "border-primary bg-primary/10 shadow-sm"
+                        : "border-border/70 bg-card hover:border-primary/35"
+                    }`}
+                  >
+                    <span className="block font-semibold">{option.label}</span>
+                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                      {option.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {subtype && (
+              <div className="rounded-xl border border-primary/20 bg-primary/[0.05] p-3 text-sm">
+                Perfil atual: <span className="font-medium">{subtypeByKey(segment, subtype)?.label}</span>.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="rounded-2xl border-border/70 shadow-soft">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -175,7 +232,7 @@ export function SegmentModulesSettings() {
           </div>
 
           <div className="flex justify-end">
-            <Button onClick={save} disabled={!canEdit || !segment || saving}>
+            <Button onClick={save} disabled={!canEdit || !segment || !subtype || saving}>
               {saving ? "Salvando…" : "Salvar segmento e módulos"}
             </Button>
           </div>
