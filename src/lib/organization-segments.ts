@@ -68,7 +68,7 @@ export const MODULE_CATALOG: Array<{
   { key: "automations", label: "Automações", description: "Regras, lembretes e disparos.", group: "core", available: true },
   { key: "client_portal", label: "Portal do Cliente", description: "Experiência externa e autoatendimento.", group: "core", available: true },
 
-  { key: "health_patients", label: "Pacientes", description: "Cadastro e acompanhamento administrativo de pacientes.", group: "health", available: false },
+  { key: "health_patients", label: "Pacientes", description: "Cadastro e acompanhamento administrativo de pacientes.", group: "health", available: true },
   { key: "health_insurance", label: "Convênios", description: "Planos, operadoras e vínculos.", group: "health", available: false },
   { key: "health_authorizations", label: "Autorizações", description: "Solicitações, validade e acompanhamento.", group: "health", available: false },
   { key: "health_billing", label: "Contas Médicas", description: "Faturamento e acompanhamento de recebimentos.", group: "health", available: false },
