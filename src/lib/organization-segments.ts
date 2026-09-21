@@ -79,6 +79,111 @@ export const MODULE_CATALOG: Array<{
   { key: "real_estate_workspace", label: "Recursos Imobiliários", description: "Imóveis, contratos e vistorias.", group: "real_estate", available: false },
 ];
 
+export type BusinessSubtype =
+  | "law_firm"
+  | "solo_lawyer"
+  | "legal_department"
+  | "legal_services"
+  | "accounting_firm"
+  | "financial_bpo"
+  | "tax_services"
+  | "accounting_consulting"
+  | "engineering_office"
+  | "architecture_office"
+  | "construction"
+  | "technical_services"
+  | "regularization"
+  | "clinic_office"
+  | "medical_billing"
+  | "health_service_provider"
+  | "diagnostics"
+  | "rehabilitation"
+  | "brokerage"
+  | "property_management"
+  | "rentals"
+  | "developments"
+  | "consulting"
+  | "service_company"
+  | "administrative_services"
+  | "agency"
+  | "general_other";
+
+export type SubtypeOption = {
+  key: BusinessSubtype;
+  label: string;
+  description: string;
+  recommendedModules?: ModuleKey[];
+};
+
+export const SEGMENT_SUBTYPES: Record<BusinessSegment, SubtypeOption[]> = {
+  legal: [
+    { key: "law_firm", label: "Escritório de advocacia", description: "Equipe jurídica atendendo clientes e processos." },
+    { key: "solo_lawyer", label: "Advocacia individual", description: "Profissional autônomo com operação própria." },
+    { key: "legal_department", label: "Departamento jurídico", description: "Jurídico interno de uma empresa." },
+    { key: "legal_services", label: "Serviços jurídicos", description: "Consultoria, apoio e serviços especializados." },
+  ],
+  accounting: [
+    { key: "accounting_firm", label: "Escritório contábil", description: "Contabilidade recorrente para empresas e pessoas." },
+    { key: "financial_bpo", label: "BPO financeiro", description: "Rotinas financeiras terceirizadas para clientes." },
+    { key: "tax_services", label: "Fiscal e tributário", description: "Operação focada em obrigações e tributos." },
+    { key: "accounting_consulting", label: "Consultoria contábil", description: "Projetos e serviços consultivos." },
+  ],
+  engineering: [
+    { key: "engineering_office", label: "Escritório de engenharia", description: "Projetos, laudos e serviços de engenharia." },
+    { key: "architecture_office", label: "Arquitetura", description: "Projetos arquitetônicos e acompanhamento." },
+    { key: "construction", label: "Obras e construção", description: "Execução, medição e acompanhamento de obras." },
+    { key: "technical_services", label: "Serviços técnicos", description: "Vistorias, laudos, manutenção e campo." },
+    { key: "regularization", label: "Regularização", description: "Licenças, aprovações e documentação técnica." },
+  ],
+  health: [
+    {
+      key: "clinic_office",
+      label: "Clínica ou consultório",
+      description: "Atendimento, agenda, pacientes, convênios e financeiro.",
+      recommendedModules: [...CORE_MODULES, "health_patients", "health_insurance", "health_authorizations", "health_billing"],
+    },
+    {
+      key: "medical_billing",
+      label: "Contas médicas e faturamento",
+      description: "Faturamento de convênios, glosas e recebimentos.",
+      recommendedModules: [...CORE_MODULES, "health_insurance", "health_authorizations", "health_billing", "health_denials"],
+    },
+    {
+      key: "health_service_provider",
+      label: "Prestador de serviços de saúde",
+      description: "Profissionais e empresas que prestam serviços para clínicas e pacientes.",
+      recommendedModules: [...CORE_MODULES, "health_patients", "health_billing"],
+    },
+    {
+      key: "diagnostics",
+      label: "Diagnóstico e exames",
+      description: "Laboratórios, imagem e serviços diagnósticos.",
+      recommendedModules: [...CORE_MODULES, "health_patients", "health_insurance", "health_authorizations", "health_billing"],
+    },
+    {
+      key: "rehabilitation",
+      label: "Reabilitação e terapias",
+      description: "Fisioterapia, recuperação, terapias e acompanhamento recorrente.",
+      recommendedModules: [...CORE_MODULES, "health_patients", "health_insurance", "health_authorizations", "health_billing"],
+    },
+  ],
+  real_estate: [
+    { key: "brokerage", label: "Imobiliária e corretagem", description: "Captação, clientes, imóveis e negociações." },
+    { key: "property_management", label: "Administração de imóveis", description: "Contratos, proprietários e operação recorrente." },
+    { key: "rentals", label: "Locação", description: "Gestão de locações, vencimentos e financeiro." },
+    { key: "developments", label: "Empreendimentos", description: "Comercialização e acompanhamento de unidades." },
+  ],
+  consulting_services: [
+    { key: "consulting", label: "Consultoria", description: "Projetos, entregas e acompanhamento de clientes." },
+    { key: "service_company", label: "Empresa de serviços", description: "Operação recorrente de prestação de serviços." },
+    { key: "administrative_services", label: "Serviços administrativos", description: "Backoffice, documentação e rotinas operacionais." },
+    { key: "agency", label: "Agência", description: "Clientes, demandas, entregas e equipe." },
+  ],
+  other: [
+    { key: "general_other", label: "Outra operação", description: "Comece pelo núcleo do FLUXA e personalize os módulos." },
+  ],
+};
+
 export type SegmentOption = {
   key: BusinessSegment;
   label: string;
@@ -145,6 +250,25 @@ export const SEGMENT_OPTIONS: SegmentOption[] = [
     recommendedModules: CORE_MODULES,
   },
 ];
+
+export function subtypeOptionsForSegment(segment: BusinessSegment | null | undefined) {
+  return segment ? SEGMENT_SUBTYPES[segment] ?? [] : [];
+}
+
+export function subtypeByKey(
+  segment: BusinessSegment | null | undefined,
+  subtype: string | null | undefined,
+) {
+  return subtypeOptionsForSegment(segment).find((option) => option.key === subtype) ?? null;
+}
+
+export function recommendedModulesForSubtype(
+  segment: BusinessSegment,
+  subtype: BusinessSubtype | null | undefined,
+) {
+  const option = subtypeByKey(segment, subtype);
+  return option?.recommendedModules ?? recommendedModulesForSegment(segment);
+}
 
 const ROUTE_MODULES: Record<string, ModuleKey> = {
   "/clientes": "clients",
