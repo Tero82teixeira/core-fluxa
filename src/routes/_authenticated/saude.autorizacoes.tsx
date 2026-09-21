@@ -105,7 +105,7 @@ function HealthAuthorizationsPage() {
       });
       setShowForm(false);
     } catch (error) {
-      toast.error(describeError(error, "autorização"));
+      toast.error(describeError(error, "salvar"));
     }
   };
 
