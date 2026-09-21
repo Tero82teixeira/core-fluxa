@@ -50,6 +50,35 @@ export const CORE_MODULES: ModuleKey[] = [
   "client_portal",
 ];
 
+export const MODULE_CATALOG: Array<{
+  key: ModuleKey;
+  label: string;
+  description: string;
+  group: "core" | "health" | "legal" | "engineering" | "real_estate";
+  available: boolean;
+}> = [
+  { key: "clients", label: "Clientes", description: "Carteira e relacionamento.", group: "core", available: true },
+  { key: "processes", label: "Processos", description: "Etapas, prazos e protocolos.", group: "core", available: true },
+  { key: "documents", label: "Documentos", description: "Arquivos, solicitações e validades.", group: "core", available: true },
+  { key: "tasks", label: "Tarefas", description: "Agenda operacional e responsáveis.", group: "core", available: true },
+  { key: "communication", label: "Comunicação", description: "Histórico e acompanhamento de contatos.", group: "core", available: true },
+  { key: "finance", label: "Financeiro", description: "Receitas, contas e cobranças.", group: "core", available: true },
+  { key: "monitoring", label: "Monitoramento", description: "Prazos, alertas e vencimentos.", group: "core", available: true },
+  { key: "reports", label: "Relatórios", description: "Indicadores e visão gerencial.", group: "core", available: true },
+  { key: "automations", label: "Automações", description: "Regras, lembretes e disparos.", group: "core", available: true },
+  { key: "client_portal", label: "Portal do Cliente", description: "Experiência externa e autoatendimento.", group: "core", available: true },
+
+  { key: "health_patients", label: "Pacientes", description: "Cadastro e acompanhamento administrativo de pacientes.", group: "health", available: false },
+  { key: "health_insurance", label: "Convênios", description: "Planos, operadoras e vínculos.", group: "health", available: false },
+  { key: "health_authorizations", label: "Autorizações", description: "Solicitações, validade e acompanhamento.", group: "health", available: false },
+  { key: "health_billing", label: "Contas Médicas", description: "Faturamento e acompanhamento de recebimentos.", group: "health", available: false },
+  { key: "health_denials", label: "Glosas", description: "Controle, recurso e recuperação de valores.", group: "health", available: false },
+
+  { key: "legal_workspace", label: "Recursos Jurídicos", description: "Recursos específicos para operações jurídicas.", group: "legal", available: false },
+  { key: "engineering_workspace", label: "Recursos de Engenharia", description: "Projetos, obras e documentação técnica.", group: "engineering", available: false },
+  { key: "real_estate_workspace", label: "Recursos Imobiliários", description: "Imóveis, contratos e vistorias.", group: "real_estate", available: false },
+];
+
 export type SegmentOption = {
   key: BusinessSegment;
   label: string;
@@ -117,10 +146,45 @@ export const SEGMENT_OPTIONS: SegmentOption[] = [
   },
 ];
 
+const ROUTE_MODULES: Record<string, ModuleKey> = {
+  "/clientes": "clients",
+  "/processos": "processes",
+  "/documentos": "documents",
+  "/tarefas": "tasks",
+  "/comunicacao": "communication",
+  "/financeiro": "finance",
+  "/monitoramento": "monitoring",
+  "/relatorios": "reports",
+  "/automacoes": "automations",
+};
+
 export function segmentByKey(key: string | null | undefined) {
   return SEGMENT_OPTIONS.find((segment) => segment.key === key) ?? null;
 }
 
 export function recommendedModulesForSegment(segment: BusinessSegment) {
   return segmentByKey(segment)?.recommendedModules ?? CORE_MODULES;
+}
+
+export function enabledModulesFromUnknown(value: unknown): ModuleKey[] {
+  if (!Array.isArray(value)) return [];
+  const allowed = new Set(MODULE_CATALOG.map((module) => module.key));
+  return value.filter((module): module is ModuleKey => typeof module === "string" && allowed.has(module as ModuleKey));
+}
+
+export function moduleForRoute(route: string): ModuleKey | null {
+  return ROUTE_MODULES[route] ?? null;
+}
+
+export function routeVisibleForModules(
+  route: string,
+  businessSegment: string | null | undefined,
+  enabledModules: unknown,
+) {
+  if (!businessSegment) return true;
+  const module = moduleForRoute(route);
+  if (!module) return true;
+  const enabled = enabledModulesFromUnknown(enabledModules);
+  if (enabled.length === 0) return true;
+  return enabled.includes(module);
 }
