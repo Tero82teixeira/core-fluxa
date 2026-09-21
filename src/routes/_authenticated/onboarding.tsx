@@ -225,6 +225,29 @@ function Onboarding() {
     return true;
   };
 
+  const startExploration = async () => {
+    if (saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const id = ensureOrganization();
+      const { error: explorationError } = await (supabase as any).rpc(
+        "start_organization_exploration",
+        { _organization_id: id },
+      );
+      if (explorationError) throw explorationError;
+      await refreshWorkspace();
+      toast.success("Modo de exploração liberado. Você pode concluir a configuração depois.");
+      navigate({ to: "/meu-dia" });
+    } catch (caught) {
+      const message = describeError(caught, "empresa");
+      setError(message);
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const advance = async () => {
     if (saving) return;
     setSaving(true);
@@ -630,19 +653,31 @@ function Onboarding() {
             >
               Voltar
             </Button>
-            <Button
-              className="w-full rounded-xl sm:w-auto"
-              onClick={advance}
-              disabled={saving || !ready}
-              aria-busy={saving}
-            >
-              {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
-              {saving
-                ? "Salvando…"
-                : step === 4
-                  ? "Concluir configuração e entrar"
-                  : "Salvar e continuar"}
-            </Button>
+            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+              {step > 0 && step < 4 && (
+                <Button
+                  className="rounded-xl"
+                  variant="outline"
+                  onClick={startExploration}
+                  disabled={saving || !ready}
+                >
+                  Explorar o FLUXA agora
+                </Button>
+              )}
+              <Button
+                className="w-full rounded-xl sm:w-auto"
+                onClick={advance}
+                disabled={saving || !ready}
+                aria-busy={saving}
+              >
+                {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
+                {saving
+                  ? "Salvando…"
+                  : step === 4
+                    ? "Concluir configuração e entrar"
+                    : "Salvar e continuar"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
