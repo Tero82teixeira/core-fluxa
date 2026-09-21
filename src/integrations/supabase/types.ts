@@ -4676,6 +4676,7 @@ export type Database = {
           district: string | null
           employees_range: string | null
           enabled_modules: Json
+          onboarding_exploration_enabled: boolean
           financial_alert_days: number | null
           highlight_internal_notes: boolean | null
           locale: string | null
@@ -4736,6 +4737,7 @@ export type Database = {
           district?: string | null
           employees_range?: string | null
           enabled_modules?: Json
+          onboarding_exploration_enabled?: boolean
           financial_alert_days?: number | null
           highlight_internal_notes?: boolean | null
           locale?: string | null
@@ -4796,6 +4798,7 @@ export type Database = {
           district?: string | null
           employees_range?: string | null
           enabled_modules?: Json
+          onboarding_exploration_enabled?: boolean
           financial_alert_days?: number | null
           highlight_internal_notes?: boolean | null
           locale?: string | null
@@ -8030,6 +8033,10 @@ export type Database = {
           _settings?: Json
           _step: number
         }
+        Returns: Json
+      }
+      start_organization_exploration: {
+        Args: { _organization_id: string }
         Returns: Json
       }
       update_organization_segment: {
