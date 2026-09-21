@@ -50,7 +50,14 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   const collapsed = state === "collapsed" && !isMobile;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggleTheme } = useTheme();
-  const { displayName, role, membership, loading, onboardingCompleted } = useWorkspace();
+  const {
+    displayName,
+    role,
+    membership,
+    loading,
+    onboardingCompleted,
+    onboardingExplorationEnabled,
+  } = useWorkspace();
 
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false);
@@ -106,7 +113,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
                 <SidebarMenu className="gap-0.5">
                   {items.map((item) => {
                     const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
-                    const locked = !onboardingCompleted;
+                    const locked = !onboardingCompleted && !onboardingExplorationEnabled;
                     const navIcon = collapsed ? (
                       <item.icon className="size-4.5 shrink-0 text-sidebar-primary" aria-hidden />
                     ) : (
