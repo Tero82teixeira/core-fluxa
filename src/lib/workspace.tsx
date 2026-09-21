@@ -27,7 +27,7 @@ const INVITATION_STORAGE_KEY = "fluxa-pending-invitation";
 const WORKSPACE_TIMEOUT_MS = 12_000;
 
 const MEMBERSHIP_SELECT =
-  "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, document, phone, whatsapp, onboarding_completed, onboarding_completed_at, onboarding_step, commercial_status, trial_started_at, trial_ends_at, organization_settings(zip_code, street, number, district, city, state, main_services, clients_range, employees_range, business_segment, enabled_modules))";
+  "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, document, phone, whatsapp, onboarding_completed, onboarding_completed_at, onboarding_step, commercial_status, trial_started_at, trial_ends_at, organization_settings(zip_code, street, number, district, city, state, main_services, clients_range, employees_range, business_segment, enabled_modules, onboarding_exploration_enabled))";
 
 export type WorkspaceStatus = "idle" | "loading" | "bootstrapping" | "ready" | "error";
 
@@ -52,6 +52,7 @@ type WorkspaceContextValue = {
   role: AppRole | null;
   onboardingCompleted: boolean;
   onboardingStep: number;
+  onboardingExplorationEnabled: boolean;
   commercialStatus: EffectiveCommercialStatus | null;
   trialEndsAt: string | null;
   trialDaysRemaining: number | null;
@@ -337,6 +338,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       role: membership?.role ?? null,
       onboardingCompleted: Boolean(membership?.organizations?.onboarding_completed_at),
       onboardingStep: membership?.organizations?.onboarding_step ?? 0,
+      onboardingExplorationEnabled: Boolean(
+        membership?.organizations?.organization_settings?.onboarding_exploration_enabled,
+      ),
       commercialStatus,
       trialEndsAt: commercialOrganization?.trial_ends_at ?? null,
       trialDaysRemaining:
