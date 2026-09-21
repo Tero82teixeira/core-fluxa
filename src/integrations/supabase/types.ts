@@ -4650,6 +4650,7 @@ export type Database = {
           business_hours_end: string | null
           business_hours_start: string | null
           business_segment: string | null
+          business_subtype: string | null
           city: string | null
           clients_range: string | null
           communication_ai_enabled: boolean
@@ -4711,6 +4712,7 @@ export type Database = {
           business_hours_end?: string | null
           business_hours_start?: string | null
           business_segment?: string | null
+          business_subtype?: string | null
           city?: string | null
           clients_range?: string | null
           communication_ai_enabled?: boolean
@@ -4772,6 +4774,7 @@ export type Database = {
           business_hours_end?: string | null
           business_hours_start?: string | null
           business_segment?: string | null
+          business_subtype?: string | null
           city?: string | null
           clients_range?: string | null
           communication_ai_enabled?: boolean
@@ -8044,6 +8047,7 @@ export type Database = {
           _enabled_modules: Json
           _organization_id: string
           _segment: string
+          _subtype?: string
         }
         Returns: Json
       }
