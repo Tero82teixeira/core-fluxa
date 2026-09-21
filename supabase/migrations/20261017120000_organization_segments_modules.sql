@@ -4,6 +4,7 @@
 
 ALTER TABLE public.organization_settings
   ADD COLUMN IF NOT EXISTS business_segment text,
+  ADD COLUMN IF NOT EXISTS business_subtype text,
   ADD COLUMN IF NOT EXISTS enabled_modules jsonb NOT NULL DEFAULT '[]'::jsonb,
   ADD COLUMN IF NOT EXISTS onboarding_exploration_enabled boolean NOT NULL DEFAULT false;
 
@@ -34,7 +35,8 @@ ALTER TABLE public.organization_settings
 CREATE OR REPLACE FUNCTION public.update_organization_segment(
   _organization_id uuid,
   _segment text,
-  _enabled_modules jsonb
+  _enabled_modules jsonb,
+  _subtype text DEFAULT NULL
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -70,17 +72,20 @@ BEGIN
   INSERT INTO public.organization_settings(
     organization_id,
     business_segment,
+    business_subtype,
     enabled_modules,
     updated_by
   )
   VALUES (
     _organization_id,
     _segment,
+    NULLIF(trim(COALESCE(_subtype, '')), ''),
     _enabled_modules,
     auth.uid()
   )
   ON CONFLICT (organization_id) DO UPDATE
     SET business_segment = EXCLUDED.business_segment,
+        business_subtype = EXCLUDED.business_subtype,
         enabled_modules = EXCLUDED.enabled_modules,
         updated_by = auth.uid(),
         updated_at = now();
@@ -101,6 +106,7 @@ BEGIN
     _organization_id,
     jsonb_build_object(
       'business_segment', _segment,
+      'business_subtype', NULLIF(trim(COALESCE(_subtype, '')), ''),
       'enabled_modules', _enabled_modules
     )
   );
@@ -108,14 +114,15 @@ BEGIN
   RETURN jsonb_build_object(
     'organization_id', _organization_id,
     'business_segment', _segment,
+    'business_subtype', NULLIF(trim(COALESCE(_subtype, '')), ''),
     'enabled_modules', _enabled_modules
   );
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.update_organization_segment(uuid, text, jsonb)
+REVOKE ALL ON FUNCTION public.update_organization_segment(uuid, text, jsonb, text)
   FROM PUBLIC, anon, service_role;
-GRANT EXECUTE ON FUNCTION public.update_organization_segment(uuid, text, jsonb)
+GRANT EXECUTE ON FUNCTION public.update_organization_segment(uuid, text, jsonb, text)
   TO authenticated;
 
 
