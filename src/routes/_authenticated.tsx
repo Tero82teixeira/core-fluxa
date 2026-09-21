@@ -30,7 +30,13 @@ export const Route = createFileRoute("/_authenticated")({
 
 /** Leva o usuário sem empresa (ou com onboarding pendente) para a configuração. */
 function OnboardingGate() {
-  const { status, onboardingCompleted, commercialAccess, platformAdmin } = useWorkspace();
+  const {
+    status,
+    onboardingCompleted,
+    onboardingExplorationEnabled,
+    commercialAccess,
+    platformAdmin,
+  } = useWorkspace();
   const location = useLocation();
   const navigate = useNavigate();
   const onOnboarding = location.pathname.startsWith("/onboarding");
@@ -42,11 +48,14 @@ function OnboardingGate() {
     if (status !== "ready") return;
     if (!commercialAccess) return;
     if (platformAdmin && onPlatformArea) return;
-    if (!onboardingCompleted && !onOnboarding) navigate({ to: "/onboarding", replace: true });
-    if (onboardingCompleted && onOnboarding) navigate({ to: "/meu-dia", replace: true });
+    if (!onboardingCompleted && !onboardingExplorationEnabled && !onOnboarding)
+      navigate({ to: "/onboarding", replace: true });
+    if ((onboardingCompleted || onboardingExplorationEnabled) && onOnboarding && location.search.explore !== "setup")
+      navigate({ to: "/meu-dia", replace: true });
   }, [
     status,
     onboardingCompleted,
+    onboardingExplorationEnabled,
     commercialAccess,
     platformAdmin,
     onOnboarding,
