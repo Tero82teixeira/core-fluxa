@@ -173,7 +173,10 @@ export function enabledModulesFromUnknown(value: unknown): ModuleKey[] {
 }
 
 export function moduleForRoute(route: string): ModuleKey | null {
-  return ROUTE_MODULES[route] ?? null;
+  const base = Object.keys(ROUTE_MODULES).find(
+    (candidate) => route === candidate || route.startsWith(`${candidate}/`),
+  );
+  return base ? ROUTE_MODULES[base] : null;
 }
 
 export function routeVisibleForModules(
