@@ -100,7 +100,7 @@ function HealthPatientsPage() {
       reset();
       setShowForm(false);
     } catch (error) {
-      toast.error(describeError(error, "paciente"));
+      toast.error(describeError(error, "salvar"));
     }
   };
 
