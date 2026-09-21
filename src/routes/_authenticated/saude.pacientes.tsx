@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { useWorkspace } from "@/lib/workspace";
 import { describeError } from "@/lib/errors";
+import { usePermissions } from "@/lib/permissions";
 import { maskPhone } from "@/lib/format";
 import {
   useCreateHealthPatient,
@@ -46,6 +47,7 @@ export const Route = createFileRoute("/_authenticated/saude/pacientes")({
 
 function HealthPatientsPage() {
   const { organizationId } = useWorkspace();
+  const permissions = usePermissions();
   const [term, setTerm] = useState("");
   const [debounced, setDebounced] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -138,18 +140,20 @@ function HealthPatientsPage() {
               </span>
             </div>
           </div>
-          <Button
-            type="button"
-            className="w-full rounded-xl bg-white text-slate-950 hover:bg-slate-100 sm:w-auto"
-            onClick={() => setShowForm((value) => !value)}
-          >
-            <Plus className="size-4" aria-hidden />
-            {showForm ? "Fechar cadastro" : "Novo paciente"}
-          </Button>
+          {permissions.canCreate && (
+            <Button
+              type="button"
+              className="w-full rounded-xl bg-white text-slate-950 hover:bg-slate-100 sm:w-auto"
+              onClick={() => setShowForm((value) => !value)}
+            >
+              <Plus className="size-4" aria-hidden />
+              {showForm ? "Fechar cadastro" : "Novo paciente"}
+            </Button>
+          )}
         </div>
       </header>
 
-      {showForm && (
+      {showForm && permissions.canCreate && (
         <Card className="rounded-2xl border-border/70 shadow-soft">
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
