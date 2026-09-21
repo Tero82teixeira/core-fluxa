@@ -55,6 +55,7 @@ export type Membership = {
       clients_range: string | null;
       employees_range: string | null;
       business_segment: string | null;
+      business_subtype: string | null;
       enabled_modules: unknown;
       onboarding_exploration_enabled: boolean;
     } | null;
@@ -70,7 +71,7 @@ export function useMemberships(user: User | null) {
       const { data, error } = await supabase
         .from("organization_members")
         .select(
-          "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, document, phone, whatsapp, onboarding_completed, onboarding_completed_at, onboarding_step, commercial_status, trial_started_at, trial_ends_at, organization_settings(zip_code, street, number, district, city, state, main_services, clients_range, employees_range, business_segment, enabled_modules, onboarding_exploration_enabled))",
+          "id, organization_id, user_id, role, is_active, organizations(id, legal_name, trade_name, document, phone, whatsapp, onboarding_completed, onboarding_completed_at, onboarding_step, commercial_status, trial_started_at, trial_ends_at, organization_settings(zip_code, street, number, district, city, state, main_services, clients_range, employees_range, business_segment, business_subtype, enabled_modules, onboarding_exploration_enabled))",
         )
         .eq("user_id", user?.id ?? "")
         .eq("is_active", true)
