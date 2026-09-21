@@ -50,8 +50,7 @@ function OnboardingGate() {
     if (platformAdmin && onPlatformArea) return;
     if (!onboardingCompleted && !onboardingExplorationEnabled && !onOnboarding)
       navigate({ to: "/onboarding", replace: true });
-    if ((onboardingCompleted || onboardingExplorationEnabled) && onOnboarding && location.search.explore !== "setup")
-      navigate({ to: "/meu-dia", replace: true });
+    if (onboardingCompleted && onOnboarding) navigate({ to: "/meu-dia", replace: true });
   }, [
     status,
     onboardingCompleted,
