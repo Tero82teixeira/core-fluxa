@@ -197,40 +197,40 @@ BEGIN
   SELECT COALESCE(
     jsonb_agg(
       jsonb_build_object(
-        'id', authorization.id,
-        'patient_profile_id', authorization.patient_profile_id,
+        'id', authz.id,
+        'patient_profile_id', authz.patient_profile_id,
         'patient_name', client.name,
-        'insurer_id', authorization.insurer_id,
+        'insurer_id', authz.insurer_id,
         'insurer_name', insurer.name,
-        'authorization_number', authorization.authorization_number,
-        'service_label', authorization.service_label,
-        'requested_at', authorization.requested_at,
-        'valid_until', authorization.valid_until,
-        'status', authorization.status,
-        'administrative_notes', authorization.administrative_notes,
-        'created_at', authorization.created_at
+        'authorization_number', authz.authorization_number,
+        'service_label', authz.service_label,
+        'requested_at', authz.requested_at,
+        'valid_until', authz.valid_until,
+        'status', authz.status,
+        'administrative_notes', authz.administrative_notes,
+        'created_at', authz.created_at
       )
-      ORDER BY authorization.requested_at DESC, authorization.created_at DESC
+      ORDER BY authz.requested_at DESC, authz.created_at DESC
     ),
     '[]'::jsonb
   )
   INTO result
-  FROM public.health_authorizations authorization
+  FROM public.health_authorizations authz
   JOIN public.health_patient_profiles profile
-    ON profile.id = authorization.patient_profile_id
-   AND profile.organization_id = authorization.organization_id
+    ON profile.id = authz.patient_profile_id
+   AND profile.organization_id = authz.organization_id
   JOIN public.clients client
     ON client.id = profile.client_id
-   AND client.organization_id = authorization.organization_id
+   AND client.organization_id = authz.organization_id
   LEFT JOIN public.health_insurers insurer
-    ON insurer.id = authorization.insurer_id
-   AND insurer.organization_id = authorization.organization_id
-  WHERE authorization.organization_id = _organization_id
+    ON insurer.id = authz.insurer_id
+   AND insurer.organization_id = authz.organization_id
+  WHERE authz.organization_id = _organization_id
     AND (
       NULLIF(trim(COALESCE(_search, '')), '') IS NULL
       OR client.name ILIKE '%' || trim(_search) || '%'
-      OR COALESCE(authorization.authorization_number, '') ILIKE '%' || trim(_search) || '%'
-      OR authorization.service_label ILIKE '%' || trim(_search) || '%'
+      OR COALESCE(authz.authorization_number, '') ILIKE '%' || trim(_search) || '%'
+      OR authz.service_label ILIKE '%' || trim(_search) || '%'
       OR COALESCE(insurer.name, '') ILIKE '%' || trim(_search) || '%'
     );
 
@@ -254,7 +254,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public', 'pg_temp'
 AS $function$
-DECLARE authorization public.health_authorizations;
+DECLARE authz public.health_authorizations;
 DECLARE clean_service text := NULLIF(trim(_service_label), '');
 BEGIN
   IF auth.uid() IS NULL OR NOT public.has_org_role(
@@ -318,7 +318,7 @@ BEGIN
     auth.uid(),
     auth.uid()
   )
-  RETURNING * INTO authorization;
+  RETURNING * INTO authz;
 
   INSERT INTO public.audit_logs(organization_id, actor_id, action, entity, entity_id, metadata)
   VALUES (
@@ -326,24 +326,24 @@ BEGIN
     auth.uid(),
     'health.authorization.created',
     'health_authorization',
-    authorization.id,
+    authz.id,
     jsonb_build_object(
-      'patient_profile_id', authorization.patient_profile_id,
-      'insurer_id', authorization.insurer_id,
-      'status', authorization.status
+      'patient_profile_id', authz.patient_profile_id,
+      'insurer_id', authz.insurer_id,
+      'status', authz.status
     )
   );
 
   RETURN jsonb_build_object(
-    'id', authorization.id,
-    'patient_profile_id', authorization.patient_profile_id,
-    'insurer_id', authorization.insurer_id,
-    'authorization_number', authorization.authorization_number,
-    'service_label', authorization.service_label,
-    'requested_at', authorization.requested_at,
-    'valid_until', authorization.valid_until,
-    'status', authorization.status,
-    'administrative_notes', authorization.administrative_notes
+    'id', authz.id,
+    'patient_profile_id', authz.patient_profile_id,
+    'insurer_id', authz.insurer_id,
+    'authorization_number', authz.authorization_number,
+    'service_label', authz.service_label,
+    'requested_at', authz.requested_at,
+    'valid_until', authz.valid_until,
+    'status', authz.status,
+    'administrative_notes', authz.administrative_notes
   );
 END;
 $function$;
