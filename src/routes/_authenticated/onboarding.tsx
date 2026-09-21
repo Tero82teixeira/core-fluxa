@@ -222,8 +222,6 @@ function Onboarding() {
     };
 
     await updateOnboarding({ step: 1, company: payload });
-
-    await refreshWorkspace();
     return true;
   };
 
@@ -354,7 +352,7 @@ function Onboarding() {
           </span>
         </div>
         <Progress value={((step + 1) / STEPS.length) * 100} className="h-2" />
-        <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
+        <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-5">
           {STEPS.map((item, index) => (
             <span
               key={item.title}
