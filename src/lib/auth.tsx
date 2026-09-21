@@ -13,7 +13,11 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import { buildLegalAcceptanceMetadata } from "@/lib/legal";
-import { captureProductEvent, resetProductAnalytics } from "@/lib/product-analytics";
+import {
+  captureProductEvent,
+  captureProductEventImmediately,
+  resetProductAnalytics,
+} from "@/lib/product-analytics";
 
 /**
  * Fonte única de verdade da autenticação.
@@ -77,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    captureProductEvent("user_signed_in");
+    await captureProductEventImmediately("user_signed_in");
   }, []);
 
   const signUp = useCallback(

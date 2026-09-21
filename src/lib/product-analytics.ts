@@ -148,6 +148,20 @@ export function captureProductEvent(
   });
 }
 
+export async function captureProductEventImmediately(
+  event: ProductAnalyticsEvent,
+  properties: ProductAnalyticsProperties = {},
+) {
+  try {
+    const client = await initializeProductAnalytics();
+    client?.capture(event, sanitizeAnalyticsProperties(properties), { send_instantly: true });
+  } catch (error: unknown) {
+    console.warn("[Analytics] evento imediato não enviado", {
+      message: error instanceof Error ? error.message : undefined,
+    });
+  }
+}
+
 export function identifyProductUser(userId: string, properties: ProductAnalyticsProperties = {}) {
   if (!userId) return;
   void initializeProductAnalytics().then((client) => {
