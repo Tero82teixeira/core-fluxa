@@ -68,7 +68,7 @@ function HealthInsurersPage() {
       setForm({ name: "", registration_code: "", contact_phone: "", contact_email: "" });
       setShowForm(false);
     } catch (error) {
-      toast.error(describeError(error, "convênio"));
+      toast.error(describeError(error, "salvar"));
     }
   };
 
