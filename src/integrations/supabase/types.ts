@@ -4649,6 +4649,7 @@ export type Database = {
           auto_assign_portal_communications: boolean
           business_hours_end: string | null
           business_hours_start: string | null
+          business_segment: string | null
           city: string | null
           clients_range: string | null
           communication_ai_enabled: boolean
@@ -4674,6 +4675,7 @@ export type Database = {
             | null
           district: string | null
           employees_range: string | null
+          enabled_modules: Json
           financial_alert_days: number | null
           highlight_internal_notes: boolean | null
           locale: string | null
@@ -4707,6 +4709,7 @@ export type Database = {
           auto_assign_portal_communications?: boolean
           business_hours_end?: string | null
           business_hours_start?: string | null
+          business_segment?: string | null
           city?: string | null
           clients_range?: string | null
           communication_ai_enabled?: boolean
@@ -4732,6 +4735,7 @@ export type Database = {
             | null
           district?: string | null
           employees_range?: string | null
+          enabled_modules?: Json
           financial_alert_days?: number | null
           highlight_internal_notes?: boolean | null
           locale?: string | null
@@ -4765,6 +4769,7 @@ export type Database = {
           auto_assign_portal_communications?: boolean
           business_hours_end?: string | null
           business_hours_start?: string | null
+          business_segment?: string | null
           city?: string | null
           clients_range?: string | null
           communication_ai_enabled?: boolean
@@ -4790,6 +4795,7 @@ export type Database = {
             | null
           district?: string | null
           employees_range?: string | null
+          enabled_modules?: Json
           financial_alert_days?: number | null
           highlight_internal_notes?: boolean | null
           locale?: string | null
@@ -8023,6 +8029,14 @@ export type Database = {
           _organization_id: string
           _settings?: Json
           _step: number
+        }
+        Returns: Json
+      }
+      update_organization_segment: {
+        Args: {
+          _enabled_modules: Json
+          _organization_id: string
+          _segment: string
         }
         Returns: Json
       }
