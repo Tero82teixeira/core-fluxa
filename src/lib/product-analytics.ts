@@ -8,6 +8,7 @@ export type ProductAnalyticsEvent =
   | "confirmation_email_resent"
   | "document_uploaded"
   | "organization_onboarding_completed"
+  | "organization_segment_selected"
   | "page_viewed"
   | "password_reset_requested"
   | "process_created"
