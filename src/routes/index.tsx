@@ -31,6 +31,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { submitPublicLead } from "@/hooks/use-lead-capture";
+import { captureProductEvent } from "@/lib/product-analytics";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -180,14 +182,16 @@ function TrialLink({
   children,
   variant = "default",
   className,
+  onClick,
 }: {
   children: React.ReactNode;
   variant?: "default" | "outline";
   className?: string;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 }) {
   return (
     <Button asChild variant={variant} className={className}>
-      <Link to="/entrar" search={{ mode: "signup" }}>
+      <Link to="/entrar" search={{ mode: "signup" }} onClick={onClick}>
         {children}
       </Link>
     </Button>
@@ -441,11 +445,22 @@ const DIAGNOSTIC_QUESTIONS: QuizQuestion[] = [
   },
 ];
 
+const QUIZ_LEAD_TOKEN =
+  ((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
+    ?.VITE_QUIZ_LEAD_TOKEN ?? "").trim();
+
 function DiagnosticQuiz() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [segment, setSegment] = useState("");
   const [finished, setFinished] = useState(false);
+  const [leadCaptured, setLeadCaptured] = useState(false);
+  const [leadName, setLeadName] = useState("");
+  const [leadEmail, setLeadEmail] = useState("");
+  const [leadPhone, setLeadPhone] = useState("");
+  const [leadConsent, setLeadConsent] = useState(false);
+  const [leadSending, setLeadSending] = useState(false);
+  const [leadError, setLeadError] = useState("");
 
   const question = DIAGNOSTIC_QUESTIONS[step];
   const score = answers.reduce((total, value) => total + value, 0);
@@ -477,17 +492,80 @@ function DiagnosticQuiz() {
             panel: "border-violet-200/70 bg-violet-50/70 dark:border-violet-900/60 dark:bg-violet-950/25",
           };
 
+  const scoreBand = score <= 5 ? "structured" : score <= 12 ? "growing" : "organize";
+
   const choose = (option: QuizOption) => {
-    if (step === 0) setSegment(option.label);
+    const selectedSegment = step === 0 ? option.label : segment;
+    if (step === 0) {
+      setSegment(option.label);
+      captureProductEvent("diagnostic_quiz_started", { entry_point: "landing" });
+    }
+
     const nextAnswers = [...answers, option.score];
     setAnswers(nextAnswers);
 
     if (step === DIAGNOSTIC_QUESTIONS.length - 1) {
+      const nextScore = nextAnswers.reduce((total, value) => total + value, 0);
+      const nextBand = nextScore <= 5 ? "structured" : nextScore <= 12 ? "growing" : "organize";
+      captureProductEvent("diagnostic_quiz_completed", {
+        score_band: nextBand,
+        segment: selectedSegment || "unknown",
+      });
       setFinished(true);
+      if (!QUIZ_LEAD_TOKEN) setLeadCaptured(true);
       return;
     }
 
     setStep((current) => current + 1);
+  };
+
+  const submitLead = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLeadError("");
+
+    if (leadName.trim().length < 2) {
+      setLeadError("Informe seu nome.");
+      return;
+    }
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(leadEmail.trim())) {
+      setLeadError("Informe um e-mail válido.");
+      return;
+    }
+    if (!leadConsent) {
+      setLeadError("Autorize o uso dos dados para receber seu diagnóstico e contato.");
+      return;
+    }
+
+    setLeadSending(true);
+    try {
+      const params =
+        typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
+      const source = params?.get("utm_source")?.slice(0, 80) || "quiz-fluxa";
+
+      await submitPublicLead(QUIZ_LEAD_TOKEN, {
+        name: leadName.trim(),
+        email: leadEmail.trim(),
+        phone: leadPhone.trim(),
+        company: "",
+        message: `Diagnóstico FLUXA: ${result.eyebrow}. Segmento informado: ${segment || "não informado"}.`,
+        source,
+        website: "",
+        consent: true,
+      });
+
+      captureProductEvent("diagnostic_quiz_lead_submitted", {
+        score_band: scoreBand,
+        segment: segment || "unknown",
+        source,
+      });
+      setLeadCaptured(true);
+    } catch {
+      setLeadError(
+        "Não foi possível salvar seus dados agora. Você ainda pode visualizar o resultado abaixo.",
+      );
+    } finally {
+      setLeadSending(false);
+    }
   };
 
   const restart = () => {
@@ -495,6 +573,12 @@ function DiagnosticQuiz() {
     setAnswers([]);
     setSegment("");
     setFinished(false);
+    setLeadCaptured(false);
+    setLeadName("");
+    setLeadEmail("");
+    setLeadPhone("");
+    setLeadConsent(false);
+    setLeadError("");
   };
 
   return (
@@ -581,6 +665,110 @@ function DiagnosticQuiz() {
                 </div>
               </aside>
             </div>
+          ) : !leadCaptured ? (
+            <div className="grid gap-0 lg:grid-cols-[1fr_18rem]">
+              <div className="p-5 sm:p-8">
+                <p className="text-xs font-semibold tracking-[0.14em] text-blue-700 uppercase dark:text-blue-300">
+                  Seu diagnóstico está pronto
+                </p>
+                <h3 className="mt-2 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+                  Para onde podemos enviar sua análise?
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Informe seus dados para registrar seu interesse e visualizar o resultado. O WhatsApp é opcional.
+                </p>
+
+                <form className="mt-6 grid gap-4" onSubmit={submitLead} noValidate>
+                  <label className="grid gap-1.5 text-sm font-medium">
+                    Nome
+                    <input
+                      value={leadName}
+                      onChange={(event) => setLeadName(event.target.value)}
+                      autoComplete="name"
+                      maxLength={160}
+                      className="h-11 rounded-xl border bg-background px-3 text-base font-normal outline-none transition-shadow focus:ring-2 focus:ring-blue-500"
+                    />
+                  </label>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="grid gap-1.5 text-sm font-medium">
+                      E-mail
+                      <input
+                        type="email"
+                        value={leadEmail}
+                        onChange={(event) => setLeadEmail(event.target.value)}
+                        autoComplete="email"
+                        inputMode="email"
+                        maxLength={255}
+                        className="h-11 rounded-xl border bg-background px-3 text-base font-normal outline-none transition-shadow focus:ring-2 focus:ring-blue-500"
+                      />
+                    </label>
+                    <label className="grid gap-1.5 text-sm font-medium">
+                      WhatsApp <span className="font-normal text-muted-foreground">(opcional)</span>
+                      <input
+                        value={leadPhone}
+                        onChange={(event) => setLeadPhone(event.target.value)}
+                        autoComplete="tel"
+                        inputMode="tel"
+                        maxLength={24}
+                        className="h-11 rounded-xl border bg-background px-3 text-base font-normal outline-none transition-shadow focus:ring-2 focus:ring-blue-500"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border bg-muted/20 p-3 text-xs leading-5 text-muted-foreground sm:text-sm">
+                    <input
+                      type="checkbox"
+                      checked={leadConsent}
+                      onChange={(event) => setLeadConsent(event.target.checked)}
+                      className="mt-1 size-4 accent-blue-600"
+                    />
+                    <span>
+                      Autorizo o uso destes dados para registrar meu interesse e permitir contato sobre o FLUXA.
+                      Consulte a{" "}
+                      <Link
+                        to="/politica-de-privacidade"
+                        target="_blank"
+                        className="font-medium text-primary underline underline-offset-2"
+                      >
+                        Política de Privacidade
+                      </Link>
+                      .
+                    </span>
+                  </label>
+
+                  {leadError && (
+                    <p role="alert" className="text-sm text-destructive">
+                      {leadError}
+                    </p>
+                  )}
+
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button type="submit" disabled={leadSending} className="h-11 bg-blue-600 px-5 text-white hover:bg-blue-500">
+                      {leadSending ? "Salvando…" : "Ver meu resultado"}
+                      {!leadSending && <ArrowRight className="size-4" aria-hidden />}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-11"
+                      onClick={() => setLeadCaptured(true)}
+                    >
+                      Ver resultado sem informar dados
+                    </Button>
+                  </div>
+                </form>
+              </div>
+
+              <aside className="border-t bg-slate-950 p-6 text-white lg:border-t-0 lg:border-l">
+                <span className="grid size-11 place-items-center rounded-2xl bg-emerald-400/10 text-emerald-300">
+                  <ShieldCheck className="size-5" aria-hidden />
+                </span>
+                <h3 className="mt-5 text-lg font-semibold">Seus dados ficam protegidos</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  O cadastro serve para registrar seu interesse no FLUXA. Você pode visualizar o resultado sem preencher o formulário.
+                </p>
+              </aside>
+            </div>
           ) : (
             <div className="p-5 sm:p-8">
               <div className={`rounded-2xl border p-5 sm:p-7 ${result.panel}`}>
@@ -621,7 +809,15 @@ function DiagnosticQuiz() {
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
-                  <TrialLink className="h-11 bg-blue-600 px-5 text-white hover:bg-blue-500">
+                  <TrialLink
+                    className="h-11 bg-blue-600 px-5 text-white hover:bg-blue-500"
+                    onClick={() =>
+                      captureProductEvent("diagnostic_quiz_trial_started", {
+                        score_band: scoreBand,
+                        segment: segment || "unknown",
+                      })
+                    }
+                  >
                     Começar 14 dias grátis <ArrowRight className="size-4" aria-hidden />
                   </TrialLink>
                   <Button type="button" variant="outline" onClick={restart} className="h-11">
