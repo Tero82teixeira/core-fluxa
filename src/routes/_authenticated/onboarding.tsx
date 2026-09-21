@@ -9,6 +9,15 @@ import { describeError } from "@/lib/errors";
 import { digits, isValidCNPJ, isValidCPF, maskDocument, maskPhone } from "@/lib/format";
 import { useCnpjLookup } from "@/hooks/use-cnpj-lookup";
 import { captureProductEvent } from "@/lib/product-analytics";
+import {
+  SEGMENT_OPTIONS,
+  recommendedModulesForSubtype,
+  segmentByKey,
+  subtypeByKey,
+  subtypeOptionsForSegment,
+  type BusinessSegment,
+  type BusinessSubtype,
+} from "@/lib/organization-segments";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,6 +45,8 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
 });
 
 const STEPS = [
+  { title: "Segmento", icon: Sparkles, hint: "Prepare o FLUXA para sua área" },
+  { title: "Tipo de operação", icon: Settings2, hint: "Adapte o FLUXA ao seu negócio" },
   { title: "Empresa", icon: Building2, hint: "Identificação e contato" },
   { title: "Localização", icon: MapPin, hint: "Onde a empresa atua" },
   { title: "Operação", icon: Settings2, hint: "Serviços e porte" },
@@ -55,7 +66,9 @@ function Onboarding() {
     refreshWorkspace,
   } = useWorkspace();
 
-  const [step, setStep] = useState(onboardingStep);
+  const [step, setStep] = useState(0);
+  const [segment, setSegment] = useState<BusinessSegment | null>(null);
+  const [subtype, setSubtype] = useState<BusinessSubtype | null>(null);
   const [saving, setSaving] = useState(false);
   const cnpjLookup = useCnpjLookup();
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +79,18 @@ function Onboarding() {
   }>({});
   const hydratedOrganization = useRef<string | null>(null);
 
-  useEffect(() => setStep(onboardingStep), [onboardingStep]);
+  const savedSegment = membership?.organizations?.organization_settings?.business_segment ?? null;
+  const savedSubtype = membership?.organizations?.organization_settings?.business_subtype ?? null;
+
+  useEffect(() => {
+    const resolvedSegment = savedSegment as BusinessSegment | null;
+    const resolvedSubtype = savedSubtype as BusinessSubtype | null;
+    setSegment(resolvedSegment);
+    setSubtype(resolvedSubtype);
+    if (!resolvedSegment) setStep(0);
+    else if (!resolvedSubtype) setStep(1);
+    else setStep(Math.min(onboardingStep + 2, 5));
+  }, [onboardingStep, savedSegment, savedSubtype]);
 
   const [company, setCompany] = useState({
     trade_name: membership?.organizations?.trade_name ?? "",
@@ -114,6 +138,8 @@ function Onboarding() {
       clients_range: settings?.clients_range ?? "",
       employees_range: settings?.employees_range ?? "",
     });
+    setSegment((settings?.business_segment as BusinessSegment | null) ?? null);
+    setSubtype((settings?.business_subtype as BusinessSubtype | null) ?? null);
   }, [membership]);
 
   /**
@@ -207,9 +233,30 @@ function Onboarding() {
     };
 
     await updateOnboarding({ step: 1, company: payload });
-
-    await refreshWorkspace();
     return true;
+  };
+
+  const startExploration = async () => {
+    if (saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const id = ensureOrganization();
+      const { error: explorationError } = await (supabase as any).rpc(
+        "start_organization_exploration",
+        { _organization_id: id },
+      );
+      if (explorationError) throw explorationError;
+      await refreshWorkspace();
+      toast.success("Modo de exploração liberado. Você pode concluir a configuração depois.");
+      navigate({ to: "/meu-dia" });
+    } catch (caught) {
+      const message = describeError(caught, "empresa");
+      setError(message);
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const advance = async () => {
@@ -218,9 +265,40 @@ function Onboarding() {
     setError(null);
     try {
       if (step === 0) {
-        if (!(await saveCompany())) return;
+        if (!segment) {
+          setError("Escolha a área principal da sua empresa ou atuação.");
+          return;
+        }
+        setSubtype(null);
+        setStep(1);
+        return;
       }
       if (step === 1) {
+        if (!segment || !subtype) {
+          setError("Escolha o tipo de operação que melhor representa sua empresa.");
+          return;
+        }
+        const id = ensureOrganization();
+        const { error: segmentError } = await (supabase as any).rpc(
+          "update_organization_segment",
+          {
+            _organization_id: id,
+            _segment: segment,
+            _subtype: subtype,
+            _enabled_modules: recommendedModulesForSubtype(segment, subtype),
+          },
+        );
+        if (segmentError) throw segmentError;
+        await refreshWorkspace();
+        captureProductEvent("organization_segment_selected", { segment });
+        toast.success("Perfil da operação salvo. Agora vamos configurar sua empresa.");
+        setStep(2);
+        return;
+      }
+      if (step === 2) {
+        if (!(await saveCompany())) return;
+      }
+      if (step === 3) {
         await updateOnboarding({
           step: 2,
           settings: {
@@ -233,7 +311,7 @@ function Onboarding() {
           },
         });
       }
-      if (step === 2) {
+      if (step === 4) {
         await updateOnboarding({
           step: 3,
           settings: {
@@ -243,7 +321,7 @@ function Onboarding() {
           },
         });
       }
-      if (step === 3) {
+      if (step === 5) {
         await updateOnboarding({ step: 3, complete: true });
         await refreshWorkspace();
         captureProductEvent("organization_onboarding_completed");
@@ -252,7 +330,7 @@ function Onboarding() {
         return;
       }
       toast.success("Progresso salvo.");
-      setStep((current) => Math.min(current + 1, 3));
+      setStep((current) => Math.min(current + 1, 5));
     } catch (caught) {
       console.error("Erro no vínculo da empresa", {
         message: caught instanceof Error ? caught.message : undefined,
@@ -305,8 +383,8 @@ function Onboarding() {
           </div>
         </div>
         <p className="relative mt-4 max-w-2xl text-sm leading-6 text-slate-300">
-          Conclua estas quatro etapas rápidas para liberar os módulos. Depois, você poderá alterar
-          os dados em Configurações.
+          Vamos preparar o FLUXA para a sua área e concluir a configuração em poucos passos.
+          Depois, você poderá revisar essas escolhas em Configurações.
         </p>
       </header>
 
@@ -318,7 +396,7 @@ function Onboarding() {
           </span>
         </div>
         <Progress value={((step + 1) / STEPS.length) * 100} className="h-2" />
-        <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
+        <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-6">
           {STEPS.map((item, index) => (
             <span
               key={item.title}
@@ -359,6 +437,101 @@ function Onboarding() {
           )}
 
           {step === 0 && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold">Qual é a área principal da sua empresa ou atuação?</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  O FLUXA usará essa escolha para recomendar os módulos mais adequados. Você poderá
+                  alterar a configuração depois.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {SEGMENT_OPTIONS.map((option) => {
+                  const SegmentIcon = option.icon;
+                  const selected = segment === option.key;
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => {
+                        setSegment(option.key);
+                        setError(null);
+                      }}
+                      className={`group rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        selected
+                          ? "border-blue-500 bg-blue-500/10 shadow-sm"
+                          : "border-border/70 bg-card hover:border-blue-500/35"
+                      }`}
+                    >
+                      <span className={`grid size-10 place-items-center rounded-xl ${
+                        selected
+                          ? "bg-blue-500 text-white"
+                          : "bg-muted text-muted-foreground group-hover:text-blue-600"
+                      }`}>
+                        <SegmentIcon className="size-5" aria-hidden />
+                      </span>
+                      <span className="mt-3 block font-semibold">{option.label}</span>
+                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                        {option.description}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {segment && (
+                <div className="rounded-2xl border border-blue-500/20 bg-blue-500/[0.06] p-4">
+                  <p className="text-sm font-semibold">
+                    FLUXA preparado para {segmentByKey(segment)?.label}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Começaremos com o núcleo operacional e os recursos recomendados para este
+                    segmento. Módulos de outras áreas não serão exibidos.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 1 && segment && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold">O que melhor descreve sua operação?</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Essa escolha ajuda o FLUXA a recomendar os recursos certos sem encher seu menu
+                  com coisas que você não usa.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {subtypeOptionsForSegment(segment).map((option) => {
+                  const selected = subtype === option.key;
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => {
+                        setSubtype(option.key);
+                        setError(null);
+                      }}
+                      className={`rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        selected
+                          ? "border-blue-500 bg-blue-500/10 shadow-sm"
+                          : "border-border/70 bg-card hover:border-blue-500/35"
+                      }`}
+                    >
+                      <span className="block font-semibold">{option.label}</span>
+                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                        {option.description}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Nome fantasia *" className="sm:col-span-2">
                 <Input
@@ -435,7 +608,7 @@ function Onboarding() {
             </div>
           )}
 
-          {step === 1 && (
+          {step === 3 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="CEP">
                 <Input
@@ -482,7 +655,7 @@ function Onboarding() {
             </div>
           )}
 
-          {step === 2 && (
+          {step === 4 && (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Principais serviços" className="sm:col-span-2">
                 <Textarea
@@ -509,13 +682,15 @@ function Onboarding() {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 5 && (
             <div className="space-y-4">
               <p className="text-sm leading-6 text-muted-foreground">
                 Revise as informações. Ao concluir, você entrará na Central de Comando e poderá
                 começar a cadastrar clientes, processos e tarefas.
               </p>
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <Summary label="Segmento" value={segmentByKey(segment)?.label ?? ""} />
+                <Summary label="Tipo de operação" value={subtypeByKey(segment, subtype)?.label ?? ""} />
                 <Summary label="Empresa" value={company.trade_name} />
                 <Summary label="Razão social" value={company.legal_name || company.trade_name} />
                 <Summary label="Documento" value={maskDocument(company.document)} />
@@ -538,19 +713,31 @@ function Onboarding() {
             >
               Voltar
             </Button>
-            <Button
-              className="w-full rounded-xl sm:w-auto"
-              onClick={advance}
-              disabled={saving || !ready}
-              aria-busy={saving}
-            >
-              {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
-              {saving
-                ? "Salvando…"
-                : step === 3
-                  ? "Concluir configuração e entrar"
-                  : "Salvar e continuar"}
-            </Button>
+            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+              {step > 1 && step < 5 && (
+                <Button
+                  className="rounded-xl"
+                  variant="outline"
+                  onClick={startExploration}
+                  disabled={saving || !ready}
+                >
+                  Explorar o FLUXA agora
+                </Button>
+              )}
+              <Button
+                className="w-full rounded-xl sm:w-auto"
+                onClick={advance}
+                disabled={saving || !ready}
+                aria-busy={saving}
+              >
+                {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
+                {saving
+                  ? "Salvando…"
+                  : step === 5
+                    ? "Concluir configuração e entrar"
+                    : "Salvar e continuar"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -36,6 +36,7 @@ import { LeadCaptureSettings } from "@/components/leads/lead-capture-settings";
 import { AsaasSettings } from "@/components/finance/asaas-settings";
 import { DataProtectionPanel } from "@/components/security/data-protection-panel";
 import { IntegrationHealthPanel } from "@/components/integrations/integration-health-panel";
+import { SegmentModulesSettings } from "@/components/settings/segment-modules-settings";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -50,6 +51,7 @@ export const Route = createFileRoute("/_authenticated/configuracoes")({
 const tabs = [
   ["geral", "Geral"],
   ["organizacao", "Organização"],
+  ["segmento", "Segmento e módulos"],
   ["preferencias", "Preferências"],
   ["operacao", "Operação"],
   ["financeiro", "Financeiro"],
@@ -393,6 +395,9 @@ function SettingsPage() {
               onChange={(v) => set("zip_code", v)}
             />
           </Section>
+        </TabsContent>
+        <TabsContent value="segmento">
+          <SegmentModulesSettings />
         </TabsContent>
         <TabsContent value="preferencias">
           <Section title="Preferências regionais">

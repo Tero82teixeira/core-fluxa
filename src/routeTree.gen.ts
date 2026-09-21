@@ -15,6 +15,9 @@ import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-
 import { Route as MeuPortalRouteImport } from './routes/meu-portal'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AuthenticatedSaudePacientesRouteImport } from './routes/_authenticated/saude.pacientes'
+import { Route as AuthenticatedSaudeConveniosRouteImport } from './routes/_authenticated/saude.convenios'
+import { Route as AuthenticatedSaudeAutorizacoesRouteImport } from './routes/_authenticated/saude.autorizacoes'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PropostaTokenRouteImport } from './routes/proposta.$token'
 import { Route as PortalDoClienteTokenRouteImport } from './routes/portal-do-cliente.$token'
@@ -101,6 +104,21 @@ const CaptarTokenRoute = CaptarTokenRouteImport.update({
   id: '/captar/$token',
   path: '/captar/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSaudePacientesRoute = AuthenticatedSaudePacientesRouteImport.update({
+  id: '/saude/pacientes',
+  path: '/saude/pacientes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSaudeConveniosRoute = AuthenticatedSaudeConveniosRouteImport.update({
+  id: '/saude/convenios',
+  path: '/saude/convenios',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSaudeAutorizacoesRoute = AuthenticatedSaudeAutorizacoesRouteImport.update({
+  id: '/saude/autorizacoes',
+  path: '/saude/autorizacoes',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTarefasRoute = AuthenticatedTarefasRouteImport.update({
   id: '/tarefas',
@@ -277,6 +295,12 @@ export interface FileRoutesByFullPath {
   '/processos': typeof AuthenticatedProcessosRouteWithChildren
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/suporte-plataforma': typeof AuthenticatedSuportePlataformaRoute
+  '/saude/pacientes': typeof AuthenticatedSaudePacientesRoute
+  '/saude/convenios': typeof AuthenticatedSaudeConveniosRoute
+  '/saude/autorizacoes': typeof AuthenticatedSaudeAutorizacoesRoute
+  '/saude/pacientes': typeof AuthenticatedSaudePacientesRoute
+  '/saude/convenios': typeof AuthenticatedSaudeConveniosRoute
+  '/saude/autorizacoes': typeof AuthenticatedSaudeAutorizacoesRoute
   '/tarefas': typeof AuthenticatedTarefasRoute
   '/captar/$token': typeof CaptarTokenRoute
   '/convite/$token': typeof ConviteTokenRoute
@@ -355,6 +379,9 @@ export interface FileRoutesById {
   '/_authenticated/processos': typeof AuthenticatedProcessosRouteWithChildren
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/suporte-plataforma': typeof AuthenticatedSuportePlataformaRoute
+  '/_authenticated/saude/pacientes': typeof AuthenticatedSaudePacientesRoute
+  '/_authenticated/saude/convenios': typeof AuthenticatedSaudeConveniosRoute
+  '/_authenticated/saude/autorizacoes': typeof AuthenticatedSaudeAutorizacoesRoute
   '/_authenticated/tarefas': typeof AuthenticatedTarefasRoute
   '/captar/$token': typeof CaptarTokenRoute
   '/convite/$token': typeof ConviteTokenRoute
@@ -396,6 +423,9 @@ export interface FileRouteTypes {
     | '/processos'
     | '/relatorios'
     | '/suporte-plataforma'
+    | '/saude/pacientes'
+    | '/saude/convenios'
+    | '/saude/autorizacoes'
     | '/tarefas'
     | '/captar/$token'
     | '/convite/$token'
@@ -473,6 +503,9 @@ export interface FileRouteTypes {
     | '/_authenticated/processos'
     | '/_authenticated/relatorios'
     | '/_authenticated/suporte-plataforma'
+    | '/_authenticated/saude/pacientes'
+    | '/_authenticated/saude/convenios'
+    | '/_authenticated/saude/autorizacoes'
     | '/_authenticated/tarefas'
     | '/captar/$token'
     | '/convite/$token'
@@ -579,6 +612,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/captar/$token'
       preLoaderRoute: typeof CaptarTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/saude/pacientes': {
+      id: '/_authenticated/saude/pacientes'
+      path: '/saude/pacientes'
+      fullPath: '/saude/pacientes'
+      preLoaderRoute: typeof AuthenticatedSaudePacientesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/saude/convenios': {
+      id: '/_authenticated/saude/convenios'
+      path: '/saude/convenios'
+      fullPath: '/saude/convenios'
+      preLoaderRoute: typeof AuthenticatedSaudeConveniosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/saude/autorizacoes': {
+      id: '/_authenticated/saude/autorizacoes'
+      path: '/saude/autorizacoes'
+      fullPath: '/saude/autorizacoes'
+      preLoaderRoute: typeof AuthenticatedSaudeAutorizacoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/tarefas': {
       id: '/_authenticated/tarefas'
@@ -811,6 +865,9 @@ const AuthenticatedProcessosRouteWithChildren =
   )
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedSaudePacientesRoute: typeof AuthenticatedSaudePacientesRoute
+  AuthenticatedSaudeConveniosRoute: typeof AuthenticatedSaudeConveniosRoute
+  AuthenticatedSaudeAutorizacoesRoute: typeof AuthenticatedSaudeAutorizacoesRoute
   AuthenticatedAdministracaoPlataformaRoute: typeof AuthenticatedAdministracaoPlataformaRoute
   AuthenticatedAjudaRoute: typeof AuthenticatedAjudaRoute
   AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
@@ -834,6 +891,9 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedSaudePacientesRoute: AuthenticatedSaudePacientesRoute,
+  AuthenticatedSaudeConveniosRoute: AuthenticatedSaudeConveniosRoute,
+  AuthenticatedSaudeAutorizacoesRoute: AuthenticatedSaudeAutorizacoesRoute,
   AuthenticatedAdministracaoPlataformaRoute:
     AuthenticatedAdministracaoPlataformaRoute,
   AuthenticatedAjudaRoute: AuthenticatedAjudaRoute,

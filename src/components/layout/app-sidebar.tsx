@@ -24,12 +24,16 @@ import { useWorkspace } from "@/lib/workspace";
 import { ROLE } from "@/lib/domain";
 import { canManageSubscription } from "@/lib/billing";
 import { cn } from "@/lib/utils";
+import { routeVisibleForModules } from "@/lib/organization-segments";
 import { toast } from "sonner";
 
 const NAV_ICON_TONE: Record<string, string> = {
   "/meu-dia": "bg-amber-400/10 text-amber-300",
   "/central": "bg-blue-400/12 text-blue-300",
   "/clientes": "bg-cyan-400/10 text-cyan-300",
+  "/saude/pacientes": "bg-emerald-400/10 text-emerald-300",
+  "/saude/convenios": "bg-teal-400/10 text-teal-300",
+  "/saude/autorizacoes": "bg-indigo-400/10 text-indigo-300",
   "/processos": "bg-violet-400/10 text-violet-300",
   "/documentos": "bg-indigo-400/10 text-indigo-300",
   "/monitoramento": "bg-orange-400/10 text-orange-300",
@@ -50,7 +54,15 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   const collapsed = state === "collapsed" && !isMobile;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggleTheme } = useTheme();
-  const { displayName, role, membership, loading, onboardingCompleted } = useWorkspace();
+  const {
+    displayName,
+    role,
+    membership,
+    loading,
+    onboardingCompleted,
+    onboardingExplorationEnabled,
+  } = useWorkspace();
+  const organizationSettings = membership?.organizations?.organization_settings;
 
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false);
@@ -90,6 +102,11 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
             (item) =>
               item.group === group.key &&
               navItemVisibleForRole(item.to, role) &&
+              routeVisibleForModules(
+                item.to,
+                organizationSettings?.business_segment,
+                organizationSettings?.enabled_modules,
+              ) &&
               (item.to !== "/assinatura" || canManageSubscription(role)),
           );
           if (items.length === 0) return null;
@@ -106,7 +123,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
                 <SidebarMenu className="gap-0.5">
                   {items.map((item) => {
                     const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
-                    const locked = !onboardingCompleted;
+                    const locked = !onboardingCompleted && !onboardingExplorationEnabled;
                     const navIcon = collapsed ? (
                       <item.icon className="size-4.5 shrink-0 text-sidebar-primary" aria-hidden />
                     ) : (
