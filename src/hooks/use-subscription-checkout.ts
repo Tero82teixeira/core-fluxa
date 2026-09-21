@@ -10,6 +10,7 @@ import {
 } from "@/lib/billing";
 import { describeError } from "@/lib/errors";
 import { useWorkspace } from "@/lib/workspace";
+import { captureProductEvent } from "@/lib/product-analytics";
 
 export function useSubscriptionCheckout() {
   const { organizationId, role, user, displayName } = useWorkspace();
@@ -35,6 +36,8 @@ export function useSubscriptionCheckout() {
         _organization: organizationId,
       });
       if (error) throw error;
+
+      captureProductEvent("subscription_checkout_started");
 
       window.location.assign(
         buildKiwifyCheckoutUrl({

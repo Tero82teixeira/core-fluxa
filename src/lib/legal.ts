@@ -1,5 +1,5 @@
-export const LEGAL_DOCUMENT_VERSION = "2026-08-30";
-export const LEGAL_LAST_UPDATED_LABEL = "30 de agosto de 2026";
+export const LEGAL_DOCUMENT_VERSION = "2026-09-21";
+export const LEGAL_LAST_UPDATED_LABEL = "21 de setembro de 2026";
 
 export type LegalAcceptanceSource = "company_signup" | "invitation";
 
