@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 
 import {
@@ -29,5 +30,16 @@ describe("product analytics privacy", () => {
       }),
       { page: "/clientes", role: "owner", completed: true },
     );
+  });
+
+  test("envia o evento de login imediatamente antes do redirecionamento", () => {
+    const analyticsSource = readFileSync(
+      new URL("../src/lib/product-analytics.ts", import.meta.url),
+      "utf8",
+    );
+    const authSource = readFileSync(new URL("../src/lib/auth.tsx", import.meta.url), "utf8");
+
+    assert.match(analyticsSource, /send_instantly:\s*true/);
+    assert.match(authSource, /await captureProductEventImmediately\("user_signed_in"\)/);
   });
 });
