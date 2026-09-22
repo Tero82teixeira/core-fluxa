@@ -3773,6 +3773,118 @@ export type Database = {
           },
         ]
       }
+      health_billing_batch_items: {
+        Row: {
+          batch_id: string
+          billing_item_id: string
+          created_at: string
+          created_by: string
+          id: string
+          organization_id: string
+        }
+        Insert: {
+          batch_id: string
+          billing_item_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          organization_id: string
+        }
+        Update: {
+          batch_id?: string
+          billing_item_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_billing_batch_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "health_billing_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_billing_batch_items_billing_item_id_fkey"
+            columns: ["billing_item_id"]
+            isOneToOne: false
+            referencedRelation: "health_billing_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_billing_batch_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_billing_batches: {
+        Row: {
+          administrative_notes: string | null
+          created_at: string
+          created_by: string
+          expected_payment_at: string | null
+          id: string
+          insurer_id: string
+          organization_id: string
+          protocol_number: string | null
+          reference_period: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          administrative_notes?: string | null
+          created_at?: string
+          created_by: string
+          expected_payment_at?: string | null
+          id?: string
+          insurer_id: string
+          organization_id: string
+          protocol_number?: string | null
+          reference_period: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          administrative_notes?: string | null
+          created_at?: string
+          created_by?: string
+          expected_payment_at?: string | null
+          id?: string
+          insurer_id?: string
+          organization_id?: string
+          protocol_number?: string | null
+          reference_period?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_billing_batches_insurer_id_fkey"
+            columns: ["insurer_id"]
+            isOneToOne: false
+            referencedRelation: "health_insurers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_billing_batches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_billing_items: {
         Row: {
           administrative_notes: string | null
@@ -7131,6 +7243,17 @@ export type Database = {
         }
         Returns: Json
       }
+      create_health_billing_batch: {
+        Args: {
+          _administrative_notes?: string
+          _billing_item_ids: Json
+          _expected_payment_at?: string
+          _insurer_id: string
+          _organization_id: string
+          _reference_period: string
+        }
+        Returns: Json
+      }
       create_health_billing_item: {
         Args: {
           _administrative_notes?: string
@@ -7468,6 +7591,10 @@ export type Database = {
         }[]
       }
       list_health_authorizations: {
+        Args: { _organization_id: string; _search?: string }
+        Returns: Json
+      }
+      list_health_billing_batches: {
         Args: { _organization_id: string; _search?: string }
         Returns: Json
       }
@@ -8347,6 +8474,15 @@ export type Database = {
         }[]
       }
       storage_path_org: { Args: { _name: string }; Returns: string }
+      submit_health_billing_batch: {
+        Args: {
+          _batch_id: string
+          _organization_id: string
+          _protocol_number: string
+          _submitted_at?: string
+        }
+        Returns: Json
+      }
       submit_client_portal_communication_rating: {
         Args: { _comment?: string; _rating: number; _thread_id: string }
         Returns: string
