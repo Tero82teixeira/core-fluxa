@@ -30,6 +30,50 @@ CREATE INDEX IF NOT EXISTS health_appointments_professional_start_idx
 ALTER TABLE public.health_appointments ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.health_appointments FROM PUBLIC, anon, authenticated;
 
+CREATE OR REPLACE FUNCTION public.list_health_appointment_professionals(
+  _organization_id uuid
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  result jsonb;
+BEGIN
+  IF auth.uid() IS NULL OR NOT public.has_org_role(
+    _organization_id,
+    ARRAY['superadmin','proprietario','administrador','gestor','operacional','atendimento']::public.app_role[]
+  ) THEN
+    RAISE EXCEPTION 'HEALTH_APPOINTMENT_ACCESS_DENIED' USING ERRCODE='42501';
+  END IF;
+
+  IF NOT public.health_module_enabled(_organization_id, 'health_appointments') THEN
+    RAISE EXCEPTION 'HEALTH_APPOINTMENT_MODULE_DISABLED' USING ERRCODE='42501';
+  END IF;
+
+  SELECT COALESCE(
+    jsonb_agg(
+      jsonb_build_object(
+        'user_id', member.user_id,
+        'name', profile.full_name,
+        'email', profile.email
+      )
+      ORDER BY COALESCE(profile.full_name, profile.email, member.user_id::text)
+    ),
+    '[]'::jsonb
+  )
+  INTO result
+  FROM public.organization_members member
+  LEFT JOIN public.profiles profile ON profile.id = member.user_id
+  WHERE member.organization_id = _organization_id
+    AND member.is_active
+    AND member.role::text <> 'cliente_externo';
+
+  RETURN result;
+END;
+$function$;
+
 CREATE OR REPLACE FUNCTION public.list_health_appointments(
   _organization_id uuid,
   _date date
@@ -293,6 +337,8 @@ BEGIN
 END;
 $function$;
 
+REVOKE ALL ON FUNCTION public.list_health_appointment_professionals(uuid)
+  FROM PUBLIC, anon, service_role;
 REVOKE ALL ON FUNCTION public.list_health_appointments(uuid, date)
   FROM PUBLIC, anon, service_role;
 REVOKE ALL ON FUNCTION public.create_health_appointment(uuid, uuid, uuid, text, timestamptz, timestamptz, text, text)
@@ -300,8 +346,19 @@ REVOKE ALL ON FUNCTION public.create_health_appointment(uuid, uuid, uuid, text, 
 REVOKE ALL ON FUNCTION public.update_health_appointment_status(uuid, uuid, text)
   FROM PUBLIC, anon, service_role;
 
+GRANT EXECUTE ON FUNCTION public.list_health_appointment_professionals(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.list_health_appointments(uuid, date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.create_health_appointment(uuid, uuid, uuid, text, timestamptz, timestamptz, text, text)
   TO authenticated;
 GRANT EXECUTE ON FUNCTION public.update_health_appointment_status(uuid, uuid, text)
   TO authenticated;
+
+
+-- Organizações de Saúde que já usam Pacientes recebem a Agenda na ativação inicial
+-- desta entrega. Configurações futuras continuam respeitando a seleção de módulos da empresa.
+UPDATE public.organization_settings
+SET enabled_modules = enabled_modules || '["health_appointments"]'::jsonb
+WHERE business_segment = 'health'
+  AND jsonb_typeof(enabled_modules) = 'array'
+  AND enabled_modules ? 'health_patients'
+  AND NOT enabled_modules ? 'health_appointments';
