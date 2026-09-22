@@ -15,6 +15,8 @@ export type HealthBillingBatch = {
   item_count: number;
   total_amount: number;
   paid_amount: number;
+  denied_amount: number;
+  pending_amount: number;
   created_at?: string | null;
 };
 
@@ -91,6 +93,67 @@ export function useSubmitHealthBillingBatch(organizationId: string | null) {
       await Promise.all([
         client.invalidateQueries({ queryKey: ["health-billing-batches", organizationId] }),
         client.invalidateQueries({ queryKey: ["health-billing-items", organizationId] }),
+      ]);
+    },
+  });
+}
+
+
+export type HealthBatchPayment = {
+  id: string;
+  batch_id: string;
+  amount: number;
+  received_at: string;
+  reference: string | null;
+  administrative_notes: string | null;
+  created_at?: string | null;
+};
+
+export function useHealthBatchPayments(
+  organizationId: string | null,
+  batchId: string | null,
+) {
+  return useQuery({
+    queryKey: ["health-batch-payments", organizationId, batchId],
+    enabled: Boolean(organizationId && batchId),
+    queryFn: async () => {
+      const { data, error } = await rpc.rpc("list_health_batch_payments", {
+        _organization_id: organizationId,
+        _batch_id: batchId,
+      });
+      if (error) throw error;
+      return (Array.isArray(data) ? data : []) as HealthBatchPayment[];
+    },
+  });
+}
+
+export function useRecordHealthBatchPayment(organizationId: string | null) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: {
+      batch_id: string;
+      amount: number;
+      received_at?: string | null;
+      reference?: string | null;
+      administrative_notes?: string | null;
+    }) => {
+      const { data, error } = await rpc.rpc("record_health_batch_payment", {
+        _organization_id: organizationId,
+        _batch_id: values.batch_id,
+        _amount: values.amount,
+        _received_at: values.received_at || null,
+        _reference: values.reference || null,
+        _administrative_notes: values.administrative_notes || null,
+      });
+      if (error) throw error;
+      return data as HealthBatchPayment;
+    },
+    onSuccess: async (_data, variables) => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["health-billing-batches", organizationId] }),
+        client.invalidateQueries({
+          queryKey: ["health-batch-payments", organizationId, variables.batch_id],
+        }),
       ]);
     },
   });
