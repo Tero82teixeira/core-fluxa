@@ -1,6 +1,14 @@
 import { FormEvent, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, Clock3, Loader2, MapPin, Plus, ReceiptText } from "lucide-react";
+import {
+  BellRing,
+  CalendarDays,
+  Clock3,
+  Loader2,
+  MapPin,
+  Plus,
+  ReceiptText,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -41,6 +49,12 @@ import { usePermissions } from "@/lib/permissions";
 import { useWorkspace } from "@/lib/workspace";
 
 export const Route = createFileRoute("/_authenticated/saude/agenda")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    date:
+      typeof search.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(search.date)
+        ? search.date
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Agenda — FLUXA Saúde" },
@@ -54,7 +68,7 @@ export const Route = createFileRoute("/_authenticated/saude/agenda")({
 });
 
 const statusLabel: Record<HealthAppointmentStatus, string> = {
-  agendado: "Agendado",
+  agendado: "Aguardando confirmação",
   confirmado: "Confirmado",
   concluido: "Concluído",
   faltou: "Faltou",
@@ -77,7 +91,8 @@ function formatTime(value: string) {
 function HealthAgendaPage() {
   const { organizationId } = useWorkspace();
   const permissions = usePermissions();
-  const [date, setDate] = useState(localDateInputValue);
+  const { date: requestedDate } = Route.useSearch();
+  const [date, setDate] = useState(requestedDate || localDateInputValue);
   const [showForm, setShowForm] = useState(false);
   const [billingAppointment, setBillingAppointment] =
     useState<HealthAppointment | null>(null);
@@ -100,11 +115,9 @@ function HealthAgendaPage() {
   const counts = useMemo(
     () => ({
       total: rows.length,
+      awaitingConfirmation: rows.filter((row) => row.status === "agendado").length,
       confirmed: rows.filter((row) => row.status === "confirmado").length,
       completed: rows.filter((row) => row.status === "concluido").length,
-      pending: rows.filter((row) =>
-        ["agendado", "confirmado"].includes(row.status),
-      ).length,
     }),
     [rows],
   );
@@ -223,7 +236,7 @@ function HealthAgendaPage() {
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           ["Atendimentos", counts.total],
-          ["Em aberto", counts.pending],
+          ["A confirmar", counts.awaitingConfirmation],
           ["Confirmados", counts.confirmed],
           ["Concluídos", counts.completed],
         ].map(([label, value]) => (
@@ -235,6 +248,19 @@ function HealthAgendaPage() {
           </Card>
         ))}
       </section>
+
+      <div className="flex gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+          <BellRing className="size-4" aria-hidden />
+        </span>
+        <div>
+          <p className="font-medium">Lembretes administrativos automáticos</p>
+          <p className="mt-1 text-muted-foreground">
+            O FLUXA avisa sobre confirmação nas próximas 24 horas, atendimento
+            confirmado em até 2 horas e resultado ainda não atualizado.
+          </p>
+        </div>
+      </div>
 
       {showForm && permissions.canCreate && (
         <Card className="rounded-2xl border-border/70 shadow-soft">
@@ -445,7 +471,7 @@ function HealthAgendaPage() {
                             disabled={updateStatus.isPending}
                             onClick={() => void changeStatus(appointment.id, "confirmado")}
                           >
-                            Confirmar
+                            Confirmar presença
                           </Button>
                         )}
                         {!["concluido", "cancelado", "faltou"].includes(appointment.status) && (
