@@ -16,7 +16,7 @@ const page = readFileSync(
 describe("agenda administrativa do FLUXA Saúde", () => {
   test("mantém a agenda fora do prontuário clínico", () => {
     assert.match(migration, /Não armazena prontuário, diagnóstico, prescrição ou evolução clínica/);
-    assert.match(page, /não registrar prontuário/);
+    assert.match(page, /sem registrar prontuário/);
   });
 
   test("isola dados por organização e módulo", () => {
