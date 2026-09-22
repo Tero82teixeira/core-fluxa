@@ -7060,10 +7060,10 @@ export type Database = {
         Args: {
           _administrative_notes?: string
           _amount: number
-          _authorization_id?: string
+          _authorization_id: string
           _billed_at?: string
           _due_date?: string
-          _insurer_id?: string
+          _insurer_id: string
           _organization_id: string
           _patient_profile_id: string
           _service_date: string
