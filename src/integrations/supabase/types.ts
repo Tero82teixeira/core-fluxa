@@ -7754,6 +7754,14 @@ export type Database = {
         Args: { _date: string; _organization_id: string }
         Returns: Json
       }
+      list_health_appointments_range: {
+        Args: {
+          _end_date: string
+          _organization_id: string
+          _start_date: string
+        }
+        Returns: Json
+      }
       reschedule_health_appointment: {
         Args: {
           _appointment_id: string
