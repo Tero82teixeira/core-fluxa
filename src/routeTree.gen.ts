@@ -22,6 +22,7 @@ import { Route as AuthenticatedSaudeContasMedicasRouteImport } from './routes/_a
 import { Route as AuthenticatedSaudeGlosasRouteImport } from './routes/_authenticated/saude.glosas'
 import { Route as AuthenticatedSaudeLotesFaturamentoRouteImport } from './routes/_authenticated/saude.lotes-faturamento'
 import { Route as AuthenticatedSaudeConciliacaoRouteImport } from './routes/_authenticated/saude.conciliacao'
+import { Route as AuthenticatedSaudePainelFaturamentoRouteImport } from './routes/_authenticated/saude.painel-faturamento'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PropostaTokenRouteImport } from './routes/proposta.$token'
 import { Route as PortalDoClienteTokenRouteImport } from './routes/portal-do-cliente.$token'
@@ -142,6 +143,11 @@ const AuthenticatedSaudeLotesFaturamentoRoute = AuthenticatedSaudeLotesFaturamen
 const AuthenticatedSaudeConciliacaoRoute = AuthenticatedSaudeConciliacaoRouteImport.update({
   id: '/saude/conciliacao',
   path: '/saude/conciliacao',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSaudePainelFaturamentoRoute = AuthenticatedSaudePainelFaturamentoRouteImport.update({
+  id: '/saude/painel-faturamento',
+  path: '/saude/painel-faturamento',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTarefasRoute = AuthenticatedTarefasRouteImport.update({
@@ -326,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/saude/glosas': typeof AuthenticatedSaudeGlosasRoute
   '/saude/lotes-faturamento': typeof AuthenticatedSaudeLotesFaturamentoRoute
   '/saude/conciliacao': typeof AuthenticatedSaudeConciliacaoRoute
+  '/saude/painel-faturamento': typeof AuthenticatedSaudePainelFaturamentoRoute
   '/saude/pacientes': typeof AuthenticatedSaudePacientesRoute
   '/saude/convenios': typeof AuthenticatedSaudeConveniosRoute
   '/saude/autorizacoes': typeof AuthenticatedSaudeAutorizacoesRoute
@@ -333,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/saude/glosas': typeof AuthenticatedSaudeGlosasRoute
   '/saude/lotes-faturamento': typeof AuthenticatedSaudeLotesFaturamentoRoute
   '/saude/conciliacao': typeof AuthenticatedSaudeConciliacaoRoute
+  '/saude/painel-faturamento': typeof AuthenticatedSaudePainelFaturamentoRoute
   '/tarefas': typeof AuthenticatedTarefasRoute
   '/captar/$token': typeof CaptarTokenRoute
   '/convite/$token': typeof ConviteTokenRoute
@@ -418,6 +426,7 @@ export interface FileRoutesById {
   '/_authenticated/saude/glosas': typeof AuthenticatedSaudeGlosasRoute
   '/_authenticated/saude/lotes-faturamento': typeof AuthenticatedSaudeLotesFaturamentoRoute
   '/_authenticated/saude/conciliacao': typeof AuthenticatedSaudeConciliacaoRoute
+  '/_authenticated/saude/painel-faturamento': typeof AuthenticatedSaudePainelFaturamentoRoute
   '/_authenticated/tarefas': typeof AuthenticatedTarefasRoute
   '/captar/$token': typeof CaptarTokenRoute
   '/convite/$token': typeof ConviteTokenRoute
@@ -466,6 +475,7 @@ export interface FileRouteTypes {
     | '/saude/glosas'
     | '/saude/lotes-faturamento'
     | '/saude/conciliacao'
+    | '/saude/painel-faturamento'
     | '/tarefas'
     | '/captar/$token'
     | '/convite/$token'
@@ -550,6 +560,7 @@ export interface FileRouteTypes {
     | '/_authenticated/saude/glosas'
     | '/_authenticated/saude/lotes-faturamento'
     | '/_authenticated/saude/conciliacao'
+    | '/_authenticated/saude/painel-faturamento'
     | '/_authenticated/tarefas'
     | '/captar/$token'
     | '/convite/$token'
@@ -704,6 +715,13 @@ declare module '@tanstack/react-router' {
       path: '/saude/conciliacao'
       fullPath: '/saude/conciliacao'
       preLoaderRoute: typeof AuthenticatedSaudeConciliacaoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/saude/painel-faturamento': {
+      id: '/_authenticated/saude/painel-faturamento'
+      path: '/saude/painel-faturamento'
+      fullPath: '/saude/painel-faturamento'
+      preLoaderRoute: typeof AuthenticatedSaudePainelFaturamentoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/tarefas': {
@@ -944,6 +962,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSaudeGlosasRoute: typeof AuthenticatedSaudeGlosasRoute
   AuthenticatedSaudeLotesFaturamentoRoute: typeof AuthenticatedSaudeLotesFaturamentoRoute
   AuthenticatedSaudeConciliacaoRoute: typeof AuthenticatedSaudeConciliacaoRoute
+  AuthenticatedSaudePainelFaturamentoRoute: typeof AuthenticatedSaudePainelFaturamentoRoute
   AuthenticatedAdministracaoPlataformaRoute: typeof AuthenticatedAdministracaoPlataformaRoute
   AuthenticatedAjudaRoute: typeof AuthenticatedAjudaRoute
   AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
@@ -974,6 +993,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSaudeGlosasRoute: AuthenticatedSaudeGlosasRoute,
   AuthenticatedSaudeLotesFaturamentoRoute: AuthenticatedSaudeLotesFaturamentoRoute,
   AuthenticatedSaudeConciliacaoRoute: AuthenticatedSaudeConciliacaoRoute,
+  AuthenticatedSaudePainelFaturamentoRoute: AuthenticatedSaudePainelFaturamentoRoute,
   AuthenticatedAdministracaoPlataformaRoute:
     AuthenticatedAdministracaoPlataformaRoute,
   AuthenticatedAjudaRoute: AuthenticatedAjudaRoute,
