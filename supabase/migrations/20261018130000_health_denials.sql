@@ -126,6 +126,7 @@ SET search_path TO 'public', 'pg_temp'
 AS $function$
 DECLARE denial public.health_denials;
 DECLARE billing public.health_billing_items;
+DECLARE existing_denied numeric(14,2);
 DECLARE clean_reason text := NULLIF(trim(_reason), '');
 BEGIN
   IF auth.uid() IS NULL OR NOT public.has_org_role(
@@ -152,7 +153,14 @@ BEGIN
     RAISE EXCEPTION 'HEALTH_DENIAL_BILLING_INVALID' USING ERRCODE='22023';
   END IF;
 
-  IF _denied_amount > billing.amount THEN
+  SELECT COALESCE(sum(denied_amount), 0)
+    INTO existing_denied
+    FROM public.health_denials
+   WHERE organization_id = _organization_id
+     AND billing_item_id = _billing_item_id
+     AND status <> 'cancelada';
+
+  IF _denied_amount > billing.amount OR existing_denied + _denied_amount > billing.amount THEN
     RAISE EXCEPTION 'HEALTH_DENIAL_AMOUNT_INVALID' USING ERRCODE='22023';
   END IF;
 
