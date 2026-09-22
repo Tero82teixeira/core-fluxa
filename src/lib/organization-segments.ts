@@ -68,7 +68,8 @@ export const MODULE_CATALOG: Array<{
   { key: "automations", label: "Automações", description: "Regras, lembretes e disparos.", group: "core", available: true },
   { key: "client_portal", label: "Portal do Cliente", description: "Experiência externa e autoatendimento.", group: "core", available: true },
 
-  { key: "health_patients", label: "Pacientes", description: "Cadastro e acompanhamento administrativo de pacientes.", group: "health", available: true },\n  { key: "health_appointments", label: "Agenda", description: "Horários e atendimentos administrativos.", group: "health", available: true },
+  { key: "health_patients", label: "Pacientes", description: "Cadastro e acompanhamento administrativo de pacientes.", group: "health", available: true },
+  { key: "health_appointments", label: "Agenda", description: "Horários e atendimentos administrativos.", group: "health", available: true },
   { key: "health_insurance", label: "Convênios", description: "Planos, operadoras e vínculos.", group: "health", available: true },
   { key: "health_authorizations", label: "Autorizações", description: "Solicitações, validade e acompanhamento.", group: "health", available: true },
   { key: "health_billing", label: "Contas Médicas", description: "Faturamento e acompanhamento de recebimentos.", group: "health", available: true },
@@ -272,7 +273,8 @@ export function recommendedModulesForSubtype(
 
 const ROUTE_MODULES: Record<string, ModuleKey> = {
   "/clientes": "clients",
-  "/saude/pacientes": "health_patients",\n  "/saude/agenda": "health_appointments",
+  "/saude/pacientes": "health_patients",
+  "/saude/agenda": "health_appointments",
   "/saude/convenios": "health_insurance",
   "/saude/autorizacoes": "health_authorizations",
   "/saude/contas-medicas": "health_billing",
