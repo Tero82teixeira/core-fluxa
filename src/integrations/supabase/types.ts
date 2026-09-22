@@ -7042,6 +7042,59 @@ export type Database = {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
       }
+      create_health_authorization: {
+        Args: {
+          _administrative_notes?: string
+          _authorization_number?: string
+          _insurer_id: string
+          _organization_id: string
+          _patient_profile_id: string
+          _requested_at?: string
+          _service_label: string
+          _status?: string
+          _valid_until?: string
+        }
+        Returns: Json
+      }
+      create_health_billing_item: {
+        Args: {
+          _administrative_notes?: string
+          _amount: number
+          _authorization_id?: string
+          _billed_at?: string
+          _due_date?: string
+          _insurer_id?: string
+          _organization_id: string
+          _patient_profile_id: string
+          _service_date: string
+          _service_label: string
+          _status?: string
+        }
+        Returns: Json
+      }
+      create_health_insurer: {
+        Args: {
+          _contact_email?: string
+          _contact_phone?: string
+          _name: string
+          _organization_id: string
+          _registration_code?: string
+        }
+        Returns: Json
+      }
+      create_health_patient: {
+        Args: {
+          _birth_date?: string
+          _email?: string
+          _insurance_name?: string
+          _member_number?: string
+          _name: string
+          _organization_id: string
+          _payer_type?: string
+          _phone?: string
+        }
+        Returns: Json
+      }
       create_invitation: {
         Args: {
           _email: string
