@@ -72,7 +72,7 @@ export const MODULE_CATALOG: Array<{
   { key: "health_insurance", label: "Convênios", description: "Planos, operadoras e vínculos.", group: "health", available: true },
   { key: "health_authorizations", label: "Autorizações", description: "Solicitações, validade e acompanhamento.", group: "health", available: true },
   { key: "health_billing", label: "Contas Médicas", description: "Faturamento e acompanhamento de recebimentos.", group: "health", available: true },
-  { key: "health_denials", label: "Glosas", description: "Controle, recurso e recuperação de valores.", group: "health", available: false },
+  { key: "health_denials", label: "Glosas", description: "Controle, recurso e recuperação de valores.", group: "health", available: true },
 
   { key: "legal_workspace", label: "Recursos Jurídicos", description: "Recursos específicos para operações jurídicas.", group: "legal", available: false },
   { key: "engineering_workspace", label: "Recursos de Engenharia", description: "Projetos, obras e documentação técnica.", group: "engineering", available: false },
@@ -276,6 +276,7 @@ const ROUTE_MODULES: Record<string, ModuleKey> = {
   "/saude/convenios": "health_insurance",
   "/saude/autorizacoes": "health_authorizations",
   "/saude/contas-medicas": "health_billing",
+  "/saude/glosas": "health_denials",
   "/processos": "processes",
   "/documentos": "documents",
   "/tarefas": "tasks",
