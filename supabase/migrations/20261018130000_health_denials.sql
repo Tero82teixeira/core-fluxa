@@ -234,6 +234,8 @@ SECURITY DEFINER
 SET search_path TO 'public', 'pg_temp'
 AS $function$
 DECLARE denial public.health_denials;
+DECLARE previous_recovered numeric(14,2);
+DECLARE recovery_delta numeric(14,2);
 BEGIN
   IF auth.uid() IS NULL OR NOT public.has_org_role(
     _organization_id,
@@ -264,6 +266,9 @@ BEGIN
     RAISE EXCEPTION 'HEALTH_DENIAL_RECOVERED_INVALID' USING ERRCODE='22023';
   END IF;
 
+  previous_recovered := denial.recovered_amount;
+  recovery_delta := _recovered_amount - previous_recovered;
+
   UPDATE public.health_denials
      SET status = _status,
          recovered_amount = _recovered_amount,
@@ -276,12 +281,13 @@ BEGIN
      AND organization_id = _organization_id
   RETURNING * INTO denial;
 
-  IF _status IN ('recuperada','parcial','mantida') THEN
+  IF recovery_delta <> 0 THEN
     UPDATE public.health_billing_items
-       SET paid_amount = LEAST(amount, paid_amount + _recovered_amount),
+       SET paid_amount = GREATEST(0, LEAST(amount, paid_amount + recovery_delta)),
            status = CASE
-             WHEN LEAST(amount, paid_amount + _recovered_amount) >= amount THEN 'pago'
-             WHEN LEAST(amount, paid_amount + _recovered_amount) > 0 THEN 'parcial'
+             WHEN GREATEST(0, LEAST(amount, paid_amount + recovery_delta)) >= amount THEN 'pago'
+             WHEN GREATEST(0, LEAST(amount, paid_amount + recovery_delta)) > 0 THEN 'parcial'
+             WHEN status = 'pago' OR status = 'parcial' THEN 'glosado'
              ELSE status
            END,
            updated_at = now(),
