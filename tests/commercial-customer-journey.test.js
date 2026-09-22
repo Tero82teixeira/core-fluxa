@@ -43,8 +43,8 @@ describe("checklist comercial da jornada do cliente", () => {
     assert.match(landing, /Sem cartão/);
     assert.match(auth, /legalAccepted/);
     assert.match(auth, /needsEmailConfirmation/);
-    assert.match(onboarding, /Conclua estas quatro etapas rápidas/);
-    assert.doesNotMatch(onboarding, /Concluir depois/);
+    assert.match(onboarding, /Vamos preparar o FLUXA para a sua área/);
+    assert.match(onboarding, /Explorar o FLUXA agora/);
     assert.match(billing, /FLUXA_MONTHLY_PRICE = 149\.9/);
     assert.match(subscription, /Minha assinatura/);
     assert.match(webhook, /apply_kiwify_subscription_event/);

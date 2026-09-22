@@ -18,6 +18,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedSaudePacientesRouteImport } from './routes/_authenticated/saude.pacientes'
 import { Route as AuthenticatedSaudeConveniosRouteImport } from './routes/_authenticated/saude.convenios'
 import { Route as AuthenticatedSaudeAutorizacoesRouteImport } from './routes/_authenticated/saude.autorizacoes'
+import { Route as AuthenticatedSaudeContasMedicasRouteImport } from './routes/_authenticated/saude.contas-medicas'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PropostaTokenRouteImport } from './routes/proposta.$token'
 import { Route as PortalDoClienteTokenRouteImport } from './routes/portal-do-cliente.$token'
@@ -118,6 +119,11 @@ const AuthenticatedSaudeConveniosRoute = AuthenticatedSaudeConveniosRouteImport.
 const AuthenticatedSaudeAutorizacoesRoute = AuthenticatedSaudeAutorizacoesRouteImport.update({
   id: '/saude/autorizacoes',
   path: '/saude/autorizacoes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSaudeContasMedicasRoute = AuthenticatedSaudeContasMedicasRouteImport.update({
+  id: '/saude/contas-medicas',
+  path: '/saude/contas-medicas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTarefasRoute = AuthenticatedTarefasRouteImport.update({
@@ -298,9 +304,11 @@ export interface FileRoutesByFullPath {
   '/saude/pacientes': typeof AuthenticatedSaudePacientesRoute
   '/saude/convenios': typeof AuthenticatedSaudeConveniosRoute
   '/saude/autorizacoes': typeof AuthenticatedSaudeAutorizacoesRoute
+  '/saude/contas-medicas': typeof AuthenticatedSaudeContasMedicasRoute
   '/saude/pacientes': typeof AuthenticatedSaudePacientesRoute
   '/saude/convenios': typeof AuthenticatedSaudeConveniosRoute
   '/saude/autorizacoes': typeof AuthenticatedSaudeAutorizacoesRoute
+  '/saude/contas-medicas': typeof AuthenticatedSaudeContasMedicasRoute
   '/tarefas': typeof AuthenticatedTarefasRoute
   '/captar/$token': typeof CaptarTokenRoute
   '/convite/$token': typeof ConviteTokenRoute
@@ -382,6 +390,7 @@ export interface FileRoutesById {
   '/_authenticated/saude/pacientes': typeof AuthenticatedSaudePacientesRoute
   '/_authenticated/saude/convenios': typeof AuthenticatedSaudeConveniosRoute
   '/_authenticated/saude/autorizacoes': typeof AuthenticatedSaudeAutorizacoesRoute
+  '/_authenticated/saude/contas-medicas': typeof AuthenticatedSaudeContasMedicasRoute
   '/_authenticated/tarefas': typeof AuthenticatedTarefasRoute
   '/captar/$token': typeof CaptarTokenRoute
   '/convite/$token': typeof ConviteTokenRoute
@@ -426,6 +435,7 @@ export interface FileRouteTypes {
     | '/saude/pacientes'
     | '/saude/convenios'
     | '/saude/autorizacoes'
+    | '/saude/contas-medicas'
     | '/tarefas'
     | '/captar/$token'
     | '/convite/$token'
@@ -506,6 +516,7 @@ export interface FileRouteTypes {
     | '/_authenticated/saude/pacientes'
     | '/_authenticated/saude/convenios'
     | '/_authenticated/saude/autorizacoes'
+    | '/_authenticated/saude/contas-medicas'
     | '/_authenticated/tarefas'
     | '/captar/$token'
     | '/convite/$token'
@@ -632,6 +643,13 @@ declare module '@tanstack/react-router' {
       path: '/saude/autorizacoes'
       fullPath: '/saude/autorizacoes'
       preLoaderRoute: typeof AuthenticatedSaudeAutorizacoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/saude/contas-medicas': {
+      id: '/_authenticated/saude/contas-medicas'
+      path: '/saude/contas-medicas'
+      fullPath: '/saude/contas-medicas'
+      preLoaderRoute: typeof AuthenticatedSaudeContasMedicasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/tarefas': {
@@ -868,6 +886,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSaudePacientesRoute: typeof AuthenticatedSaudePacientesRoute
   AuthenticatedSaudeConveniosRoute: typeof AuthenticatedSaudeConveniosRoute
   AuthenticatedSaudeAutorizacoesRoute: typeof AuthenticatedSaudeAutorizacoesRoute
+  AuthenticatedSaudeContasMedicasRoute: typeof AuthenticatedSaudeContasMedicasRoute
   AuthenticatedAdministracaoPlataformaRoute: typeof AuthenticatedAdministracaoPlataformaRoute
   AuthenticatedAjudaRoute: typeof AuthenticatedAjudaRoute
   AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
@@ -894,6 +913,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSaudePacientesRoute: AuthenticatedSaudePacientesRoute,
   AuthenticatedSaudeConveniosRoute: AuthenticatedSaudeConveniosRoute,
   AuthenticatedSaudeAutorizacoesRoute: AuthenticatedSaudeAutorizacoesRoute,
+  AuthenticatedSaudeContasMedicasRoute: AuthenticatedSaudeContasMedicasRoute,
   AuthenticatedAdministracaoPlataformaRoute:
     AuthenticatedAdministracaoPlataformaRoute,
   AuthenticatedAjudaRoute: AuthenticatedAjudaRoute,

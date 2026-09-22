@@ -34,6 +34,7 @@ const NAV_ICON_TONE: Record<string, string> = {
   "/saude/pacientes": "bg-emerald-400/10 text-emerald-300",
   "/saude/convenios": "bg-teal-400/10 text-teal-300",
   "/saude/autorizacoes": "bg-indigo-400/10 text-indigo-300",
+  "/saude/contas-medicas": "bg-violet-400/10 text-violet-300",
   "/processos": "bg-violet-400/10 text-violet-300",
   "/documentos": "bg-indigo-400/10 text-indigo-300",
   "/monitoramento": "bg-orange-400/10 text-orange-300",

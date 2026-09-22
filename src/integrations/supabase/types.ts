@@ -3700,6 +3700,282 @@ export type Database = {
           },
         ]
       }
+      health_authorizations: {
+        Row: {
+          administrative_notes: string | null
+          authorization_number: string | null
+          created_at: string
+          created_by: string
+          id: string
+          insurer_id: string | null
+          organization_id: string
+          patient_profile_id: string
+          requested_at: string
+          service_label: string
+          status: string
+          updated_at: string
+          updated_by: string
+          valid_until: string | null
+        }
+        Insert: {
+          administrative_notes?: string | null
+          authorization_number?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          insurer_id?: string | null
+          organization_id: string
+          patient_profile_id: string
+          requested_at?: string
+          service_label: string
+          status?: string
+          updated_at?: string
+          updated_by: string
+          valid_until?: string | null
+        }
+        Update: {
+          administrative_notes?: string | null
+          authorization_number?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          insurer_id?: string | null
+          organization_id?: string
+          patient_profile_id?: string
+          requested_at?: string
+          service_label?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_authorizations_insurer_id_fkey"
+            columns: ["insurer_id"]
+            isOneToOne: false
+            referencedRelation: "health_insurers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_authorizations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_authorizations_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "health_patient_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_billing_items: {
+        Row: {
+          administrative_notes: string | null
+          amount: number
+          authorization_id: string | null
+          billed_at: string | null
+          created_at: string
+          created_by: string
+          due_date: string | null
+          id: string
+          insurer_id: string | null
+          organization_id: string
+          paid_amount: number
+          patient_profile_id: string
+          service_date: string
+          service_label: string
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          administrative_notes?: string | null
+          amount: number
+          authorization_id?: string | null
+          billed_at?: string | null
+          created_at?: string
+          created_by: string
+          due_date?: string | null
+          id?: string
+          insurer_id?: string | null
+          organization_id: string
+          paid_amount?: number
+          patient_profile_id: string
+          service_date: string
+          service_label: string
+          status?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          administrative_notes?: string | null
+          amount?: number
+          authorization_id?: string | null
+          billed_at?: string | null
+          created_at?: string
+          created_by?: string
+          due_date?: string | null
+          id?: string
+          insurer_id?: string | null
+          organization_id?: string
+          paid_amount?: number
+          patient_profile_id?: string
+          service_date?: string
+          service_label?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_billing_items_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "health_authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_billing_items_insurer_id_fkey"
+            columns: ["insurer_id"]
+            isOneToOne: false
+            referencedRelation: "health_insurers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_billing_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_billing_items_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "health_patient_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_insurers: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          organization_id: string
+          registration_code: string | null
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          organization_id: string
+          registration_code?: string | null
+          status?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          registration_code?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_insurers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_patient_profiles: {
+        Row: {
+          administrative_status: string
+          client_id: string
+          created_at: string
+          created_by: string
+          id: string
+          insurance_name: string | null
+          member_number: string | null
+          organization_id: string
+          payer_type: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          administrative_status?: string
+          client_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          insurance_name?: string | null
+          member_number?: string | null
+          organization_id: string
+          payer_type?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          administrative_status?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          insurance_name?: string | null
+          member_number?: string | null
+          organization_id?: string
+          payer_type?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_patient_profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_patient_profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_patient_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_alert_push_claims: {
         Row: {
           claimed_at: string
@@ -6766,6 +7042,59 @@ export type Database = {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
       }
+      create_health_authorization: {
+        Args: {
+          _administrative_notes?: string
+          _authorization_number?: string
+          _insurer_id: string
+          _organization_id: string
+          _patient_profile_id: string
+          _requested_at?: string
+          _service_label: string
+          _status?: string
+          _valid_until?: string
+        }
+        Returns: Json
+      }
+      create_health_billing_item: {
+        Args: {
+          _administrative_notes?: string
+          _amount: number
+          _authorization_id: string
+          _billed_at?: string
+          _due_date?: string
+          _insurer_id: string
+          _organization_id: string
+          _patient_profile_id: string
+          _service_date: string
+          _service_label: string
+          _status?: string
+        }
+        Returns: Json
+      }
+      create_health_insurer: {
+        Args: {
+          _contact_email?: string
+          _contact_phone?: string
+          _name: string
+          _organization_id: string
+          _registration_code?: string
+        }
+        Returns: Json
+      }
+      create_health_patient: {
+        Args: {
+          _birth_date?: string
+          _email?: string
+          _insurance_name?: string
+          _member_number?: string
+          _name: string
+          _organization_id: string
+          _payer_type?: string
+          _phone?: string
+        }
+        Returns: Json
+      }
       create_invitation: {
         Args: {
           _email: string
@@ -6952,6 +7281,10 @@ export type Database = {
           title: string
         }[]
       }
+      health_module_enabled: {
+        Args: { _module: string; _organization_id: string }
+        Returns: boolean
+      }
       has_client_portal_access: {
         Args: { _client_id: string; _organization_id: string }
         Returns: boolean
@@ -7045,6 +7378,22 @@ export type Database = {
           title: string
           updated_at: string
         }[]
+      }
+      list_health_authorizations: {
+        Args: { _organization_id: string; _search?: string }
+        Returns: Json
+      }
+      list_health_billing_items: {
+        Args: { _organization_id: string; _search?: string }
+        Returns: Json
+      }
+      list_health_insurers: {
+        Args: { _organization_id: string; _search?: string }
+        Returns: Json
+      }
+      list_health_patients: {
+        Args: { _organization_id: string; _search?: string }
+        Returns: Json
       }
       list_document_request_templates: {
         Args: { _organization_id: string }
