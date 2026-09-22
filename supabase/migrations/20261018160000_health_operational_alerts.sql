@@ -133,35 +133,47 @@ BEGIN
 
     -- Convênio com índice de glosa líquido elevado na janela recente.
     SELECT
-      billing.organization_id,
+      stats.organization_id,
       'insurer_high_denial_rate',
-      billing.insurer_id,
+      stats.insurer_id,
       '/saude/painel-faturamento',
-      'Índice de glosa elevado: ' || insurer.name,
+      'Índice de glosa elevado: ' || stats.insurer_name,
       format(
-        'Nos últimos 30 dias, %.1f%% do valor faturado foi glosado líquido.',
-        (100 * sum(GREATEST(denial.denied_amount - denial.recovered_amount, 0))
-          / NULLIF(sum(billing.amount), 0))::numeric
+        'Nos últimos 30 dias, %s%% do valor faturado foi glosado líquido.',
+        round((100 * stats.net_denied_amount / NULLIF(stats.billed_amount, 0))::numeric, 1)::text
       ),
-      'health-insurer-denial-rate:' || billing.insurer_id::text || ':' ||
-        to_char(date_trunc('week', (_as_of AT TIME ZONE org.timezone_name)::date), 'IYYY-IW'),
+      'health-insurer-denial-rate:' || stats.insurer_id::text || ':' ||
+        to_char(date_trunc('week', (_as_of AT TIME ZONE stats.timezone_name)::date), 'IYYY-IW'),
       ARRAY['superadmin','proprietario','administrador','gestor','financeiro']::text[]
-    FROM public.health_billing_items billing
-    JOIN health_orgs org ON org.organization_id = billing.organization_id
-    JOIN public.health_insurers insurer
-      ON insurer.id = billing.insurer_id
-     AND insurer.organization_id = billing.organization_id
-    JOIN public.health_denials denial
-      ON denial.billing_item_id = billing.id
-     AND denial.organization_id = billing.organization_id
-     AND denial.status <> 'cancelada'
-    WHERE public.health_module_enabled(billing.organization_id, 'health_denials')
-      AND billing.insurer_id IS NOT NULL
-      AND billing.service_date >= ((_as_of AT TIME ZONE org.timezone_name)::date - 30)
-    GROUP BY billing.organization_id, billing.insurer_id, insurer.name, org.timezone_name
-    HAVING count(DISTINCT billing.id) >= 5
-       AND sum(GREATEST(denial.denied_amount - denial.recovered_amount, 0))
-           / NULLIF(sum(billing.amount), 0) >= 0.10
+    FROM (
+      SELECT
+        billing.organization_id,
+        billing.insurer_id,
+        insurer.name AS insurer_name,
+        org.timezone_name,
+        count(*) AS billing_count,
+        sum(billing.amount)::numeric AS billed_amount,
+        sum(COALESCE(denial_totals.net_denied, 0))::numeric AS net_denied_amount
+      FROM public.health_billing_items billing
+      JOIN health_orgs org ON org.organization_id = billing.organization_id
+      JOIN public.health_insurers insurer
+        ON insurer.id = billing.insurer_id
+       AND insurer.organization_id = billing.organization_id
+      LEFT JOIN LATERAL (
+        SELECT sum(GREATEST(denial.denied_amount - denial.recovered_amount, 0)) AS net_denied
+        FROM public.health_denials denial
+        WHERE denial.billing_item_id = billing.id
+          AND denial.organization_id = billing.organization_id
+          AND denial.status <> 'cancelada'
+      ) denial_totals ON true
+      WHERE public.health_module_enabled(billing.organization_id, 'health_denials')
+        AND billing.insurer_id IS NOT NULL
+        AND billing.service_date >= ((_as_of AT TIME ZONE org.timezone_name)::date - 30)
+      GROUP BY billing.organization_id, billing.insurer_id, insurer.name, org.timezone_name
+    ) stats
+    WHERE stats.billing_count >= 5
+      AND stats.billed_amount > 0
+      AND stats.net_denied_amount / stats.billed_amount >= 0.10
   ), recipients AS (
     SELECT
       alert.organization_id,
