@@ -39,6 +39,7 @@ const filters = [
   ["monitoring", "Monitoramentos"],
   ["team", "Equipe"],
   ["integration", "Integrações"],
+  ["health", "Saúde"],
   ["system", "Sistema"],
 ];
 
