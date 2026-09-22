@@ -108,7 +108,7 @@ AS $function$
 DECLARE
   appointment public.health_appointments;
   billing public.health_billing_items;
-  authorization public.health_authorizations;
+  authorization_row public.health_authorizations;
   resolved_insurer_id uuid := _insurer_id;
   timezone_name text := 'America/Sao_Paulo';
 BEGIN
@@ -166,23 +166,23 @@ BEGIN
 
   IF _authorization_id IS NOT NULL THEN
     SELECT *
-    INTO authorization
+    INTO authorization_row
     FROM public.health_authorizations
     WHERE id = _authorization_id
       AND organization_id = _organization_id
       AND patient_profile_id = appointment.patient_profile_id
       AND (valid_until IS NULL OR valid_until >= (appointment.starts_at AT TIME ZONE timezone_name)::date);
 
-    IF authorization.id IS NULL OR authorization.status <> 'autorizado' THEN
+    IF authorization_row.id IS NULL OR authorization_row.status <> 'autorizado' THEN
       RAISE EXCEPTION 'HEALTH_APPOINTMENT_BILLING_AUTHORIZATION_INVALID' USING ERRCODE='22023';
     END IF;
 
     IF _insurer_id IS NOT NULL
-       AND authorization.insurer_id IS DISTINCT FROM _insurer_id THEN
+       AND authorization_row.insurer_id IS DISTINCT FROM _insurer_id THEN
       RAISE EXCEPTION 'HEALTH_APPOINTMENT_BILLING_INSURER_MISMATCH' USING ERRCODE='22023';
     END IF;
 
-    resolved_insurer_id := COALESCE(_insurer_id, authorization.insurer_id);
+    resolved_insurer_id := COALESCE(_insurer_id, authorization_row.insurer_id);
   END IF;
 
   IF resolved_insurer_id IS NOT NULL AND NOT EXISTS (
