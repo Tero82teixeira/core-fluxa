@@ -29,6 +29,7 @@ export type ModuleKey =
   | "automations"
   | "client_portal"
   | "health_patients"
+  | "health_appointments"
   | "health_insurance"
   | "health_authorizations"
   | "health_billing"
