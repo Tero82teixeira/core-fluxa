@@ -7334,6 +7334,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_health_operational_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       create_health_insurer: {
         Args: {
           _contact_email?: string
