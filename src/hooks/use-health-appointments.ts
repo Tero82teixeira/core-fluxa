@@ -137,6 +137,40 @@ export function useUpdateHealthAppointmentStatus(
   });
 }
 
+export function useRescheduleHealthAppointment(
+  organizationId: string | null,
+) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: {
+      appointment_id: string;
+      professional_user_id?: string | null;
+      starts_at: string;
+      ends_at: string;
+      location?: string | null;
+    }) => {
+      const { data, error } = await rpc.rpc(
+        "reschedule_health_appointment",
+        {
+          _organization_id: organizationId,
+          _appointment_id: values.appointment_id,
+          _professional_user_id: values.professional_user_id || null,
+          _starts_at: values.starts_at,
+          _ends_at: values.ends_at,
+          _location: values.location || null,
+        },
+      );
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async () => {
+      await client.invalidateQueries({
+        queryKey: ["health-appointments", organizationId],
+      });
+    },
+  });
+}
+
 export function useCompleteHealthAppointmentAndCreateBilling(
   organizationId: string | null,
 ) {

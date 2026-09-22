@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   BellRing,
+  CalendarClock,
   CalendarDays,
   Clock3,
   Loader2,
@@ -38,6 +39,7 @@ import {
   useCreateHealthAppointment,
   useHealthAppointmentProfessionals,
   useHealthAppointments,
+  useRescheduleHealthAppointment,
   useUpdateHealthAppointmentStatus,
 } from "@/hooks/use-health-appointments";
 import {
@@ -88,6 +90,15 @@ function formatTime(value: string) {
   });
 }
 
+function localDateTimeParts(value: string) {
+  const date = new Date(value);
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return {
+    date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+  };
+}
+
 function HealthAgendaPage() {
   const { organizationId } = useWorkspace();
   const permissions = usePermissions();
@@ -95,6 +106,8 @@ function HealthAgendaPage() {
   const [date, setDate] = useState(requestedDate || localDateInputValue);
   const [showForm, setShowForm] = useState(false);
   const [billingAppointment, setBillingAppointment] =
+    useState<HealthAppointment | null>(null);
+  const [reschedulingAppointment, setReschedulingAppointment] =
     useState<HealthAppointment | null>(null);
   const appointments = useHealthAppointments(organizationId, date);
   const patients = useHealthPatients(organizationId, "");
@@ -474,6 +487,16 @@ function HealthAgendaPage() {
                             Confirmar presença
                           </Button>
                         )}
+                        {["agendado", "confirmado"].includes(appointment.status) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setReschedulingAppointment(appointment)}
+                          >
+                            <CalendarClock className="size-4" aria-hidden />
+                            Reagendar
+                          </Button>
+                        )}
                         {!["concluido", "cancelado", "faltou"].includes(appointment.status) && (
                           <>
                             <Button
@@ -517,7 +540,183 @@ function HealthAgendaPage() {
           onClose={() => setBillingAppointment(null)}
         />
       )}
+      {reschedulingAppointment && (
+        <AppointmentReschedulingDialog
+          appointment={reschedulingAppointment}
+          organizationId={organizationId}
+          professionals={professionals.data ?? []}
+          onRescheduled={setDate}
+          onClose={() => setReschedulingAppointment(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function AppointmentReschedulingDialog({
+  appointment,
+  organizationId,
+  professionals,
+  onRescheduled,
+  onClose,
+}: {
+  appointment: HealthAppointment;
+  organizationId: string | null;
+  professionals: Array<{
+    user_id: string;
+    name: string | null;
+    email: string | null;
+  }>;
+  onRescheduled: (date: string) => void;
+  onClose: () => void;
+}) {
+  const reschedule = useRescheduleHealthAppointment(organizationId);
+  const start = localDateTimeParts(appointment.starts_at);
+  const end = localDateTimeParts(appointment.ends_at);
+  const [form, setForm] = useState({
+    date: start.date,
+    start_time: start.time,
+    end_time: end.time,
+    professional_user_id: appointment.professional_user_id || "none",
+    location: appointment.location || "",
+  });
+
+  const submitRescheduling = async (event: FormEvent) => {
+    event.preventDefault();
+    const starts = new Date(`${form.date}T${form.start_time}:00`);
+    const ends = new Date(`${form.date}T${form.end_time}:00`);
+    if (
+      Number.isNaN(starts.getTime()) ||
+      Number.isNaN(ends.getTime()) ||
+      ends <= starts
+    ) {
+      toast.error("Confira a data e os horários do atendimento.");
+      return;
+    }
+
+    try {
+      await reschedule.mutateAsync({
+        appointment_id: appointment.id,
+        professional_user_id:
+          form.professional_user_id === "none"
+            ? null
+            : form.professional_user_id,
+        starts_at: starts.toISOString(),
+        ends_at: ends.toISOString(),
+        location: form.location.trim() || null,
+      });
+      toast.success("Atendimento reagendado e aguardando nova confirmação.");
+      onRescheduled(form.date);
+      onClose();
+    } catch (error) {
+      const message = String((error as { message?: string })?.message ?? "");
+      if (message.includes("HEALTH_APPOINTMENT_PROFESSIONAL_CONFLICT")) {
+        toast.error("Esse profissional já possui atendimento nesse horário.");
+        return;
+      }
+      if (message.includes("HEALTH_APPOINTMENT_PATIENT_CONFLICT")) {
+        toast.error("Esse paciente já possui atendimento nesse horário.");
+        return;
+      }
+      if (message.includes("HEALTH_APPOINTMENT_RESCHEDULE_NOT_ALLOWED")) {
+        toast.error(
+          "Somente atendimentos a confirmar ou confirmados podem ser reagendados.",
+        );
+        return;
+      }
+      toast.error(describeError(error, "salvar"));
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reagendar atendimento</DialogTitle>
+          <DialogDescription>
+            {appointment.patient_name} · {appointment.service_label}. A mudança
+            exigirá uma nova confirmação de presença.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submitRescheduling} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="reschedule-date">Data</Label>
+              <Input
+                id="reschedule-date"
+                type="date"
+                value={form.date}
+                onChange={(event) => setForm({ ...form, date: event.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="reschedule-start">Início</Label>
+              <Input
+                id="reschedule-start"
+                type="time"
+                value={form.start_time}
+                onChange={(event) =>
+                  setForm({ ...form, start_time: event.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="reschedule-end">Fim</Label>
+              <Input
+                id="reschedule-end"
+                type="time"
+                value={form.end_time}
+                onChange={(event) =>
+                  setForm({ ...form, end_time: event.target.value })
+                }
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Profissional / responsável</Label>
+            <Select
+              value={form.professional_user_id}
+              onValueChange={(value) =>
+                setForm({ ...form, professional_user_id: value })
+              }
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem responsável definido</SelectItem>
+                {professionals.map((member) => (
+                  <SelectItem key={member.user_id} value={member.user_id}>
+                    {member.name || member.email || "Membro da equipe"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="reschedule-location">Local / sala</Label>
+            <Input
+              id="reschedule-location"
+              value={form.location}
+              maxLength={120}
+              placeholder="Ex.: Sala 2"
+              onChange={(event) =>
+                setForm({ ...form, location: event.target.value })
+              }
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={reschedule.isPending}>
+              {reschedule.isPending && (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              )}
+              {reschedule.isPending ? "Reagendando…" : "Confirmar reagendamento"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
