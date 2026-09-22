@@ -27,6 +27,8 @@ export type HealthAppointment = {
   status: HealthAppointmentStatus;
   location: string | null;
   administrative_notes: string | null;
+  billing_item_id: string | null;
+  billing_status: string | null;
 };
 
 const rpc = supabase as unknown as {
@@ -131,6 +133,52 @@ export function useUpdateHealthAppointmentStatus(
       await client.invalidateQueries({
         queryKey: ["health-appointments", organizationId],
       });
+    },
+  });
+}
+
+export function useCompleteHealthAppointmentAndCreateBilling(
+  organizationId: string | null,
+) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: {
+      appointment_id: string;
+      amount: number;
+      insurer_id?: string | null;
+      authorization_id?: string | null;
+      due_date?: string | null;
+      administrative_notes?: string | null;
+    }) => {
+      const { data, error } = await rpc.rpc(
+        "complete_health_appointment_and_create_billing",
+        {
+          _organization_id: organizationId,
+          _appointment_id: values.appointment_id,
+          _amount: values.amount,
+          _insurer_id: values.insurer_id || null,
+          _authorization_id: values.authorization_id || null,
+          _due_date: values.due_date || null,
+          _administrative_notes: values.administrative_notes || null,
+        },
+      );
+      if (error) throw error;
+      return data as {
+        appointment_id: string;
+        appointment_status: "concluido";
+        billing_item_id: string;
+        billing_status: "rascunho";
+      };
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({
+          queryKey: ["health-appointments", organizationId],
+        }),
+        client.invalidateQueries({
+          queryKey: ["health-billing-items", organizationId],
+        }),
+      ]);
     },
   });
 }

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type HealthBillingItem = {
   id: string;
+  appointment_id?: string | null;
   patient_profile_id: string;
   patient_name?: string;
   insurer_id: string | null;

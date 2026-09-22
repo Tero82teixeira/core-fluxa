@@ -4006,6 +4006,7 @@ export type Database = {
         Row: {
           administrative_notes: string | null
           amount: number
+          appointment_id: string | null
           authorization_id: string | null
           billed_at: string | null
           created_at: string
@@ -4025,6 +4026,7 @@ export type Database = {
         Insert: {
           administrative_notes?: string | null
           amount: number
+          appointment_id?: string | null
           authorization_id?: string | null
           billed_at?: string | null
           created_at?: string
@@ -4044,6 +4046,7 @@ export type Database = {
         Update: {
           administrative_notes?: string | null
           amount?: number
+          appointment_id?: string | null
           authorization_id?: string | null
           billed_at?: string | null
           created_at?: string
@@ -4061,6 +4064,13 @@ export type Database = {
           updated_by?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "health_billing_items_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "health_appointments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "health_billing_items_authorization_id_fkey"
             columns: ["authorization_id"]
@@ -7397,6 +7407,18 @@ export type Database = {
           _service_date: string
           _service_label: string
           _status?: string
+        }
+        Returns: Json
+      }
+      complete_health_appointment_and_create_billing: {
+        Args: {
+          _administrative_notes?: string
+          _amount: number
+          _appointment_id: string
+          _authorization_id?: string
+          _due_date?: string
+          _insurer_id?: string
+          _organization_id: string
         }
         Returns: Json
       }
