@@ -54,6 +54,7 @@ describe("status dos módulos na navegação lateral", () => {
         { to: "/saude/autorizacoes", label: "Autorizações", ready: true, group: "operacao" },
         { to: "/saude/contas-medicas", label: "Contas Médicas", ready: true, group: "gestao" },
         { to: "/saude/lotes-faturamento", label: "Lotes de Faturamento", ready: true, group: "gestao" },
+        { to: "/saude/conciliacao", label: "Conciliação", ready: true, group: "gestao" },
         { to: "/saude/glosas", label: "Glosas", ready: true, group: "gestao" },
         { to: "/processos", label: "Processos", ready: true, group: "operacao" },
         { to: "/documentos", label: "Documentos", ready: true, group: "operacao" },

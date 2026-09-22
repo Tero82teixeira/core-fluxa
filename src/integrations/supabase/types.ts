@@ -3822,6 +3822,57 @@ export type Database = {
           },
         ]
       }
+      health_billing_batch_payments: {
+        Row: {
+          administrative_notes: string | null
+          amount: number
+          batch_id: string
+          created_at: string
+          created_by: string
+          id: string
+          organization_id: string
+          received_at: string
+          reference: string | null
+        }
+        Insert: {
+          administrative_notes?: string | null
+          amount: number
+          batch_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          organization_id: string
+          received_at?: string
+          reference?: string | null
+        }
+        Update: {
+          administrative_notes?: string | null
+          amount?: number
+          batch_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          organization_id?: string
+          received_at?: string
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_billing_batch_payments_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "health_billing_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_billing_batch_payments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_billing_batches: {
         Row: {
           administrative_notes: string | null
@@ -7592,6 +7643,10 @@ export type Database = {
       }
       list_health_authorizations: {
         Args: { _organization_id: string; _search?: string }
+        Returns: Json
+      }
+      list_health_batch_payments: {
+        Args: { _batch_id: string; _organization_id: string }
         Returns: Json
       }
       list_health_billing_batches: {

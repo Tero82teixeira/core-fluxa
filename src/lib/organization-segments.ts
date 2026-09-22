@@ -277,6 +277,7 @@ const ROUTE_MODULES: Record<string, ModuleKey> = {
   "/saude/autorizacoes": "health_authorizations",
   "/saude/contas-medicas": "health_billing",
   "/saude/lotes-faturamento": "health_billing",
+  "/saude/conciliacao": "health_billing",
   "/saude/glosas": "health_denials",
   "/processos": "processes",
   "/documentos": "documents",
