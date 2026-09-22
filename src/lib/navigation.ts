@@ -42,7 +42,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/meu-dia", label: "Meu Dia", icon: ListTodo, description: "Prioridades pessoais", ready: true, group: "operacao" },
   { to: "/central", label: "Central de Comando", icon: LayoutDashboard, description: "Pulso da operação", ready: true, group: "operacao" },
   { to: "/clientes", label: "Clientes", icon: Users, description: "Carteira e relacionamento", ready: true, group: "operacao" },
-  { to: "/saude/pacientes", label: "Pacientes", icon: HeartPulse, description: "Gestão administrativa de pacientes", ready: true, group: "operacao" },
+  { to: "/saude/pacientes", label: "Pacientes", icon: HeartPulse, description: "Gestão administrativa de pacientes", ready: true, group: "operacao" },\n  { to: "/saude/agenda", label: "Agenda", icon: CalendarClock, description: "Horários e atendimentos administrativos", ready: true, group: "operacao" },
   { to: "/saude/convenios", label: "Convênios", icon: Building2, description: "Operadoras e contatos administrativos", ready: true, group: "operacao" },
   { to: "/saude/autorizacoes", label: "Autorizações", icon: ClipboardCheck, description: "Solicitações, validade e status", ready: true, group: "operacao" },
   { to: "/saude/contas-medicas", label: "Contas Médicas", icon: FileText, description: "Faturamento e recebimentos", ready: true, group: "gestao" },
