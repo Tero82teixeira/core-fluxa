@@ -31,32 +31,32 @@ BEGIN
   ), alert_candidates AS (
     -- Autorizações próximas do vencimento.
     SELECT
-      authorization.organization_id,
+      authz.organization_id,
       'authorization'::text AS alert_type,
-      authorization.id AS entity_id,
+      authz.id AS entity_id,
       '/saude/autorizacoes'::text AS action_url,
       CASE
-        WHEN authorization.valid_until = (_as_of AT TIME ZONE org.timezone_name)::date
+        WHEN authz.valid_until = (_as_of AT TIME ZONE org.timezone_name)::date
           THEN 'Autorização vence hoje'
-        WHEN authorization.valid_until = ((_as_of AT TIME ZONE org.timezone_name)::date + 1)
+        WHEN authz.valid_until = ((_as_of AT TIME ZONE org.timezone_name)::date + 1)
           THEN 'Autorização vence amanhã'
         ELSE 'Autorização próxima do vencimento'
       END AS title,
       format(
         '%s · validade %s.',
-        left(authorization.service_label, 120),
-        to_char(authorization.valid_until, 'DD/MM/YYYY')
+        left(authz.service_label, 120),
+        to_char(authz.valid_until, 'DD/MM/YYYY')
       ) AS body,
-      'health-authorization:' || authorization.id::text || ':' ||
-        authorization.valid_until::text AS dedupe_base,
+      'health-authorization:' || authz.id::text || ':' ||
+        authz.valid_until::text AS dedupe_base,
       ARRAY['superadmin','proprietario','administrador','gestor','operacional','atendimento']::text[]
         AS recipient_roles
-    FROM public.health_authorizations authorization
-    JOIN health_orgs org ON org.organization_id = authorization.organization_id
-    WHERE public.health_module_enabled(authorization.organization_id, 'health_authorizations')
-      AND authorization.status = 'autorizado'
-      AND authorization.valid_until IS NOT NULL
-      AND authorization.valid_until BETWEEN
+    FROM public.health_authorizations authz
+    JOIN health_orgs org ON org.organization_id = authz.organization_id
+    WHERE public.health_module_enabled(authz.organization_id, 'health_authorizations')
+      AND authz.status = 'autorizado'
+      AND authz.valid_until IS NOT NULL
+      AND authz.valid_until BETWEEN
         (_as_of AT TIME ZONE org.timezone_name)::date
         AND ((_as_of AT TIME ZONE org.timezone_name)::date + 7)
 
