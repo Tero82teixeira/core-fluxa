@@ -24,6 +24,7 @@ export type HealthAppointment = {
   service_label: string;
   starts_at: string;
   ends_at: string;
+  appointment_date?: string;
   status: HealthAppointmentStatus;
   location: string | null;
   administrative_notes: string | null;
@@ -58,15 +59,40 @@ export function useHealthAppointmentProfessionals(
 export function useHealthAppointments(
   organizationId: string | null,
   date: string,
+  enabled = true,
 ) {
   return useQuery({
     queryKey: ["health-appointments", organizationId, date],
-    enabled: Boolean(organizationId && date),
+    enabled: Boolean(organizationId && date && enabled),
     queryFn: async () => {
       const { data, error } = await rpc.rpc("list_health_appointments", {
         _organization_id: organizationId,
         _date: date,
       });
+      if (error) throw error;
+      return (Array.isArray(data) ? data : []) as HealthAppointment[];
+    },
+  });
+}
+
+export function useHealthAppointmentsRange(
+  organizationId: string | null,
+  startDate: string,
+  endDate: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["health-appointments", organizationId, "range", startDate, endDate],
+    enabled: Boolean(organizationId && startDate && endDate && enabled),
+    queryFn: async () => {
+      const { data, error } = await rpc.rpc(
+        "list_health_appointments_range",
+        {
+          _organization_id: organizationId,
+          _start_date: startDate,
+          _end_date: endDate,
+        },
+      );
       if (error) throw error;
       return (Array.isArray(data) ? data : []) as HealthAppointment[];
     },

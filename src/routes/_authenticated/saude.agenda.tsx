@@ -4,6 +4,9 @@ import {
   BellRing,
   CalendarClock,
   CalendarDays,
+  CalendarRange,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Loader2,
   MapPin,
@@ -39,6 +42,7 @@ import {
   useCreateHealthAppointment,
   useHealthAppointmentProfessionals,
   useHealthAppointments,
+  useHealthAppointmentsRange,
   useRescheduleHealthAppointment,
   useUpdateHealthAppointmentStatus,
 } from "@/hooks/use-health-appointments";
@@ -99,17 +103,62 @@ function localDateTimeParts(value: string) {
   };
 }
 
+function dateInputFromLocal(date: Date) {
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function addDaysToDateInput(value: string, days: number) {
+  const date = new Date(`${value}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return dateInputFromLocal(date);
+}
+
+function weekStartDateInput(value: string) {
+  const date = new Date(`${value}T12:00:00`);
+  const daysSinceMonday = (date.getDay() + 6) % 7;
+  date.setDate(date.getDate() - daysSinceMonday);
+  return dateInputFromLocal(date);
+}
+
+function formatDayHeading(value: string) {
+  const date = new Date(`${value}T12:00:00`);
+  const weekday = new Intl.DateTimeFormat("pt-BR", { weekday: "long" }).format(date);
+  const civilDate = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+  }).format(date);
+  return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} · ${civilDate}`;
+}
+
 function HealthAgendaPage() {
   const { organizationId } = useWorkspace();
   const permissions = usePermissions();
   const { date: requestedDate } = Route.useSearch();
   const [date, setDate] = useState(requestedDate || localDateInputValue);
+  const [viewMode, setViewMode] = useState<"day" | "week">("day");
   const [showForm, setShowForm] = useState(false);
   const [billingAppointment, setBillingAppointment] =
     useState<HealthAppointment | null>(null);
   const [reschedulingAppointment, setReschedulingAppointment] =
     useState<HealthAppointment | null>(null);
-  const appointments = useHealthAppointments(organizationId, date);
+  const weekStart = useMemo(() => weekStartDateInput(date), [date]);
+  const weekEnd = useMemo(() => addDaysToDateInput(weekStart, 6), [weekStart]);
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, index) => addDaysToDateInput(weekStart, index)),
+    [weekStart],
+  );
+  const appointments = useHealthAppointments(
+    organizationId,
+    date,
+    viewMode === "day",
+  );
+  const weeklyAppointments = useHealthAppointmentsRange(
+    organizationId,
+    weekStart,
+    weekEnd,
+    viewMode === "week",
+  );
   const patients = useHealthPatients(organizationId, "");
   const professionals = useHealthAppointmentProfessionals(organizationId);
   const create = useCreateHealthAppointment(organizationId);
@@ -124,7 +173,20 @@ function HealthAgendaPage() {
     administrative_notes: "",
   });
 
-  const rows = appointments.data ?? [];
+  const activeQuery = viewMode === "week" ? weeklyAppointments : appointments;
+  const rows = activeQuery.data ?? [];
+  const dayGroups = useMemo(
+    () =>
+      (viewMode === "week" ? weekDays : [date]).map((groupDate) => ({
+        date: groupDate,
+        rows: rows.filter(
+          (appointment) =>
+            (appointment.appointment_date || localDateTimeParts(appointment.starts_at).date) ===
+            groupDate,
+        ),
+      })),
+    [date, rows, viewMode, weekDays],
+  );
   const counts = useMemo(
     () => ({
       total: rows.length,
@@ -202,6 +264,12 @@ function HealthAgendaPage() {
     }
   };
 
+  const navigatePeriod = (direction: -1 | 1) => {
+    setDate((current) =>
+      addDaysToDateInput(current, direction * (viewMode === "week" ? 7 : 1)),
+    );
+  };
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
       <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7">
@@ -226,12 +294,6 @@ function HealthAgendaPage() {
             </p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Input
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-              className="border-white/15 bg-white text-slate-950 sm:w-44"
-            />
             {permissions.canCreate && (
               <Button
                 type="button"
@@ -245,6 +307,68 @@ function HealthAgendaPage() {
           </div>
         </div>
       </header>
+
+      <section className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-soft lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex rounded-xl bg-muted p-1">
+          <Button
+            type="button"
+            size="sm"
+            variant={viewMode === "day" ? "default" : "ghost"}
+            className="flex-1 sm:flex-none"
+            onClick={() => setViewMode("day")}
+          >
+            <CalendarDays className="size-4" aria-hidden />
+            Agenda diária
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={viewMode === "week" ? "default" : "ghost"}
+            className="flex-1 sm:flex-none"
+            onClick={() => setViewMode("week")}
+          >
+            <CalendarRange className="size-4" aria-hidden />
+            Agenda semanal
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            aria-label={viewMode === "week" ? "Semana anterior" : "Dia anterior"}
+            onClick={() => navigatePeriod(-1)}
+          >
+            <ChevronLeft className="size-4" aria-hidden />
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setDate(localDateInputValue())}
+          >
+            Hoje
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            aria-label={viewMode === "week" ? "Próxima semana" : "Próximo dia"}
+            onClick={() => navigatePeriod(1)}
+          >
+            <ChevronRight className="size-4" aria-hidden />
+          </Button>
+          <Input
+            type="date"
+            value={date}
+            aria-label="Data da agenda"
+            onChange={(event) => {
+              if (event.target.value) setDate(event.target.value);
+            }}
+            className="min-w-40 flex-1 sm:w-44 sm:flex-none"
+          />
+        </div>
+      </section>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
@@ -392,26 +516,46 @@ function HealthAgendaPage() {
 
       <Card className="rounded-2xl border-border/70 shadow-soft">
         <CardContent className="p-4 sm:p-5">
-          {appointments.isLoading ? (
+          {activeQuery.isLoading ? (
             <div className="flex min-h-40 items-center justify-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" aria-hidden />
               Carregando agenda…
             </div>
-          ) : appointments.isError ? (
+          ) : activeQuery.isError ? (
             <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
               Não foi possível carregar a agenda.
             </div>
           ) : rows.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center">
               <CalendarDays className="mx-auto size-8 text-muted-foreground" aria-hidden />
-              <p className="mt-3 font-medium">Nenhum atendimento neste dia.</p>
+              <p className="mt-3 font-medium">
+                Nenhum atendimento {viewMode === "week" ? "nesta semana" : "neste dia"}.
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Escolha outra data ou agende o primeiro horário.
+                Escolha outro período ou agende o primeiro horário.
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {rows.map((appointment) => (
+            <div className="space-y-6">
+              {dayGroups.map((group) => (
+                <section key={group.date} className="space-y-3">
+                  {viewMode === "week" && (
+                    <div className="flex items-center justify-between border-b border-border/70 pb-2">
+                      <h2 className="font-semibold capitalize">
+                        {formatDayHeading(group.date)}
+                      </h2>
+                      <span className="text-xs text-muted-foreground">
+                        {group.rows.length} {group.rows.length === 1 ? "atendimento" : "atendimentos"}
+                      </span>
+                    </div>
+                  )}
+                  {group.rows.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+                      Nenhum atendimento neste dia.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {group.rows.map((appointment) => (
                 <div
                   key={appointment.id}
                   className="flex flex-col gap-4 rounded-2xl border border-border/70 p-4 lg:flex-row lg:items-center lg:justify-between"
@@ -527,7 +671,11 @@ function HealthAgendaPage() {
                         )}
                       </div>
                     )}
-                </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
               ))}
             </div>
           )}
