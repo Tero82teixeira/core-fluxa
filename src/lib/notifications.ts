@@ -5,6 +5,7 @@ export const NOTIFICATION_KINDS = [
   "monitoring",
   "team",
   "integration",
+  "health",
   "system",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
