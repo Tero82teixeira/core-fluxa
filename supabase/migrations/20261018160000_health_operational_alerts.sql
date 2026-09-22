@@ -246,6 +246,7 @@ DECLARE
   weekly_productivity_report_count integer := 0;
   kiwify_expiry_count integer := 0;
   commercial_next_action_count integer := 0;
+  payment_reminder_count integer := 0;
   health_alert_count integer := 0;
 BEGIN
   scheduled_count := public.process_due_scheduled_automations();
@@ -384,6 +385,13 @@ BEGIN
   END;
 
   BEGIN
+    payment_reminder_count := public.create_asaas_client_payment_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    payment_reminder_count := -1;
+    RAISE WARNING 'ASAAS_CLIENT_PAYMENT_REMINDER_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
     health_alert_count := public.create_health_operational_notifications();
   EXCEPTION WHEN OTHERS THEN
     health_alert_count := -1;
@@ -411,6 +419,7 @@ BEGIN
     'client_birthday_notifications_created', client_birthday_count,
     'stale_lead_notifications_created', stale_lead_count,
     'commercial_next_action_notifications_created', commercial_next_action_count,
+    'asaas_client_payment_reminders_created', payment_reminder_count,
     'health_operational_notifications_created', health_alert_count
   );
 END;
