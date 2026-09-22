@@ -3862,6 +3862,81 @@ export type Database = {
           },
         ]
       }
+      health_denials: {
+        Row: {
+          administrative_notes: string | null
+          appeal_due_date: string | null
+          appealed_at: string | null
+          billing_item_id: string
+          created_at: string
+          created_by: string
+          denial_code: string | null
+          denied_amount: number
+          id: string
+          organization_id: string
+          reason: string
+          received_at: string
+          recovered_amount: number
+          resolved_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          administrative_notes?: string | null
+          appeal_due_date?: string | null
+          appealed_at?: string | null
+          billing_item_id: string
+          created_at?: string
+          created_by: string
+          denial_code?: string | null
+          denied_amount: number
+          id?: string
+          organization_id: string
+          reason: string
+          received_at?: string
+          recovered_amount?: number
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          administrative_notes?: string | null
+          appeal_due_date?: string | null
+          appealed_at?: string | null
+          billing_item_id?: string
+          created_at?: string
+          created_by?: string
+          denial_code?: string | null
+          denied_amount?: number
+          id?: string
+          organization_id?: string
+          reason?: string
+          received_at?: string
+          recovered_amount?: number
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_denials_billing_item_id_fkey"
+            columns: ["billing_item_id"]
+            isOneToOne: false
+            referencedRelation: "health_billing_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_denials_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_insurers: {
         Row: {
           contact_email: string | null
@@ -7072,6 +7147,19 @@ export type Database = {
         }
         Returns: Json
       }
+      create_health_denial: {
+        Args: {
+          _administrative_notes?: string
+          _appeal_due_date?: string
+          _billing_item_id: string
+          _denial_code?: string
+          _denied_amount: number
+          _organization_id: string
+          _reason: string
+          _received_at?: string
+        }
+        Returns: Json
+      }
       create_health_insurer: {
         Args: {
           _contact_email?: string
@@ -7384,6 +7472,10 @@ export type Database = {
         Returns: Json
       }
       list_health_billing_items: {
+        Args: { _organization_id: string; _search?: string }
+        Returns: Json
+      }
+      list_health_denials: {
         Args: { _organization_id: string; _search?: string }
         Returns: Json
       }
@@ -8372,6 +8464,18 @@ export type Database = {
           _sector: string
         }
         Returns: undefined
+      }
+      update_health_denial: {
+        Args: {
+          _administrative_notes?: string
+          _appealed_at?: string
+          _denial_id: string
+          _organization_id: string
+          _recovered_amount?: number
+          _resolved_at?: string
+          _status: string
+        }
+        Returns: Json
       }
       update_organization_commercial_status: {
         Args: { _action: string; _days?: number; _organization_id: string }
