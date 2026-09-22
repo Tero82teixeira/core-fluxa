@@ -18,10 +18,10 @@ import { useHealthPatients } from "@/hooks/use-health-patients";
 import {
   type HealthAppointmentStatus,
   useCreateHealthAppointment,
+  useHealthAppointmentProfessionals,
   useHealthAppointments,
   useUpdateHealthAppointmentStatus,
 } from "@/hooks/use-health-appointments";
-import { useTeamMembers } from "@/hooks/use-team";
 import { describeError } from "@/lib/errors";
 import { usePermissions } from "@/lib/permissions";
 import { useWorkspace } from "@/lib/workspace";
@@ -67,7 +67,7 @@ function HealthAgendaPage() {
   const [showForm, setShowForm] = useState(false);
   const appointments = useHealthAppointments(organizationId, date);
   const patients = useHealthPatients(organizationId, "");
-  const team = useTeamMembers(organizationId);
+  const professionals = useHealthAppointmentProfessionals(organizationId);
   const create = useCreateHealthAppointment(organizationId);
   const updateStatus = useUpdateHealthAppointmentStatus(organizationId);
   const [form, setForm] = useState({
@@ -79,11 +79,6 @@ function HealthAgendaPage() {
     location: "",
     administrative_notes: "",
   });
-
-  const activeMembers = useMemo(
-    () => (team.data ?? []).filter((member) => member.is_active),
-    [team.data],
-  );
 
   const rows = appointments.data ?? [];
   const counts = useMemo(
@@ -260,9 +255,9 @@ function HealthAgendaPage() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Sem responsável definido</SelectItem>
-                    {activeMembers.map((member) => (
+                    {(professionals.data ?? []).map((member) => (
                       <SelectItem key={member.user_id} value={member.user_id}>
-                        {member.full_name || member.email || "Membro da equipe"}
+                        {member.name || member.email || "Membro da equipe"}
                       </SelectItem>
                     ))}
                   </SelectContent>
