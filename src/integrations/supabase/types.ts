@@ -3700,6 +3700,72 @@ export type Database = {
           },
         ]
       }
+      health_appointments: {
+        Row: {
+          administrative_notes: string | null
+          created_at: string
+          created_by: string
+          ends_at: string
+          id: string
+          location: string | null
+          organization_id: string
+          patient_profile_id: string
+          professional_user_id: string | null
+          service_label: string
+          starts_at: string
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          administrative_notes?: string | null
+          created_at?: string
+          created_by: string
+          ends_at: string
+          id?: string
+          location?: string | null
+          organization_id: string
+          patient_profile_id: string
+          professional_user_id?: string | null
+          service_label: string
+          starts_at: string
+          status?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          administrative_notes?: string | null
+          created_at?: string
+          created_by?: string
+          ends_at?: string
+          id?: string
+          location?: string | null
+          organization_id?: string
+          patient_profile_id?: string
+          professional_user_id?: string | null
+          service_label?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_appointments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_appointments_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "health_patient_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_authorizations: {
         Row: {
           administrative_notes: string | null
@@ -7280,6 +7346,19 @@ export type Database = {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
       }
+      create_health_appointment: {
+        Args: {
+          _administrative_notes?: string
+          _ends_at: string
+          _location?: string
+          _organization_id: string
+          _patient_profile_id: string
+          _professional_user_id: string
+          _service_label: string
+          _starts_at: string
+        }
+        Returns: Json
+      }
       create_health_authorization: {
         Args: {
           _administrative_notes?: string
@@ -7644,6 +7723,14 @@ export type Database = {
           title: string
           updated_at: string
         }[]
+      }
+      list_health_appointment_professionals: {
+        Args: { _organization_id: string }
+        Returns: Json
+      }
+      list_health_appointments: {
+        Args: { _date: string; _organization_id: string }
+        Returns: Json
       }
       list_health_authorizations: {
         Args: { _organization_id: string; _search?: string }
@@ -8167,6 +8254,17 @@ export type Database = {
         }
         Returns: string
       }
+      record_health_batch_payment: {
+        Args: {
+          _administrative_notes?: string
+          _amount: number
+          _batch_id: string
+          _organization_id: string
+          _received_at?: string
+          _reference?: string
+        }
+        Returns: Json
+      }
       record_audit_event: {
         Args: {
           _action: string
@@ -8659,6 +8757,14 @@ export type Database = {
           _sector: string
         }
         Returns: undefined
+      }
+      update_health_appointment_status: {
+        Args: {
+          _appointment_id: string
+          _organization_id: string
+          _status: string
+        }
+        Returns: Json
       }
       update_health_denial: {
         Args: {
