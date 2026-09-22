@@ -9,6 +9,12 @@ export type HealthAppointmentStatus =
   | "faltou"
   | "cancelado";
 
+export type HealthAppointmentProfessional = {
+  user_id: string;
+  name: string | null;
+  email: string | null;
+};
+
 export type HealthAppointment = {
   id: string;
   patient_profile_id: string;
@@ -29,6 +35,23 @@ const rpc = supabase as unknown as {
     args: Record<string, unknown>,
   ) => PromiseLike<{ data: unknown; error: unknown }>;
 };
+
+export function useHealthAppointmentProfessionals(
+  organizationId: string | null,
+) {
+  return useQuery({
+    queryKey: ["health-appointment-professionals", organizationId],
+    enabled: Boolean(organizationId),
+    queryFn: async () => {
+      const { data, error } = await rpc.rpc(
+        "list_health_appointment_professionals",
+        { _organization_id: organizationId },
+      );
+      if (error) throw error;
+      return (Array.isArray(data) ? data : []) as HealthAppointmentProfessional[];
+    },
+  });
+}
 
 export function useHealthAppointments(
   organizationId: string | null,
