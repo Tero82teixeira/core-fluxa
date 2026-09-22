@@ -3773,6 +3773,92 @@ export type Database = {
           },
         ]
       }
+      health_appointments: {
+        Row: {
+          administrative_notes: string | null
+          authorization_id: string | null
+          created_at: string
+          created_by: string
+          ends_at: string
+          id: string
+          location: string | null
+          modality: string
+          organization_id: string
+          patient_profile_id: string
+          responsible_user_id: string | null
+          service_label: string
+          starts_at: string
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          administrative_notes?: string | null
+          authorization_id?: string | null
+          created_at?: string
+          created_by: string
+          ends_at: string
+          id?: string
+          location?: string | null
+          modality?: string
+          organization_id: string
+          patient_profile_id: string
+          responsible_user_id?: string | null
+          service_label: string
+          starts_at: string
+          status?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          administrative_notes?: string | null
+          authorization_id?: string | null
+          created_at?: string
+          created_by?: string
+          ends_at?: string
+          id?: string
+          location?: string | null
+          modality?: string
+          organization_id?: string
+          patient_profile_id?: string
+          responsible_user_id?: string | null
+          service_label?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_appointments_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "health_authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_appointments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_appointments_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "health_patient_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_appointments_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_billing_batch_items: {
         Row: {
           batch_id: string
@@ -7294,6 +7380,22 @@ export type Database = {
         }
         Returns: Json
       }
+      create_health_appointment: {
+        Args: {
+          _administrative_notes?: string
+          _authorization_id?: string
+          _ends_at: string
+          _location?: string
+          _modality?: string
+          _organization_id: string
+          _patient_profile_id: string
+          _responsible_user_id?: string
+          _service_label: string
+          _starts_at: string
+          _status?: string
+        }
+        Returns: Json
+      }
       create_health_billing_batch: {
         Args: {
           _administrative_notes?: string
@@ -7647,6 +7749,16 @@ export type Database = {
       }
       list_health_authorizations: {
         Args: { _organization_id: string; _search?: string }
+        Returns: Json
+      }
+      list_health_appointments: {
+        Args: {
+          _organization_id: string
+          _search?: string
+          _starts_from: string
+          _starts_until: string
+          _status?: string
+        }
         Returns: Json
       }
       list_health_batch_payments: {
@@ -8659,6 +8771,14 @@ export type Database = {
           _sector: string
         }
         Returns: undefined
+      }
+      update_health_appointment_status: {
+        Args: {
+          _appointment_id: string
+          _organization_id: string
+          _status: string
+        }
+        Returns: Json
       }
       update_health_denial: {
         Args: {

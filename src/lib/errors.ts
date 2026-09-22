@@ -81,6 +81,22 @@ export function describeError(error: unknown, context: Ctx = "salvar"): string {
     return "O responsável escolhido não é um membro ativo desta empresa.";
   if (message.includes("task_due_before_start"))
     return "O prazo final não pode ser anterior à data inicial.";
+  if (message.includes("health_appointment_schedule_conflict"))
+    return "Este profissional já possui um atendimento nesse horário.";
+  if (message.includes("health_appointment_period_invalid"))
+    return "O horário final deve ser posterior ao horário inicial.";
+  if (message.includes("health_appointment_duration_invalid"))
+    return "O atendimento não pode ter duração superior a 24 horas.";
+  if (message.includes("health_appointment_range_too_large"))
+    return "Consulte a agenda em períodos de até 93 dias.";
+  if (message.includes("health_appointment_text_too_long"))
+    return "Um dos textos ultrapassou o tamanho permitido.";
+  if (message.includes("health_appointment_patient_invalid"))
+    return "Selecione um paciente ativo desta empresa.";
+  if (message.includes("health_appointment_responsible_invalid"))
+    return "O profissional responsável precisa ser um membro ativo da empresa.";
+  if (message.includes("health_appointment_authorization_invalid"))
+    return "A autorização selecionada não está válida para este paciente e data.";
   if (message.includes("amount_below_paid_total"))
     return "O valor do lançamento não pode ser menor que o total já pago.";
   if (message.includes("transaction_not_editable"))

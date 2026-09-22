@@ -29,6 +29,7 @@ export type ModuleKey =
   | "automations"
   | "client_portal"
   | "health_patients"
+  | "health_appointments"
   | "health_insurance"
   | "health_authorizations"
   | "health_billing"
@@ -69,6 +70,7 @@ export const MODULE_CATALOG: Array<{
   { key: "client_portal", label: "Portal do Cliente", description: "Experiência externa e autoatendimento.", group: "core", available: true },
 
   { key: "health_patients", label: "Pacientes", description: "Cadastro e acompanhamento administrativo de pacientes.", group: "health", available: true },
+  { key: "health_appointments", label: "Agenda e Atendimentos", description: "Horários, confirmações e responsáveis pelos atendimentos.", group: "health", available: true },
   { key: "health_insurance", label: "Convênios", description: "Planos, operadoras e vínculos.", group: "health", available: true },
   { key: "health_authorizations", label: "Autorizações", description: "Solicitações, validade e acompanhamento.", group: "health", available: true },
   { key: "health_billing", label: "Contas Médicas", description: "Faturamento e acompanhamento de recebimentos.", group: "health", available: true },
@@ -140,7 +142,7 @@ export const SEGMENT_SUBTYPES: Record<BusinessSegment, SubtypeOption[]> = {
       key: "clinic_office",
       label: "Clínica ou consultório",
       description: "Atendimento, agenda, pacientes, convênios e financeiro.",
-      recommendedModules: [...CORE_MODULES, "health_patients", "health_insurance", "health_authorizations", "health_billing"],
+      recommendedModules: [...CORE_MODULES, "health_patients", "health_appointments", "health_insurance", "health_authorizations", "health_billing"],
     },
     {
       key: "medical_billing",
@@ -152,19 +154,19 @@ export const SEGMENT_SUBTYPES: Record<BusinessSegment, SubtypeOption[]> = {
       key: "health_service_provider",
       label: "Prestador de serviços de saúde",
       description: "Profissionais e empresas que prestam serviços para clínicas e pacientes.",
-      recommendedModules: [...CORE_MODULES, "health_patients", "health_billing"],
+      recommendedModules: [...CORE_MODULES, "health_patients", "health_appointments", "health_billing"],
     },
     {
       key: "diagnostics",
       label: "Diagnóstico e exames",
       description: "Laboratórios, imagem e serviços diagnósticos.",
-      recommendedModules: [...CORE_MODULES, "health_patients", "health_insurance", "health_authorizations", "health_billing"],
+      recommendedModules: [...CORE_MODULES, "health_patients", "health_appointments", "health_insurance", "health_authorizations", "health_billing"],
     },
     {
       key: "rehabilitation",
       label: "Reabilitação e terapias",
       description: "Fisioterapia, recuperação, terapias e acompanhamento recorrente.",
-      recommendedModules: [...CORE_MODULES, "health_patients", "health_insurance", "health_authorizations", "health_billing"],
+      recommendedModules: [...CORE_MODULES, "health_patients", "health_appointments", "health_insurance", "health_authorizations", "health_billing"],
     },
   ],
   real_estate: [
@@ -222,6 +224,7 @@ export const SEGMENT_OPTIONS: SegmentOption[] = [
     recommendedModules: [
       ...CORE_MODULES,
       "health_patients",
+      "health_appointments",
       "health_insurance",
       "health_authorizations",
       "health_billing",
@@ -273,6 +276,7 @@ export function recommendedModulesForSubtype(
 const ROUTE_MODULES: Record<string, ModuleKey> = {
   "/clientes": "clients",
   "/saude/pacientes": "health_patients",
+  "/saude/agenda": "health_appointments",
   "/saude/convenios": "health_insurance",
   "/saude/autorizacoes": "health_authorizations",
   "/saude/contas-medicas": "health_billing",
