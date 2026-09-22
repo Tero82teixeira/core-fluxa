@@ -16,6 +16,7 @@ type Ctx =
   | "empresa"
   | "documento"
   | "monitoramento"
+  | "faturar"
   | "upload"
   | "auth";
 
@@ -32,6 +33,7 @@ const FALLBACK: Record<Ctx, string> = {
   empresa: "Não foi possível salvar os dados da empresa. Tente novamente.",
   documento: "Não foi possível concluir a ação no documento. Tente novamente.",
   monitoramento: "Não foi possível atualizar o item de monitoramento. Tente novamente.",
+  faturar: "Não foi possível gerar a conta médica. Revise os dados e tente novamente.",
   upload: "Não foi possível enviar o arquivo. Verifique o formato e tente novamente.",
   auth: "Não foi possível concluir. Tente novamente em instantes.",
 };
@@ -105,6 +107,14 @@ export function describeError(error: unknown, context: Ctx = "salvar"): string {
     return "Somente contas arquivadas podem ser restauradas.";
   if (message.includes("description_required")) return "Informe a descrição do lançamento.";
   if (message.includes("invalid_amount")) return "Informe um valor financeiro maior que zero.";
+  if (message.includes("health_appointment_billing_amount_invalid"))
+    return "Informe um valor válido para a conta médica.";
+  if (message.includes("health_appointment_billing_status_invalid"))
+    return "Atendimentos cancelados ou com falta não podem ser faturados.";
+  if (message.includes("health_appointment_billing_authorization_invalid"))
+    return "A autorização não está válida para este paciente e atendimento.";
+  if (message.includes("health_appointment_billing_insurer_mismatch"))
+    return "A autorização selecionada pertence a outro convênio.";
   if (message.includes("due_date_required")) return "Informe a data de vencimento.";
   if (message.includes("not_allowed")) return "Você não possui permissão para esta ação.";
   if (message.includes("invite_not_found")) return "Convite não encontrado.";

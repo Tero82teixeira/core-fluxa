@@ -1,10 +1,18 @@
 import { FormEvent, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, Clock3, Loader2, MapPin, Plus } from "lucide-react";
+import { CalendarDays, Clock3, Loader2, MapPin, Plus, ReceiptText } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,12 +24,18 @@ import {
 } from "@/components/ui/select";
 import { useHealthPatients } from "@/hooks/use-health-patients";
 import {
+  type HealthAppointment,
   type HealthAppointmentStatus,
+  useCompleteHealthAppointmentAndCreateBilling,
   useCreateHealthAppointment,
   useHealthAppointmentProfessionals,
   useHealthAppointments,
   useUpdateHealthAppointmentStatus,
 } from "@/hooks/use-health-appointments";
+import {
+  useHealthAuthorizations,
+  useHealthInsurers,
+} from "@/hooks/use-health-insurance";
 import { describeError } from "@/lib/errors";
 import { usePermissions } from "@/lib/permissions";
 import { useWorkspace } from "@/lib/workspace";
@@ -65,6 +79,8 @@ function HealthAgendaPage() {
   const permissions = usePermissions();
   const [date, setDate] = useState(localDateInputValue);
   const [showForm, setShowForm] = useState(false);
+  const [billingAppointment, setBillingAppointment] =
+    useState<HealthAppointment | null>(null);
   const appointments = useHealthAppointments(organizationId, date);
   const patients = useHealthPatients(organizationId, "");
   const professionals = useHealthAppointmentProfessionals(organizationId);
@@ -392,11 +408,36 @@ function HealthAgendaPage() {
                           {appointment.administrative_notes}
                         </p>
                       )}
+                      {appointment.billing_item_id && permissions.canViewFinance && (
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="link"
+                          className="mt-1 h-auto justify-start p-0 text-xs"
+                        >
+                          <a href="/saude/contas-medicas">
+                            <ReceiptText className="size-3.5" aria-hidden />
+                            Conta médica criada
+                          </a>
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  {permissions.canEdit &&
-                    !["concluido", "cancelado", "faltou"].includes(appointment.status) && (
+                  {permissions.canEdit && (
                       <div className="flex flex-wrap gap-2">
+                        {!appointment.billing_item_id &&
+                          permissions.canManageFinance &&
+                          !["cancelado", "faltou"].includes(appointment.status) && (
+                            <Button
+                              size="sm"
+                              onClick={() => setBillingAppointment(appointment)}
+                            >
+                              <ReceiptText className="size-4" aria-hidden />
+                              {appointment.status === "concluido"
+                                ? "Gerar conta"
+                                : "Concluir e faturar"}
+                            </Button>
+                          )}
                         {appointment.status === "agendado" && (
                           <Button
                             size="sm"
@@ -407,29 +448,34 @@ function HealthAgendaPage() {
                             Confirmar
                           </Button>
                         )}
-                        <Button
-                          size="sm"
-                          disabled={updateStatus.isPending}
-                          onClick={() => void changeStatus(appointment.id, "concluido")}
-                        >
-                          Concluir
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={updateStatus.isPending}
-                          onClick={() => void changeStatus(appointment.id, "faltou")}
-                        >
-                          Faltou
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={updateStatus.isPending}
-                          onClick={() => void changeStatus(appointment.id, "cancelado")}
-                        >
-                          Cancelar
-                        </Button>
+                        {!["concluido", "cancelado", "faltou"].includes(appointment.status) && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant={permissions.canManageFinance ? "outline" : "default"}
+                              disabled={updateStatus.isPending}
+                              onClick={() => void changeStatus(appointment.id, "concluido")}
+                            >
+                              Concluir sem faturar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={updateStatus.isPending}
+                              onClick={() => void changeStatus(appointment.id, "faltou")}
+                            >
+                              Faltou
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={updateStatus.isPending}
+                              onClick={() => void changeStatus(appointment.id, "cancelado")}
+                            >
+                              Cancelar
+                            </Button>
+                          </>
+                        )}
                       </div>
                     )}
                 </div>
@@ -438,6 +484,180 @@ function HealthAgendaPage() {
           )}
         </CardContent>
       </Card>
+      {billingAppointment && (
+        <AppointmentBillingDialog
+          appointment={billingAppointment}
+          organizationId={organizationId}
+          onClose={() => setBillingAppointment(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function AppointmentBillingDialog({
+  appointment,
+  organizationId,
+  onClose,
+}: {
+  appointment: HealthAppointment;
+  organizationId: string | null;
+  onClose: () => void;
+}) {
+  const insurers = useHealthInsurers(organizationId, "");
+  const authorizations = useHealthAuthorizations(organizationId, "");
+  const completeAndBill =
+    useCompleteHealthAppointmentAndCreateBilling(organizationId);
+  const [form, setForm] = useState({
+    amount: "",
+    insurer_id: "none",
+    authorization_id: "none",
+    due_date: "",
+    administrative_notes: "",
+  });
+
+  const availableAuthorizations = (authorizations.data ?? []).filter(
+    (authorization) =>
+      authorization.patient_profile_id === appointment.patient_profile_id &&
+      authorization.status === "autorizado" &&
+      (form.insurer_id === "none" || authorization.insurer_id === form.insurer_id),
+  );
+
+  const submitBilling = async (event: FormEvent) => {
+    event.preventDefault();
+    const amount = Number(form.amount.replace(",", "."));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Informe um valor válido para a conta médica.");
+      return;
+    }
+
+    try {
+      await completeAndBill.mutateAsync({
+        appointment_id: appointment.id,
+        amount,
+        insurer_id: form.insurer_id === "none" ? null : form.insurer_id,
+        authorization_id:
+          form.authorization_id === "none" ? null : form.authorization_id,
+        due_date: form.due_date || null,
+        administrative_notes: form.administrative_notes.trim() || null,
+      });
+      toast.success("Atendimento concluído e conta médica criada.");
+      onClose();
+    } catch (error) {
+      const message = String((error as { message?: string })?.message ?? "");
+      if (message.includes("HEALTH_APPOINTMENT_ALREADY_BILLED")) {
+        toast.error("Este atendimento já possui uma conta médica.");
+        return;
+      }
+      toast.error(describeError(error, "faturar"));
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Concluir e gerar conta médica</DialogTitle>
+          <DialogDescription>
+            {appointment.patient_name} · {appointment.service_label}. A conta será criada
+            como rascunho para conferência no faturamento.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submitBilling} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="appointment-billing-amount">Valor *</Label>
+            <Input
+              id="appointment-billing-amount"
+              inputMode="decimal"
+              autoFocus
+              placeholder="0,00"
+              value={form.amount}
+              onChange={(event) => setForm({ ...form, amount: event.target.value })}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Convênio</Label>
+              <Select
+                value={form.insurer_id}
+                onValueChange={(value) =>
+                  setForm({ ...form, insurer_id: value, authorization_id: "none" })
+                }
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Particular / sem convênio</SelectItem>
+                  {(insurers.data ?? [])
+                    .filter((insurer) => insurer.status === "ativo")
+                    .map((insurer) => (
+                      <SelectItem key={insurer.id} value={insurer.id}>
+                        {insurer.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Autorização</Label>
+              <Select
+                value={form.authorization_id}
+                onValueChange={(value) => {
+                  const authorization = availableAuthorizations.find(
+                    (item) => item.id === value,
+                  );
+                  setForm({
+                    ...form,
+                    authorization_id: value,
+                    insurer_id: authorization?.insurer_id || form.insurer_id,
+                  });
+                }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem autorização</SelectItem>
+                  {availableAuthorizations.map((authorization) => (
+                    <SelectItem key={authorization.id} value={authorization.id}>
+                      {authorization.authorization_number || authorization.service_label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="appointment-billing-due-date">Vencimento</Label>
+            <Input
+              id="appointment-billing-due-date"
+              type="date"
+              value={form.due_date}
+              onChange={(event) => setForm({ ...form, due_date: event.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="appointment-billing-notes">Observação administrativa</Label>
+            <Input
+              id="appointment-billing-notes"
+              maxLength={240}
+              placeholder="Não use este campo para informações clínicas."
+              value={form.administrative_notes}
+              onChange={(event) =>
+                setForm({ ...form, administrative_notes: event.target.value })
+              }
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={completeAndBill.isPending}>
+              {completeAndBill.isPending && (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              )}
+              {completeAndBill.isPending ? "Gerando…" : "Concluir e gerar conta"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
