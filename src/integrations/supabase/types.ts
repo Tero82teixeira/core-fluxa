@@ -8254,6 +8254,17 @@ export type Database = {
         }
         Returns: string
       }
+      record_health_batch_payment: {
+        Args: {
+          _administrative_notes?: string
+          _amount: number
+          _batch_id: string
+          _organization_id: string
+          _received_at?: string
+          _reference?: string
+        }
+        Returns: Json
+      }
       record_audit_event: {
         Args: {
           _action: string
