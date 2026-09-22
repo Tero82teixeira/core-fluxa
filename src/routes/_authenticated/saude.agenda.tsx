@@ -144,7 +144,7 @@ function HealthAgendaPage() {
         toast.error("Esse paciente já possui atendimento nesse horário.");
         return;
       }
-      toast.error(describeError(error, "agendar"));
+      toast.error(describeError(error, "salvar"));
     }
   };
 
@@ -156,7 +156,7 @@ function HealthAgendaPage() {
       await updateStatus.mutateAsync({ appointmentId, status });
       toast.success(`Atendimento marcado como ${statusLabel[status].toLowerCase()}.`);
     } catch (error) {
-      toast.error(describeError(error, "atualizar"));
+      toast.error(describeError(error, "salvar"));
     }
   };
 
