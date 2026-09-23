@@ -36,6 +36,8 @@ export function summarizeClinicDashboard({
     total: appointments.length,
     awaitingConfirmation: appointments.filter((item) => item.status === "agendado").length,
     confirmed: appointments.filter((item) => item.status === "confirmado").length,
+    waiting: appointments.filter((item) => item.reception_status === "chegou").length,
+    inService: appointments.filter((item) => item.reception_status === "em_atendimento").length,
     completed: appointments.filter((item) => item.status === "concluido").length,
   };
 

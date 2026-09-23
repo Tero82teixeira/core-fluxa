@@ -3703,6 +3703,7 @@ export type Database = {
       health_appointments: {
         Row: {
           administrative_notes: string | null
+          checked_in_at: string | null
           created_at: string
           created_by: string
           ends_at: string
@@ -3711,7 +3712,9 @@ export type Database = {
           organization_id: string
           patient_profile_id: string
           professional_user_id: string | null
+          reception_status: string
           service_label: string
+          service_started_at: string | null
           starts_at: string
           status: string
           updated_at: string
@@ -3719,6 +3722,7 @@ export type Database = {
         }
         Insert: {
           administrative_notes?: string | null
+          checked_in_at?: string | null
           created_at?: string
           created_by: string
           ends_at: string
@@ -3727,7 +3731,9 @@ export type Database = {
           organization_id: string
           patient_profile_id: string
           professional_user_id?: string | null
+          reception_status?: string
           service_label: string
+          service_started_at?: string | null
           starts_at: string
           status?: string
           updated_at?: string
@@ -3735,6 +3741,7 @@ export type Database = {
         }
         Update: {
           administrative_notes?: string | null
+          checked_in_at?: string | null
           created_at?: string
           created_by?: string
           ends_at?: string
@@ -3743,7 +3750,9 @@ export type Database = {
           organization_id?: string
           patient_profile_id?: string
           professional_user_id?: string | null
+          reception_status?: string
           service_label?: string
+          service_started_at?: string | null
           starts_at?: string
           status?: string
           updated_at?: string
@@ -8798,6 +8807,14 @@ export type Database = {
           _sector: string
         }
         Returns: undefined
+      }
+      update_health_appointment_reception_status: {
+        Args: {
+          _appointment_id: string
+          _organization_id: string
+          _status: string
+        }
+        Returns: Json
       }
       update_health_appointment_status: {
         Args: {

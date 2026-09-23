@@ -9,6 +9,8 @@ export type HealthAppointmentStatus =
   | "faltou"
   | "cancelado";
 
+export type HealthReceptionStatus = "chegou" | "em_atendimento";
+
 export type HealthAppointmentProfessional = {
   user_id: string;
   name: string | null;
@@ -26,6 +28,9 @@ export type HealthAppointment = {
   ends_at: string;
   appointment_date?: string;
   status: HealthAppointmentStatus;
+  reception_status: "aguardando" | HealthReceptionStatus;
+  checked_in_at: string | null;
+  service_started_at: string | null;
   location: string | null;
   administrative_notes: string | null;
   billing_item_id: string | null;
@@ -159,6 +164,29 @@ export function useUpdateHealthAppointmentStatus(
       await client.invalidateQueries({
         queryKey: ["health-appointments", organizationId],
       });
+    },
+  });
+}
+
+export function useUpdateHealthAppointmentReceptionStatus(
+  organizationId: string | null,
+) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ appointmentId, status }: {
+      appointmentId: string;
+      status: HealthReceptionStatus;
+    }) => {
+      const { data, error } = await rpc.rpc("update_health_appointment_reception_status", {
+        _organization_id: organizationId,
+        _appointment_id: appointmentId,
+        _status: status,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ["health-appointments", organizationId] });
     },
   });
 }
