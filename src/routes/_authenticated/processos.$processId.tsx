@@ -28,6 +28,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentScopePanel } from "@/components/documents/document-scope-panel";
 import { DocumentUploadDialog } from "@/components/documents/document-upload-dialog";
+import { LegalCaseProfilePanel } from "@/components/legal/legal-case-profile-panel";
 import {
   Select,
   SelectContent,
@@ -76,7 +77,7 @@ export const Route = createFileRoute("/_authenticated/processos/$processId")({
 
 function ProcessDetail() {
   const { processId } = Route.useParams();
-  const { organizationId } = useWorkspace();
+  const { organizationId, membership } = useWorkspace();
   const permissions = usePermissions();
   const process = useProcess(processId);
   const checklist = useProcessChecklist(processId);
@@ -130,6 +131,8 @@ function ProcessDetail() {
   const docsPct = docsTotal ? Math.round((docsReceived / docsTotal) * 100) : 0;
   const relatedTasks = (tasks.data ?? []).filter((task) => task.process_id === processId);
   const currentIndex = KANBAN_STAGES.indexOf(data.stage);
+  const isLegalWorkspace =
+    membership?.organizations?.organization_settings?.business_segment === "legal";
 
   const secondary = [
     { label: "Número interno", value: data.code },
@@ -269,6 +272,14 @@ function ProcessDetail() {
           </dl>
         </CardContent>
       </Card>
+
+      {isLegalWorkspace && (
+        <LegalCaseProfilePanel
+          organizationId={organizationId}
+          processId={processId}
+          canEdit={permissions.canEdit}
+        />
+      )}
 
       <Card className="rounded-2xl border-border/70 shadow-soft">
         <CardContent className="p-5 sm:p-6">
