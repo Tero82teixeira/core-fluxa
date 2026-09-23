@@ -4627,6 +4627,84 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_case_profiles: {
+        Row: {
+          action_type: string | null
+          case_side: string | null
+          cnj_number: string | null
+          confidential: boolean
+          court: string | null
+          created_at: string
+          created_by: string
+          district: string | null
+          id: string
+          judicial_unit: string | null
+          legal_area: string | null
+          next_hearing_at: string | null
+          opposing_party: string | null
+          organization_id: string
+          process_id: string
+          state: string | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          action_type?: string | null
+          case_side?: string | null
+          cnj_number?: string | null
+          confidential?: boolean
+          court?: string | null
+          created_at?: string
+          created_by: string
+          district?: string | null
+          id?: string
+          judicial_unit?: string | null
+          legal_area?: string | null
+          next_hearing_at?: string | null
+          opposing_party?: string | null
+          organization_id: string
+          process_id: string
+          state?: string | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          action_type?: string | null
+          case_side?: string | null
+          cnj_number?: string | null
+          confidential?: boolean
+          court?: string | null
+          created_at?: string
+          created_by?: string
+          district?: string | null
+          id?: string
+          judicial_unit?: string | null
+          legal_area?: string | null
+          next_hearing_at?: string | null
+          opposing_party?: string | null
+          organization_id?: string
+          process_id?: string
+          state?: string | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_case_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_case_profiles_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_performance_goals: {
         Row: {
           completed_processes_target: number
@@ -7628,6 +7706,10 @@ export type Database = {
           first_reminder_minutes: number
         }[]
       }
+      get_legal_case_profile: {
+        Args: { _organization_id: string; _process_id: string }
+        Returns: Json
+      }
       get_organization_settings: {
         Args: { _organization_id: string }
         Returns: Json
@@ -7659,6 +7741,10 @@ export type Database = {
       }
       health_module_enabled: {
         Args: { _module: string; _organization_id: string }
+        Returns: boolean
+      }
+      legal_module_enabled: {
+        Args: { _organization_id: string }
         Returns: boolean
       }
       has_client_portal_access: {
@@ -8923,6 +9009,24 @@ export type Database = {
           _title: string
         }
         Returns: string
+      }
+      upsert_legal_case_profile: {
+        Args: {
+          _action_type?: string
+          _case_side?: string
+          _cnj_number?: string
+          _confidential?: boolean
+          _court?: string
+          _district?: string
+          _judicial_unit?: string
+          _legal_area?: string
+          _next_hearing_at?: string
+          _opposing_party?: string
+          _organization_id: string
+          _process_id: string
+          _state?: string
+        }
+        Returns: Json
       }
       upsert_monitoring_state: {
         Args: {
