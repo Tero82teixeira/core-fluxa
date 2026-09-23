@@ -28,10 +28,10 @@ const rpc = supabase as unknown as {
   ) => PromiseLike<{ data: unknown; error: unknown }>;
 };
 
-export function useHealthBillingItems(organizationId: string | null, search = "") {
+export function useHealthBillingItems(organizationId: string | null, search = "", enabled = true) {
   return useQuery({
     queryKey: ["health-billing-items", organizationId, search],
-    enabled: Boolean(organizationId),
+    enabled: Boolean(organizationId && enabled),
     queryFn: async () => {
       const { data, error } = await rpc.rpc("list_health_billing_items", {
         _organization_id: organizationId,
