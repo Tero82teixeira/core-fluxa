@@ -9,6 +9,7 @@ const migration = readFileSync(
   "supabase/migrations/20261018230000_segment_module_isolation.sql",
   "utf8",
 );
+const generatedTypes = readFileSync("src/integrations/supabase/types.ts", "utf8");
 
 describe("isolamento de módulos por segmento", () => {
   test("não libera rotas verticais quando o segmento está ausente", () => {
@@ -38,6 +39,7 @@ describe("isolamento de módulos por segmento", () => {
     assert.match(migration, /WHEN 'health_appointments' THEN _segment IS DISTINCT FROM 'health'/);
     assert.match(migration, /organization_settings_segment_modules_check/);
     assert.match(migration, /RAISE EXCEPTION 'SEGMENT_MODULES_INVALID'/);
+    assert.match(generatedTypes, /organization_modules_are_valid/);
   });
 
   test("preserva o núcleo e remove apenas módulos antigos incompatíveis", () => {
