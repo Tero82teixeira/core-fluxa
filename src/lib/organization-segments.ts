@@ -76,7 +76,7 @@ export const MODULE_CATALOG: Array<{
   { key: "health_billing", label: "Contas Médicas", description: "Faturamento e acompanhamento de recebimentos.", group: "health", available: true },
   { key: "health_denials", label: "Glosas", description: "Controle, recurso e recuperação de valores.", group: "health", available: true },
 
-  { key: "legal_workspace", label: "Recursos Jurídicos", description: "Recursos específicos para operações jurídicas.", group: "legal", available: false },
+  { key: "legal_workspace", label: "Recursos Jurídicos", description: "Painel jurídico, carteira de processos e prazos prioritários.", group: "legal", available: true },
   { key: "engineering_workspace", label: "Recursos de Engenharia", description: "Projetos, obras e documentação técnica.", group: "engineering", available: false },
   { key: "real_estate_workspace", label: "Recursos Imobiliários", description: "Imóveis, contratos e vistorias.", group: "real_estate", available: false },
 ];
@@ -275,6 +275,7 @@ export function recommendedModulesForSubtype(
 
 const ROUTE_MODULES: Record<string, ModuleKey> = {
   "/clientes": "clients",
+  "/advocacia/painel-juridico": "legal_workspace",
   "/saude/pacientes": "health_patients",
   "/saude/agenda": "health_appointments",
   "/saude/painel-clinica": "health_appointments",

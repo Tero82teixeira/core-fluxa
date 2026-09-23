@@ -49,6 +49,7 @@ describe("status dos módulos na navegação lateral", () => {
         { to: "/meu-dia", label: "Meu Dia", ready: true, group: "operacao" },
         { to: "/central", label: "Central de Comando", ready: true, group: "operacao" },
         { to: "/clientes", label: "Clientes", ready: true, group: "operacao" },
+        { to: "/advocacia/painel-juridico", label: "Painel Jurídico", ready: true, group: "operacao" },
         { to: "/saude/pacientes", label: "Pacientes", ready: true, group: "operacao" },
         { to: "/saude/agenda", label: "Agenda", ready: true, group: "operacao" },
         { to: "/saude/painel-clinica", label: "Painel da Clínica", ready: true, group: "operacao" },
