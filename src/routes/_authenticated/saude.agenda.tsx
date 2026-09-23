@@ -8,10 +8,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  LogIn,
   Loader2,
   MapPin,
+  Play,
   Plus,
   ReceiptText,
+  Timer,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +47,7 @@ import {
   useHealthAppointments,
   useHealthAppointmentsRange,
   useRescheduleHealthAppointment,
+  useUpdateHealthAppointmentReceptionStatus,
   useUpdateHealthAppointmentStatus,
 } from "@/hooks/use-health-appointments";
 import {
@@ -81,6 +85,15 @@ const statusLabel: Record<HealthAppointmentStatus, string> = {
   cancelado: "Cancelado",
 };
 
+function visibleStatus(appointment: HealthAppointment) {
+  if (["concluido", "faltou", "cancelado"].includes(appointment.status)) {
+    return statusLabel[appointment.status];
+  }
+  if (appointment.reception_status === "chegou") return "Na recepção";
+  if (appointment.reception_status === "em_atendimento") return "Em atendimento";
+  return statusLabel[appointment.status];
+}
+
 function localDateInputValue() {
   const date = new Date();
   const offset = date.getTimezoneOffset();
@@ -92,6 +105,15 @@ function formatTime(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function waitingTime(value: string) {
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));
+  if (minutes < 1) return "chegou agora";
+  if (minutes < 60) return `aguardando há ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return `aguardando há ${hours}h${remainder ? ` ${remainder}min` : ""}`;
 }
 
 function localDateTimeParts(value: string) {
@@ -163,6 +185,7 @@ function HealthAgendaPage() {
   const professionals = useHealthAppointmentProfessionals(organizationId);
   const create = useCreateHealthAppointment(organizationId);
   const updateStatus = useUpdateHealthAppointmentStatus(organizationId);
+  const updateReceptionStatus = useUpdateHealthAppointmentReceptionStatus(organizationId);
   const [form, setForm] = useState({
     patient_profile_id: "",
     professional_user_id: "none",
@@ -192,6 +215,12 @@ function HealthAgendaPage() {
       total: rows.length,
       awaitingConfirmation: rows.filter((row) => row.status === "agendado").length,
       confirmed: rows.filter((row) => row.status === "confirmado").length,
+      waiting: rows.filter(
+        (row) => row.reception_status === "chegou" && !["concluido", "faltou", "cancelado"].includes(row.status),
+      ).length,
+      inService: rows.filter(
+        (row) => row.reception_status === "em_atendimento" && !["concluido", "faltou", "cancelado"].includes(row.status),
+      ).length,
       completed: rows.filter((row) => row.status === "concluido").length,
     }),
     [rows],
@@ -259,6 +288,18 @@ function HealthAgendaPage() {
     try {
       await updateStatus.mutateAsync({ appointmentId, status });
       toast.success(`Atendimento marcado como ${statusLabel[status].toLowerCase()}.`);
+    } catch (error) {
+      toast.error(describeError(error, "salvar"));
+    }
+  };
+
+  const changeReceptionStatus = async (
+    appointmentId: string,
+    status: "chegou" | "em_atendimento",
+  ) => {
+    try {
+      await updateReceptionStatus.mutateAsync({ appointmentId, status });
+      toast.success(status === "chegou" ? "Chegada registrada." : "Atendimento iniciado.");
     } catch (error) {
       toast.error(describeError(error, "salvar"));
     }
@@ -370,11 +411,13 @@ function HealthAgendaPage() {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {[
           ["Atendimentos", counts.total],
           ["A confirmar", counts.awaitingConfirmation],
           ["Confirmados", counts.confirmed],
+          ["Na recepção", counts.waiting],
+          ["Em atendimento", counts.inService],
           ["Concluídos", counts.completed],
         ].map(([label, value]) => (
           <Card key={String(label)} className="rounded-2xl border-border/70">
@@ -568,7 +611,7 @@ function HealthAgendaPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold">{appointment.patient_name}</p>
                         <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-                          {statusLabel[appointment.status]}
+                          {visibleStatus(appointment)}
                         </span>
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">
@@ -591,6 +634,22 @@ function HealthAgendaPage() {
                           {appointment.administrative_notes}
                         </p>
                       )}
+                      {appointment.reception_status === "chegou" &&
+                        appointment.checked_in_at &&
+                        !["concluido", "faltou", "cancelado"].includes(appointment.status) && (
+                          <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                            <Timer className="size-3.5" aria-hidden />
+                            Chegou às {formatTime(appointment.checked_in_at)} · {waitingTime(appointment.checked_in_at)}
+                          </p>
+                        )}
+                      {appointment.reception_status === "em_atendimento" &&
+                        appointment.service_started_at &&
+                        !["concluido", "faltou", "cancelado"].includes(appointment.status) && (
+                          <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-blue-700 dark:text-blue-300">
+                            <Play className="size-3.5" aria-hidden />
+                            Iniciado às {formatTime(appointment.service_started_at)}
+                          </p>
+                        )}
                       {appointment.billing_item_id && permissions.canViewFinance && (
                         <Button
                           asChild
@@ -621,7 +680,7 @@ function HealthAgendaPage() {
                                 : "Concluir e faturar"}
                             </Button>
                           )}
-                        {appointment.status === "agendado" && (
+                        {appointment.status === "agendado" && appointment.reception_status === "aguardando" && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -631,7 +690,31 @@ function HealthAgendaPage() {
                             Confirmar presença
                           </Button>
                         )}
-                        {["agendado", "confirmado"].includes(appointment.status) && (
+                        {["agendado", "confirmado"].includes(appointment.status) &&
+                          appointment.reception_status === "aguardando" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={updateReceptionStatus.isPending}
+                              onClick={() => void changeReceptionStatus(appointment.id, "chegou")}
+                            >
+                              <LogIn className="size-4" aria-hidden />
+                              Registrar chegada
+                            </Button>
+                          )}
+                        {["agendado", "confirmado"].includes(appointment.status) &&
+                          appointment.reception_status === "chegou" && (
+                            <Button
+                              size="sm"
+                              disabled={updateReceptionStatus.isPending}
+                              onClick={() => void changeReceptionStatus(appointment.id, "em_atendimento")}
+                            >
+                              <Play className="size-4" aria-hidden />
+                              Iniciar atendimento
+                            </Button>
+                          )}
+                        {["agendado", "confirmado"].includes(appointment.status) &&
+                          appointment.reception_status === "aguardando" && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -640,7 +723,7 @@ function HealthAgendaPage() {
                             <CalendarClock className="size-4" aria-hidden />
                             Reagendar
                           </Button>
-                        )}
+                          )}
                         {!["concluido", "cancelado", "faltou"].includes(appointment.status) && (
                           <>
                             <Button

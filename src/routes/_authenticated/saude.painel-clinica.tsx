@@ -11,7 +11,9 @@ import {
   ClipboardCheck,
   Clock3,
   Loader2,
+  Play,
   RefreshCw,
+  Timer,
   Users,
   WalletCards,
 } from "lucide-react";
@@ -19,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useHealthAppointments } from "@/hooks/use-health-appointments";
+import { type HealthAppointment, useHealthAppointments } from "@/hooks/use-health-appointments";
 import { useHealthBillingItems } from "@/hooks/use-health-billing";
 import { useHealthDenials } from "@/hooks/use-health-denials";
 import { useHealthAuthorizations } from "@/hooks/use-health-insurance";
@@ -60,6 +62,15 @@ function civilDate(value: string | null) {
   return new Intl.DateTimeFormat("pt-BR").format(new Date(`${value}T12:00:00`));
 }
 
+function waitingTime(value: string) {
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));
+  if (minutes < 1) return "agora";
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return `${hours}h${remainder ? ` ${remainder}min` : ""}`;
+}
+
 function HealthClinicDashboardPage() {
   const { organizationId, role } = useWorkspace();
   const today = localCivilDate();
@@ -87,6 +98,22 @@ function HealthClinicDashboardPage() {
         .filter((item) => !["cancelado", "faltou"].includes(item.status))
         .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
         .slice(0, 6),
+    [appointments.data],
+  );
+
+  const receptionQueue = useMemo(
+    () =>
+      [...(appointments.data ?? [])]
+        .filter(
+          (item) =>
+            ["agendado", "confirmado"].includes(item.status) &&
+            ["chegou", "em_atendimento"].includes(item.reception_status),
+        )
+        .sort((a, b) =>
+          String(a.checked_in_at ?? a.starts_at).localeCompare(
+            String(b.checked_in_at ?? b.starts_at),
+          ),
+        ),
     [appointments.data],
   );
 
@@ -175,7 +202,7 @@ function HealthClinicDashboardPage() {
         <>
           <section
             aria-label="Resumo da agenda"
-            className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
           >
             <MetricCard
               label="Atendimentos hoje"
@@ -196,12 +223,77 @@ function HealthClinicDashboardPage() {
               tone="emerald"
             />
             <MetricCard
+              label="Na recepção"
+              value={summary.appointmentCounts.waiting}
+              icon={Timer}
+              tone="amber"
+            />
+            <MetricCard
+              label="Em atendimento"
+              value={summary.appointmentCounts.inService}
+              icon={Play}
+              tone="blue"
+            />
+            <MetricCard
               label="Concluídos"
               value={summary.appointmentCounts.completed}
               icon={CheckCircle2}
               tone="violet"
             />
           </section>
+
+          <Card
+            className={receptionQueue.length > 0 ? "border-amber-500/30 bg-amber-500/[0.03]" : ""}
+          >
+            <CardHeader className="flex flex-row items-center justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Timer className="size-4 text-amber-600" />
+                  Fila da recepção
+                </CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Chegadas registradas e atendimentos em andamento.
+                </p>
+              </div>
+              <Button asChild size="sm" variant="ghost">
+                <Link to="/saude/agenda" search={{ date: today }}>
+                  Abrir recepção <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {receptionQueue.length === 0 ? (
+                <div className="md:col-span-2 xl:col-span-3">
+                  <EmptyState icon={CheckCircle2} text="Nenhum paciente aguardando na recepção." />
+                </div>
+              ) : (
+                receptionQueue.map((appointment) => (
+                  <div key={appointment.id} className="rounded-2xl border bg-background p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{appointment.patient_name}</p>
+                        <p className="truncate text-sm text-muted-foreground">
+                          {appointment.service_label} · {time(appointment.starts_at)}
+                        </p>
+                      </div>
+                      <Badge variant="outline">{appointmentStatus(appointment)}</Badge>
+                    </div>
+                    {appointment.reception_status === "chegou" && appointment.checked_in_at && (
+                      <p className="mt-3 text-xs font-medium text-amber-700 dark:text-amber-300">
+                        Aguardando há {waitingTime(appointment.checked_in_at)}
+                      </p>
+                    )}
+                    {appointment.reception_status === "em_atendimento" &&
+                      appointment.service_started_at && (
+                        <p className="mt-3 text-xs font-medium text-blue-700 dark:text-blue-300">
+                          Iniciado às {time(appointment.service_started_at)}
+                        </p>
+                      )}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
 
           <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
             <Card>
@@ -237,7 +329,7 @@ function HealthClinicDashboardPage() {
                           {appointment.service_label}
                         </p>
                       </div>
-                      <Badge variant="outline">{appointmentStatus(appointment.status)}</Badge>
+                      <Badge variant="outline">{appointmentStatus(appointment)}</Badge>
                     </div>
                   ))
                 )}
@@ -343,13 +435,28 @@ function HealthClinicDashboardPage() {
   );
 }
 
-function appointmentStatus(status: string) {
+function appointmentStatus(appointment: HealthAppointment) {
+  if (
+    appointment.status === "concluido" ||
+    appointment.status === "faltou" ||
+    appointment.status === "cancelado"
+  ) {
+    return (
+      {
+        concluido: "Concluído",
+        faltou: "Faltou",
+        cancelado: "Cancelado",
+      }[appointment.status] ?? appointment.status
+    );
+  }
+  if (appointment.reception_status === "chegou") return "Na recepção";
+  if (appointment.reception_status === "em_atendimento") return "Em atendimento";
   return (
     {
       agendado: "A confirmar",
       confirmado: "Confirmado",
       concluido: "Concluído",
-    }[status] ?? status
+    }[appointment.status] ?? appointment.status
   );
 }
 
