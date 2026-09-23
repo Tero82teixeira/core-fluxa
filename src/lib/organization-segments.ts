@@ -224,6 +224,7 @@ export const SEGMENT_OPTIONS: SegmentOption[] = [
     recommendedModules: [
       ...CORE_MODULES,
       "health_patients",
+      "health_appointments",
       "health_insurance",
       "health_authorizations",
       "health_billing",
@@ -308,6 +309,30 @@ export function enabledModulesFromUnknown(value: unknown): ModuleKey[] {
   return value.filter((module): module is ModuleKey => typeof module === "string" && allowed.has(module as ModuleKey));
 }
 
+export function moduleAllowedForSegment(
+  module: ModuleKey,
+  businessSegment: string | null | undefined,
+) {
+  const catalogEntry = MODULE_CATALOG.find((entry) => entry.key === module);
+  if (!catalogEntry) return false;
+  if (catalogEntry.group === "core") return true;
+
+  return catalogEntry.group === businessSegment;
+}
+
+export function modulesAvailableForSegment(businessSegment: string | null | undefined) {
+  return MODULE_CATALOG.filter((module) => moduleAllowedForSegment(module.key, businessSegment));
+}
+
+export function sanitizeModulesForSegment(
+  businessSegment: string | null | undefined,
+  enabledModules: unknown,
+) {
+  return enabledModulesFromUnknown(enabledModules).filter((module) =>
+    moduleAllowedForSegment(module, businessSegment),
+  );
+}
+
 export function moduleForRoute(route: string): ModuleKey | null {
   const base = Object.keys(ROUTE_MODULES).find(
     (candidate) => route === candidate || route.startsWith(`${candidate}/`),
@@ -320,10 +345,19 @@ export function routeVisibleForModules(
   businessSegment: string | null | undefined,
   enabledModules: unknown,
 ) {
-  if (!businessSegment) return true;
   const module = moduleForRoute(route);
   if (!module) return true;
-  const enabled = enabledModulesFromUnknown(enabledModules);
-  if (enabled.length === 0) return true;
+
+  if (!moduleAllowedForSegment(module, businessSegment)) return false;
+
+  const configured = sanitizeModulesForSegment(businessSegment, enabledModules);
+  const segment = segmentByKey(businessSegment)?.key;
+  const enabled =
+    configured.length > 0
+      ? configured
+      : segment
+        ? recommendedModulesForSegment(segment)
+        : CORE_MODULES;
+
   return enabled.includes(module);
 }

@@ -125,19 +125,25 @@ function WorkspaceRecovery() {
 }
 
 function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
-  const { status, commercialAccess, platformAdmin, organizationId, onboardingCompleted } =
-    useWorkspace();
+  const {
+    status,
+    commercialAccess,
+    platformAdmin,
+    organizationId,
+    onboardingCompleted,
+    membership,
+  } = useWorkspace();
   const pathname = useLocation({ select: (location) => location.pathname });
+  const onPlatformArea =
+    pathname.startsWith("/administracao-plataforma") || pathname.startsWith("/suporte-plataforma");
+  const settings = membership?.organizations?.organization_settings;
+  const moduleRouteAllowed =
+    status !== "ready" ||
+    onPlatformArea ||
+    routeVisibleForModules(pathname, settings?.business_segment, settings?.enabled_modules);
+
   if (status === "error") return <WorkspaceRecovery />;
-  if (
-    status === "ready" &&
-    !commercialAccess &&
-    !(
-      platformAdmin &&
-      (pathname.startsWith("/administracao-plataforma") ||
-        pathname.startsWith("/suporte-plataforma"))
-    )
-  ) {
+  if (status === "ready" && !commercialAccess && !(platformAdmin && onPlatformArea)) {
     return <CommercialAccessBlocked onSignOut={onSignOut} />;
   }
 
@@ -148,7 +154,14 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
         <SidebarInset className="min-w-0 overflow-hidden border-border/70 shadow-2xl shadow-black/10 md:border">
           <AppHeader onSignOut={onSignOut} />
           <main className="min-w-0 bg-muted/20 flex-1 pb-24 sm:pb-28">
-            <Outlet />
+            {moduleRouteAllowed ? (
+              <Outlet />
+            ) : (
+              <div className="flex min-h-[50vh] items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Redirecionando para uma área disponível…
+              </div>
+            )}
           </main>
         </SidebarInset>
         <StaffQuickChat />

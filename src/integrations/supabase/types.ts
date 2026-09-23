@@ -8036,6 +8036,10 @@ export type Database = {
           warning_count: number
         }[]
       }
+      organization_modules_are_valid: {
+        Args: { _enabled_modules: Json; _segment: string }
+        Returns: boolean
+      }
       organization_webhook_events: {
         Args: { _limit?: number; _organization_id: string }
         Returns: {
