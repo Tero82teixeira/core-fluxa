@@ -4699,7 +4699,7 @@ export type Database = {
           {
             foreignKeyName: "legal_case_profiles_process_id_fkey"
             columns: ["process_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "processes"
             referencedColumns: ["id"]
           },
