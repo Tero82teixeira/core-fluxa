@@ -51,6 +51,7 @@ describe("status dos módulos na navegação lateral", () => {
         { to: "/clientes", label: "Clientes", ready: true, group: "operacao" },
         { to: "/saude/pacientes", label: "Pacientes", ready: true, group: "operacao" },
         { to: "/saude/agenda", label: "Agenda", ready: true, group: "operacao" },
+        { to: "/saude/painel-clinica", label: "Painel da Clínica", ready: true, group: "operacao" },
         { to: "/saude/convenios", label: "Convênios", ready: true, group: "operacao" },
         { to: "/saude/autorizacoes", label: "Autorizações", ready: true, group: "operacao" },
         { to: "/saude/contas-medicas", label: "Contas Médicas", ready: true, group: "gestao" },

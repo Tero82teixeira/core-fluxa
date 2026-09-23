@@ -276,6 +276,7 @@ const ROUTE_MODULES: Record<string, ModuleKey> = {
   "/clientes": "clients",
   "/saude/pacientes": "health_patients",
   "/saude/agenda": "health_appointments",
+  "/saude/painel-clinica": "health_appointments",
   "/saude/convenios": "health_insurance",
   "/saude/autorizacoes": "health_authorizations",
   "/saude/contas-medicas": "health_billing",
