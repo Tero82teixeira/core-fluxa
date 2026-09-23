@@ -10,11 +10,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/lib/workspace";
 import {
   CORE_MODULES,
-  MODULE_CATALOG,
   SEGMENT_OPTIONS,
-  enabledModulesFromUnknown,
+  moduleAllowedForSegment,
+  modulesAvailableForSegment,
   recommendedModulesForSegment,
   recommendedModulesForSubtype,
+  sanitizeModulesForSegment,
   segmentByKey,
   subtypeByKey,
   subtypeOptionsForSegment,
@@ -31,11 +32,15 @@ export function SegmentModulesSettings() {
   const settings = membership?.organizations?.organization_settings;
   const currentSegment = (settings?.business_segment as BusinessSegment | null) ?? null;
   const currentSubtype = (settings?.business_subtype as BusinessSubtype | null) ?? null;
-  const currentEnabled = enabledModulesFromUnknown(settings?.enabled_modules);
+  const currentEnabled = sanitizeModulesForSegment(currentSegment, settings?.enabled_modules);
   const [segment, setSegment] = useState<BusinessSegment | null>(currentSegment);
   const [subtype, setSubtype] = useState<BusinessSubtype | null>(currentSubtype);
   const [enabled, setEnabled] = useState<ModuleKey[]>(
-    currentEnabled.length ? currentEnabled : currentSegment ? recommendedModulesForSegment(currentSegment) : CORE_MODULES,
+    currentEnabled.length
+      ? currentEnabled
+      : currentSegment
+        ? recommendedModulesForSegment(currentSegment)
+        : CORE_MODULES,
   );
   const [saving, setSaving] = useState(false);
   const canEdit = Boolean(role && managementRoles.has(role));
@@ -49,6 +54,7 @@ export function SegmentModulesSettings() {
         : CORE_MODULES,
     [segment, subtype],
   );
+  const availableModules = useMemo(() => modulesAvailableForSegment(segment), [segment]);
 
   const selectSegment = (value: BusinessSegment) => {
     setSegment(value);
@@ -63,10 +69,9 @@ export function SegmentModulesSettings() {
   };
 
   const toggleModule = (key: ModuleKey, checked: boolean) => {
+    if (!moduleAllowedForSegment(key, segment)) return;
     setEnabled((current) =>
-      checked
-        ? Array.from(new Set([...current, key]))
-        : current.filter((module) => module !== key),
+      checked ? Array.from(new Set([...current, key])) : current.filter((module) => module !== key),
     );
   };
 
@@ -74,11 +79,12 @@ export function SegmentModulesSettings() {
     if (!organizationId || !segment || !subtype || saving) return;
     setSaving(true);
     try {
+      const safeEnabled = sanitizeModulesForSegment(segment, enabled);
       const { error } = await (supabase as any).rpc("update_organization_segment", {
         _organization_id: organizationId,
         _segment: segment,
         _subtype: subtype,
-        _enabled_modules: enabled,
+        _enabled_modules: safeEnabled,
       });
       if (error) throw error;
       await refreshWorkspace();
@@ -116,9 +122,13 @@ export function SegmentModulesSettings() {
                       : "border-border/70 bg-card hover:border-primary/35"
                   }`}
                 >
-                  <span className={`grid size-10 place-items-center rounded-xl ${
-                    selected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  }`}>
+                  <span
+                    className={`grid size-10 place-items-center rounded-xl ${
+                      selected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
                     <Icon className="size-5" aria-hidden />
                   </span>
                   <span className="mt-3 block font-semibold">{option.label}</span>
@@ -170,7 +180,8 @@ export function SegmentModulesSettings() {
             </div>
             {subtype && (
               <div className="rounded-xl border border-primary/20 bg-primary/[0.05] p-3 text-sm">
-                Perfil atual: <span className="font-medium">{subtypeByKey(segment, subtype)?.label}</span>.
+                Perfil atual:{" "}
+                <span className="font-medium">{subtypeByKey(segment, subtype)?.label}</span>.
               </div>
             )}
           </CardContent>
@@ -193,7 +204,7 @@ export function SegmentModulesSettings() {
           </div>
 
           <div className="space-y-3">
-            {MODULE_CATALOG.map((module) => {
+            {availableModules.map((module) => {
               const checked = enabled.includes(module.key);
               const isRecommended = recommended.includes(module.key);
               const disabled = !canEdit || !module.available;
