@@ -103,7 +103,7 @@ function AuthBrand({ compact = false }: { compact?: boolean }) {
 
 function AuthSidePanel({ mode }: { mode: AuthMode }) {
   return (
-    <section className="relative hidden min-h-dvh overflow-hidden bg-slate-950 px-10 py-9 text-white lg:flex lg:flex-col lg:justify-between xl:px-14 xl:py-11">
+    <section className="relative hidden min-h-0 overflow-hidden bg-slate-950 px-10 py-9 text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:justify-between lg:overflow-y-auto xl:px-14 xl:py-11">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.055] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:48px_48px]"
         aria-hidden
@@ -121,7 +121,7 @@ function AuthSidePanel({ mode }: { mode: AuthMode }) {
         <AuthBrand />
       </div>
 
-      <div className="relative my-10 max-w-xl">
+      <div className="relative my-10 max-w-xl [@media(max-height:760px)]:my-5">
         <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/25 bg-blue-400/10 px-3 py-1.5 text-xs font-semibold text-blue-200">
           {mode === "signup" ? (
             <>
@@ -134,18 +134,18 @@ function AuthSidePanel({ mode }: { mode: AuthMode }) {
           )}
         </div>
 
-        <h1 className="mt-6 max-w-lg font-display text-4xl leading-[1.08] font-semibold tracking-[-0.035em] text-balance xl:text-[3.25rem]">
+        <h1 className="mt-6 max-w-lg font-display text-4xl leading-[1.08] font-semibold tracking-[-0.035em] text-balance [@media(max-height:760px)]:mt-4 xl:text-[3.25rem]">
           {mode === "signup"
             ? "Comece com clareza desde o primeiro dia."
             : "Sua operação continua de onde você parou."}
         </h1>
-        <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">
+        <p className="mt-5 max-w-lg text-base leading-7 text-slate-300 [@media(max-height:760px)]:mt-3">
           {mode === "signup"
             ? "Crie sua empresa, organize a primeira rotina e conheça todos os módulos da FLUXA no seu próprio ritmo."
             : "Entre para acompanhar clientes, processos, documentos, tarefas, prazos e decisões em um único lugar."}
         </p>
 
-        <ul className="mt-7 grid gap-3">
+        <ul className="mt-7 grid gap-3 [@media(max-height:760px)]:mt-4 [@media(max-height:760px)]:gap-2">
           {BENEFITS.map(({ icon: Icon, label }) => (
             <li key={label} className="flex items-center gap-3 text-sm text-slate-200">
               <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-blue-300">
@@ -156,7 +156,7 @@ function AuthSidePanel({ mode }: { mode: AuthMode }) {
           ))}
         </ul>
 
-        <div className="mt-8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-2xl shadow-black/20 backdrop-blur">
+        <div className="mt-8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-2xl shadow-black/20 backdrop-blur [@media(max-height:760px)]:hidden">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <span className="flex items-center gap-2 text-xs font-semibold text-slate-200">
               <LayoutDashboard className="size-4 text-blue-300" aria-hidden /> Fluxo conectado
@@ -334,10 +334,10 @@ function AuthPage() {
   };
 
   return (
-    <div className="grid min-h-dvh bg-slate-50 lg:grid-cols-[1.05fr_0.95fr] dark:bg-slate-950">
+    <div className="grid min-h-dvh bg-slate-50 lg:grid-cols-[1.05fr_0.95fr] lg:items-start dark:bg-slate-950">
       <AuthSidePanel mode={mode} />
 
-      <section className="relative flex min-h-dvh items-center justify-center px-4 py-6 sm:px-8 sm:py-10">
+      <section className="relative flex min-h-dvh items-center justify-center px-4 py-4 sm:px-8 sm:py-5">
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-blue-500/[0.06] to-transparent lg:hidden"
           aria-hidden
@@ -354,10 +354,10 @@ function AuthPage() {
           </div>
 
           <Card className="w-full rounded-3xl border-border/80 bg-card/95 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.35)] backdrop-blur">
-            <CardContent className="p-5 sm:p-8">
+            <CardContent className="p-5 sm:p-6">
               <Link
                 to="/"
-                className="mb-6 hidden w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground lg:flex"
+                className="mb-4 hidden w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground lg:flex"
               >
                 <ArrowLeft className="size-3.5" aria-hidden /> Voltar para a página inicial
               </Link>
@@ -367,7 +367,7 @@ function AuthPage() {
                   <p className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">
                     {mode === "login" ? "Acesso à plataforma" : "Teste gratuito"}
                   </p>
-                  <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+                  <h2 className={`mt-2 font-display font-semibold tracking-tight ${mode === "signup" ? "text-xl sm:text-[1.375rem]" : "text-2xl sm:text-[1.75rem]"}`}>
                     {mode === "login" ? "Bem-vindo à FLUXA" : "Crie sua empresa na FLUXA"}
                   </h2>
                 </div>
@@ -472,7 +472,7 @@ function AuthPage() {
                 </div>
               ) : (
                 <>
-                  <form onSubmit={submit} noValidate className="mt-6 space-y-4.5">
+                  <form onSubmit={submit} noValidate className="mt-4 space-y-3">
                     {mode === "signup" && (
                       <div className="space-y-2">
                         <Label htmlFor="name" className="text-sm font-medium">
