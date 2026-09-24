@@ -28,7 +28,7 @@ test("formulário orienta senha, carregamento, erros e confirmação", () => {
 });
 
 test("experiência móvel mantém marca e formulário sem o painel extenso", () => {
-  assert.match(auth, /hidden min-h-dvh[\s\S]*lg:flex/);
+  assert.match(auth, /hidden min-h-0[\s\S]*lg:flex/);
   assert.match(auth, /lg:hidden/);
   assert.match(auth, /<AuthBrand compact \/>/);
 });
