@@ -224,7 +224,8 @@ function AuthPage() {
         setErrors({ form: "Não foi possível identificar sua área de acesso. Tente novamente." });
         return;
       }
-      navigate({ to: data === "client_portal" ? "/meu-portal" : "/central", replace: true });
+      // O workspace decide se precisa escolher a área antes de abrir o sistema.
+      navigate({ to: data === "client_portal" ? "/meu-portal" : "/onboarding", replace: true });
     });
   }, [authStatus, navigate]);
 
