@@ -62,6 +62,19 @@ export type LegalAgendaHearing = {
   confidential: boolean;
 };
 
+export type LegalDeadline = {
+  id: string;
+  organization_id: string;
+  process_id: string;
+  title: string;
+  due_date: string;
+  status: "aberto" | "concluido" | "cancelado";
+  process_code: string;
+  process_title: string | null;
+  client_name: string;
+  confidential: boolean;
+};
+
 const rpc = supabase as unknown as {
   rpc: (
     name: string,
@@ -130,6 +143,53 @@ export function useLegalAgenda(organizationId: string | null, from: string, to: 
       });
       if (error) throw error;
       return (Array.isArray(data) ? data : []) as LegalAgendaHearing[];
+    },
+  });
+}
+
+export function useLegalDeadlines(
+  organizationId: string | null,
+  options: { processId?: string; from?: string; to?: string },
+) {
+  const { processId, from, to } = options;
+  return useQuery({
+    queryKey: ["legal-deadlines", organizationId, processId ?? null, from ?? null, to ?? null],
+    enabled: Boolean(organizationId && (processId || (from && to))),
+    queryFn: async () => {
+      const { data, error } = await rpc.rpc("list_legal_deadlines", {
+        _organization_id: organizationId,
+        _process_id: processId ?? null,
+        _from: from ?? null,
+        _to: to ?? null,
+      });
+      if (error) throw error;
+      return (Array.isArray(data) ? data : []) as LegalDeadline[];
+    },
+  });
+}
+
+export function useSaveLegalDeadline(organizationId: string | null, processId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: {
+      id?: string;
+      title: string;
+      dueDate: string;
+      status: LegalDeadline["status"];
+    }) => {
+      const { data, error } = await rpc.rpc("save_legal_deadline", {
+        _organization_id: organizationId,
+        _process_id: processId,
+        _deadline_id: values.id ?? null,
+        _title: values.title,
+        _due_date: values.dueDate,
+        _status: values.status,
+      });
+      if (error) throw error;
+      return data as LegalDeadline;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["legal-deadlines", organizationId] });
     },
   });
 }

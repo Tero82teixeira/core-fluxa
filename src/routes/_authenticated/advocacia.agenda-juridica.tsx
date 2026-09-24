@@ -16,7 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useLegalAgenda } from "@/hooks/use-legal-cases";
+import { useLegalAgenda, useLegalDeadlines } from "@/hooks/use-legal-cases";
 import { useProcesses, useTasks } from "@/hooks/use-operations";
 import { localCivilDate } from "@/lib/legal-workspace";
 import { useWorkspace } from "@/lib/workspace";
@@ -88,6 +88,10 @@ function LegalAgendaPage() {
   const [view, setView] = useState<ViewMode>(search.view ?? "week");
   const range = useMemo(() => rangeIso(date, view), [date, view]);
   const hearings = useLegalAgenda(organizationId, range.from, range.to);
+  const legalDeadlines = useLegalDeadlines(organizationId, {
+    from: range.startDate,
+    to: range.endDate,
+  });
   const processes = useProcesses(organizationId);
   const tasks = useTasks(organizationId);
 
@@ -114,11 +118,21 @@ function LegalAgendaPage() {
         id: `deadline:${process.id}`,
         kind: "deadline" as const,
         at: `${process.due_date}T12:00:00`,
-        title: `Prazo · ${process.code}`,
+        title: `Prazo geral · ${process.code}`,
         subtitle: `${process.clients?.name ?? "Cliente não informado"} · ${process.title ?? "Processo"}`,
         processId: process.id,
         confidential: false,
       }));
+
+    const individualDeadlines = (legalDeadlines.data ?? []).map((deadline) => ({
+      id: `legal-deadline:${deadline.id}`,
+      kind: "deadline" as const,
+      at: `${deadline.due_date}T12:00:00`,
+      title: `${deadline.title} · ${deadline.process_code}`,
+      subtitle: `${deadline.client_name} · ${deadline.process_title ?? "Processo"}`,
+      processId: deadline.process_id,
+      confidential: deadline.confidential,
+    }));
 
     const taskEvents = (tasks.data ?? [])
       .filter(
@@ -138,10 +152,17 @@ function LegalAgendaPage() {
         confidential: false,
       }));
 
-    return [...hearingEvents, ...deadlineEvents, ...taskEvents].sort(
+    return [...hearingEvents, ...deadlineEvents, ...individualDeadlines, ...taskEvents].sort(
       (a, b) => new Date(a.at).getTime() - new Date(b.at).getTime(),
     );
-  }, [hearings.data, processes.data, range.endDate, range.startDate, tasks.data]);
+  }, [
+    hearings.data,
+    legalDeadlines.data,
+    processes.data,
+    range.endDate,
+    range.startDate,
+    tasks.data,
+  ]);
 
   const days = useMemo(
     () =>
@@ -152,8 +173,9 @@ function LegalAgendaPage() {
     [events, range.startDate, view],
   );
 
-  const isLoading = hearings.isLoading || processes.isLoading || tasks.isLoading;
-  const hasError = hearings.isError || processes.isError || tasks.isError;
+  const isLoading =
+    hearings.isLoading || legalDeadlines.isLoading || processes.isLoading || tasks.isLoading;
+  const hasError = hearings.isError || legalDeadlines.isError || processes.isError || tasks.isError;
   const move = (direction: number) => setDate(addDays(date, direction * (view === "week" ? 7 : 1)));
   const counts = {
     hearing: events.filter((event) => event.kind === "hearing").length,

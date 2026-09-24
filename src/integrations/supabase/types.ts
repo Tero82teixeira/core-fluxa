@@ -4705,6 +4705,60 @@ export type Database = {
           },
         ]
       }
+      legal_deadlines: {
+        Row: {
+          created_at: string
+          created_by: string
+          due_date: string
+          id: string
+          organization_id: string
+          process_id: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          due_date: string
+          id?: string
+          organization_id: string
+          process_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          due_date?: string
+          id?: string
+          organization_id?: string
+          process_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_deadlines_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_deadlines_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_performance_goals: {
         Row: {
           completed_processes_target: number
@@ -7904,6 +7958,10 @@ export type Database = {
         Args: { _from: string; _organization_id: string; _to: string }
         Returns: Json
       }
+      list_legal_deadlines: {
+        Args: { _from?: string; _organization_id: string; _process_id?: string; _to?: string }
+        Returns: Json
+      }
       list_document_request_templates: {
         Args: { _organization_id: string }
         Returns: {
@@ -9033,6 +9091,17 @@ export type Database = {
           _organization_id: string
           _process_id: string
           _state?: string
+        }
+        Returns: Json
+      }
+      save_legal_deadline: {
+        Args: {
+          _deadline_id?: string
+          _due_date: string
+          _organization_id: string
+          _process_id: string
+          _status?: string
+          _title: string
         }
         Returns: Json
       }
