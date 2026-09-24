@@ -25,12 +25,12 @@ describe("primeira experiência do cliente", () => {
     assert.match(onboarding, /Concluir configuração e entrar/);
   });
 
-  test("entra no Meu Dia somente depois de concluir a RPC protegida", async () => {
+  test("entra na área escolhida somente depois de concluir a RPC protegida", async () => {
     const onboarding = await readFile(onboardingPath, "utf8");
 
     assert.match(
       onboarding,
-      /updateOnboarding\(\{ step: 3, complete: true \}\);[\s\S]*refreshWorkspace\(\);[\s\S]*navigate\(\{ to: "\/meu-dia" \}\)/,
+      /updateOnboarding\(\{ step: 3, complete: true \}\);[\s\S]*refreshWorkspace\(\);[\s\S]*segment === "health"[\s\S]*healthWorkspaceHome[\s\S]*: "\/meu-dia"/,
     );
     assert.match(onboarding, /aria-current=\{index === step \? "step" : undefined\}/);
   });

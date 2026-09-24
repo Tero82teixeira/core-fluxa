@@ -37,7 +37,11 @@ import { useWorkspace } from "@/lib/workspace";
 import { ROLE } from "@/lib/domain";
 import { canManageSubscription } from "@/lib/billing";
 import { cn } from "@/lib/utils";
-import { routeVisibleForModules } from "@/lib/organization-segments";
+import {
+  healthWorkspaceHome,
+  isFocusedHealthWorkspace,
+  routeVisibleForModules,
+} from "@/lib/organization-segments";
 import { toast } from "sonner";
 
 const NAV_ICON_TONE: Record<string, string> = {
@@ -108,6 +112,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   } = useWorkspace();
   const organizationSettings = membership?.organizations?.organization_settings;
   const isHealthWorkspace = organizationSettings?.business_segment === "health";
+  const focusedHealth = isFocusedHealthWorkspace(organizationSettings);
   const [billingOpen, setBillingOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
 
@@ -139,6 +144,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
         item.to,
         organizationSettings?.business_segment,
         organizationSettings?.enabled_modules,
+        focusedHealth,
       ) &&
       (item.to !== "/assinatura" || canManageSubscription(role)),
   );
@@ -277,7 +283,9 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
     >
       <SidebarHeader className="border-b border-sidebar-border/80 px-3 py-4">
         <Link
-          to="/meu-dia"
+          to={
+            focusedHealth ? healthWorkspaceHome(organizationSettings?.enabled_modules) : "/meu-dia"
+          }
           onClick={closeOnMobile}
           className="flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
         >
@@ -298,7 +306,25 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
       </SidebarHeader>
 
       <SidebarContent className="gap-1 px-2">
-        {isHealthWorkspace ? (
+        {focusedHealth ? (
+          <>
+            {renderGroup("rotina-clinica", "Clínica", routineItems)}
+            {renderCollapsibleGroup(
+              "faturamento-saude",
+              "Faturamento",
+              billingItems,
+              billingOpen,
+              setBillingOpen,
+              ReceiptText,
+            )}
+            {renderGroup(
+              "gestao-clinica",
+              "Gestão da clínica",
+              visibleItems.filter((item) => item.to === "/equipe"),
+            )}
+            {renderGroup("sistema", "Sistema", systemItems)}
+          </>
+        ) : isHealthWorkspace ? (
           <>
             {renderGroup("rotina-clinica", "Rotina da clínica", routineItems)}
             {renderCollapsibleGroup(

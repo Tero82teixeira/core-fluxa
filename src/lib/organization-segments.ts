@@ -58,27 +58,141 @@ export const MODULE_CATALOG: Array<{
   group: "core" | "health" | "legal" | "engineering" | "real_estate";
   available: boolean;
 }> = [
-  { key: "clients", label: "Clientes", description: "Carteira e relacionamento.", group: "core", available: true },
-  { key: "processes", label: "Processos", description: "Etapas, prazos e protocolos.", group: "core", available: true },
-  { key: "documents", label: "Documentos", description: "Arquivos, solicitações e validades.", group: "core", available: true },
-  { key: "tasks", label: "Tarefas", description: "Agenda operacional e responsáveis.", group: "core", available: true },
-  { key: "communication", label: "Comunicação", description: "Histórico e acompanhamento de contatos.", group: "core", available: true },
-  { key: "finance", label: "Financeiro", description: "Receitas, contas e cobranças.", group: "core", available: true },
-  { key: "monitoring", label: "Monitoramento", description: "Prazos, alertas e vencimentos.", group: "core", available: true },
-  { key: "reports", label: "Relatórios", description: "Indicadores e visão gerencial.", group: "core", available: true },
-  { key: "automations", label: "Automações", description: "Regras, lembretes e disparos.", group: "core", available: true },
-  { key: "client_portal", label: "Portal do Cliente", description: "Experiência externa e autoatendimento.", group: "core", available: true },
+  {
+    key: "clients",
+    label: "Clientes",
+    description: "Carteira e relacionamento.",
+    group: "core",
+    available: true,
+  },
+  {
+    key: "processes",
+    label: "Processos",
+    description: "Etapas, prazos e protocolos.",
+    group: "core",
+    available: true,
+  },
+  {
+    key: "documents",
+    label: "Documentos",
+    description: "Arquivos, solicitações e validades.",
+    group: "core",
+    available: true,
+  },
+  {
+    key: "tasks",
+    label: "Tarefas",
+    description: "Agenda operacional e responsáveis.",
+    group: "core",
+    available: true,
+  },
+  {
+    key: "communication",
+    label: "Comunicação",
+    description: "Histórico e acompanhamento de contatos.",
+    group: "core",
+    available: true,
+  },
+  {
+    key: "finance",
+    label: "Financeiro",
+    description: "Receitas, contas e cobranças.",
+    group: "core",
+    available: true,
+  },
+  {
+    key: "monitoring",
+    label: "Monitoramento",
+    description: "Prazos, alertas e vencimentos.",
+    group: "core",
+    available: true,
+  },
+  {
+    key: "reports",
+    label: "Relatórios",
+    description: "Indicadores e visão gerencial.",
+    group: "core",
+    available: true,
+  },
+  {
+    key: "automations",
+    label: "Automações",
+    description: "Regras, lembretes e disparos.",
+    group: "core",
+    available: true,
+  },
+  {
+    key: "client_portal",
+    label: "Portal do Cliente",
+    description: "Experiência externa e autoatendimento.",
+    group: "core",
+    available: true,
+  },
 
-  { key: "health_patients", label: "Pacientes", description: "Cadastro e acompanhamento administrativo de pacientes.", group: "health", available: true },
-  { key: "health_appointments", label: "Agenda", description: "Horários e atendimentos administrativos.", group: "health", available: true },
-  { key: "health_insurance", label: "Convênios", description: "Planos, operadoras e vínculos.", group: "health", available: true },
-  { key: "health_authorizations", label: "Autorizações", description: "Solicitações, validade e acompanhamento.", group: "health", available: true },
-  { key: "health_billing", label: "Contas Médicas", description: "Faturamento e acompanhamento de recebimentos.", group: "health", available: true },
-  { key: "health_denials", label: "Glosas", description: "Controle, recurso e recuperação de valores.", group: "health", available: true },
+  {
+    key: "health_patients",
+    label: "Pacientes",
+    description: "Cadastro e acompanhamento administrativo de pacientes.",
+    group: "health",
+    available: true,
+  },
+  {
+    key: "health_appointments",
+    label: "Agenda",
+    description: "Horários e atendimentos administrativos.",
+    group: "health",
+    available: true,
+  },
+  {
+    key: "health_insurance",
+    label: "Convênios",
+    description: "Planos, operadoras e vínculos.",
+    group: "health",
+    available: true,
+  },
+  {
+    key: "health_authorizations",
+    label: "Autorizações",
+    description: "Solicitações, validade e acompanhamento.",
+    group: "health",
+    available: true,
+  },
+  {
+    key: "health_billing",
+    label: "Contas Médicas",
+    description: "Faturamento e acompanhamento de recebimentos.",
+    group: "health",
+    available: true,
+  },
+  {
+    key: "health_denials",
+    label: "Glosas",
+    description: "Controle, recurso e recuperação de valores.",
+    group: "health",
+    available: true,
+  },
 
-  { key: "legal_workspace", label: "Recursos Jurídicos", description: "Painel jurídico, carteira de processos e prazos prioritários.", group: "legal", available: true },
-  { key: "engineering_workspace", label: "Recursos de Engenharia", description: "Projetos, obras e documentação técnica.", group: "engineering", available: false },
-  { key: "real_estate_workspace", label: "Recursos Imobiliários", description: "Imóveis, contratos e vistorias.", group: "real_estate", available: false },
+  {
+    key: "legal_workspace",
+    label: "Recursos Jurídicos",
+    description: "Painel jurídico, carteira de processos e prazos prioritários.",
+    group: "legal",
+    available: true,
+  },
+  {
+    key: "engineering_workspace",
+    label: "Recursos de Engenharia",
+    description: "Projetos, obras e documentação técnica.",
+    group: "engineering",
+    available: false,
+  },
+  {
+    key: "real_estate_workspace",
+    label: "Recursos Imobiliários",
+    description: "Imóveis, contratos e vistorias.",
+    group: "real_estate",
+    available: false,
+  },
 ];
 
 export type BusinessSubtype =
@@ -119,70 +233,186 @@ export type SubtypeOption = {
 
 export const SEGMENT_SUBTYPES: Record<BusinessSegment, SubtypeOption[]> = {
   legal: [
-    { key: "law_firm", label: "Escritório de advocacia", description: "Equipe jurídica atendendo clientes e processos." },
-    { key: "solo_lawyer", label: "Advocacia individual", description: "Profissional autônomo com operação própria." },
-    { key: "legal_department", label: "Departamento jurídico", description: "Jurídico interno de uma empresa." },
-    { key: "legal_services", label: "Serviços jurídicos", description: "Consultoria, apoio e serviços especializados." },
+    {
+      key: "law_firm",
+      label: "Escritório de advocacia",
+      description: "Equipe jurídica atendendo clientes e processos.",
+    },
+    {
+      key: "solo_lawyer",
+      label: "Advocacia individual",
+      description: "Profissional autônomo com operação própria.",
+    },
+    {
+      key: "legal_department",
+      label: "Departamento jurídico",
+      description: "Jurídico interno de uma empresa.",
+    },
+    {
+      key: "legal_services",
+      label: "Serviços jurídicos",
+      description: "Consultoria, apoio e serviços especializados.",
+    },
   ],
   accounting: [
-    { key: "accounting_firm", label: "Escritório contábil", description: "Contabilidade recorrente para empresas e pessoas." },
-    { key: "financial_bpo", label: "BPO financeiro", description: "Rotinas financeiras terceirizadas para clientes." },
-    { key: "tax_services", label: "Fiscal e tributário", description: "Operação focada em obrigações e tributos." },
-    { key: "accounting_consulting", label: "Consultoria contábil", description: "Projetos e serviços consultivos." },
+    {
+      key: "accounting_firm",
+      label: "Escritório contábil",
+      description: "Contabilidade recorrente para empresas e pessoas.",
+    },
+    {
+      key: "financial_bpo",
+      label: "BPO financeiro",
+      description: "Rotinas financeiras terceirizadas para clientes.",
+    },
+    {
+      key: "tax_services",
+      label: "Fiscal e tributário",
+      description: "Operação focada em obrigações e tributos.",
+    },
+    {
+      key: "accounting_consulting",
+      label: "Consultoria contábil",
+      description: "Projetos e serviços consultivos.",
+    },
   ],
   engineering: [
-    { key: "engineering_office", label: "Escritório de engenharia", description: "Projetos, laudos e serviços de engenharia." },
-    { key: "architecture_office", label: "Arquitetura", description: "Projetos arquitetônicos e acompanhamento." },
-    { key: "construction", label: "Obras e construção", description: "Execução, medição e acompanhamento de obras." },
-    { key: "technical_services", label: "Serviços técnicos", description: "Vistorias, laudos, manutenção e campo." },
-    { key: "regularization", label: "Regularização", description: "Licenças, aprovações e documentação técnica." },
+    {
+      key: "engineering_office",
+      label: "Escritório de engenharia",
+      description: "Projetos, laudos e serviços de engenharia.",
+    },
+    {
+      key: "architecture_office",
+      label: "Arquitetura",
+      description: "Projetos arquitetônicos e acompanhamento.",
+    },
+    {
+      key: "construction",
+      label: "Obras e construção",
+      description: "Execução, medição e acompanhamento de obras.",
+    },
+    {
+      key: "technical_services",
+      label: "Serviços técnicos",
+      description: "Vistorias, laudos, manutenção e campo.",
+    },
+    {
+      key: "regularization",
+      label: "Regularização",
+      description: "Licenças, aprovações e documentação técnica.",
+    },
   ],
   health: [
     {
       key: "clinic_office",
       label: "Clínica ou consultório",
       description: "Atendimento, agenda, pacientes, convênios e financeiro.",
-      recommendedModules: [...CORE_MODULES, "health_patients", "health_appointments", "health_insurance", "health_authorizations", "health_billing"],
+      recommendedModules: [
+        ...CORE_MODULES,
+        "health_patients",
+        "health_appointments",
+        "health_insurance",
+        "health_authorizations",
+        "health_billing",
+      ],
     },
     {
       key: "medical_billing",
       label: "Contas médicas e faturamento",
       description: "Faturamento de convênios, glosas e recebimentos.",
-      recommendedModules: [...CORE_MODULES, "health_insurance", "health_authorizations", "health_billing", "health_denials"],
+      recommendedModules: [
+        ...CORE_MODULES,
+        "health_insurance",
+        "health_authorizations",
+        "health_billing",
+        "health_denials",
+      ],
     },
     {
       key: "health_service_provider",
       label: "Prestador de serviços de saúde",
       description: "Profissionais e empresas que prestam serviços para clínicas e pacientes.",
-      recommendedModules: [...CORE_MODULES, "health_patients", "health_appointments", "health_billing"],
+      recommendedModules: [
+        ...CORE_MODULES,
+        "health_patients",
+        "health_appointments",
+        "health_billing",
+      ],
     },
     {
       key: "diagnostics",
       label: "Diagnóstico e exames",
       description: "Laboratórios, imagem e serviços diagnósticos.",
-      recommendedModules: [...CORE_MODULES, "health_patients", "health_appointments", "health_insurance", "health_authorizations", "health_billing"],
+      recommendedModules: [
+        ...CORE_MODULES,
+        "health_patients",
+        "health_appointments",
+        "health_insurance",
+        "health_authorizations",
+        "health_billing",
+      ],
     },
     {
       key: "rehabilitation",
       label: "Reabilitação e terapias",
       description: "Fisioterapia, recuperação, terapias e acompanhamento recorrente.",
-      recommendedModules: [...CORE_MODULES, "health_patients", "health_appointments", "health_insurance", "health_authorizations", "health_billing"],
+      recommendedModules: [
+        ...CORE_MODULES,
+        "health_patients",
+        "health_appointments",
+        "health_insurance",
+        "health_authorizations",
+        "health_billing",
+      ],
     },
   ],
   real_estate: [
-    { key: "brokerage", label: "Imobiliária e corretagem", description: "Captação, clientes, imóveis e negociações." },
-    { key: "property_management", label: "Administração de imóveis", description: "Contratos, proprietários e operação recorrente." },
-    { key: "rentals", label: "Locação", description: "Gestão de locações, vencimentos e financeiro." },
-    { key: "developments", label: "Empreendimentos", description: "Comercialização e acompanhamento de unidades." },
+    {
+      key: "brokerage",
+      label: "Imobiliária e corretagem",
+      description: "Captação, clientes, imóveis e negociações.",
+    },
+    {
+      key: "property_management",
+      label: "Administração de imóveis",
+      description: "Contratos, proprietários e operação recorrente.",
+    },
+    {
+      key: "rentals",
+      label: "Locação",
+      description: "Gestão de locações, vencimentos e financeiro.",
+    },
+    {
+      key: "developments",
+      label: "Empreendimentos",
+      description: "Comercialização e acompanhamento de unidades.",
+    },
   ],
   consulting_services: [
-    { key: "consulting", label: "Consultoria", description: "Projetos, entregas e acompanhamento de clientes." },
-    { key: "service_company", label: "Empresa de serviços", description: "Operação recorrente de prestação de serviços." },
-    { key: "administrative_services", label: "Serviços administrativos", description: "Backoffice, documentação e rotinas operacionais." },
+    {
+      key: "consulting",
+      label: "Consultoria",
+      description: "Projetos, entregas e acompanhamento de clientes.",
+    },
+    {
+      key: "service_company",
+      label: "Empresa de serviços",
+      description: "Operação recorrente de prestação de serviços.",
+    },
+    {
+      key: "administrative_services",
+      label: "Serviços administrativos",
+      description: "Backoffice, documentação e rotinas operacionais.",
+    },
     { key: "agency", label: "Agência", description: "Clientes, demandas, entregas e equipe." },
   ],
   other: [
-    { key: "general_other", label: "Outra operação", description: "Comece pelo núcleo do FLUXA e personalize os módulos." },
+    {
+      key: "general_other",
+      label: "Outra operação",
+      description: "Comece pelo núcleo do FLUXA e personalize os módulos.",
+    },
   ],
 };
 
@@ -255,7 +485,7 @@ export const SEGMENT_OPTIONS: SegmentOption[] = [
 ];
 
 export function subtypeOptionsForSegment(segment: BusinessSegment | null | undefined) {
-  return segment ? SEGMENT_SUBTYPES[segment] ?? [] : [];
+  return segment ? (SEGMENT_SUBTYPES[segment] ?? []) : [];
 }
 
 export function subtypeByKey(
@@ -308,7 +538,9 @@ export function recommendedModulesForSegment(segment: BusinessSegment) {
 export function enabledModulesFromUnknown(value: unknown): ModuleKey[] {
   if (!Array.isArray(value)) return [];
   const allowed = new Set(MODULE_CATALOG.map((module) => module.key));
-  return value.filter((module): module is ModuleKey => typeof module === "string" && allowed.has(module as ModuleKey));
+  return value.filter(
+    (module): module is ModuleKey => typeof module === "string" && allowed.has(module as ModuleKey),
+  );
 }
 
 export function moduleAllowedForSegment(
@@ -342,11 +574,55 @@ export function moduleForRoute(route: string): ModuleKey | null {
   return base ? ROUTE_MODULES[base] : null;
 }
 
+export function isFocusedHealthWorkspace(
+  settings:
+    | { business_segment?: string | null; focused_health_workspace?: boolean | null }
+    | null
+    | undefined,
+) {
+  return settings?.business_segment === "health" && settings.focused_health_workspace === true;
+}
+
+const HEALTH_SHARED_ROUTES = new Set([
+  "/onboarding",
+  "/equipe",
+  "/notificacoes",
+  "/configuracoes",
+  "/assinatura",
+  "/ajuda",
+  "/novidades",
+]);
+
+export function healthWorkspaceHome(enabledModules: unknown) {
+  const priorities = [
+    "/saude/painel-clinica",
+    "/saude/pacientes",
+    "/saude/agenda",
+    "/saude/contas-medicas",
+    "/saude/convenios",
+    "/saude/autorizacoes",
+    "/saude/glosas",
+  ] as const;
+  return (
+    priorities.find((route) => routeVisibleForModules(route, "health", enabledModules, true)) ??
+    "/configuracoes"
+  );
+}
+
 export function routeVisibleForModules(
   route: string,
   businessSegment: string | null | undefined,
   enabledModules: unknown,
+  focusedHealthWorkspace = false,
 ) {
+  if (
+    businessSegment === "health" &&
+    focusedHealthWorkspace &&
+    !route.startsWith("/saude/") &&
+    ![...HEALTH_SHARED_ROUTES].some((shared) => route === shared || route.startsWith(`${shared}/`))
+  ) {
+    return false;
+  }
   const module = moduleForRoute(route);
   if (!module) return true;
 

@@ -37,6 +37,7 @@ import { AsaasSettings } from "@/components/finance/asaas-settings";
 import { DataProtectionPanel } from "@/components/security/data-protection-panel";
 import { IntegrationHealthPanel } from "@/components/integrations/integration-health-panel";
 import { SegmentModulesSettings } from "@/components/settings/segment-modules-settings";
+import { isFocusedHealthWorkspace } from "@/lib/organization-segments";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -161,7 +162,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function SettingsPage() {
-  const { organizationId, role } = useWorkspace();
+  const { organizationId, role, membership } = useWorkspace();
+  const focusedHealth = isFocusedHealthWorkspace(membership?.organizations?.organization_settings);
+  const visibleTabs = focusedHealth
+    ? tabs.filter(([key]) => ["organizacao", "segmento", "preferencias", "seguranca"].includes(key))
+    : tabs;
   const { session } = useSession();
   const query = useOrganizationSettings(organizationId);
   const update = useUpdateOrganizationSettings(organizationId);
@@ -255,7 +260,7 @@ function SettingsPage() {
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-300">
               <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 font-medium text-white">
-                {tabs.length} áreas configuráveis
+                {visibleTabs.length} áreas configuráveis
               </span>
               <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
                 {canEdit ? "Edição autorizada" : "Somente leitura"}
@@ -291,9 +296,12 @@ function SettingsPage() {
           </CardContent>
         </Card>
       )}
-      <Tabs defaultValue="geral">
+      <Tabs
+        key={focusedHealth ? "health" : "general"}
+        defaultValue={focusedHealth ? "organizacao" : "geral"}
+      >
         <TabsList className="h-auto w-full flex-wrap justify-start gap-1.5 rounded-2xl border border-border/70 bg-card p-2 shadow-soft">
-          {tabs.map(([key, label]) => (
+          {visibleTabs.map(([key, label]) => (
             <TabsTrigger className="rounded-xl px-4 py-2" key={key} value={key}>
               {label}
             </TabsTrigger>

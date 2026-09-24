@@ -11,6 +11,7 @@ import { useCnpjLookup } from "@/hooks/use-cnpj-lookup";
 import { captureProductEvent } from "@/lib/product-analytics";
 import {
   SEGMENT_OPTIONS,
+  healthWorkspaceHome,
   recommendedModulesForSubtype,
   segmentByKey,
   subtypeByKey,
@@ -249,7 +250,12 @@ function Onboarding() {
       if (explorationError) throw explorationError;
       await refreshWorkspace();
       toast.success("Modo de exploração liberado. Você pode concluir a configuração depois.");
-      navigate({ to: "/meu-dia" });
+      navigate({
+        to:
+          segment === "health"
+            ? healthWorkspaceHome(recommendedModulesForSubtype(segment, subtype))
+            : "/meu-dia",
+      });
     } catch (caught) {
       const message = describeError(caught, "empresa");
       setError(message);
@@ -279,15 +285,12 @@ function Onboarding() {
           return;
         }
         const id = ensureOrganization();
-        const { error: segmentError } = await (supabase as any).rpc(
-          "update_organization_segment",
-          {
-            _organization_id: id,
-            _segment: segment,
-            _subtype: subtype,
-            _enabled_modules: recommendedModulesForSubtype(segment, subtype),
-          },
-        );
+        const { error: segmentError } = await (supabase as any).rpc("update_organization_segment", {
+          _organization_id: id,
+          _segment: segment,
+          _subtype: subtype,
+          _enabled_modules: recommendedModulesForSubtype(segment, subtype),
+        });
         if (segmentError) throw segmentError;
         await refreshWorkspace();
         captureProductEvent("organization_segment_selected", { segment });
@@ -325,8 +328,17 @@ function Onboarding() {
         await updateOnboarding({ step: 3, complete: true });
         await refreshWorkspace();
         captureProductEvent("organization_onboarding_completed");
-        toast.success("Empresa configurada. Bem-vindo ao Meu Dia.");
-        navigate({ to: "/meu-dia" });
+        toast.success(
+          segment === "health"
+            ? "Empresa configurada. Bem-vindo ao Painel da Clínica."
+            : "Empresa configurada. Bem-vindo ao Meu Dia.",
+        );
+        navigate({
+          to:
+            segment === "health"
+              ? healthWorkspaceHome(recommendedModulesForSubtype(segment, subtype))
+              : "/meu-dia",
+        });
         return;
       }
       toast.success("Progresso salvo.");
@@ -383,8 +395,8 @@ function Onboarding() {
           </div>
         </div>
         <p className="relative mt-4 max-w-2xl text-sm leading-6 text-slate-300">
-          Vamos preparar o FLUXA para a sua área e concluir a configuração em poucos passos.
-          Depois, você poderá revisar essas escolhas em Configurações.
+          Vamos preparar o FLUXA para a sua área e concluir a configuração em poucos passos. Depois,
+          você poderá revisar essas escolhas em Configurações.
         </p>
       </header>
 
@@ -439,7 +451,9 @@ function Onboarding() {
           {step === 0 && (
             <div className="space-y-4">
               <div>
-                <p className="text-sm font-semibold">Qual é a área principal da sua empresa ou atuação?</p>
+                <p className="text-sm font-semibold">
+                  Qual é a área principal da sua empresa ou atuação?
+                </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   O FLUXA usará essa escolha para recomendar os módulos mais adequados. Você poderá
                   alterar a configuração depois.
@@ -464,11 +478,13 @@ function Onboarding() {
                           : "border-border/70 bg-card hover:border-blue-500/35"
                       }`}
                     >
-                      <span className={`grid size-10 place-items-center rounded-xl ${
-                        selected
-                          ? "bg-blue-500 text-white"
-                          : "bg-muted text-muted-foreground group-hover:text-blue-600"
-                      }`}>
+                      <span
+                        className={`grid size-10 place-items-center rounded-xl ${
+                          selected
+                            ? "bg-blue-500 text-white"
+                            : "bg-muted text-muted-foreground group-hover:text-blue-600"
+                        }`}
+                      >
                         <SegmentIcon className="size-5" aria-hidden />
                       </span>
                       <span className="mt-3 block font-semibold">{option.label}</span>
@@ -498,8 +514,8 @@ function Onboarding() {
               <div>
                 <p className="text-sm font-semibold">O que melhor descreve sua operação?</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Essa escolha ajuda o FLUXA a recomendar os recursos certos sem encher seu menu
-                  com coisas que você não usa.
+                  Essa escolha ajuda o FLUXA a recomendar os recursos certos sem encher seu menu com
+                  coisas que você não usa.
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -690,7 +706,10 @@ function Onboarding() {
               </p>
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
                 <Summary label="Segmento" value={segmentByKey(segment)?.label ?? ""} />
-                <Summary label="Tipo de operação" value={subtypeByKey(segment, subtype)?.label ?? ""} />
+                <Summary
+                  label="Tipo de operação"
+                  value={subtypeByKey(segment, subtype)?.label ?? ""}
+                />
                 <Summary label="Empresa" value={company.trade_name} />
                 <Summary label="Razão social" value={company.legal_name || company.trade_name} />
                 <Summary label="Documento" value={maskDocument(company.document)} />
