@@ -26,8 +26,10 @@ export type Notification = {
   created_at: string;
 };
 
+export const FOCUSED_HEALTH_NOTIFICATION_KINDS = ["health", "team", "integration", "system"];
+
 export function visibleForFocusedHealth(notification: Pick<Notification, "kind">): boolean {
-  return ["health", "team", "integration", "system"].includes(notification.kind);
+  return FOCUSED_HEALTH_NOTIFICATION_KINDS.includes(notification.kind);
 }
 
 export function isSafeNotificationUrl(value: string | null | undefined): value is string {

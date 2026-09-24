@@ -28,7 +28,7 @@ test("policies não são permissivas", () =>
 test("RPCs revogadas de PUBLIC e anon", () =>
   assert.match(migration, /REVOKE ALL ON FUNCTION[\s\S]*FROM PUBLIC, anon/));
 test("sino limita cinco recentes e exibe contador", () => {
-  assert.match(header, /useNotifications\(organizationId, 5\)/);
+  assert.match(header, /useNotifications\(organizationId, 5, focusedHealth\)/);
   assert.match(header, /99\+/);
 });
 test("consulta ordena mais recente e filtro existe", () => {

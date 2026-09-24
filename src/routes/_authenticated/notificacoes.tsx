@@ -52,7 +52,7 @@ function NotificationsPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState("all");
   const [limit, setLimit] = useState(20);
-  const query = useNotifications(organizationId, limit);
+  const query = useNotifications(organizationId, limit, focusedHealth);
   const mark = useMarkNotificationRead(organizationId);
   const markAll = useMarkAllNotificationsRead(organizationId);
   const createTest = useCreateTestNotification(organizationId);

@@ -86,15 +86,13 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const CurrentIcon = current?.icon;
   const isDetail = Boolean(current) && pathname !== current?.to;
 
-  const notifications = useNotifications(organizationId, 5);
-  const unreadQuery = useUnreadNotificationCount(organizationId);
+  const notifications = useNotifications(organizationId, 5, focusedHealth);
+  const unreadQuery = useUnreadNotificationCount(organizationId, focusedHealth);
   const markNotification = useMarkNotificationRead(organizationId);
   const recentNotifications = (notifications.data ?? []).filter(
     (item) => !focusedHealth || visibleForFocusedHealth(item),
   );
-  const unread = focusedHealth
-    ? recentNotifications.filter((item) => !item.read_at).length
-    : (unreadQuery.data ?? 0);
+  const unread = unreadQuery.data ?? 0;
 
   const openNotification = async (notification: Notification) => {
     await markNotification.mutateAsync({ _notification: notification.id });
