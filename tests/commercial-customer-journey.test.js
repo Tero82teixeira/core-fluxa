@@ -44,7 +44,8 @@ describe("checklist comercial da jornada do cliente", () => {
     assert.match(auth, /legalAccepted/);
     assert.match(auth, /needsEmailConfirmation/);
     assert.match(onboarding, /Antes de entrar no sistema/);
-    assert.match(onboarding, /Cadastrar minha empresa/);
+    assert.match(onboarding, /Clique em uma opção para continuar/);
+    assert.match(onboarding, /void advance\(option\.key\)/);
     assert.doesNotMatch(onboarding, /Explorar o FLUXA agora/);
     assert.match(billing, /FLUXA_MONTHLY_PRICE = 149\.9/);
     assert.match(subscription, /Minha assinatura/);

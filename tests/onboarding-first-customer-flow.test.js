@@ -10,7 +10,7 @@ describe("primeira experiência do cliente", () => {
 
     assert.match(onboarding, /Antes de entrar no sistema/);
     assert.match(onboarding, /Qual é a sua área de atuação/);
-    assert.match(onboarding, /Cadastrar minha empresa/);
+    assert.match(onboarding, /Clique em uma opção para continuar/);
     assert.match(onboarding, /revisar essas informações em Configurações/);
     assert.match(onboarding, /Nome fantasia \*/);
     assert.match(onboarding, /Campo obrigatório/);
@@ -21,6 +21,9 @@ describe("primeira experiência do cliente", () => {
 
     assert.doesNotMatch(onboarding, /Explorar o FLUXA agora/);
     assert.match(onboarding, /step < 2/);
+    assert.match(onboarding, /setStep\(1\);/);
+    assert.match(onboarding, /void advance\(option\.key\)/);
+    assert.doesNotMatch(onboarding, /onClick=\{advance\}/);
     assert.match(onboarding, /update_organization_segment/);
     assert.match(onboarding, /Concluir configuração e entrar/);
   });
