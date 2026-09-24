@@ -608,6 +608,21 @@ export function healthWorkspaceHome(enabledModules: unknown) {
   );
 }
 
+export function workspaceHomeForSegment(
+  businessSegment: string | null | undefined,
+  enabledModules: unknown,
+  focusedHealthWorkspace = false,
+) {
+  if (businessSegment === "health" && focusedHealthWorkspace)
+    return healthWorkspaceHome(enabledModules);
+  if (
+    businessSegment === "legal" &&
+    routeVisibleForModules("/advocacia/painel-juridico", "legal", enabledModules)
+  )
+    return "/advocacia/painel-juridico";
+  return "/meu-dia";
+}
+
 export function routeVisibleForModules(
   route: string,
   businessSegment: string | null | undefined,

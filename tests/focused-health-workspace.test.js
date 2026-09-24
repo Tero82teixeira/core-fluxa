@@ -5,6 +5,7 @@ import {
   healthWorkspaceHome,
   isFocusedHealthWorkspace,
   routeVisibleForModules,
+  workspaceHomeForSegment,
 } from "../src/lib/organization-segments.ts";
 import { FOCUSED_HEALTH_HELP_CATEGORIES, HELP_ARTICLES } from "../src/lib/help-center.ts";
 import { visibleForFocusedHealth } from "../src/lib/notifications.ts";
@@ -59,4 +60,12 @@ test("health flag does not affect a legal organization", () => {
     routeVisibleForModules("/saude/pacientes", "legal", ["health_patients"], false),
     false,
   );
+});
+
+test("new health and legal companies enter their own dashboards", () => {
+  assert.equal(workspaceHomeForSegment("health", ["health_appointments"], true), "/saude/painel-clinica");
+  assert.equal(workspaceHomeForSegment("legal", ["legal_workspace"]), "/advocacia/painel-juridico");
+  assert.equal(workspaceHomeForSegment("health", ["health_appointments"], false), "/meu-dia");
+  assert.equal(routeVisibleForModules("/advocacia/painel-juridico", "health", ["health_appointments"], true), false);
+  assert.equal(routeVisibleForModules("/saude/pacientes", "legal", ["legal_workspace"]), false);
 });

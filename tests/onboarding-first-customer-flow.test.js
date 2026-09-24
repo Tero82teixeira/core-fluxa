@@ -8,20 +8,20 @@ describe("primeira experiência do cliente", () => {
   test("explica que a configuração libera os módulos e pode ser editada depois", async () => {
     const onboarding = await readFile(onboardingPath, "utf8");
 
-    assert.match(onboarding, /Vamos preparar o FLUXA para a sua área/);
-    assert.match(onboarding, /poderá revisar essas escolhas em Configurações/);
-    assert.match(onboarding, /Qual é a área principal da sua empresa ou atuação/);
-    assert.match(onboarding, /O que melhor descreve sua operação/);
+    assert.match(onboarding, /Antes de entrar no sistema/);
+    assert.match(onboarding, /Qual é a sua área de atuação/);
+    assert.match(onboarding, /Cadastrar minha empresa/);
+    assert.match(onboarding, /revisar essas informações em Configurações/);
     assert.match(onboarding, /Nome fantasia \*/);
     assert.match(onboarding, /Campo obrigatório/);
   });
 
-  test("permite explorar depois de definir segmento e tipo de operação", async () => {
+  test("exige cadastrar a empresa antes de abrir os menus", async () => {
     const onboarding = await readFile(onboardingPath, "utf8");
 
-    assert.match(onboarding, /Explorar o FLUXA agora/);
-    assert.match(onboarding, /start_organization_exploration/);
-    assert.match(onboarding, /step > 1 && step < 5/);
+    assert.doesNotMatch(onboarding, /Explorar o FLUXA agora/);
+    assert.match(onboarding, /step < 2/);
+    assert.match(onboarding, /update_organization_segment/);
     assert.match(onboarding, /Concluir configuração e entrar/);
   });
 
@@ -30,8 +30,8 @@ describe("primeira experiência do cliente", () => {
 
     assert.match(
       onboarding,
-      /updateOnboarding\(\{ step: 3, complete: true \}\);[\s\S]*refreshWorkspace\(\);[\s\S]*segment === "health"[\s\S]*healthWorkspaceHome[\s\S]*: "\/meu-dia"/,
+      /updateOnboarding\(\{ step: 3, complete: true \}\);[\s\S]*refreshWorkspace\(\);[\s\S]*workspaceHomeForSegment/,
     );
-    assert.match(onboarding, /aria-current=\{index === step \? "step" : undefined\}/);
+    assert.match(onboarding, /aria-current=\{index \+ 2 === step \? "step" : undefined\}/);
   });
 });

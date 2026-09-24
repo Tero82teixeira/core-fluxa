@@ -19,9 +19,9 @@ import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 import { useAuth } from "@/lib/auth";
 import { requiresWorkspaceSetup } from "@/lib/onboarding-entry";
 import {
-  healthWorkspaceHome,
   isFocusedHealthWorkspace,
   routeVisibleForModules,
+  workspaceHomeForSegment,
 } from "@/lib/organization-segments";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -67,9 +67,11 @@ function OnboardingGate() {
     }
     if (onboardingCompleted && onOnboarding) {
       navigate({
-        to: isFocusedHealthWorkspace(settings)
-          ? healthWorkspaceHome(settings?.enabled_modules)
-          : "/meu-dia",
+        to: workspaceHomeForSegment(
+          settings?.business_segment,
+          settings?.enabled_modules,
+          isFocusedHealthWorkspace(settings),
+        ),
         replace: true,
       });
       return;
@@ -86,9 +88,11 @@ function OnboardingGate() {
       )
     ) {
       navigate({
-        to: isFocusedHealthWorkspace(settings)
-          ? healthWorkspaceHome(settings?.enabled_modules)
-          : "/meu-dia",
+        to: workspaceHomeForSegment(
+          settings?.business_segment,
+          settings?.enabled_modules,
+          isFocusedHealthWorkspace(settings),
+        ),
         replace: true,
       });
     }
@@ -176,6 +180,14 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
     );
 
   if (status === "error") return <WorkspaceRecovery />;
+  if (status !== "ready") {
+    return (
+      <div className="flex min-h-dvh items-center justify-center gap-2 bg-slate-950 text-sm text-white">
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        Preparando seu acesso…
+      </div>
+    );
+  }
   if (status === "ready" && !commercialAccess && !(platformAdmin && onPlatformArea)) {
     return <CommercialAccessBlocked onSignOut={onSignOut} />;
   }
@@ -183,9 +195,9 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
   // Um novo workspace não expõe o menu geral enquanto a área não foi definida.
   if (status === "ready" && needsOnboarding) {
     return onOnboarding ? (
-      <main className="min-h-dvh bg-muted/20">
+      <div className="min-h-dvh bg-muted/20">
         <Outlet />
-      </main>
+      </div>
     ) : (
       <div className="flex min-h-dvh items-center justify-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />

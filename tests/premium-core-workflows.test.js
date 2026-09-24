@@ -37,11 +37,12 @@ describe("acabamento premium dos fluxos centrais", () => {
     assert.match(newProcess, /Criar processo/);
   });
 
-  test("onboarding deixa o progresso e as seis etapas evidentes", () => {
+  test("escolha de área separada e cadastro da empresa mostram progresso próprio", () => {
     assert.match(onboarding, /Primeiros passos/);
     assert.match(onboarding, /Seu progresso/);
-    assert.match(onboarding, /Etapa \{step \+ 1\} de \{STEPS\.length\}/);
-    assert.match(onboarding, /sm:grid-cols-6/);
+    assert.match(onboarding, /Antes de entrar no sistema/);
+    assert.match(onboarding, /Etapa \{step - 1\} de \{STEPS\.length - 2\}/);
+    assert.match(onboarding, /sm:grid-cols-4/);
     assert.match(onboarding, /Concluir configuração e entrar/);
   });
 
