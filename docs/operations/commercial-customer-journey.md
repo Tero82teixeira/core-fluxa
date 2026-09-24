@@ -19,10 +19,11 @@ Use este roteiro antes de uma campanha, mudança no cadastro, alteração do pla
 
 ## 3. Configuração inicial
 
-- Confirme o redirecionamento obrigatório para **Configuração da empresa**.
+- Confirme a tela exclusiva de **escolha de área**, sem menu lateral ou painel do sistema.
+- Escolha **Clínica e Saúde** ou **Advocacia**, depois o tipo de operação; só então abra o cadastro da empresa.
 - Preencha, em ordem, Empresa, Localização, Operação e Conclusão.
-- Confirme que não existe a opção **Concluir depois**.
-- Ao finalizar, confirme o acesso à Central de Comando e a possibilidade de editar os dados em Configurações.
+- Confirme que não é possível explorar o sistema antes de terminar o cadastro da empresa.
+- Ao finalizar, confira os menus de sua área (Painel da Clínica ou Painel Jurídico) e a possibilidade de editar os dados em Configurações.
 
 ## 4. Teste grátis e operação
 

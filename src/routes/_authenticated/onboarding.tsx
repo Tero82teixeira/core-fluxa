@@ -5,17 +5,18 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/lib/workspace";
+import { useAuth } from "@/lib/auth";
 import { describeError } from "@/lib/errors";
 import { digits, isValidCNPJ, isValidCPF, maskDocument, maskPhone } from "@/lib/format";
 import { useCnpjLookup } from "@/hooks/use-cnpj-lookup";
 import { captureProductEvent } from "@/lib/product-analytics";
 import {
   SEGMENT_OPTIONS,
-  healthWorkspaceHome,
   recommendedModulesForSubtype,
   segmentByKey,
   subtypeByKey,
   subtypeOptionsForSegment,
+  workspaceHomeForSegment,
   type BusinessSegment,
   type BusinessSubtype,
 } from "@/lib/organization-segments";
@@ -56,6 +57,7 @@ const STEPS = [
 
 function Onboarding() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const {
     user,
     status,
@@ -237,34 +239,6 @@ function Onboarding() {
     return true;
   };
 
-  const startExploration = async () => {
-    if (saving) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const id = ensureOrganization();
-      const { error: explorationError } = await (supabase as any).rpc(
-        "start_organization_exploration",
-        { _organization_id: id },
-      );
-      if (explorationError) throw explorationError;
-      await refreshWorkspace();
-      toast.success("Modo de exploração liberado. Você pode concluir a configuração depois.");
-      navigate({
-        to:
-          segment === "health"
-            ? healthWorkspaceHome(recommendedModulesForSubtype(segment, subtype))
-            : "/meu-dia",
-      });
-    } catch (caught) {
-      const message = describeError(caught, "empresa");
-      setError(message);
-      toast.error(message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const advance = async () => {
     if (saving) return;
     setSaving(true);
@@ -325,19 +299,23 @@ function Onboarding() {
         });
       }
       if (step === 5) {
+        if (!segment || !subtype) {
+          setError("Escolha a área e o tipo de operação antes de concluir.");
+          setStep(0);
+          return;
+        }
         await updateOnboarding({ step: 3, complete: true });
         await refreshWorkspace();
         captureProductEvent("organization_onboarding_completed");
         toast.success(
-          segment === "health"
-            ? "Empresa configurada. Bem-vindo ao Painel da Clínica."
-            : "Empresa configurada. Bem-vindo ao Meu Dia.",
+          `Empresa configurada. Bem-vindo ao FLUXA ${segmentByKey(segment)?.label ?? ""}.`,
         );
         navigate({
-          to:
-            segment === "health"
-              ? healthWorkspaceHome(recommendedModulesForSubtype(segment, subtype))
-              : "/meu-dia",
+          to: workspaceHomeForSegment(
+            segment,
+            recommendedModulesForSubtype(segment, subtype),
+            segment === "health",
+          ),
         });
         return;
       }
@@ -374,6 +352,126 @@ function Onboarding() {
     );
   }
 
+  if (step < 2) {
+    return (
+      <div className="flex min-h-dvh flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 px-4 py-6 text-white sm:px-8">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between">
+          <span className="font-display text-xl font-bold tracking-tight">FLUXA</span>
+          <Button
+            variant="ghost"
+            className="text-slate-300 hover:bg-white/10 hover:text-white"
+            onClick={() => void signOut()}
+          >
+            Sair
+          </Button>
+        </div>
+        <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center py-10 sm:py-16">
+          <div className="mb-8 max-w-2xl">
+            <span className="mb-5 inline-flex size-12 items-center justify-center rounded-2xl bg-blue-400 text-slate-950">
+              <Sparkles className="size-6" aria-hidden />
+            </span>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">
+              Antes de entrar no sistema · {step + 1} de 2
+            </p>
+            <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+              {step === 0
+                ? "Qual é a sua área de atuação?"
+                : `Como você trabalha em ${segmentByKey(segment)?.label ?? "sua área"}?`}
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-slate-300 sm:text-base">
+              {step === 0
+                ? "Escolha sua área para preparar os menus e recursos certos. Depois, você preencherá os dados da empresa."
+                : "Escolha o tipo de operação. Em seguida, vamos cadastrar sua empresa antes de abrir o FLUXA."}
+            </p>
+          </div>
+          {step === 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {[...SEGMENT_OPTIONS]
+                .sort(
+                  (a, b) =>
+                    (a.key === "health" || a.key === "legal" ? -1 : 0) -
+                    (b.key === "health" || b.key === "legal" ? -1 : 0),
+                )
+                .map((option) => {
+                  const SegmentIcon = option.icon;
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      aria-pressed={segment === option.key}
+                      onClick={() => {
+                        setSegment(option.key);
+                        setSubtype(null);
+                        setError(null);
+                      }}
+                      className={`rounded-2xl border p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${segment === option.key ? "border-blue-300 bg-blue-400/20" : "border-white/15 bg-white/[0.06] hover:border-blue-300/60 hover:bg-white/10"}`}
+                    >
+                      <SegmentIcon className="size-7 text-blue-300" aria-hidden />
+                      <span className="mt-4 block font-semibold">{option.label}</span>
+                      <span className="mt-1 block text-sm leading-5 text-slate-300">
+                        {option.description}
+                      </span>
+                    </button>
+                  );
+                })}
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {subtypeOptionsForSegment(segment).map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  aria-pressed={subtype === option.key}
+                  onClick={() => {
+                    setSubtype(option.key);
+                    setError(null);
+                  }}
+                  className={`rounded-2xl border p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${subtype === option.key ? "border-blue-300 bg-blue-400/20" : "border-white/15 bg-white/[0.06] hover:border-blue-300/60 hover:bg-white/10"}`}
+                >
+                  <span className="block font-semibold">{option.label}</span>
+                  <span className="mt-1 block text-sm leading-5 text-slate-300">
+                    {option.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          {(error || bootstrapError) && (
+            <p
+              role="alert"
+              className="mt-5 rounded-xl border border-red-300/30 bg-red-500/10 p-3 text-sm text-red-100"
+            >
+              {error ?? bootstrapError}
+            </p>
+          )}
+          <div className="mt-8 flex items-center justify-between gap-3">
+            {step === 1 ? (
+              <Button
+                variant="ghost"
+                className="text-white hover:bg-white/10 hover:text-white"
+                disabled={saving}
+                onClick={() => setStep(0)}
+              >
+                Voltar
+              </Button>
+            ) : (
+              <span />
+            )}
+            <Button
+              className="bg-blue-400 text-slate-950 hover:bg-blue-300"
+              onClick={advance}
+              disabled={saving || !ready}
+              aria-busy={saving}
+            >
+              {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
+              {step === 0 ? "Continuar" : "Cadastrar minha empresa"}
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-6 lg:p-8">
       <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-7">
@@ -395,8 +493,8 @@ function Onboarding() {
           </div>
         </div>
         <p className="relative mt-4 max-w-2xl text-sm leading-6 text-slate-300">
-          Vamos preparar o FLUXA para a sua área e concluir a configuração em poucos passos. Depois,
-          você poderá revisar essas escolhas em Configurações.
+          Complete os dados da sua empresa para entrar no FLUXA {segmentByKey(segment)?.label}. Você
+          poderá revisar essas informações em Configurações.
         </p>
       </header>
 
@@ -404,19 +502,19 @@ function Onboarding() {
         <div className="flex items-center justify-between gap-3 text-sm">
           <span className="font-semibold">Seu progresso</span>
           <span className="text-muted-foreground">
-            Etapa {step + 1} de {STEPS.length}
+            Etapa {step - 1} de {STEPS.length - 2}
           </span>
         </div>
-        <Progress value={((step + 1) / STEPS.length) * 100} className="h-2" />
-        <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-6">
-          {STEPS.map((item, index) => (
+        <Progress value={((step - 1) / (STEPS.length - 2)) * 100} className="h-2" />
+        <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
+          {STEPS.slice(2).map((item, index) => (
             <span
               key={item.title}
-              aria-current={index === step ? "step" : undefined}
+              aria-current={index + 2 === step ? "step" : undefined}
               className={`rounded-xl border px-3 py-2 ${
-                index === step
+                index + 2 === step
                   ? "border-blue-500/35 bg-blue-500/10 font-semibold text-blue-700 dark:text-blue-300"
-                  : index < step
+                  : index + 2 < step
                     ? "border-emerald-500/25 bg-emerald-500/8 text-emerald-700 dark:text-emerald-300"
                     : "border-border/70 bg-muted/20"
               }`}
@@ -446,105 +544,6 @@ function Onboarding() {
             >
               {error ?? bootstrapError}
             </p>
-          )}
-
-          {step === 0 && (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-semibold">
-                  Qual é a área principal da sua empresa ou atuação?
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  O FLUXA usará essa escolha para recomendar os módulos mais adequados. Você poderá
-                  alterar a configuração depois.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {SEGMENT_OPTIONS.map((option) => {
-                  const SegmentIcon = option.icon;
-                  const selected = segment === option.key;
-                  return (
-                    <button
-                      key={option.key}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => {
-                        setSegment(option.key);
-                        setError(null);
-                      }}
-                      className={`group rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                        selected
-                          ? "border-blue-500 bg-blue-500/10 shadow-sm"
-                          : "border-border/70 bg-card hover:border-blue-500/35"
-                      }`}
-                    >
-                      <span
-                        className={`grid size-10 place-items-center rounded-xl ${
-                          selected
-                            ? "bg-blue-500 text-white"
-                            : "bg-muted text-muted-foreground group-hover:text-blue-600"
-                        }`}
-                      >
-                        <SegmentIcon className="size-5" aria-hidden />
-                      </span>
-                      <span className="mt-3 block font-semibold">{option.label}</span>
-                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                        {option.description}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              {segment && (
-                <div className="rounded-2xl border border-blue-500/20 bg-blue-500/[0.06] p-4">
-                  <p className="text-sm font-semibold">
-                    FLUXA preparado para {segmentByKey(segment)?.label}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Começaremos com o núcleo operacional e os recursos recomendados para este
-                    segmento. Módulos de outras áreas não serão exibidos.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {step === 1 && segment && (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-semibold">O que melhor descreve sua operação?</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Essa escolha ajuda o FLUXA a recomendar os recursos certos sem encher seu menu com
-                  coisas que você não usa.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {subtypeOptionsForSegment(segment).map((option) => {
-                  const selected = subtype === option.key;
-                  return (
-                    <button
-                      key={option.key}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => {
-                        setSubtype(option.key);
-                        setError(null);
-                      }}
-                      className={`rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                        selected
-                          ? "border-blue-500 bg-blue-500/10 shadow-sm"
-                          : "border-border/70 bg-card hover:border-blue-500/35"
-                      }`}
-                    >
-                      <span className="block font-semibold">{option.label}</span>
-                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                        {option.description}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           )}
 
           {step === 2 && (
@@ -701,8 +700,8 @@ function Onboarding() {
           {step === 5 && (
             <div className="space-y-4">
               <p className="text-sm leading-6 text-muted-foreground">
-                Revise as informações. Ao concluir, você entrará na Central de Comando e poderá
-                começar a cadastrar clientes, processos e tarefas.
+                Revise as informações. Ao concluir, você entrará no FLUXA com os menus de
+                {` ${segmentByKey(segment)?.label ?? "sua área"}`}.
               </p>
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
                 <Summary label="Segmento" value={segmentByKey(segment)?.label ?? ""} />
@@ -733,16 +732,6 @@ function Onboarding() {
               Voltar
             </Button>
             <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
-              {step > 1 && step < 5 && (
-                <Button
-                  className="rounded-xl"
-                  variant="outline"
-                  onClick={startExploration}
-                  disabled={saving || !ready}
-                >
-                  Explorar o FLUXA agora
-                </Button>
-              )}
               <Button
                 className="w-full rounded-xl sm:w-auto"
                 onClick={advance}
