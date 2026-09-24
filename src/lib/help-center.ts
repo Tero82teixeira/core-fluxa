@@ -12,6 +12,8 @@ export const HELP_CATEGORIES = [
   "Automações",
   "Configurações",
   "Segurança e acesso",
+  "Saúde",
+  "Faturamento em saúde",
 ] as const;
 export type HelpCategory = (typeof HELP_CATEGORIES)[number];
 export type HelpArticle = {
@@ -55,6 +57,62 @@ const article = (
   ],
 });
 export const HELP_ARTICLES: HelpArticle[] = [
+  article(
+    "saude-pacientes",
+    "Como cadastrar pacientes",
+    "Saúde",
+    "Cadastre o paciente para organizar seus atendimentos.",
+    "/saude/pacientes",
+    1,
+  ),
+  article(
+    "saude-agenda",
+    "Como agendar um atendimento",
+    "Saúde",
+    "Use a Agenda para marcar o atendimento de um paciente.",
+    "/saude/agenda",
+    2,
+  ),
+  article(
+    "saude-atendimento",
+    "Como concluir um atendimento",
+    "Saúde",
+    "Abra o atendimento na Agenda, confira os dados e conclua o registro.",
+    "/saude/agenda",
+    3,
+  ),
+  article(
+    "saude-autorizacoes",
+    "Como acompanhar autorizações",
+    "Saúde",
+    "Confira autorizações e seus vencimentos antes de faturar.",
+    "/saude/autorizacoes",
+    4,
+  ),
+  article(
+    "saude-contas",
+    "Como conferir contas médicas",
+    "Faturamento em saúde",
+    "Confira a Conta Médica gerada após faturar o atendimento.",
+    "/saude/contas-medicas",
+    5,
+  ),
+  article(
+    "saude-lotes",
+    "Como acompanhar lotes e pagamentos",
+    "Faturamento em saúde",
+    "Consulte os lotes enviados e confira a conciliação dos pagamentos.",
+    "/saude/lotes-faturamento",
+    6,
+  ),
+  article(
+    "saude-glosas",
+    "Como acompanhar glosas",
+    "Faturamento em saúde",
+    "Consulte as glosas e os prazos de recurso da clínica.",
+    "/saude/glosas",
+    7,
+  ),
   article(
     "comecar",
     "Como começar a usar a FLUXA",
@@ -362,6 +420,12 @@ export const HELP_ARTICLES: HelpArticle[] = [
   ].map((x, i) =>
     article(x[0], x[1], "Segurança e acesso", x[2], "/configuracoes", 120 + i, ["acesso", "rls"]),
   ),
+];
+export const FOCUSED_HEALTH_HELP_CATEGORIES: readonly HelpCategory[] = [
+  "Saúde",
+  "Faturamento em saúde",
+  "Equipe",
+  "Segurança e acesso",
 ];
 export const FAQ_IDS = [
   "somente-leitura",

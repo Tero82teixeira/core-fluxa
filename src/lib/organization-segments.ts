@@ -590,7 +590,6 @@ const HEALTH_SHARED_ROUTES = new Set([
   "/configuracoes",
   "/assinatura",
   "/ajuda",
-  "/novidades",
 ]);
 
 export function healthWorkspaceHome(enabledModules: unknown) {

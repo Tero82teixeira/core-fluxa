@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BookOpen, ChevronRight, LifeBuoy, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useWorkspace } from "@/lib/workspace";
 import {
   FAQ_IDS,
+  FOCUSED_HEALTH_HELP_CATEGORIES,
   HELP_ARTICLES,
   HELP_CATEGORIES,
   QUICK_GUIDE_IDS,
@@ -13,6 +14,7 @@ import {
   type HelpCategory,
 } from "@/lib/help-center";
 import { goToHelpArticleModule, openHelpArticle } from "@/lib/help-center-interactions";
+import { isFocusedHealthWorkspace } from "@/lib/organization-segments";
 import {
   useCreateSupportRequest,
   useReplySupportRequest,
@@ -66,18 +68,27 @@ const statusLabel: Record<SupportStatus, string> = {
   arquivado: "Arquivado",
 };
 function HelpPage() {
-  const { organizationId, role, user } = useWorkspace();
+  const { organizationId, role, user, membership } = useWorkspace();
+  const focusedHealth = isFocusedHealthWorkspace(membership?.organizations?.organization_settings);
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<HelpCategory | null>(null);
   const [selected, setSelected] = useState<HelpArticle | null>(null);
   const [supportOpen, setSupportOpen] = useState(false);
   const articleTitleRef = useRef<HTMLHeadingElement>(null);
-  const results = useMemo(() => searchHelpArticles(query, category), [query, category]);
-  const faq = FAQ_IDS.map((id) => HELP_ARTICLES.find((a) => a.id === id)!).filter(Boolean);
-  const guides = QUICK_GUIDE_IDS.map((id) => HELP_ARTICLES.find((a) => a.id === id)!).filter(
-    Boolean,
+  const visible = (a: HelpArticle) =>
+    !focusedHealth || FOCUSED_HEALTH_HELP_CATEGORIES.includes(a.category);
+  const results = searchHelpArticles(query, category).filter(visible);
+  const faq = FAQ_IDS.map((id) => HELP_ARTICLES.find((a) => a.id === id)!).filter(
+    (a): a is HelpArticle => Boolean(a) && visible(a),
   );
+  const guides = (
+    focusedHealth
+      ? ["saude-pacientes", "saude-agenda", "saude-contas", "saude-glosas"]
+      : QUICK_GUIDE_IDS
+  )
+    .map((id) => HELP_ARTICLES.find((a) => a.id === id)!)
+    .filter((a): a is HelpArticle => Boolean(a) && visible(a));
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-8 p-4 sm:p-6 lg:p-8">
       <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 p-5 text-white shadow-[0_28px_70px_-38px_rgba(15,23,42,0.8)] sm:p-8">
@@ -132,7 +143,9 @@ function HelpPage() {
           Categorias
         </h2>
         <div className="flex flex-wrap gap-2">
-          {HELP_CATEGORIES.map((c) => (
+          {HELP_CATEGORIES.filter(
+            (c) => !focusedHealth || FOCUSED_HEALTH_HELP_CATEGORIES.includes(c),
+          ).map((c) => (
             <Button
               key={c}
               size="sm"

@@ -12,9 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useWorkspace } from "@/lib/workspace";
+import { isFocusedHealthWorkspace } from "@/lib/organization-segments";
 import {
   filterNotifications,
   notificationDestination,
+  visibleForFocusedHealth,
   type Notification,
 } from "@/lib/notifications";
 import {
@@ -45,7 +47,8 @@ const filters = [
 ];
 
 function NotificationsPage() {
-  const { organizationId, role } = useWorkspace();
+  const { organizationId, role, membership } = useWorkspace();
+  const focusedHealth = isFocusedHealthWorkspace(membership?.organizations?.organization_settings);
   const navigate = useNavigate();
   const [filter, setFilter] = useState("all");
   const [limit, setLimit] = useState(20);
@@ -54,8 +57,11 @@ function NotificationsPage() {
   const markAll = useMarkAllNotificationsRead(organizationId);
   const createTest = useCreateTestNotification(organizationId);
   const canCreateTest = role === "proprietario" || role === "administrador";
-  const rows = filterNotifications(query.data ?? [], filter);
-  const unread = (query.data ?? []).filter((item) => !item.read_at).length;
+  const visible = (query.data ?? []).filter(
+    (item) => !focusedHealth || visibleForFocusedHealth(item),
+  );
+  const rows = filterNotifications(visible, filter);
+  const unread = visible.filter((item) => !item.read_at).length;
   const open = async (notification: Notification) => {
     if (mark.isPending) return;
     try {
@@ -105,7 +111,7 @@ function NotificationsPage() {
                 {unread} não lida(s)
               </span>
               <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
-                {query.data?.length ?? 0} carregada(s)
+                {visible.length} carregada(s)
               </span>
               <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
                 {rows.length} no filtro atual
@@ -154,11 +160,17 @@ function NotificationsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {filters.map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
+            {filters
+              .filter(
+                ([value]) =>
+                  !focusedHealth ||
+                  ["all", "unread", "health", "team", "integration", "system"].includes(value),
+              )
+              .map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
       </div>

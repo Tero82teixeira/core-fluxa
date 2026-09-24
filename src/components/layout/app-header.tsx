@@ -50,7 +50,11 @@ import {
 import { initials, relativeTime } from "@/lib/format";
 import { NAV_ITEMS, navItemVisibleForRole } from "@/lib/navigation";
 import { isFocusedHealthWorkspace, routeVisibleForModules } from "@/lib/organization-segments";
-import { notificationDestination, type Notification } from "@/lib/notifications";
+import {
+  notificationDestination,
+  visibleForFocusedHealth,
+  type Notification,
+} from "@/lib/notifications";
 import { GlobalSearch } from "@/components/global-search";
 import { useSubscriptionCheckout } from "@/hooks/use-subscription-checkout";
 import { usePlatformSupportOpenCount } from "@/hooks/use-platform-support";
@@ -85,7 +89,12 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const notifications = useNotifications(organizationId, 5);
   const unreadQuery = useUnreadNotificationCount(organizationId);
   const markNotification = useMarkNotificationRead(organizationId);
-  const unread = unreadQuery.data ?? 0;
+  const recentNotifications = (notifications.data ?? []).filter(
+    (item) => !focusedHealth || visibleForFocusedHealth(item),
+  );
+  const unread = focusedHealth
+    ? recentNotifications.filter((item) => !item.read_at).length
+    : (unreadQuery.data ?? 0);
 
   const openNotification = async (notification: Notification) => {
     await markNotification.mutateAsync({ _notification: notification.id });
@@ -299,12 +308,12 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
                 <Badge variant="secondary">{unread} novas</Badge>
               </div>
               <div className="max-h-80 divide-y divide-border overflow-y-auto">
-                {(notifications.data ?? []).length === 0 && (
+                {recentNotifications.length === 0 && (
                   <p className="px-4 py-6 text-sm text-muted-foreground">
                     Nenhuma notificação por enquanto.
                   </p>
                 )}
-                {(notifications.data ?? []).map((item) => (
+                {recentNotifications.map((item) => (
                   <button
                     type="button"
                     key={item.id}
