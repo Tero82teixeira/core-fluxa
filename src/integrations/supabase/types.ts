@@ -7526,6 +7526,10 @@ export type Database = {
         Args: { _as_of?: string }
         Returns: number
       }
+      create_legal_operational_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       create_health_insurer: {
         Args: {
           _contact_email?: string
@@ -7894,6 +7898,10 @@ export type Database = {
       }
       list_health_patients: {
         Args: { _organization_id: string; _search?: string }
+        Returns: Json
+      }
+      list_legal_agenda: {
+        Args: { _from: string; _organization_id: string; _to: string }
         Returns: Json
       }
       list_document_request_templates: {
@@ -8531,6 +8539,7 @@ export type Database = {
         Returns: undefined
       }
       run_temporal_automation_cycle: { Args: never; Returns: Json }
+      run_temporal_automation_cycle_core: { Args: never; Returns: Json }
       save_client_portal_faq_article: {
         Args: {
           _answer: string

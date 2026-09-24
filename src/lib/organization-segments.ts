@@ -276,6 +276,7 @@ export function recommendedModulesForSubtype(
 const ROUTE_MODULES: Record<string, ModuleKey> = {
   "/clientes": "clients",
   "/advocacia/painel-juridico": "legal_workspace",
+  "/advocacia/agenda-juridica": "legal_workspace",
   "/saude/pacientes": "health_patients",
   "/saude/agenda": "health_appointments",
   "/saude/painel-clinica": "health_appointments",
