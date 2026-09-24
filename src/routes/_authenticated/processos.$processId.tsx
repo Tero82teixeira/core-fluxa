@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentScopePanel } from "@/components/documents/document-scope-panel";
 import { DocumentUploadDialog } from "@/components/documents/document-upload-dialog";
 import { LegalCaseProfilePanel } from "@/components/legal/legal-case-profile-panel";
+import { LegalDeadlinesPanel } from "@/components/legal/legal-deadlines-panel";
 import {
   Select,
   SelectContent,
@@ -275,6 +276,14 @@ function ProcessDetail() {
 
       {isLegalWorkspace && (
         <LegalCaseProfilePanel
+          organizationId={organizationId}
+          processId={processId}
+          canEdit={permissions.canEdit}
+        />
+      )}
+
+      {isLegalWorkspace && (
+        <LegalDeadlinesPanel
           organizationId={organizationId}
           processId={processId}
           canEdit={permissions.canEdit}
