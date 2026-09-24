@@ -1,0 +1,85 @@
+name: FLUXA database backup
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: fluxa-db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in SUPABASE_DB_URL BACKUP_S3_BUCKET AWS_ROLE_TO_ASSUME AWS_REGION; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing backup configuration: $name" >&2
+              exit 1
+            fi
+          done
+          command -v docker >/dev/null
+          command -v aws >/dev/null
+
+      - uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Create dump outside the repository
+        id: dump
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/fluxa-db-backup"
+          chmod 700 "$RUNNER_TEMP/fluxa-db-backup"
+          backup_path="$(docker run --rm --pull=always \
+            --user "$(id -u):$(id -g)" \
+            -e SUPABASE_DB_URL -e BACKUP_DIR=/backup \
+            -v "$GITHUB_WORKSPACE:/src:ro" \
+            -v "$RUNNER_TEMP/fluxa-db-backup:/backup" \
+            postgres:17-bookworm bash /src/scripts/backup-db.sh)"
+          backup_name="${backup_path##*/}"
+          backup_path="$RUNNER_TEMP/fluxa-db-backup/$backup_name"
+          [[ -f "$backup_path/COMPLETED" ]] || { echo 'Backup incomplete' >&2; exit 1; }
+          echo "backup_path=$backup_path" >> "$GITHUB_OUTPUT"
+
+      - name: Verify and upload to private S3
+        shell: bash
+        env:
+          BACKUP_PATH: ${{ steps.dump.outputs.backup_path }}
+        run: |
+          set -euo pipefail
+          cd -- "$BACKUP_PATH"
+          files=( ./*.dump ./*.dump.sha256 ./*_schema.sql ./*_schema.sql.sha256 )
+          [[ ${#files[@]} -eq 4 ]] || { echo 'Expected two backups and two checksums' >&2; exit 1; }
+          for checksum in ./*.sha256; do sha256sum --check --status "$checksum"; done
+          prefix="fluxa-db/${BACKUP_PATH##*/}"
+          for file in "${files[@]}"; do
+            name="${file#./}"
+            aws s3 cp --only-show-errors --sse AES256 "$file" "s3://$BACKUP_S3_BUCKET/$prefix/$name"
+            remote_size="$(aws s3api head-object --bucket "$BACKUP_S3_BUCKET" \
+              --key "$prefix/$name" --query ContentLength --output text)"
+            [[ "$remote_size" == "$(stat -c %s "$file")" ]] || { echo "Incomplete upload: $name" >&2; exit 1; }
+          done
+          # O marcador remoto só existe se todos os arquivos já foram enviados e conferidos.
+          aws s3 cp --only-show-errors --sse AES256 COMPLETED "s3://$BACKUP_S3_BUCKET/$prefix/COMPLETED"
+          aws s3api head-object --bucket "$BACKUP_S3_BUCKET" --key "$prefix/COMPLETED" >/dev/null
+          echo "Backup uploaded and verified: $prefix"
