@@ -11,6 +11,7 @@ import { useWorkspace } from "@/lib/workspace";
 import {
   CORE_MODULES,
   SEGMENT_OPTIONS,
+  isFocusedHealthWorkspace,
   moduleAllowedForSegment,
   modulesAvailableForSegment,
   recommendedModulesForSegment,
@@ -33,6 +34,7 @@ export function SegmentModulesSettings() {
   const currentSegment = (settings?.business_segment as BusinessSegment | null) ?? null;
   const currentSubtype = (settings?.business_subtype as BusinessSubtype | null) ?? null;
   const currentEnabled = sanitizeModulesForSegment(currentSegment, settings?.enabled_modules);
+  const focusedHealth = isFocusedHealthWorkspace(settings);
   const [segment, setSegment] = useState<BusinessSegment | null>(currentSegment);
   const [subtype, setSubtype] = useState<BusinessSubtype | null>(currentSubtype);
   const [enabled, setEnabled] = useState<ModuleKey[]>(
@@ -54,7 +56,13 @@ export function SegmentModulesSettings() {
         : CORE_MODULES,
     [segment, subtype],
   );
-  const availableModules = useMemo(() => modulesAvailableForSegment(segment), [segment]);
+  const availableModules = useMemo(
+    () =>
+      modulesAvailableForSegment(segment).filter(
+        (module) => !focusedHealth || segment !== "health" || module.group === "health",
+      ),
+    [focusedHealth, segment],
+  );
 
   const selectSegment = (value: BusinessSegment) => {
     setSegment(value);

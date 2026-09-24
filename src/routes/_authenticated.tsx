@@ -17,7 +17,11 @@ import { PushNotificationOnboarding } from "@/components/notifications/push-noti
 import { CommercialAccessBlocked } from "@/components/commercial-access-blocked";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 import { useAuth } from "@/lib/auth";
-import { routeVisibleForModules } from "@/lib/organization-segments";
+import {
+  healthWorkspaceHome,
+  isFocusedHealthWorkspace,
+  routeVisibleForModules,
+} from "@/lib/organization-segments";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -55,7 +59,13 @@ function OnboardingGate() {
       return;
     }
     if (onboardingCompleted && onOnboarding) {
-      navigate({ to: "/meu-dia", replace: true });
+      const settings = membership?.organizations?.organization_settings;
+      navigate({
+        to: isFocusedHealthWorkspace(settings)
+          ? healthWorkspaceHome(settings?.enabled_modules)
+          : "/meu-dia",
+        replace: true,
+      });
       return;
     }
 
@@ -67,9 +77,15 @@ function OnboardingGate() {
         location.pathname,
         settings?.business_segment,
         settings?.enabled_modules,
+        isFocusedHealthWorkspace(settings),
       )
     ) {
-      navigate({ to: "/meu-dia", replace: true });
+      navigate({
+        to: isFocusedHealthWorkspace(settings)
+          ? healthWorkspaceHome(settings?.enabled_modules)
+          : "/meu-dia",
+        replace: true,
+      });
     }
   }, [
     status,
@@ -140,7 +156,12 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
   const moduleRouteAllowed =
     status !== "ready" ||
     onPlatformArea ||
-    routeVisibleForModules(pathname, settings?.business_segment, settings?.enabled_modules);
+    routeVisibleForModules(
+      pathname,
+      settings?.business_segment,
+      settings?.enabled_modules,
+      isFocusedHealthWorkspace(settings),
+    );
 
   if (status === "error") return <WorkspaceRecovery />;
   if (status === "ready" && !commercialAccess && !(platformAdmin && onPlatformArea)) {
@@ -164,7 +185,7 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
             )}
           </main>
         </SidebarInset>
-        <StaffQuickChat />
+        {!isFocusedHealthWorkspace(settings) && <StaffQuickChat />}
         <PushNotificationOnboarding
           organizationId={organizationId}
           enabled={status === "ready" && commercialAccess && onboardingCompleted}

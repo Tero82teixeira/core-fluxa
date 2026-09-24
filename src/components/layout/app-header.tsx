@@ -48,7 +48,8 @@ import {
   useUnreadNotificationCount,
 } from "@/hooks/use-notifications";
 import { initials, relativeTime } from "@/lib/format";
-import { NAV_ITEMS } from "@/lib/navigation";
+import { NAV_ITEMS, navItemVisibleForRole } from "@/lib/navigation";
+import { isFocusedHealthWorkspace, routeVisibleForModules } from "@/lib/organization-segments";
 import { notificationDestination, type Notification } from "@/lib/notifications";
 import { GlobalSearch } from "@/components/global-search";
 import { useSubscriptionCheckout } from "@/hooks/use-subscription-checkout";
@@ -70,6 +71,8 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
     can,
   } = useWorkspace();
   const [searchOpen, setSearchOpen] = useState(false);
+  const organizationSettings = membership?.organizations?.organization_settings;
+  const focusedHealth = isFocusedHealthWorkspace(organizationSettings);
   const subscription = useSubscriptionCheckout();
   const platformSupport = usePlatformSupportOpenCount(platformAdmin);
 
@@ -92,14 +95,14 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      if (!focusedHealth && (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setSearchOpen((open) => !open);
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [focusedHealth]);
 
   const operationalRole = Boolean(
     role && ["superadmin", "proprietario", "administrador", "gestor", "operacional"].includes(role),
@@ -108,7 +111,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const financeRole = Boolean(
     role && ["superadmin", "proprietario", "administrador", "financeiro"].includes(role),
   );
-  const quickActions = [
+  const generalQuickActions = [
     {
       label: "Novo cliente",
       icon: UserPlus,
@@ -141,6 +144,21 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
       visible: operationalRole,
     },
   ].filter((action) => action.visible);
+  const healthQuickActions = [
+    { label: "Pacientes", icon: UserPlus, to: "/saude/pacientes" as const },
+    { label: "Agenda", icon: CalendarPlus, to: "/saude/agenda" as const },
+    { label: "Contas Médicas", icon: CreditCard, to: "/saude/contas-medicas" as const },
+  ].filter(
+    (action) =>
+      navItemVisibleForRole(action.to, role) &&
+      routeVisibleForModules(
+        action.to,
+        organizationSettings?.business_segment,
+        organizationSettings?.enabled_modules,
+        focusedHealth,
+      ),
+  );
+  const quickActions = focusedHealth ? healthQuickActions : generalQuickActions;
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-card/90 shadow-[0_1px_18px_-12px_rgba(15,23,42,0.45)] backdrop-blur-xl">
@@ -210,43 +228,51 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
               {subscription.loading ? "Abrindo…" : "Assinar agora"}
             </Button>
           )}
-          <Button
-            variant="outline"
-            onClick={() => setSearchOpen(true)}
-            className="hidden h-10 w-56 justify-start gap-2 rounded-xl border-border/70 bg-muted/25 text-muted-foreground shadow-none hover:bg-muted/50 lg:flex xl:w-72"
-          >
-            <Search className="size-4.5" aria-hidden />
-            <span className="truncate text-sm">Buscar em tudo…</span>
-            <kbd className="ml-auto rounded border border-border px-1.5 py-0.5 text-xs">Ctrl K</kbd>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-10 rounded-xl lg:hidden"
-            aria-label="Busca global"
-            onClick={() => setSearchOpen(true)}
-          >
-            <Search className="size-4" aria-hidden />
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="h-10 gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-600/20 hover:from-blue-500 hover:to-blue-500">
-                <Plus className="size-4" aria-hidden />
-                <span className="hidden sm:inline">Criar</span>
+          {!focusedHealth && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setSearchOpen(true)}
+                className="hidden h-10 w-56 justify-start gap-2 rounded-xl border-border/70 bg-muted/25 text-muted-foreground shadow-none hover:bg-muted/50 lg:flex xl:w-72"
+              >
+                <Search className="size-4.5" aria-hidden />
+                <span className="truncate text-sm">Buscar em tudo…</span>
+                <kbd className="ml-auto rounded border border-border px-1.5 py-0.5 text-xs">
+                  Ctrl K
+                </kbd>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Ações rápidas</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {quickActions.map((action) => (
-                <DropdownMenuItem key={action.label} onSelect={() => navigate({ to: action.to })}>
-                  <action.icon className="size-4" aria-hidden />
-                  {action.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-10 rounded-xl lg:hidden"
+                aria-label="Busca global"
+                onClick={() => setSearchOpen(true)}
+              >
+                <Search className="size-4" aria-hidden />
+              </Button>
+            </>
+          )}
+
+          {quickActions.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="h-10 gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-600/20 hover:from-blue-500 hover:to-blue-500">
+                  <Plus className="size-4" aria-hidden />
+                  <span className="hidden sm:inline">{focusedHealth ? "Saúde" : "Criar"}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Ações rápidas</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {quickActions.map((action) => (
+                  <DropdownMenuItem key={action.label} onSelect={() => navigate({ to: action.to })}>
+                    <action.icon className="size-4" aria-hidden />
+                    {action.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           <Popover>
             <PopoverTrigger asChild>
@@ -386,7 +412,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
         </div>
       </div>
 
-      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+      {!focusedHealth && <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />}
     </header>
   );
 }

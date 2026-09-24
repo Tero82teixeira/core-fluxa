@@ -122,7 +122,7 @@ test("documentos enviados aparecem apenas para quem pode analisar", () => {
   assert.equal(visible.items[0].kind, "document");
 });
 
-test("navegação, rota e entrada padrão expõem o painel Meu Dia", async () => {
+test("Meu Dia continua acessível aos segmentos gerais e Saúde focada abre a clínica", async () => {
   const [navigation, route, layout, sidebar] = await Promise.all([
     readFile(new URL("../src/lib/navigation.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/routes/_authenticated/meu-dia.tsx", import.meta.url), "utf8"),
@@ -132,6 +132,8 @@ test("navegação, rota e entrada padrão expõem o painel Meu Dia", async () =>
   assert.match(navigation, /to:\s*"\/meu-dia",[\s\S]*?label:\s*"Meu Dia"/);
   assert.match(route, /Fila de prioridades/);
   assert.match(route, /Comece pelo que exige sua atenção agora/);
-  assert.match(layout, /navigate\(\{ to: "\/meu-dia", replace: true \}\)/);
-  assert.match(sidebar, /to="\/meu-dia"/);
+  assert.match(layout, /isFocusedHealthWorkspace\(settings\)/);
+  assert.match(layout, /healthWorkspaceHome\(settings\?\.enabled_modules\)/);
+  assert.match(layout, /: "\/meu-dia"/);
+  assert.match(sidebar, /focusedHealth \? healthWorkspaceHome[\s\S]*: "\/meu-dia"/);
 });

@@ -5410,6 +5410,7 @@ export type Database = {
           enabled_modules: Json
           onboarding_exploration_enabled: boolean
           financial_alert_days: number | null
+          focused_health_workspace: boolean
           highlight_internal_notes: boolean | null
           locale: string | null
           logo_url: string | null
@@ -5472,6 +5473,7 @@ export type Database = {
           enabled_modules?: Json
           onboarding_exploration_enabled?: boolean
           financial_alert_days?: number | null
+          focused_health_workspace?: boolean
           highlight_internal_notes?: boolean | null
           locale?: string | null
           logo_url?: string | null
@@ -5534,6 +5536,7 @@ export type Database = {
           enabled_modules?: Json
           onboarding_exploration_enabled?: boolean
           financial_alert_days?: number | null
+          focused_health_workspace?: boolean
           highlight_internal_notes?: boolean | null
           locale?: string | null
           logo_url?: string | null

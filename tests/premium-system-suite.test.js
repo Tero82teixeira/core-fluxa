@@ -12,7 +12,7 @@ describe("experiência premium das telas de sistema", () => {
     assert.match(settings, /max-w-\[1600px\]/);
     assert.match(settings, /Administração central/);
     assert.match(settings, /to-teal-950/);
-    assert.match(settings, /\{tabs\.length\} áreas configuráveis/);
+    assert.match(settings, /\{visibleTabs\.length\} áreas configuráveis/);
     assert.match(settings, /Alterações pendentes/);
     assert.match(settings, /Salvar alterações/);
     assert.match(settings, /TabsList className="[^"]*rounded-2xl/);
