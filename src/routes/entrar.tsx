@@ -103,7 +103,7 @@ function AuthBrand({ compact = false }: { compact?: boolean }) {
 
 function AuthSidePanel({ mode }: { mode: AuthMode }) {
   return (
-    <section className="relative hidden min-h-0 overflow-hidden bg-slate-950 px-10 py-9 text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:justify-between lg:overflow-y-auto xl:px-14 xl:py-11">
+    <section className="relative hidden min-h-0 overflow-clip bg-slate-950 px-10 py-9 text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:justify-between xl:px-14 xl:py-11">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.055] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:48px_48px]"
         aria-hidden
