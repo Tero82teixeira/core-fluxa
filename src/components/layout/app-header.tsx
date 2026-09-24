@@ -169,8 +169,8 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-card/90 shadow-[0_1px_18px_-12px_rgba(15,23,42,0.45)] backdrop-blur-xl">
-      <div className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 sm:px-5 lg:px-6">
-        <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 sm:px-5 lg:px-6">
+        <div className="flex min-w-0 flex-1 basis-40 items-center gap-2.5">
           <SidebarTrigger className="size-9 shrink-0 rounded-xl border border-border/80 bg-background shadow-sm hover:bg-muted" />
           {CurrentIcon && (
             <span className="hidden size-9 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary sm:grid">
@@ -211,7 +211,7 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex w-full max-w-full min-w-0 flex-wrap items-center justify-end gap-1.5 2xl:w-auto">
           {commercialStatus === "trial" && trialDaysRemaining !== null && (
             <Badge
               variant="outline"
@@ -240,10 +240,11 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
               <Button
                 variant="outline"
                 onClick={() => setSearchOpen(true)}
-                className="hidden h-10 w-56 justify-start gap-2 rounded-xl border-border/70 bg-muted/25 text-muted-foreground shadow-none hover:bg-muted/50 lg:flex xl:w-72"
+                aria-label="Buscar em tudo"
+                className="hidden h-10 w-44 justify-start gap-2 rounded-xl border-border/70 bg-muted/25 text-muted-foreground shadow-none hover:bg-muted/50 lg:flex xl:w-56"
               >
                 <Search className="size-4.5" aria-hidden />
-                <span className="truncate text-sm">Buscar em tudo…</span>
+                <span className="text-sm">Buscar</span>
                 <kbd className="ml-auto rounded border border-border px-1.5 py-0.5 text-xs">
                   Ctrl K
                 </kbd>

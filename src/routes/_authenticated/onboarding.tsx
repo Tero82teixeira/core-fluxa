@@ -239,22 +239,14 @@ function Onboarding() {
     return true;
   };
 
-  const advance = async () => {
+  const advance = async (selectedSubtype?: BusinessSubtype) => {
     if (saving) return;
     setSaving(true);
     setError(null);
     try {
-      if (step === 0) {
-        if (!segment) {
-          setError("Escolha a área principal da sua empresa ou atuação.");
-          return;
-        }
-        setSubtype(null);
-        setStep(1);
-        return;
-      }
       if (step === 1) {
-        if (!segment || !subtype) {
+        const nextSubtype = selectedSubtype ?? subtype;
+        if (!segment || !nextSubtype) {
           setError("Escolha o tipo de operação que melhor representa sua empresa.");
           return;
         }
@@ -262,8 +254,8 @@ function Onboarding() {
         const { error: segmentError } = await (supabase as any).rpc("update_organization_segment", {
           _organization_id: id,
           _segment: segment,
-          _subtype: subtype,
-          _enabled_modules: recommendedModulesForSubtype(segment, subtype),
+          _subtype: nextSubtype,
+          _enabled_modules: recommendedModulesForSubtype(segment, nextSubtype),
         });
         if (segmentError) throw segmentError;
         await refreshWorkspace();
@@ -403,7 +395,9 @@ function Onboarding() {
                         setSegment(option.key);
                         setSubtype(null);
                         setError(null);
+                        setStep(1);
                       }}
+                      disabled={!ready || saving}
                       className={`rounded-2xl border p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${segment === option.key ? "border-blue-300 bg-blue-400/20" : "border-white/15 bg-white/[0.06] hover:border-blue-300/60 hover:bg-white/10"}`}
                     >
                       <SegmentIcon className="size-7 text-blue-300" aria-hidden />
@@ -425,7 +419,9 @@ function Onboarding() {
                   onClick={() => {
                     setSubtype(option.key);
                     setError(null);
+                    void advance(option.key);
                   }}
+                  disabled={!ready || saving}
                   className={`rounded-2xl border p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${subtype === option.key ? "border-blue-300 bg-blue-400/20" : "border-white/15 bg-white/[0.06] hover:border-blue-300/60 hover:bg-white/10"}`}
                 >
                   <span className="block font-semibold">{option.label}</span>
@@ -457,15 +453,9 @@ function Onboarding() {
             ) : (
               <span />
             )}
-            <Button
-              className="bg-blue-400 text-slate-950 hover:bg-blue-300"
-              onClick={advance}
-              disabled={saving || !ready}
-              aria-busy={saving}
-            >
-              {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
-              {step === 0 ? "Continuar" : "Cadastrar minha empresa"}
-            </Button>
+            <span className="text-right text-sm text-slate-300" aria-live="polite">
+              {saving ? "Salvando sua escolha…" : "Clique em uma opção para continuar"}
+            </span>
           </div>
         </main>
       </div>
@@ -734,7 +724,7 @@ function Onboarding() {
             <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
               <Button
                 className="w-full rounded-xl sm:w-auto"
-                onClick={advance}
+                onClick={() => void advance()}
                 disabled={saving || !ready}
                 aria-busy={saving}
               >
