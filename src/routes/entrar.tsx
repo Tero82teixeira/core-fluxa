@@ -9,8 +9,6 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
-  FileStack,
-  FolderKanban,
   KeyRound,
   LayoutDashboard,
   ListChecks,
@@ -46,11 +44,11 @@ export const Route = createFileRoute("/entrar")({
   head: () => ({
     meta: [
       { title: "Entrar — FLUXA" },
-      { name: "description", content: "Acesse a central inteligente de processos da sua empresa." },
+      { name: "description", content: "Acesse a central de operações da sua empresa no FLUXA." },
       { property: "og:title", content: "Entrar — FLUXA" },
       {
         property: "og:description",
-        content: "Acesse a central inteligente de processos da sua empresa.",
+        content: "Acesse a central de operações da sua empresa no FLUXA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -61,15 +59,15 @@ export const Route = createFileRoute("/entrar")({
 
 const BENEFITS = [
   { icon: CalendarCheck2, label: "Prioridades e prazos no lugar certo" },
-  { icon: Workflow, label: "Clientes, processos e tarefas conectados" },
+  { icon: Workflow, label: "Uma rotina organizada para a sua área" },
   { icon: ShieldCheck, label: "Equipe e dados protegidos por permissões" },
 ];
 
 const CONNECTED_FLOW = [
-  { icon: Users, label: "Clientes", detail: "Contexto centralizado" },
-  { icon: FolderKanban, label: "Processos", detail: "Etapas acompanhadas" },
+  { icon: LayoutDashboard, label: "Sua área", detail: "Menus relevantes" },
+  { icon: Workflow, label: "Rotina", detail: "Tudo organizado" },
   { icon: ListChecks, label: "Tarefas", detail: "Responsáveis definidos" },
-  { icon: FileStack, label: "Documentos", detail: "Arquivos conectados" },
+  { icon: Users, label: "Equipe", detail: "Acessos protegidos" },
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -141,8 +139,8 @@ function AuthSidePanel({ mode }: { mode: AuthMode }) {
         </h1>
         <p className="mt-5 max-w-lg text-base leading-7 text-slate-300 [@media(max-height:760px)]:mt-3">
           {mode === "signup"
-            ? "Crie sua empresa, organize a primeira rotina e conheça todos os módulos da FLUXA no seu próprio ritmo."
-            : "Entre para acompanhar clientes, processos, documentos, tarefas, prazos e decisões em um único lugar."}
+            ? "Crie sua conta, escolha sua área de atuação e configure sua empresa com os recursos certos para sua rotina."
+            : "Entre para acompanhar a rotina da sua empresa no espaço de trabalho preparado para sua área."}
         </p>
 
         <ul className="mt-7 grid gap-3 [@media(max-height:760px)]:mt-4 [@media(max-height:760px)]:gap-2">
