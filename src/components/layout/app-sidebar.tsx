@@ -1,5 +1,17 @@
+import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Building2, ChevronsLeft, ChevronsRight, LogOut, Moon, Sparkles, Sun } from "lucide-react";
+import {
+  Building2,
+  ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
+  FileStack,
+  LogOut,
+  Moon,
+  ReceiptText,
+  Sparkles,
+  Sun,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -15,9 +27,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { organizationDisplayName } from "@/lib/organization-name";
-import { NAV_GROUPS, NAV_ITEMS, navItemVisibleForRole } from "@/lib/navigation";
+import { NAV_GROUPS, NAV_ITEMS, navItemVisibleForRole, type NavItem } from "@/lib/navigation";
 import { initials } from "@/lib/format";
 import { useTheme } from "@/lib/theme";
 import { useWorkspace } from "@/lib/workspace";
@@ -56,6 +69,30 @@ const NAV_ICON_TONE: Record<string, string> = {
   "/novidades": "bg-pink-400/10 text-pink-300",
 };
 
+const HEALTH_ROUTINE_ORDER = [
+  "/meu-dia",
+  "/saude/painel-clinica",
+  "/saude/pacientes",
+  "/saude/agenda",
+  "/saude/convenios",
+  "/saude/autorizacoes",
+  "/tarefas",
+  "/central",
+];
+const HEALTH_ROUTINE_ROUTES = new Set(HEALTH_ROUTINE_ORDER);
+
+const HEALTH_BILLING_ROUTES = new Set([
+  "/saude/contas-medicas",
+  "/saude/lotes-faturamento",
+  "/saude/conciliacao",
+  "/saude/painel-faturamento",
+  "/saude/glosas",
+]);
+
+function isCurrentRoute(pathname: string, route: string) {
+  return pathname === route || pathname.startsWith(`${route}/`);
+}
+
 export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
@@ -70,10 +107,163 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
     onboardingExplorationEnabled,
   } = useWorkspace();
   const organizationSettings = membership?.organizations?.organization_settings;
+  const isHealthWorkspace = organizationSettings?.business_segment === "health";
+  const [billingOpen, setBillingOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isHealthWorkspace) return;
+    if ([...HEALTH_BILLING_ROUTES].some((route) => isCurrentRoute(pathname, route))) {
+      setBillingOpen(true);
+    } else if (
+      NAV_ITEMS.some(
+        (item) =>
+          item.group !== "sistema" &&
+          !HEALTH_ROUTINE_ROUTES.has(item.to) &&
+          !HEALTH_BILLING_ROUTES.has(item.to) &&
+          isCurrentRoute(pathname, item.to),
+      )
+    ) {
+      setToolsOpen(true);
+    }
+  }, [isHealthWorkspace, pathname]);
+
+  const visibleItems = NAV_ITEMS.filter(
+    (item) =>
+      navItemVisibleForRole(item.to, role) &&
+      routeVisibleForModules(
+        item.to,
+        organizationSettings?.business_segment,
+        organizationSettings?.enabled_modules,
+      ) &&
+      (item.to !== "/assinatura" || canManageSubscription(role)),
+  );
+
+  const routineItems = HEALTH_ROUTINE_ORDER.flatMap((route) =>
+    visibleItems.filter((item) => item.to === route),
+  );
+  const billingItems = visibleItems.filter((item) => HEALTH_BILLING_ROUTES.has(item.to));
+  const generalItems = visibleItems.filter(
+    (item) =>
+      item.group !== "sistema" &&
+      !HEALTH_ROUTINE_ROUTES.has(item.to) &&
+      !HEALTH_BILLING_ROUTES.has(item.to),
+  );
+  const systemItems = visibleItems.filter((item) => item.group === "sistema");
+  const locked = !onboardingCompleted && !onboardingExplorationEnabled;
 
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false);
   };
+
+  const renderItem = (item: NavItem) => {
+    const active = isCurrentRoute(pathname, item.to);
+    const navIcon = collapsed ? (
+      <item.icon className="size-4.5 shrink-0 text-sidebar-primary" aria-hidden />
+    ) : (
+      <span
+        className={cn(
+          "grid size-7 shrink-0 place-items-center rounded-lg transition-transform group-hover/menu-button:scale-105",
+          NAV_ICON_TONE[item.to],
+        )}
+      >
+        <item.icon className="size-4" aria-hidden />
+      </span>
+    );
+    return (
+      <SidebarMenuItem key={item.to}>
+        <SidebarMenuButton
+          asChild={!locked}
+          isActive={active}
+          tooltip={item.label}
+          className="group/menu-button relative h-10 rounded-xl text-sm text-sidebar-foreground/75 hover:bg-white/[0.06] hover:text-white data-[active=true]:bg-blue-500/15 data-[active=true]:font-semibold data-[active=true]:text-blue-200 data-[active=true]:shadow-[inset_3px_0_0_0_rgb(96_165_250)]"
+        >
+          {locked ? (
+            <span
+              onClick={() =>
+                toast.info("Conclua a configuração inicial da empresa para acessar este módulo.")
+              }
+            >
+              {navIcon}
+              <span className="truncate">{item.label}</span>
+            </span>
+          ) : (
+            <Link to={item.to} onClick={closeOnMobile} className="gap-3">
+              {navIcon}
+              <span className="truncate">{item.label}</span>
+              {!item.ready && !collapsed && (
+                <span className="ml-auto rounded-full border border-sidebar-border px-1.5 py-0.5 text-[0.65rem] leading-none text-muted-foreground">
+                  em breve
+                </span>
+              )}
+            </Link>
+          )}
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
+
+  const renderGroup = (key: string, label: string, items: NavItem[]) =>
+    items.length ? (
+      <SidebarGroup key={key} className="py-1.5">
+        {collapsed ? (
+          <div className="mx-auto my-1 h-px w-6 bg-sidebar-border" aria-hidden />
+        ) : (
+          <SidebarGroupLabel className="text-[0.65rem] font-semibold tracking-[0.15em] text-sidebar-foreground/40 uppercase">
+            {label}
+          </SidebarGroupLabel>
+        )}
+        <SidebarGroupContent>
+          <SidebarMenu className="gap-0.5">{items.map(renderItem)}</SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    ) : null;
+
+  const renderCollapsibleGroup = (
+    key: string,
+    label: string,
+    items: NavItem[],
+    open: boolean,
+    setOpen: (open: boolean) => void,
+    Icon: typeof ReceiptText,
+  ) =>
+    items.length ? (
+      <Collapsible
+        key={key}
+        open={open}
+        onOpenChange={(nextOpen) => setOpen(collapsed ? true : nextOpen)}
+        asChild
+      >
+        <SidebarGroup className="py-1.5">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              title={label}
+              className="flex h-10 w-full items-center gap-3 rounded-xl px-2 text-left text-sm font-medium text-sidebar-foreground/80 hover:bg-white/[0.06] hover:text-white focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none"
+              onClick={() => {
+                if (collapsed) toggleSidebar();
+              }}
+            >
+              <Icon className="size-4.5 shrink-0 text-sidebar-primary" aria-hidden />
+              {!collapsed && (
+                <>
+                  <span className="flex-1 truncate">{label}</span>
+                  <ChevronDown
+                    className={cn("size-4 shrink-0 transition-transform", open && "rotate-180")}
+                    aria-hidden
+                  />
+                </>
+              )}
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className={cn(collapsed && "hidden")}>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0.5 pl-2">{items.map(renderItem)}</SidebarMenu>
+            </SidebarGroupContent>
+          </CollapsibleContent>
+        </SidebarGroup>
+      </Collapsible>
+    ) : null;
 
   return (
     <Sidebar
@@ -104,84 +294,36 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
       </SidebarHeader>
 
       <SidebarContent className="gap-1 px-2">
-        {NAV_GROUPS.map((group) => {
-          const items = NAV_ITEMS.filter(
-            (item) =>
-              item.group === group.key &&
-              navItemVisibleForRole(item.to, role) &&
-              routeVisibleForModules(
-                item.to,
-                organizationSettings?.business_segment,
-                organizationSettings?.enabled_modules,
-              ) &&
-              (item.to !== "/assinatura" || canManageSubscription(role)),
-          );
-          if (items.length === 0) return null;
-          return (
-            <SidebarGroup key={group.key} className="py-1.5">
-              {collapsed ? (
-                <div className="mx-auto my-1 h-px w-6 bg-sidebar-border" aria-hidden />
-              ) : (
-                <SidebarGroupLabel className="text-[0.65rem] font-semibold tracking-[0.15em] text-sidebar-foreground/40 uppercase">
-                  {group.label}
-                </SidebarGroupLabel>
-              )}
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
-                  {items.map((item) => {
-                    const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
-                    const locked = !onboardingCompleted && !onboardingExplorationEnabled;
-                    const navIcon = collapsed ? (
-                      <item.icon className="size-4.5 shrink-0 text-sidebar-primary" aria-hidden />
-                    ) : (
-                      <span
-                        className={cn(
-                          "grid size-7 shrink-0 place-items-center rounded-lg transition-transform group-hover/menu-button:scale-105",
-                          NAV_ICON_TONE[item.to],
-                        )}
-                      >
-                        <item.icon className="size-4" aria-hidden />
-                      </span>
-                    );
-                    return (
-                      <SidebarMenuItem key={item.to}>
-                        <SidebarMenuButton
-                          asChild={!locked}
-                          isActive={active}
-                          tooltip={item.label}
-                          className="group/menu-button relative h-10 rounded-xl text-sm text-sidebar-foreground/75 hover:bg-white/[0.06] hover:text-white data-[active=true]:bg-blue-500/15 data-[active=true]:font-semibold data-[active=true]:text-blue-200 data-[active=true]:shadow-[inset_3px_0_0_0_rgb(96_165_250)]"
-                        >
-                          {locked ? (
-                            <span
-                              onClick={() =>
-                                toast.info(
-                                  "Conclua a configuração inicial da empresa para acessar este módulo.",
-                                )
-                              }
-                            >
-                              {navIcon}
-                              <span className="truncate">{item.label}</span>
-                            </span>
-                          ) : (
-                            <Link to={item.to} onClick={closeOnMobile} className="gap-3">
-                              {navIcon}
-                              <span className="truncate">{item.label}</span>
-                              {!item.ready && !collapsed && (
-                                <span className="ml-auto rounded-full border border-sidebar-border px-1.5 py-0.5 text-[0.65rem] leading-none text-muted-foreground">
-                                  em breve
-                                </span>
-                              )}
-                            </Link>
-                          )}
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          );
-        })}
+        {isHealthWorkspace ? (
+          <>
+            {renderGroup("rotina-clinica", "Rotina da clínica", routineItems)}
+            {renderCollapsibleGroup(
+              "faturamento-saude",
+              "Faturamento",
+              billingItems,
+              billingOpen,
+              setBillingOpen,
+              ReceiptText,
+            )}
+            {renderCollapsibleGroup(
+              "ferramentas-gerais",
+              "Ferramentas gerais",
+              generalItems,
+              toolsOpen,
+              setToolsOpen,
+              FileStack,
+            )}
+            {renderGroup("sistema", "Sistema", systemItems)}
+          </>
+        ) : (
+          NAV_GROUPS.map((group) =>
+            renderGroup(
+              group.key,
+              group.label,
+              visibleItems.filter((item) => item.group === group.key),
+            ),
+          )
+        )}
       </SidebarContent>
 
       <SidebarFooter className="gap-1 border-t border-sidebar-border/80 bg-black/[0.08] px-2 py-3">
