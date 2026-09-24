@@ -13,10 +13,16 @@ test("entrada e cadastro seguem a identidade premium da página pública", () =>
 });
 
 test("prévia de autenticação explica o fluxo sem indicadores fictícios", () => {
-  for (const moduleName of ["Clientes", "Processos", "Tarefas", "Documentos"]) {
+  for (const moduleName of ["Sua área", "Rotina", "Tarefas", "Equipe"]) {
     assert.match(auth, new RegExp(`label: "${moduleName}"`));
   }
   assert.doesNotMatch(auth, /PREVIEW_CARDS|"128"|"06"|"23"|"09"/);
+});
+
+test("entrada pública apresenta áreas sem sugerir apenas a rotina jurídica", () => {
+  assert.match(auth, /escolha sua área de atuação/);
+  assert.match(auth, /espaço de trabalho preparado para sua área/);
+  assert.doesNotMatch(auth, /Clientes, processos e tarefas conectados/);
 });
 
 test("formulário orienta senha, carregamento, erros e confirmação", () => {
