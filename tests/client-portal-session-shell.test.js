@@ -44,7 +44,7 @@ describe("sessão isolada do Portal do Cliente", () => {
 
   test("login separa cliente externo do workspace interno", () => {
     assert.match(login, /resolve_authenticated_home/);
-    assert.match(login, /data === "client_portal" \? "\/meu-portal" : "\/central"/);
+    assert.match(login, /data === "client_portal" \? "\/meu-portal" : "\/onboarding"/);
     assert.doesNotMatch(login, /navigate\(\{ to: "\/central"[\s\S]*await signIn/);
   });
 

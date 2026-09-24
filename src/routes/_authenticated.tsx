@@ -17,6 +17,7 @@ import { PushNotificationOnboarding } from "@/components/notifications/push-noti
 import { CommercialAccessBlocked } from "@/components/commercial-access-blocked";
 import { WorkspaceProvider, useWorkspace } from "@/lib/workspace";
 import { useAuth } from "@/lib/auth";
+import { requiresWorkspaceSetup } from "@/lib/onboarding-entry";
 import {
   healthWorkspaceHome,
   isFocusedHealthWorkspace,
@@ -46,6 +47,12 @@ function OnboardingGate() {
   const location = useLocation();
   const navigate = useNavigate();
   const onOnboarding = location.pathname.startsWith("/onboarding");
+  const settings = membership?.organizations?.organization_settings;
+  const needsOnboarding = requiresWorkspaceSetup(
+    onboardingCompleted,
+    onboardingExplorationEnabled,
+    settings?.business_segment,
+  );
   const onPlatformArea =
     location.pathname.startsWith("/administracao-plataforma") ||
     location.pathname.startsWith("/suporte-plataforma");
@@ -54,12 +61,11 @@ function OnboardingGate() {
     if (status !== "ready") return;
     if (!commercialAccess) return;
     if (platformAdmin && onPlatformArea) return;
-    if (!onboardingCompleted && !onboardingExplorationEnabled && !onOnboarding) {
+    if (needsOnboarding && !onOnboarding) {
       navigate({ to: "/onboarding", replace: true });
       return;
     }
     if (onboardingCompleted && onOnboarding) {
-      const settings = membership?.organizations?.organization_settings;
       navigate({
         to: isFocusedHealthWorkspace(settings)
           ? healthWorkspaceHome(settings?.enabled_modules)
@@ -69,7 +75,6 @@ function OnboardingGate() {
       return;
     }
 
-    const settings = membership?.organizations?.organization_settings;
     if (
       !onOnboarding &&
       !onPlatformArea &&
@@ -90,7 +95,7 @@ function OnboardingGate() {
   }, [
     status,
     onboardingCompleted,
-    onboardingExplorationEnabled,
+    needsOnboarding,
     commercialAccess,
     platformAdmin,
     membership,
@@ -147,12 +152,19 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
     platformAdmin,
     organizationId,
     onboardingCompleted,
+    onboardingExplorationEnabled,
     membership,
   } = useWorkspace();
   const pathname = useLocation({ select: (location) => location.pathname });
   const onPlatformArea =
     pathname.startsWith("/administracao-plataforma") || pathname.startsWith("/suporte-plataforma");
   const settings = membership?.organizations?.organization_settings;
+  const onOnboarding = pathname.startsWith("/onboarding");
+  const needsOnboarding = requiresWorkspaceSetup(
+    onboardingCompleted,
+    onboardingExplorationEnabled,
+    settings?.business_segment,
+  );
   const moduleRouteAllowed =
     status !== "ready" ||
     onPlatformArea ||
@@ -166,6 +178,29 @@ function WorkspaceContent({ onSignOut }: { onSignOut: () => void }) {
   if (status === "error") return <WorkspaceRecovery />;
   if (status === "ready" && !commercialAccess && !(platformAdmin && onPlatformArea)) {
     return <CommercialAccessBlocked onSignOut={onSignOut} />;
+  }
+
+  // Um novo workspace não expõe o menu geral enquanto a área não foi definida.
+  if (status === "ready" && needsOnboarding) {
+    return onOnboarding ? (
+      <main className="min-h-dvh bg-muted/20">
+        <Outlet />
+      </main>
+    ) : (
+      <div className="flex min-h-dvh items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Preparando a escolha da sua área…
+      </div>
+    );
+  }
+
+  if (status === "ready" && onboardingCompleted && onOnboarding) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Abrindo seu workspace…
+      </div>
+    );
   }
 
   return (
