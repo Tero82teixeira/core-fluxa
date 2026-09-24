@@ -23,6 +23,10 @@ dist-ssr
 .fluxa-backups/
 fluxa-backup-*/
 fluxa-backup-*.zip
+fluxa_db_*/
+fluxa_db_*.dump
+fluxa_db_*_schema.sql
+fluxa_db_*.sha256
 
 # Supabase CLI temporary artifacts
 supabase/.temp/
