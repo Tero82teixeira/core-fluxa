@@ -48,6 +48,20 @@ export type LegalCaseProfileInput = Omit<
   "id" | "organization_id" | "process_id" | "created_at" | "updated_at"
 >;
 
+export type LegalAgendaHearing = {
+  id: string;
+  process_id: string;
+  process_code: string;
+  process_title: string | null;
+  client_name: string;
+  next_hearing_at: string;
+  court: string | null;
+  judicial_unit: string | null;
+  district: string | null;
+  state: string | null;
+  confidential: boolean;
+};
+
 const rpc = supabase as unknown as {
   rpc: (
     name: string,
@@ -100,6 +114,22 @@ export function useUpsertLegalCaseProfile(organizationId: string | null, process
       await queryClient.invalidateQueries({
         queryKey: ["legal-case-profile", organizationId, processId],
       });
+    },
+  });
+}
+
+export function useLegalAgenda(organizationId: string | null, from: string, to: string) {
+  return useQuery({
+    queryKey: ["legal-agenda", organizationId, from, to],
+    enabled: Boolean(organizationId && from && to),
+    queryFn: async () => {
+      const { data, error } = await rpc.rpc("list_legal_agenda", {
+        _organization_id: organizationId,
+        _from: from,
+        _to: to,
+      });
+      if (error) throw error;
+      return (Array.isArray(data) ? data : []) as LegalAgendaHearing[];
     },
   });
 }

@@ -40,6 +40,7 @@ const filters = [
   ["team", "Equipe"],
   ["integration", "Integrações"],
   ["health", "Saúde"],
+  ["legal", "Advocacia"],
   ["system", "Sistema"],
 ];
 

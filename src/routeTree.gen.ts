@@ -40,6 +40,7 @@ import { Route as CaptarTokenRouteImport } from './routes/captar.$token'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as PortalDoClienteTokenRouteImport } from './routes/portal-do-cliente.$token'
 import { Route as PropostaTokenRouteImport } from './routes/proposta.$token'
+import { Route as AuthenticatedAdvocaciaAgendaJuridicaRouteImport } from './routes/_authenticated/advocacia.agenda-juridica'
 import { Route as AuthenticatedAdvocaciaPainelJuridicoRouteImport } from './routes/_authenticated/advocacia.painel-juridico'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as AuthenticatedClientesClientIdRouteImport } from './routes/_authenticated/clientes.$clientId'
@@ -219,6 +220,12 @@ const PropostaTokenRoute = PropostaTokenRouteImport.update({
   path: '/proposta/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdvocaciaAgendaJuridicaRoute =
+  AuthenticatedAdvocaciaAgendaJuridicaRouteImport.update({
+    id: '/advocacia/agenda-juridica',
+    path: '/advocacia/agenda-juridica',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdvocaciaPainelJuridicoRoute =
   AuthenticatedAdvocaciaPainelJuridicoRouteImport.update({
     id: '/advocacia/painel-juridico',
@@ -359,6 +366,7 @@ export interface FileRoutesByFullPath {
   '/convite/$token': typeof ConviteTokenRoute
   '/portal-do-cliente/$token': typeof PortalDoClienteTokenRoute
   '/proposta/$token': typeof PropostaTokenRoute
+  '/advocacia/agenda-juridica': typeof AuthenticatedAdvocaciaAgendaJuridicaRoute
   '/advocacia/painel-juridico': typeof AuthenticatedAdvocaciaPainelJuridicoRoute
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
@@ -407,6 +415,7 @@ export interface FileRoutesByTo {
   '/convite/$token': typeof ConviteTokenRoute
   '/portal-do-cliente/$token': typeof PortalDoClienteTokenRoute
   '/proposta/$token': typeof PropostaTokenRoute
+  '/advocacia/agenda-juridica': typeof AuthenticatedAdvocaciaAgendaJuridicaRoute
   '/advocacia/painel-juridico': typeof AuthenticatedAdvocaciaPainelJuridicoRoute
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
@@ -459,6 +468,7 @@ export interface FileRoutesById {
   '/convite/$token': typeof ConviteTokenRoute
   '/portal-do-cliente/$token': typeof PortalDoClienteTokenRoute
   '/proposta/$token': typeof PropostaTokenRoute
+  '/_authenticated/advocacia/agenda-juridica': typeof AuthenticatedAdvocaciaAgendaJuridicaRoute
   '/_authenticated/advocacia/painel-juridico': typeof AuthenticatedAdvocaciaPainelJuridicoRoute
   '/_authenticated/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
@@ -511,6 +521,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/portal-do-cliente/$token'
     | '/proposta/$token'
+    | '/advocacia/agenda-juridica'
     | '/advocacia/painel-juridico'
     | '/clientes/$clientId'
     | '/clientes/novo'
@@ -559,6 +570,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/portal-do-cliente/$token'
     | '/proposta/$token'
+    | '/advocacia/agenda-juridica'
     | '/advocacia/painel-juridico'
     | '/clientes/$clientId'
     | '/clientes/novo'
@@ -610,6 +622,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/portal-do-cliente/$token'
     | '/proposta/$token'
+    | '/_authenticated/advocacia/agenda-juridica'
     | '/_authenticated/advocacia/painel-juridico'
     | '/_authenticated/clientes/$clientId'
     | '/_authenticated/clientes/novo'
@@ -863,6 +876,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PropostaTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/advocacia/agenda-juridica': {
+      id: '/_authenticated/advocacia/agenda-juridica'
+      path: '/advocacia/agenda-juridica'
+      fullPath: '/advocacia/agenda-juridica'
+      preLoaderRoute: typeof AuthenticatedAdvocaciaAgendaJuridicaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/advocacia/painel-juridico': {
       id: '/_authenticated/advocacia/painel-juridico'
       path: '/advocacia/painel-juridico'
@@ -1051,6 +1071,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedSuportePlataformaRoute: typeof AuthenticatedSuportePlataformaRoute
   AuthenticatedTarefasRoute: typeof AuthenticatedTarefasRoute
+  AuthenticatedAdvocaciaAgendaJuridicaRoute: typeof AuthenticatedAdvocaciaAgendaJuridicaRoute
   AuthenticatedAdvocaciaPainelJuridicoRoute: typeof AuthenticatedAdvocaciaPainelJuridicoRoute
   AuthenticatedSaudeAgendaRoute: typeof AuthenticatedSaudeAgendaRoute
   AuthenticatedSaudeAutorizacoesRoute: typeof AuthenticatedSaudeAutorizacoesRoute
@@ -1086,6 +1107,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedSuportePlataformaRoute: AuthenticatedSuportePlataformaRoute,
   AuthenticatedTarefasRoute: AuthenticatedTarefasRoute,
+  AuthenticatedAdvocaciaAgendaJuridicaRoute:
+    AuthenticatedAdvocaciaAgendaJuridicaRoute,
   AuthenticatedAdvocaciaPainelJuridicoRoute:
     AuthenticatedAdvocaciaPainelJuridicoRoute,
   AuthenticatedSaudeAgendaRoute: AuthenticatedSaudeAgendaRoute,
