@@ -8539,7 +8539,6 @@ export type Database = {
         Returns: undefined
       }
       run_temporal_automation_cycle: { Args: never; Returns: Json }
-      run_temporal_automation_cycle_core: { Args: never; Returns: Json }
       save_client_portal_faq_article: {
         Args: {
           _answer: string

@@ -30,8 +30,8 @@ describe("FLUXA Advocacia — Agenda Jurídica e alertas", () => {
   });
 
   test("usa o relógio temporal existente, sem criar cron paralelo", () => {
-    assert.match(migration, /ALTER FUNCTION public\.run_temporal_automation_cycle\(\)/);
-    assert.match(migration, /run_temporal_automation_cycle_core/);
+    assert.match(migration, /CREATE OR REPLACE FUNCTION public\.run_temporal_automation_cycle\(\)/);
+    assert.match(migration, /create_health_operational_notifications/);
     assert.match(migration, /create_legal_operational_notifications/);
     assert.doesNotMatch(migration, /cron\.schedule|CREATE EXTENSION.*pg_cron/i);
   });
@@ -52,6 +52,6 @@ describe("FLUXA Advocacia — Agenda Jurídica e alertas", () => {
     assert.match(hook, /list_legal_agenda/);
     assert.match(types, /create_legal_operational_notifications/);
     assert.match(types, /list_legal_agenda/);
-    assert.match(types, /run_temporal_automation_cycle_core/);
+    assert.match(types, /run_temporal_automation_cycle/);
   });
 });

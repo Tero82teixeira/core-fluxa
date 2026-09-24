@@ -179,11 +179,6 @@ BEGIN
 END;
 $function$;
 
--- Preserva todas as etapas existentes em uma função interna e mantém o nome
--- público usado pelo único cron do FLUXA como um invólucro seguro.
-ALTER FUNCTION public.run_temporal_automation_cycle()
-  RENAME TO run_temporal_automation_cycle_core;
-
 CREATE OR REPLACE FUNCTION public.run_temporal_automation_cycle()
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -191,10 +186,178 @@ SECURITY DEFINER
 SET search_path = pg_catalog, public, pg_temp
 AS $function$
 DECLARE
-  core_result jsonb;
+  scheduled_count integer;
+  critical_count integer := 0;
+  unassigned_count integer := 0;
+  deadline_count integer := 0;
+  overdue_escalation_count integer := 0;
+  stale_process_count integer := 0;
+  overdue_communication_count integer := 0;
+  expired_document_count integer := 0;
+  overdue_financial_count integer := 0;
+  financial_recurrence_count integer := 0;
+  weekly_financial_summary_count integer := 0;
+  weekly_data_quality_count integer := 0;
+  stale_client_count integer := 0;
+  client_birthday_count integer := 0;
+  stale_lead_count integer := 0;
+  stale_task_count integer := 0;
+  daily_operational_close_count integer := 0;
+  weekly_productivity_report_count integer := 0;
+  kiwify_expiry_count integer := 0;
+  commercial_next_action_count integer := 0;
+  payment_reminder_count integer := 0;
+  health_alert_count integer := 0;
   legal_alert_count integer := 0;
 BEGIN
-  core_result := public.run_temporal_automation_cycle_core();
+  scheduled_count := public.process_due_scheduled_automations();
+
+  BEGIN
+    kiwify_expiry_count := public.suspend_expired_kiwify_subscriptions();
+  EXCEPTION WHEN OTHERS THEN
+    kiwify_expiry_count := -1;
+    RAISE WARNING 'KIWIFY_SUBSCRIPTION_EXPIRY_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    weekly_productivity_report_count := public.create_weekly_productivity_report_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    weekly_productivity_report_count := -1;
+    RAISE WARNING 'WEEKLY_PRODUCTIVITY_REPORT_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    daily_operational_close_count := public.create_daily_operational_close_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    daily_operational_close_count := -1;
+    RAISE WARNING 'DAILY_OPERATIONAL_CLOSE_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    financial_recurrence_count := public.process_due_financial_recurrences();
+  EXCEPTION WHEN OTHERS THEN
+    financial_recurrence_count := -1;
+    RAISE WARNING 'FINANCIAL_RECURRENCE_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    weekly_financial_summary_count := public.create_weekly_financial_summary_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    weekly_financial_summary_count := -1;
+    RAISE WARNING 'WEEKLY_FINANCIAL_SUMMARY_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    weekly_data_quality_count := public.create_weekly_data_quality_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    weekly_data_quality_count := -1;
+    RAISE WARNING 'WEEKLY_DATA_QUALITY_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    stale_client_count := public.create_stale_client_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    stale_client_count := -1;
+    RAISE WARNING 'STALE_CLIENT_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    client_birthday_count := public.create_client_birthday_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    client_birthday_count := -1;
+    RAISE WARNING 'CLIENT_BIRTHDAY_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    stale_lead_count := public.create_stale_lead_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    stale_lead_count := -1;
+    RAISE WARNING 'STALE_LEAD_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    critical_count := public.create_critical_monitoring_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    critical_count := -1;
+    RAISE WARNING 'CRITICAL_MONITORING_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    unassigned_count := public.create_unassigned_monitoring_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    unassigned_count := -1;
+    RAISE WARNING 'UNASSIGNED_MONITORING_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    deadline_count := public.create_deadline_reminder_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    deadline_count := -1;
+    RAISE WARNING 'DEADLINE_REMINDER_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    overdue_escalation_count := public.create_overdue_task_escalation_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    overdue_escalation_count := -1;
+    RAISE WARNING 'OVERDUE_TASK_ESCALATION_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    stale_task_count := public.create_stale_task_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    stale_task_count := -1;
+    RAISE WARNING 'STALE_TASK_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    stale_process_count := public.create_stale_process_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    stale_process_count := -1;
+    RAISE WARNING 'STALE_PROCESS_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    overdue_communication_count := public.create_overdue_communication_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    overdue_communication_count := -1;
+    RAISE WARNING 'OVERDUE_COMMUNICATION_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    expired_document_count := public.create_expired_document_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    expired_document_count := -1;
+    RAISE WARNING 'EXPIRED_DOCUMENT_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    overdue_financial_count := public.create_overdue_financial_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    overdue_financial_count := -1;
+    RAISE WARNING 'OVERDUE_FINANCIAL_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    commercial_next_action_count := public.create_commercial_next_action_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    commercial_next_action_count := -1;
+    RAISE WARNING 'COMMERCIAL_NEXT_ACTION_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    payment_reminder_count := public.create_asaas_client_payment_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    payment_reminder_count := -1;
+    RAISE WARNING 'ASAAS_CLIENT_PAYMENT_REMINDER_SCAN_FAILED: %', SQLSTATE;
+  END;
+
+  BEGIN
+    health_alert_count := public.create_health_operational_notifications();
+  EXCEPTION WHEN OTHERS THEN
+    health_alert_count := -1;
+    RAISE WARNING 'HEALTH_OPERATIONAL_ALERT_SCAN_FAILED: %', SQLSTATE;
+  END;
 
   BEGIN
     legal_alert_count := public.create_legal_operational_notifications();
@@ -203,7 +366,29 @@ BEGIN
     RAISE WARNING 'LEGAL_OPERATIONAL_ALERT_SCAN_FAILED: %', SQLSTATE;
   END;
 
-  RETURN core_result || jsonb_build_object(
+  RETURN jsonb_build_object(
+    'scheduled_processed', scheduled_count,
+    'kiwify_subscriptions_suspended', kiwify_expiry_count,
+    'weekly_productivity_reports_created', weekly_productivity_report_count,
+    'daily_operational_close_notifications_created', daily_operational_close_count,
+    'critical_notifications_created', critical_count,
+    'unassigned_notifications_created', unassigned_count,
+    'deadline_notifications_created', deadline_count,
+    'overdue_task_escalations_created', overdue_escalation_count,
+    'stale_task_notifications_created', stale_task_count,
+    'stale_process_notifications_created', stale_process_count,
+    'overdue_communication_notifications_created', overdue_communication_count,
+    'expired_document_notifications_created', expired_document_count,
+    'overdue_financial_notifications_created', overdue_financial_count,
+    'financial_recurrence_transactions_created', financial_recurrence_count,
+    'weekly_financial_summaries_created', weekly_financial_summary_count,
+    'weekly_data_quality_notifications_created', weekly_data_quality_count,
+    'stale_client_notifications_created', stale_client_count,
+    'client_birthday_notifications_created', client_birthday_count,
+    'stale_lead_notifications_created', stale_lead_count,
+    'commercial_next_action_notifications_created', commercial_next_action_count,
+    'asaas_client_payment_reminders_created', payment_reminder_count,
+    'health_operational_notifications_created', health_alert_count,
     'legal_operational_notifications_created', legal_alert_count
   );
 END;
@@ -216,14 +401,10 @@ GRANT EXECUTE ON FUNCTION public.list_legal_agenda(uuid, timestamptz, timestampt
 
 REVOKE ALL ON FUNCTION public.create_legal_operational_notifications(timestamptz)
   FROM PUBLIC, anon, authenticated, service_role;
-REVOKE ALL ON FUNCTION public.run_temporal_automation_cycle_core()
-  FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.run_temporal_automation_cycle()
   FROM PUBLIC, anon, authenticated, service_role;
 
 GRANT EXECUTE ON FUNCTION public.create_legal_operational_notifications(timestamptz)
-  TO postgres;
-GRANT EXECUTE ON FUNCTION public.run_temporal_automation_cycle_core()
   TO postgres;
 GRANT EXECUTE ON FUNCTION public.run_temporal_automation_cycle()
   TO postgres;
