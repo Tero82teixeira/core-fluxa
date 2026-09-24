@@ -113,7 +113,11 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
 
   useEffect(() => {
     if (!isHealthWorkspace) return;
-    if ([...HEALTH_BILLING_ROUTES].some((route) => isCurrentRoute(pathname, route))) {
+    if (
+      role === "financeiro" ||
+      organizationSettings?.business_subtype === "medical_billing" ||
+      [...HEALTH_BILLING_ROUTES].some((route) => isCurrentRoute(pathname, route))
+    ) {
       setBillingOpen(true);
     } else if (
       NAV_ITEMS.some(
@@ -126,7 +130,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
     ) {
       setToolsOpen(true);
     }
-  }, [isHealthWorkspace, pathname]);
+  }, [isHealthWorkspace, organizationSettings?.business_subtype, pathname, role]);
 
   const visibleItems = NAV_ITEMS.filter(
     (item) =>
