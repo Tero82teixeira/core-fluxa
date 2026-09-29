@@ -40,7 +40,7 @@ function canonicalType(node, context = "") {
     return { kind: "empty" };
   }
 
-  if (ts.isTypeLiteralNode(node)) {
+  // An empty mapped type has no keys; indentation is not part of the schema contract.\n  if (isEmptyMappedType(node)) return { kind: "emptyMapped" };\n\n  if (ts.isTypeLiteralNode(node)) {
     const members = node.members.map((member) => canonicalMember(member));
     members.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
     return { kind: "object", members };
