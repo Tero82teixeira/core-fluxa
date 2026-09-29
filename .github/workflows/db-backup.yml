@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   backup:
+    if: github.event_name == 'workflow_dispatch' || vars.FLUXA_DB_BACKUP_ENABLED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -22,6 +23,7 @@ jobs:
       BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
       AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       AWS_REGION: ${{ vars.AWS_REGION }}
+      BACKUP_ALERT_WEBHOOK_URL: ${{ secrets.BACKUP_ALERT_WEBHOOK_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -29,7 +31,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for name in SUPABASE_DB_URL BACKUP_S3_BUCKET AWS_ROLE_TO_ASSUME AWS_REGION; do
+          for name in SUPABASE_DB_URL BACKUP_S3_BUCKET AWS_ROLE_TO_ASSUME AWS_REGION BACKUP_ALERT_WEBHOOK_URL; do
             if [[ -z "${!name:-}" ]]; then
               echo "Missing backup configuration: $name" >&2
               exit 1
@@ -83,3 +85,26 @@ jobs:
           aws s3 cp --only-show-errors --sse AES256 COMPLETED "s3://$BACKUP_S3_BUCKET/$prefix/COMPLETED"
           aws s3api head-object --bucket "$BACKUP_S3_BUCKET" --key "$prefix/COMPLETED" >/dev/null
           echo "Backup uploaded and verified: $prefix"
+
+  notify_failure:
+    needs: backup
+    if: always() && needs.backup.result == 'failure'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      BACKUP_ALERT_WEBHOOK_URL: ${{ secrets.BACKUP_ALERT_WEBHOOK_URL }}
+    steps:
+      - name: Send failure alert
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${BACKUP_ALERT_WEBHOOK_URL:-}" ]]; then
+            echo 'Cannot send backup alert: BACKUP_ALERT_WEBHOOK_URL is missing' >&2
+            exit 1
+          fi
+          payload="$(jq -n \
+            --arg text "FLUXA: backup do banco falhou. Verifique ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            '{text: $text}')"
+          curl --fail-with-body --silent --show-error --retry 2 --max-time 15 \
+            -H 'Content-Type: application/json' \
+            --data "$payload" "$BACKUP_ALERT_WEBHOOK_URL"
