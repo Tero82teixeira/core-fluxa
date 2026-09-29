@@ -62,7 +62,19 @@ test("accepts equivalent empty RPC Args representations", () => {
   assert.equal(schemasAreEqual(committed, generated), true);
 });
 
-test("accepts formatting differences in empty CompositeTypes mappings", () => {\n  const committed = schema().replace(\n    "CompositeTypes: { address: { street: string; zip: number } }",\n    "CompositeTypes: { [_ in never]: never }",\n  );\n  const generated = committed.replace(\n    "{ [_ in never]: never }",\n    "{\\n        [_ in never]: never\\n      }",\n  );\n  assert.equal(schemasAreEqual(committed, generated), true);\n});\n\ntest("rejects a changed column type", () => {
+test("accepts formatting differences in empty CompositeTypes mappings", () => {
+  const committed = schema().replace(
+    "CompositeTypes: { address: { street: string; zip: number } }",
+    "CompositeTypes: { [_ in never]: never }",
+  );
+  const generated = committed.replace(
+    "{ [_ in never]: never }",
+    "{\n        [_ in never]: never\n      }",
+  );
+  assert.equal(schemasAreEqual(committed, generated), true);
+});
+
+test("rejects a changed column type", () => {
   assert.equal(schemasAreEqual(schema(), schema({ column: "number" })), false);
 });
 
