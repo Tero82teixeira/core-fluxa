@@ -79,3 +79,33 @@ export function useCreateHealthBillingItem(organizationId: string | null) {
     },
   });
 }
+
+export function useHealthBillingItemAction(organizationId: string | null) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: {
+      itemId: string;
+      action: "faturar" | "receber";
+      requestId: string;
+      amount?: number;
+      receivedAt?: string;
+    }) => {
+      const { data, error } = await rpc.rpc("apply_health_billing_item_action", {
+        _organization_id: organizationId,
+        _item_id: values.itemId,
+        _action: values.action,
+        _request_id: values.requestId,
+        _amount: values.amount ?? null,
+        _received_at: values.receivedAt || null,
+      });
+      if (error) throw error;
+      return data as HealthBillingItem;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["health-billing-items", organizationId] }),
+        client.invalidateQueries({ queryKey: ["health-clinic-dashboard", organizationId] }),
+      ]);
+    },
+  });
+}
