@@ -189,9 +189,9 @@ export const MODULE_CATALOG: Array<{
   {
     key: "real_estate_workspace",
     label: "Recursos Imobiliários",
-    description: "Imóveis, contratos e vistorias.",
+    description: "Cadastro de imóveis, proprietários e responsáveis.",
     group: "real_estate",
-    available: false,
+    available: true,
   },
 ];
 
@@ -504,6 +504,7 @@ export function recommendedModulesForSubtype(
 }
 
 const ROUTE_MODULES: Record<string, ModuleKey> = {
+  "/imobiliaria/imoveis": "real_estate_workspace",
   "/clientes": "clients",
   "/advocacia/painel-juridico": "legal_workspace",
   "/advocacia/agenda-juridica": "legal_workspace",
@@ -620,6 +621,7 @@ export function workspaceHomeForSegment(
     routeVisibleForModules("/advocacia/painel-juridico", "legal", enabledModules)
   )
     return "/advocacia/painel-juridico";
+  if (businessSegment === "real_estate" && routeVisibleForModules("/imobiliaria/imoveis", businessSegment, enabledModules)) return "/imobiliaria/imoveis";
   return "/meu-dia";
 }
 
