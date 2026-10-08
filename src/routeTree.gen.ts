@@ -45,6 +45,7 @@ import { Route as AuthenticatedAdvocaciaPainelJuridicoRouteImport } from './rout
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as AuthenticatedClientesClientIdRouteImport } from './routes/_authenticated/clientes.$clientId'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
+import { Route as AuthenticatedImobiliariaImoveisRouteImport } from './routes/_authenticated/imobiliaria.imoveis'
 import { Route as AuthenticatedProcessosIndexRouteImport } from './routes/_authenticated/processos.index'
 import { Route as AuthenticatedProcessosProcessIdRouteImport } from './routes/_authenticated/processos.$processId'
 import { Route as AuthenticatedProcessosNovoRouteImport } from './routes/_authenticated/processos.novo'
@@ -250,6 +251,12 @@ const AuthenticatedClientesNovoRoute =
     path: '/novo',
     getParentRoute: () => AuthenticatedClientesRoute,
   } as any)
+const AuthenticatedImobiliariaImoveisRoute =
+  AuthenticatedImobiliariaImoveisRouteImport.update({
+    id: '/imobiliaria/imoveis',
+    path: '/imobiliaria/imoveis',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProcessosIndexRoute =
   AuthenticatedProcessosIndexRouteImport.update({
     id: '/',
@@ -370,6 +377,7 @@ export interface FileRoutesByFullPath {
   '/advocacia/painel-juridico': typeof AuthenticatedAdvocaciaPainelJuridicoRoute
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/imobiliaria/imoveis': typeof AuthenticatedImobiliariaImoveisRoute
   '/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
   '/processos/novo': typeof AuthenticatedProcessosNovoRoute
   '/saude/agenda': typeof AuthenticatedSaudeAgendaRoute
@@ -419,6 +427,7 @@ export interface FileRoutesByTo {
   '/advocacia/painel-juridico': typeof AuthenticatedAdvocaciaPainelJuridicoRoute
   '/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/imobiliaria/imoveis': typeof AuthenticatedImobiliariaImoveisRoute
   '/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
   '/processos/novo': typeof AuthenticatedProcessosNovoRoute
   '/saude/agenda': typeof AuthenticatedSaudeAgendaRoute
@@ -472,6 +481,7 @@ export interface FileRoutesById {
   '/_authenticated/advocacia/painel-juridico': typeof AuthenticatedAdvocaciaPainelJuridicoRoute
   '/_authenticated/clientes/$clientId': typeof AuthenticatedClientesClientIdRoute
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/_authenticated/imobiliaria/imoveis': typeof AuthenticatedImobiliariaImoveisRoute
   '/_authenticated/processos/$processId': typeof AuthenticatedProcessosProcessIdRoute
   '/_authenticated/processos/novo': typeof AuthenticatedProcessosNovoRoute
   '/_authenticated/saude/agenda': typeof AuthenticatedSaudeAgendaRoute
@@ -525,6 +535,7 @@ export interface FileRouteTypes {
     | '/advocacia/painel-juridico'
     | '/clientes/$clientId'
     | '/clientes/novo'
+    | '/imobiliaria/imoveis'
     | '/processos/$processId'
     | '/processos/novo'
     | '/saude/agenda'
@@ -574,6 +585,7 @@ export interface FileRouteTypes {
     | '/advocacia/painel-juridico'
     | '/clientes/$clientId'
     | '/clientes/novo'
+    | '/imobiliaria/imoveis'
     | '/processos/$processId'
     | '/processos/novo'
     | '/saude/agenda'
@@ -626,6 +638,7 @@ export interface FileRouteTypes {
     | '/_authenticated/advocacia/painel-juridico'
     | '/_authenticated/clientes/$clientId'
     | '/_authenticated/clientes/novo'
+    | '/_authenticated/imobiliaria/imoveis'
     | '/_authenticated/processos/$processId'
     | '/_authenticated/processos/novo'
     | '/_authenticated/saude/agenda'
@@ -911,6 +924,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesNovoRouteImport
       parentRoute: typeof AuthenticatedClientesRoute
     }
+    '/_authenticated/imobiliaria/imoveis': {
+      id: '/_authenticated/imobiliaria/imoveis'
+      path: '/imobiliaria/imoveis'
+      fullPath: '/imobiliaria/imoveis'
+      preLoaderRoute: typeof AuthenticatedImobiliariaImoveisRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/processos/': {
       id: '/_authenticated/processos/'
       path: '/'
@@ -1073,6 +1093,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedTarefasRoute: typeof AuthenticatedTarefasRoute
   AuthenticatedAdvocaciaAgendaJuridicaRoute: typeof AuthenticatedAdvocaciaAgendaJuridicaRoute
   AuthenticatedAdvocaciaPainelJuridicoRoute: typeof AuthenticatedAdvocaciaPainelJuridicoRoute
+  AuthenticatedImobiliariaImoveisRoute: typeof AuthenticatedImobiliariaImoveisRoute
   AuthenticatedSaudeAgendaRoute: typeof AuthenticatedSaudeAgendaRoute
   AuthenticatedSaudeAutorizacoesRoute: typeof AuthenticatedSaudeAutorizacoesRoute
   AuthenticatedSaudeConciliacaoRoute: typeof AuthenticatedSaudeConciliacaoRoute
@@ -1111,6 +1132,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedAdvocaciaAgendaJuridicaRoute,
   AuthenticatedAdvocaciaPainelJuridicoRoute:
     AuthenticatedAdvocaciaPainelJuridicoRoute,
+  AuthenticatedImobiliariaImoveisRoute: AuthenticatedImobiliariaImoveisRoute,
   AuthenticatedSaudeAgendaRoute: AuthenticatedSaudeAgendaRoute,
   AuthenticatedSaudeAutorizacoesRoute: AuthenticatedSaudeAutorizacoesRoute,
   AuthenticatedSaudeConciliacaoRoute: AuthenticatedSaudeConciliacaoRoute,

@@ -41,6 +41,7 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
+  { to: "/imobiliaria/imoveis", label: "Imóveis", icon: Building2, description: "Carteira de imóveis, proprietários e responsáveis", ready: true, group: "operacao" },
   { to: "/meu-dia", label: "Meu Dia", icon: ListTodo, description: "Prioridades pessoais", ready: true, group: "operacao" },
   { to: "/central", label: "Central de Comando", icon: LayoutDashboard, description: "Pulso da operação", ready: true, group: "operacao" },
   { to: "/clientes", label: "Clientes", icon: Users, description: "Carteira e relacionamento", ready: true, group: "operacao" },
@@ -85,6 +86,7 @@ export const PAGE_TITLES: Record<string, string> = Object.fromEntries(
 
 const ROLE_NAVIGATION: Partial<Record<AppRole, readonly string[]>> = {
   gestor: [
+    "/imobiliaria/imoveis",
     "/meu-dia",
     "/central",
     "/clientes",
@@ -113,6 +115,7 @@ const ROLE_NAVIGATION: Partial<Record<AppRole, readonly string[]>> = {
     "/novidades",
   ],
   operacional: [
+    "/imobiliaria/imoveis",
     "/meu-dia",
     "/central",
     "/clientes",
@@ -133,6 +136,7 @@ const ROLE_NAVIGATION: Partial<Record<AppRole, readonly string[]>> = {
     "/novidades",
   ],
   atendimento: [
+    "/imobiliaria/imoveis",
     "/meu-dia",
     "/central",
     "/clientes",
@@ -148,6 +152,7 @@ const ROLE_NAVIGATION: Partial<Record<AppRole, readonly string[]>> = {
     "/novidades",
   ],
   financeiro: [
+    "/imobiliaria/imoveis",
     "/meu-dia",
     "/central",
     "/clientes",
@@ -163,6 +168,7 @@ const ROLE_NAVIGATION: Partial<Record<AppRole, readonly string[]>> = {
     "/novidades",
   ],
   visualizador: [
+    "/imobiliaria/imoveis",
     "/meu-dia",
     "/central",
     "/clientes",
