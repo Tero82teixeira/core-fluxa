@@ -1,3 +1,4 @@
+import { PropertyActivity } from "@/components/real-estate/property-activity";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Building2, Loader2, Plus, Search } from "lucide-react";
@@ -103,6 +104,7 @@ function PropertyWorkspace() {
     version: number | null;
     ownerName?: string | null;
   } | null>(null);
+  const [activity, setActivity] = useState<PropertyRow | null>(null);
   const [selected, setSelected] = useState<PropertyRow | null>(null);
   useEffect(() => {
     const timer = setTimeout(
@@ -293,6 +295,9 @@ function PropertyWorkspace() {
                     Proprietário: {row.owner_name || "Cadastro indisponível"}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setActivity(row)}>
+                      Interessados e visitas
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -341,6 +346,9 @@ function PropertyWorkspace() {
           )}
         </CardContent>
       </Card>
+      {activity && (
+        <PropertyActivity key={activity.id} property={activity} onClose={() => setActivity(null)} />
+      )}
       <Dialog
         open={Boolean(detail)}
         onOpenChange={(open) => {
