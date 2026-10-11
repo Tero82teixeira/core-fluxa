@@ -1,3 +1,4 @@
+import { PropertyNegotiations } from "@/components/real-estate/property-negotiations";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -67,6 +68,7 @@ export function PropertyActivity({
 }) {
   const { organizationId, role } = useWorkspace();
   const writable = canWriteProperties(role);
+  const [proposalInterest, setProposalInterest] = useState<InterestRow | null>(null);
   const [kind, setKind] = useState<"interests" | "visits">("interests");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
@@ -162,6 +164,14 @@ export function PropertyActivity({
   };
   const closed = !["disponivel", "reservado"].includes(property.status);
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (proposalInterest)
+    return (
+      <PropertyNegotiations
+        property={property}
+        initialInterest={proposalInterest}
+        onClose={() => setProposalInterest(null)}
+      />
+    );
   return (
     <>
       <Dialog
@@ -306,6 +316,16 @@ export function PropertyActivity({
                           }
                         >
                           Editar
+                        </Button>
+                      )}
+                      {writable && interest && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={closed || interest.status === "encerrado"}
+                          onClick={() => setProposalInterest(interest)}
+                        >
+                          Nova proposta
                         </Button>
                       )}
                       {writable && interest && (
