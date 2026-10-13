@@ -1,3 +1,4 @@
+import { PropertyContracts } from "@/components/real-estate/property-contracts";
 import { PropertyNegotiations } from "@/components/real-estate/property-negotiations";
 import { PropertyActivity } from "@/components/real-estate/property-activity";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
@@ -106,6 +107,7 @@ function PropertyWorkspace() {
     ownerName?: string | null;
   } | null>(null);
   const [negotiation, setNegotiation] = useState<PropertyRow | null>(null);
+  const [contracts, setContracts] = useState<PropertyRow | "all" | null>(null);
   const [activity, setActivity] = useState<PropertyRow | null>(null);
   const [selected, setSelected] = useState<PropertyRow | null>(null);
   useEffect(() => {
@@ -165,12 +167,20 @@ function PropertyWorkspace() {
               Organize sua carteira, proprietários, valores e responsáveis pela negociação.
             </p>
           </div>
-          {canWrite && (
-            <Button className="bg-white text-slate-950 hover:bg-slate-100" onClick={() => edit()}>
-              <Plus className="size-4" />
-              Novo imóvel
+          <div className="flex flex-wrap gap-2">
+            <Button
+              className="bg-white text-slate-950 hover:bg-slate-100"
+              onClick={() => setContracts("all")}
+            >
+              Contratos e vencimentos
             </Button>
-          )}
+            {canWrite && (
+              <Button className="bg-white text-slate-950 hover:bg-slate-100" onClick={() => edit()}>
+                <Plus className="size-4" />
+                Novo imóvel
+              </Button>
+            )}
+          </div>
         </div>
       </header>
       <div className="grid gap-3 sm:grid-cols-3">
@@ -297,6 +307,9 @@ function PropertyWorkspace() {
                     Proprietário: {row.owner_name || "Cadastro indisponível"}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setContracts(row)}>
+                      Contratos e vencimentos
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setNegotiation(row)}>
                       Propostas e negociações
                     </Button>
@@ -351,6 +364,13 @@ function PropertyWorkspace() {
           )}
         </CardContent>
       </Card>
+      {contracts && (
+        <PropertyContracts
+          key={contracts === "all" ? "all" : contracts.id}
+          property={contracts === "all" ? undefined : contracts}
+          onClose={() => setContracts(null)}
+        />
+      )}
       {negotiation && (
         <PropertyNegotiations
           key={negotiation.id}

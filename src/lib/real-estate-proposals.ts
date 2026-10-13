@@ -99,6 +99,8 @@ export function proposalValues(form: {
 }
 export function proposalError(error: unknown): string {
   const e = error as { code?: string; message?: string };
+  if (e?.message?.includes("CONTRACT_ACTIVE_PROPOSAL"))
+    return "Encerre ou cancele o contrato antes de cancelar a proposta vinculada.";
   if (e?.message?.includes("CONFLICT"))
     return "A proposta mudou. Volte à lista, atualize e abra novamente.";
   if (e?.message?.includes("ALREADY_ACTIVE"))
