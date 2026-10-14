@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { useAuth } from "@/lib/auth";
 import { describeAuthError } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
@@ -184,6 +186,7 @@ function AuthSidePanel({ mode }: { mode: AuthMode }) {
 }
 
 function AuthPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const { status: authStatus, signIn, signUp, resendConfirmation } = useAuth();
@@ -341,8 +344,10 @@ function AuthPage() {
           aria-hidden
         />
         <div className="relative w-full max-w-[30rem]">
+          <div className="mb-3 hidden justify-end lg:flex"><LanguageSwitcher /></div>
           <div className="mb-7 flex items-center justify-between lg:hidden">
             <AuthBrand compact />
+            <LanguageSwitcher />
             <Link
               to="/"
               className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
