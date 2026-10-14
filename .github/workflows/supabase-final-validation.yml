@@ -45,6 +45,7 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/fluxa-pglite" --no-audit --no-fund --ignore-scripts --package-lock=false @electric-sql/pglite@0.5.8
           FLUXA_PGLITE_ROOT="$RUNNER_TEMP/fluxa-pglite" node tests/real-estate-contracts.database.mjs
+          FLUXA_PGLITE_ROOT="$RUNNER_TEMP/fluxa-pglite" node tests/real-estate-settlements.database.mjs
 
       - name: Typecheck
         run: npm run typecheck

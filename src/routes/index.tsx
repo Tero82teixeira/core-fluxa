@@ -440,6 +440,13 @@ function CommercialLanding() {
                   className="h-12 border-white/15 bg-white/[0.04] px-6 text-base text-white hover:bg-white/10 hover:text-white"
                   asChild
                 >
+                  <Link to="/demo">Ver demonstração</Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 border-white/15 bg-white/[0.04] px-6 text-base text-white hover:bg-white/10 hover:text-white"
+                  asChild
+                >
                   <a href="#recursos">Explorar a plataforma</a>
                 </Button>
               </div>
