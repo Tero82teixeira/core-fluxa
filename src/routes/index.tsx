@@ -28,6 +28,8 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/shared/language-switcher";
 
 import { Button } from "@/components/ui/button";
 
@@ -362,6 +364,7 @@ function ProductPreview() {
 }
 
 function CommercialLanding() {
+  const { t } = useTranslation();
   return (
     <main className="min-h-dvh overflow-x-hidden bg-background text-foreground">
       <div className="bg-slate-950 text-white">
@@ -389,6 +392,7 @@ function CommercialLanding() {
               </a>
             </nav>
             <div className="flex items-center gap-2">
+              <LanguageSwitcher tone="dark" />
               <Button
                 variant="ghost"
                 asChild
@@ -398,6 +402,7 @@ function CommercialLanding() {
                   Entrar
                 </Link>
               </Button>
+              <Button asChild variant="outline" className="hidden border-white/20 text-white hover:bg-white/10 hover:text-white sm:inline-flex"><Link to="/demo">{t("landing.hero.demoCta")}</Link></Button>
               <TrialLink className="bg-blue-500 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-400">
                 Testar grátis
               </TrialLink>
@@ -435,6 +440,7 @@ function CommercialLanding() {
                 <TrialLink className="h-12 bg-blue-500 px-6 text-base text-white shadow-xl shadow-blue-500/20 hover:bg-blue-400">
                   Começar 14 dias grátis <ArrowRight className="size-4" aria-hidden />
                 </TrialLink>
+                <Button asChild variant="outline" className="h-12 border-white/20 bg-white/[0.04] px-6 text-base text-white hover:bg-white/10 hover:text-white"><Link to="/demo">{t("landing.hero.demoCta")}</Link></Button>
                 <Button
                   variant="outline"
                   className="h-12 border-white/15 bg-white/[0.04] px-6 text-base text-white hover:bg-white/10 hover:text-white"
