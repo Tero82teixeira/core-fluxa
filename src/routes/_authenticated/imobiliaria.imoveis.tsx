@@ -1,3 +1,4 @@
+import { PropertySettlements } from "@/components/real-estate/property-settlements";
 import { PropertyContracts } from "@/components/real-estate/property-contracts";
 import { PropertyNegotiations } from "@/components/real-estate/property-negotiations";
 import { PropertyActivity } from "@/components/real-estate/property-activity";
@@ -108,6 +109,7 @@ function PropertyWorkspace() {
   } | null>(null);
   const [negotiation, setNegotiation] = useState<PropertyRow | null>(null);
   const [contracts, setContracts] = useState<PropertyRow | "all" | null>(null);
+  const [settlements, setSettlements] = useState<PropertyRow | "all" | null>(null);
   const [activity, setActivity] = useState<PropertyRow | null>(null);
   const [selected, setSelected] = useState<PropertyRow | null>(null);
   useEffect(() => {
@@ -168,6 +170,12 @@ function PropertyWorkspace() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button
+              className="bg-white text-slate-950 hover:bg-slate-100"
+              onClick={() => setSettlements("all")}
+            >
+              Comissões e repasses
+            </Button>
             <Button
               className="bg-white text-slate-950 hover:bg-slate-100"
               onClick={() => setContracts("all")}
@@ -307,6 +315,9 @@ function PropertyWorkspace() {
                     Proprietário: {row.owner_name || "Cadastro indisponível"}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setSettlements(row)}>
+                      Comissões e repasses
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setContracts(row)}>
                       Contratos e vencimentos
                     </Button>
@@ -364,6 +375,13 @@ function PropertyWorkspace() {
           )}
         </CardContent>
       </Card>
+      {settlements && (
+        <PropertySettlements
+          key={settlements === "all" ? "all" : settlements.id}
+          property={settlements === "all" ? undefined : settlements}
+          onClose={() => setSettlements(null)}
+        />
+      )}
       {contracts && (
         <PropertyContracts
           key={contracts === "all" ? "all" : contracts.id}
