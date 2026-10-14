@@ -1,4 +1,4 @@
-import type { LocaleShape } from "./pt.ts";
+import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
   language: { label: "Language", pt: "Português", en: "English", es: "Español" },
