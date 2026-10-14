@@ -14,6 +14,7 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
 import { Route as MeuPortalRouteImport } from './routes/meu-portal'
 import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PropostaTokenRouteImport } from './routes/proposta.$token'
@@ -84,6 +85,11 @@ const MeuPortalRoute = MeuPortalRouteImport.update({
 const EntrarRoute = EntrarRouteImport.update({
   id: '/entrar',
   path: '/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -344,6 +350,7 @@ const AuthenticatedClientesClientIdEditarRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/demo': typeof DemoRoute
   '/entrar': typeof EntrarRoute
   '/meu-portal': typeof MeuPortalRoute
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
@@ -396,6 +403,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/demo': typeof DemoRoute
   '/entrar': typeof EntrarRoute
   '/meu-portal': typeof MeuPortalRoute
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
@@ -448,6 +456,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/demo': typeof DemoRoute
   '/entrar': typeof EntrarRoute
   '/meu-portal': typeof MeuPortalRoute
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
@@ -502,6 +511,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/demo'
     | '/entrar'
     | '/meu-portal'
     | '/politica-de-privacidade'
@@ -554,6 +564,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/demo'
     | '/entrar'
     | '/meu-portal'
     | '/politica-de-privacidade'
@@ -605,6 +616,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/demo'
     | '/entrar'
     | '/meu-portal'
     | '/politica-de-privacidade'
@@ -659,6 +671,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  DemoRoute: typeof DemoRoute
   EntrarRoute: typeof EntrarRoute
   MeuPortalRoute: typeof MeuPortalRoute
   PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
@@ -705,6 +718,13 @@ declare module '@tanstack/react-router' {
       path: '/entrar'
       fullPath: '/entrar'
       preLoaderRoute: typeof EntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -1154,6 +1174,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  DemoRoute: DemoRoute,
   EntrarRoute: EntrarRoute,
   MeuPortalRoute: MeuPortalRoute,
   PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
