@@ -1893,14 +1893,74 @@ export type Database = {
           },
         ]
       }
+      commercial_opportunity_contact_history: {
+        Row: {
+          channel: string
+          contacted_at: string
+          created_by: string
+          id: string
+          next_contact_at: string | null
+          notes: string
+          opportunity_id: string
+          organization_id: string
+          status: string
+        }
+        Insert: {
+          channel: string
+          contacted_at?: string
+          created_by: string
+          id?: string
+          next_contact_at?: string | null
+          notes: string
+          opportunity_id: string
+          organization_id: string
+          status: string
+        }
+        Update: {
+          channel?: string
+          contacted_at?: string
+          created_by?: string
+          id?: string
+          next_contact_at?: string | null
+          notes?: string
+          opportunity_id?: string
+          organization_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commercial_opportunity_contact_history_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commercial_opportunity_contact_history_scope_fkey"
+            columns: ["organization_id", "opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_opportunities"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "commercial_opportunity_contact_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commercial_opportunities: {
         Row: {
           archived_at: string | null
           client_id: string | null
+          contact_status: string
           created_at: string
           created_by: string
           estimated_value: number
           id: string
+          last_contact_at: string | null
           lost_at: string | null
           lost_reason: string | null
           next_action_at: string | null
@@ -1916,10 +1976,12 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           client_id?: string | null
+          contact_status?: string
           created_at?: string
           created_by: string
           estimated_value?: number
           id?: string
+          last_contact_at?: string | null
           lost_at?: string | null
           lost_reason?: string | null
           next_action_at?: string | null
@@ -1935,10 +1997,12 @@ export type Database = {
         Update: {
           archived_at?: string | null
           client_id?: string | null
+          contact_status?: string
           created_at?: string
           created_by?: string
           estimated_value?: number
           id?: string
+          last_contact_at?: string | null
           lost_at?: string | null
           lost_reason?: string | null
           next_action_at?: string | null
@@ -3947,51 +4011,6 @@ export type Database = {
           },
         ]
       }
-      health_billing_item_payments: {
-        Row: {
-          amount: number
-          billing_item_id: string
-          created_at: string
-          created_by: string
-          id: string
-          organization_id: string
-          received_at: string
-        }
-        Insert: {
-          amount: number
-          billing_item_id: string
-          created_at?: string
-          created_by: string
-          id: string
-          organization_id: string
-          received_at: string
-        }
-        Update: {
-          amount?: number
-          billing_item_id?: string
-          created_at?: string
-          created_by?: string
-          id?: string
-          organization_id?: string
-          received_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "health_billing_item_payments_billing_item_id_fkey"
-            columns: ["billing_item_id"]
-            isOneToOne: false
-            referencedRelation: "health_billing_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "health_billing_item_payments_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       health_billing_items: {
         Row: {
           administrative_notes: string | null
@@ -5119,48 +5138,6 @@ export type Database = {
           },
         ]
       }
-      organization_access_sessions: {
-        Row: {
-          first_access_at: string
-          id: string
-          last_access_at: string
-          organization_id: string
-          session_id: string
-          user_id: string
-        }
-        Insert: {
-          first_access_at?: string
-          id?: string
-          last_access_at?: string
-          organization_id: string
-          session_id: string
-          user_id: string
-        }
-        Update: {
-          first_access_at?: string
-          id?: string
-          last_access_at?: string
-          organization_id?: string
-          session_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_access_sessions_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_access_sessions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       organization_counters: {
         Row: {
           created_at: string
@@ -5245,6 +5222,48 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_access_sessions: {
+        Row: {
+          first_access_at: string
+          id: string
+          last_access_at: string
+          organization_id: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          first_access_at?: string
+          id?: string
+          last_access_at?: string
+          organization_id: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          first_access_at?: string
+          id?: string
+          last_access_at?: string
+          organization_id?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_access_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_access_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5389,6 +5408,7 @@ export type Database = {
           district: string | null
           employees_range: string | null
           enabled_modules: Json
+          onboarding_exploration_enabled: boolean
           financial_alert_days: number | null
           focused_health_workspace: boolean
           highlight_internal_notes: boolean | null
@@ -5404,7 +5424,6 @@ export type Database = {
           monitoring_upcoming_days: number | null
           notification_preferences: Json | null
           number: string | null
-          onboarding_exploration_enabled: boolean
           organization_id: string
           portal_name: string | null
           primary_color: string | null
@@ -5452,6 +5471,7 @@ export type Database = {
           district?: string | null
           employees_range?: string | null
           enabled_modules?: Json
+          onboarding_exploration_enabled?: boolean
           financial_alert_days?: number | null
           focused_health_workspace?: boolean
           highlight_internal_notes?: boolean | null
@@ -5467,7 +5487,6 @@ export type Database = {
           monitoring_upcoming_days?: number | null
           notification_preferences?: Json | null
           number?: string | null
-          onboarding_exploration_enabled?: boolean
           organization_id: string
           portal_name?: string | null
           primary_color?: string | null
@@ -5515,6 +5534,7 @@ export type Database = {
           district?: string | null
           employees_range?: string | null
           enabled_modules?: Json
+          onboarding_exploration_enabled?: boolean
           financial_alert_days?: number | null
           focused_health_workspace?: boolean
           highlight_internal_notes?: boolean | null
@@ -5530,7 +5550,6 @@ export type Database = {
           monitoring_upcoming_days?: number | null
           notification_preferences?: Json | null
           number?: string | null
-          onboarding_exploration_enabled?: boolean
           organization_id?: string
           portal_name?: string | null
           primary_color?: string | null
@@ -5762,6 +5781,88 @@ export type Database = {
             foreignKeyName: "platform_integration_incident_notes_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_trial_contact_history: {
+        Row: {
+          channel: string
+          contacted_at: string
+          created_by: string
+          id: string
+          next_contact_at: string | null
+          notes: string
+          organization_id: string
+          status: string
+        }
+        Insert: {
+          channel: string
+          contacted_at?: string
+          created_by: string
+          id?: string
+          next_contact_at?: string | null
+          notes: string
+          organization_id: string
+          status: string
+        }
+        Update: {
+          channel?: string
+          contacted_at?: string
+          created_by?: string
+          id?: string
+          next_contact_at?: string | null
+          notes?: string
+          organization_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_trial_contact_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_trial_follow_ups: {
+        Row: {
+          created_at: string
+          last_contact_at: string | null
+          next_contact_at: string | null
+          notes: string | null
+          organization_id: string
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          created_at?: string
+          last_contact_at?: string | null
+          next_contact_at?: string | null
+          notes?: string | null
+          organization_id: string
+          status?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          created_at?: string
+          last_contact_at?: string | null
+          next_contact_at?: string | null
+          notes?: string | null
+          organization_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_trial_follow_ups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -6145,517 +6246,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      real_estate_contract_events: {
-        Row: {
-          action: string
-          amount: number
-          contract_id: string
-          created_at: string
-          created_by: string
-          ends_on: string | null
-          id: string
-          note: string
-          organization_id: string
-          property_id: string
-          starts_on: string
-          status: string
-          terms: string
-          version: number
-        }
-        Insert: {
-          action: string
-          amount: number
-          contract_id: string
-          created_at?: string
-          created_by: string
-          ends_on?: string | null
-          id: string
-          note: string
-          organization_id: string
-          property_id: string
-          starts_on: string
-          status: string
-          terms: string
-          version: number
-        }
-        Update: {
-          action?: string
-          amount?: number
-          contract_id?: string
-          created_at?: string
-          created_by?: string
-          ends_on?: string | null
-          id?: string
-          note?: string
-          organization_id?: string
-          property_id?: string
-          starts_on?: string
-          status?: string
-          terms?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "real_estate_contract_events_organization_id_property_id_co_fkey"
-            columns: ["organization_id", "property_id", "contract_id"]
-            isOneToOne: false
-            referencedRelation: "real_estate_contracts"
-            referencedColumns: ["organization_id", "property_id", "id"]
-          },
-        ]
-      }
-      real_estate_contracts: {
-        Row: {
-          accepted_version: number
-          client_id: string
-          created_at: string
-          created_by: string
-          id: string
-          organization_id: string
-          property_id: string
-          proposal_id: string
-          purpose: string
-          reference: string
-        }
-        Insert: {
-          accepted_version: number
-          client_id: string
-          created_at?: string
-          created_by: string
-          id: string
-          organization_id: string
-          property_id: string
-          proposal_id: string
-          purpose: string
-          reference: string
-        }
-        Update: {
-          accepted_version?: number
-          client_id?: string
-          created_at?: string
-          created_by?: string
-          id?: string
-          organization_id?: string
-          property_id?: string
-          proposal_id?: string
-          purpose?: string
-          reference?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "real_estate_contracts_organization_id_client_id_fkey"
-            columns: ["organization_id", "client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "real_estate_contracts_organization_id_client_id_fkey"
-            columns: ["organization_id", "client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "real_estate_contracts_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "real_estate_contracts_organization_id_property_id_proposal_fkey"
-            columns: [
-              "organization_id",
-              "property_id",
-              "proposal_id",
-              "accepted_version",
-            ]
-            isOneToOne: false
-            referencedRelation: "real_estate_proposal_events"
-            referencedColumns: [
-              "organization_id",
-              "property_id",
-              "proposal_id",
-              "version",
-            ]
-          },
-        ]
-      }
-      real_estate_interests: {
-        Row: {
-          client_id: string
-          created_at: string
-          created_by: string
-          id: string
-          notes: string | null
-          organization_id: string
-          property_id: string
-          purpose: string
-          responsible_user_id: string | null
-          status: string
-          updated_at: string
-          updated_by: string
-          version: number
-        }
-        Insert: {
-          client_id: string
-          created_at?: string
-          created_by: string
-          id?: string
-          notes?: string | null
-          organization_id: string
-          property_id: string
-          purpose: string
-          responsible_user_id?: string | null
-          status?: string
-          updated_at?: string
-          updated_by: string
-          version?: number
-        }
-        Update: {
-          client_id?: string
-          created_at?: string
-          created_by?: string
-          id?: string
-          notes?: string | null
-          organization_id?: string
-          property_id?: string
-          purpose?: string
-          responsible_user_id?: string | null
-          status?: string
-          updated_at?: string
-          updated_by?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "real_estate_interests_organization_id_client_id_fkey"
-            columns: ["organization_id", "client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "real_estate_interests_organization_id_client_id_fkey"
-            columns: ["organization_id", "client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "real_estate_interests_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "real_estate_interests_organization_id_property_id_fkey"
-            columns: ["organization_id", "property_id"]
-            isOneToOne: false
-            referencedRelation: "real_estate_properties"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "real_estate_interests_organization_id_responsible_user_id_fkey"
-            columns: ["organization_id", "responsible_user_id"]
-            isOneToOne: false
-            referencedRelation: "organization_members"
-            referencedColumns: ["organization_id", "user_id"]
-          },
-        ]
-      }
-      real_estate_properties: {
-        Row: {
-          area_m2: number | null
-          city: string
-          code: string
-          complement: string | null
-          created_at: string
-          created_by: string
-          district: string | null
-          id: string
-          notes: string | null
-          number: string | null
-          organization_id: string
-          owner_client_id: string
-          property_type: string
-          purpose: string
-          rent_price: number | null
-          responsible_user_id: string | null
-          sale_price: number | null
-          state: string
-          status: string
-          street: string
-          title: string
-          updated_at: string
-          updated_by: string
-          version: number
-          zip_code: string | null
-        }
-        Insert: {
-          area_m2?: number | null
-          city: string
-          code: string
-          complement?: string | null
-          created_at?: string
-          created_by: string
-          district?: string | null
-          id?: string
-          notes?: string | null
-          number?: string | null
-          organization_id: string
-          owner_client_id: string
-          property_type: string
-          purpose: string
-          rent_price?: number | null
-          responsible_user_id?: string | null
-          sale_price?: number | null
-          state: string
-          status?: string
-          street: string
-          title: string
-          updated_at?: string
-          updated_by: string
-          version?: number
-          zip_code?: string | null
-        }
-        Update: {
-          area_m2?: number | null
-          city?: string
-          code?: string
-          complement?: string | null
-          created_at?: string
-          created_by?: string
-          district?: string | null
-          id?: string
-          notes?: string | null
-          number?: string | null
-          organization_id?: string
-          owner_client_id?: string
-          property_type?: string
-          purpose?: string
-          rent_price?: number | null
-          responsible_user_id?: string | null
-          sale_price?: number | null
-          state?: string
-          status?: string
-          street?: string
-          title?: string
-          updated_at?: string
-          updated_by?: string
-          version?: number
-          zip_code?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "real_estate_properties_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "real_estate_properties_organization_id_owner_client_id_fkey"
-            columns: ["organization_id", "owner_client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "real_estate_properties_organization_id_owner_client_id_fkey"
-            columns: ["organization_id", "owner_client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["organization_id", "id"]
-          },
-          {
-            foreignKeyName: "real_estate_properties_organization_id_responsible_user_id_fkey"
-            columns: ["organization_id", "responsible_user_id"]
-            isOneToOne: false
-            referencedRelation: "organization_members"
-            referencedColumns: ["organization_id", "user_id"]
-          },
-        ]
-      }
-      real_estate_proposal_events: {
-        Row: {
-          action: string
-          amount: number
-          created_at: string
-          created_by: string
-          id: string
-          note: string | null
-          organization_id: string
-          party: string
-          property_id: string
-          proposal_id: string
-          status: string
-          terms: string
-          valid_until: string
-          version: number
-        }
-        Insert: {
-          action: string
-          amount: number
-          created_at?: string
-          created_by: string
-          id: string
-          note?: string | null
-          organization_id: string
-          party: string
-          property_id: string
-          proposal_id: string
-          status: string
-          terms: string
-          valid_until: string
-          version: number
-        }
-        Update: {
-          action?: string
-          amount?: number
-          created_at?: string
-          created_by?: string
-          id?: string
-          note?: string | null
-          organization_id?: string
-          party?: string
-          property_id?: string
-          proposal_id?: string
-          status?: string
-          terms?: string
-          valid_until?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "real_estate_proposal_events_organization_id_property_id_pr_fkey"
-            columns: ["organization_id", "property_id", "proposal_id"]
-            isOneToOne: false
-            referencedRelation: "real_estate_proposals"
-            referencedColumns: ["organization_id", "property_id", "id"]
-          },
-        ]
-      }
-      real_estate_proposals: {
-        Row: {
-          created_at: string
-          created_by: string
-          id: string
-          interest_id: string
-          organization_id: string
-          property_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          id: string
-          interest_id: string
-          organization_id: string
-          property_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          id?: string
-          interest_id?: string
-          organization_id?: string
-          property_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "real_estate_proposals_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "real_estate_proposals_organization_id_property_id_interest_fkey"
-            columns: ["organization_id", "property_id", "interest_id"]
-            isOneToOne: false
-            referencedRelation: "real_estate_interests"
-            referencedColumns: ["organization_id", "property_id", "id"]
-          },
-        ]
-      }
-      real_estate_visits: {
-        Row: {
-          created_at: string
-          created_by: string
-          ends_at: string
-          id: string
-          interest_id: string
-          notes: string | null
-          organization_id: string
-          outcome: string | null
-          property_id: string
-          responsible_user_id: string
-          starts_at: string
-          status: string
-          updated_at: string
-          updated_by: string
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          ends_at: string
-          id?: string
-          interest_id: string
-          notes?: string | null
-          organization_id: string
-          outcome?: string | null
-          property_id: string
-          responsible_user_id: string
-          starts_at: string
-          status?: string
-          updated_at?: string
-          updated_by: string
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          ends_at?: string
-          id?: string
-          interest_id?: string
-          notes?: string | null
-          organization_id?: string
-          outcome?: string | null
-          property_id?: string
-          responsible_user_id?: string
-          starts_at?: string
-          status?: string
-          updated_at?: string
-          updated_by?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "real_estate_visits_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "real_estate_visits_organization_id_property_id_interest_id_fkey"
-            columns: ["organization_id", "property_id", "interest_id"]
-            isOneToOne: false
-            referencedRelation: "real_estate_interests"
-            referencedColumns: ["organization_id", "property_id", "id"]
-          },
-          {
-            foreignKeyName: "real_estate_visits_organization_id_responsible_user_id_fkey"
-            columns: ["organization_id", "responsible_user_id"]
-            isOneToOne: false
-            referencedRelation: "organization_members"
-            referencedColumns: ["organization_id", "user_id"]
           },
         ]
       }
@@ -7350,17 +6940,6 @@ export type Database = {
         }
         Returns: Json
       }
-      apply_health_billing_item_action: {
-        Args: {
-          _action: string
-          _amount?: number
-          _item_id: string
-          _organization_id: string
-          _received_at?: string
-          _request_id: string
-        }
-        Returns: Json
-      }
       apply_kiwify_subscription_event: {
         Args: {
           _access_until?: string
@@ -7784,6 +7363,22 @@ export type Database = {
         Args: { _from: string; _organization_id: string; _to: string }
         Returns: Json
       }
+      commercial_opportunity_contacts: {
+        Args: {
+          _opportunity_id: string
+          _organization_id: string
+        }
+        Returns: {
+          channel: string
+          contacted_at: string
+          created_by_name: string
+          created_by: string
+          id: string
+          next_contact_at: string
+          notes: string
+          status: string
+        }[]
+      }
       complete_asaas_charge_job: {
         Args: { _error_code?: string; _job_id: string; _succeeded: boolean }
         Returns: undefined
@@ -7799,18 +7394,6 @@ export type Database = {
           _thread_id: string
         }
         Returns: string
-      }
-      complete_health_appointment_and_create_billing: {
-        Args: {
-          _administrative_notes?: string
-          _amount: number
-          _appointment_id: string
-          _authorization_id?: string
-          _due_date?: string
-          _insurer_id?: string
-          _organization_id: string
-        }
-        Returns: Json
       }
       create_asaas_client_payment_notifications: {
         Args: { _as_of?: string }
@@ -7971,6 +7554,18 @@ export type Database = {
         }
         Returns: Json
       }
+      complete_health_appointment_and_create_billing: {
+        Args: {
+          _administrative_notes?: string
+          _amount: number
+          _appointment_id: string
+          _authorization_id?: string
+          _due_date?: string
+          _insurer_id?: string
+          _organization_id: string
+        }
+        Returns: Json
+      }
       create_health_denial: {
         Args: {
           _administrative_notes?: string
@@ -7984,6 +7579,14 @@ export type Database = {
         }
         Returns: Json
       }
+      create_health_operational_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
+      create_legal_operational_notifications: {
+        Args: { _as_of?: string }
+        Returns: number
+      }
       create_health_insurer: {
         Args: {
           _contact_email?: string
@@ -7993,10 +7596,6 @@ export type Database = {
           _registration_code?: string
         }
         Returns: Json
-      }
-      create_health_operational_notifications: {
-        Args: { _as_of?: string }
-        Returns: number
       }
       create_health_patient: {
         Args: {
@@ -8022,10 +7621,6 @@ export type Database = {
           invitation_id: string
           token: string
         }[]
-      }
-      create_legal_operational_notifications: {
-        Args: { _as_of?: string }
-        Returns: number
       }
       create_operational_close_for_organization: {
         Args: {
@@ -8205,6 +7800,14 @@ export type Database = {
           title: string
         }[]
       }
+      health_module_enabled: {
+        Args: { _module: string; _organization_id: string }
+        Returns: boolean
+      }
+      legal_module_enabled: {
+        Args: { _organization_id: string }
+        Returns: boolean
+      }
       has_client_portal_access: {
         Args: { _client_id: string; _organization_id: string }
         Returns: boolean
@@ -8215,10 +7818,6 @@ export type Database = {
           _org: string
           _roles: Database["public"]["Enums"]["app_role"][]
         }
-        Returns: boolean
-      }
-      health_module_enabled: {
-        Args: { _module: string; _organization_id: string }
         Returns: boolean
       }
       ingest_communication_channel_message: {
@@ -8255,10 +7854,6 @@ export type Database = {
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
-      legal_module_enabled: {
-        Args: { _organization_id: string }
-        Returns: boolean
-      }
       list_client_portal_callback_requests: {
         Args: never
         Returns: {
@@ -8307,15 +7902,6 @@ export type Database = {
           updated_at: string
         }[]
       }
-      list_document_request_templates: {
-        Args: { _organization_id: string }
-        Returns: {
-          id: string
-          is_active: boolean
-          items: Json
-          title: string
-        }[]
-      }
       list_health_appointment_professionals: {
         Args: { _organization_id: string }
         Returns: Json
@@ -8329,6 +7915,17 @@ export type Database = {
           _end_date: string
           _organization_id: string
           _start_date: string
+        }
+        Returns: Json
+      }
+      reschedule_health_appointment: {
+        Args: {
+          _appointment_id: string
+          _ends_at: string
+          _location?: string
+          _organization_id: string
+          _professional_user_id: string
+          _starts_at: string
         }
         Returns: Json
       }
@@ -8365,56 +7962,20 @@ export type Database = {
         Returns: Json
       }
       list_legal_deadlines: {
-        Args: {
-          _from?: string
-          _organization_id: string
-          _process_id?: string
-          _to?: string
-        }
+        Args: { _from?: string; _organization_id: string; _process_id?: string; _to?: string }
         Returns: Json
+      }
+      list_document_request_templates: {
+        Args: { _organization_id: string }
+        Returns: {
+          id: string
+          is_active: boolean
+          items: Json
+          title: string
+        }[]
       }
       list_my_client_portal_faq_articles: {
         Args: { _access_id: string }
-        Returns: Json
-      }
-      list_real_estate_activity: {
-        Args: {
-          _kind: string
-          _organization_id: string
-          _page?: number
-          _property_id: string
-          _status?: string
-        }
-        Returns: Json
-      }
-      list_real_estate_contracts: {
-        Args: {
-          _organization_id: string
-          _page?: number
-          _property_id?: string
-          _status?: string
-        }
-        Returns: Json
-      }
-      list_real_estate_properties: {
-        Args: {
-          _city?: string
-          _organization_id: string
-          _page?: number
-          _purpose?: string
-          _search?: string
-          _status?: string
-          _type?: string
-        }
-        Returns: Json
-      }
-      list_real_estate_proposals: {
-        Args: {
-          _organization_id: string
-          _page?: number
-          _property_id: string
-          _status?: string
-        }
         Returns: Json
       }
       list_staff_client_portal_callback_requests: {
@@ -8743,10 +8304,10 @@ export type Database = {
           first_access_at: string
           follow_up_notes: string
           follow_up_status: string
+          last_activity_at: string
           last_access_at: string
           last_access_user_email: string
           last_access_user_name: string
-          last_activity_at: string
           last_contact_at: string
           legal_name: string
           next_contact_at: string
@@ -8762,6 +8323,10 @@ export type Database = {
           trial_ends_at: string
           trial_started_at: string
         }[]
+      }
+      record_organization_access: {
+        Args: { _organization_id: string }
+        Returns: undefined
       }
       platform_support_open_count: { Args: never; Returns: number }
       platform_support_requests: {
@@ -8785,6 +8350,19 @@ export type Database = {
           status: string
           subject: string
           updated_at: string
+        }[]
+      }
+      platform_trial_contact_history: {
+        Args: { _organization_id: string }
+        Returns: {
+          channel: string
+          contacted_at: string
+          created_by_name: string
+          created_by: string
+          id: string
+          next_contact_at: string
+          notes: string
+          status: string
         }[]
       }
       prepare_client_portal_document_resubmission: {
@@ -8885,38 +8463,15 @@ export type Database = {
         }
         Returns: string
       }
-      real_estate_contract_history: {
+      record_health_batch_payment: {
         Args: {
-          _contract_id: string
+          _administrative_notes?: string
+          _amount: number
+          _batch_id: string
           _organization_id: string
-          _page?: number
-          _property_id: string
+          _received_at?: string
+          _reference?: string
         }
-        Returns: Json
-      }
-      real_estate_contract_options: {
-        Args: { _organization_id: string; _property_id: string }
-        Returns: Json
-      }
-      real_estate_enabled: {
-        Args: { _organization_id: string }
-        Returns: boolean
-      }
-      real_estate_form_options: {
-        Args: { _organization_id: string }
-        Returns: Json
-      }
-      real_estate_proposal_history: {
-        Args: {
-          _organization_id: string
-          _page?: number
-          _property_id: string
-          _proposal_id: string
-        }
-        Returns: Json
-      }
-      real_estate_proposal_options: {
-        Args: { _organization_id: string; _property_id: string }
         Returns: Json
       }
       record_audit_event: {
@@ -8928,17 +8483,6 @@ export type Database = {
           _organization_id: string
         }
         Returns: string
-      }
-      record_health_batch_payment: {
-        Args: {
-          _administrative_notes?: string
-          _amount: number
-          _batch_id: string
-          _organization_id: string
-          _received_at?: string
-          _reference?: string
-        }
-        Returns: Json
       }
       record_integration_runtime_heartbeat: {
         Args: { _function_name: string; _release_version: string }
@@ -8964,10 +8508,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      record_organization_access: {
-        Args: { _organization_id: string }
-        Returns: undefined
-      }
       record_process_movement: {
         Args: {
           _description: string
@@ -8977,29 +8517,6 @@ export type Database = {
           _to_stage?: Database["public"]["Enums"]["process_stage"]
         }
         Returns: string
-      }
-      record_real_estate_contract: {
-        Args: {
-          _contract_id: string
-          _expected_version: number
-          _organization_id: string
-          _property_id: string
-          _proposal_id: string
-          _request_id: string
-          _values: Json
-        }
-        Returns: Json
-      }
-      record_real_estate_negotiation: {
-        Args: {
-          _expected_version: number
-          _organization_id: string
-          _property_id: string
-          _proposal_id: string
-          _request_id: string
-          _values: Json
-        }
-        Returns: Json
       }
       register_client_portal_push_subscription: {
         Args: {
@@ -9046,17 +8563,6 @@ export type Database = {
       reply_support_request: {
         Args: { _message: string; _next_status?: string; _request_id: string }
         Returns: string
-      }
-      reschedule_health_appointment: {
-        Args: {
-          _appointment_id: string
-          _ends_at: string
-          _location?: string
-          _organization_id: string
-          _professional_user_id: string
-          _starts_at: string
-        }
-        Returns: Json
       }
       resolve_authenticated_home: { Args: never; Returns: string }
       resolve_kiwify_webhook_failure: {
@@ -9106,6 +8612,17 @@ export type Database = {
           _title: string
         }
         Returns: string
+      }
+      save_commercial_opportunity_contact: {
+        Args: {
+          _channel: string
+          _next_contact_at?: string
+          _notes: string
+          _opportunity_id: string
+          _organization_id: string
+          _status: string
+        }
+        Returns: undefined
       }
       save_commercial_proposal: {
         Args: { _organization_id: string; _payload: Json; _proposal_id: string }
@@ -9167,43 +8684,16 @@ export type Database = {
         }
         Returns: Json
       }
-      save_legal_deadline: {
+      save_platform_trial_follow_up: {
         Args: {
-          _deadline_id?: string
-          _due_date: string
+          _channel?: string
+          _next_contact_at?: string
+          _notes?: string
           _organization_id: string
-          _process_id: string
-          _status?: string
-          _title: string
+          _register_contact?: boolean
+          _status: string
         }
-        Returns: Json
-      }
-      save_real_estate_interest: {
-        Args: {
-          _expected_version: number
-          _id: string
-          _organization_id: string
-          _values: Json
-        }
-        Returns: Json
-      }
-      save_real_estate_property: {
-        Args: {
-          _expected_version: number
-          _id: string
-          _organization_id: string
-          _values: Json
-        }
-        Returns: Json
-      }
-      save_real_estate_visit: {
-        Args: {
-          _expected_version: number
-          _id: string
-          _organization_id: string
-          _values: Json
-        }
-        Returns: Json
+        Returns: undefined
       }
       seed_default_document_types: {
         Args: { _org: string }
@@ -9349,15 +8839,7 @@ export type Database = {
           unread_count: number
         }[]
       }
-      start_organization_exploration: {
-        Args: { _organization_id: string }
-        Returns: Json
-      }
       storage_path_org: { Args: { _name: string }; Returns: string }
-      submit_client_portal_communication_rating: {
-        Args: { _comment?: string; _rating: number; _thread_id: string }
-        Returns: string
-      }
       submit_health_billing_batch: {
         Args: {
           _batch_id: string
@@ -9366,6 +8848,10 @@ export type Database = {
           _submitted_at?: string
         }
         Returns: Json
+      }
+      submit_client_portal_communication_rating: {
+        Args: { _comment?: string; _rating: number; _thread_id: string }
+        Returns: string
       }
       submit_public_lead: {
         Args: {
@@ -9463,6 +8949,24 @@ export type Database = {
         Args: { _organization_id: string; _payload: Json }
         Returns: string
       }
+      update_member_portal_communication_distribution: {
+        Args: {
+          _capacity: number
+          _member: string
+          _receives_portal_communications: boolean
+        }
+        Returns: undefined
+      }
+      update_member_task_distribution: {
+        Args: {
+          _capacity: number
+          _function: string
+          _member: string
+          _receives_automatic_tasks: boolean
+          _sector: string
+        }
+        Returns: undefined
+      }
       update_health_appointment_reception_status: {
         Args: {
           _appointment_id: string
@@ -9491,24 +8995,6 @@ export type Database = {
         }
         Returns: Json
       }
-      update_member_portal_communication_distribution: {
-        Args: {
-          _capacity: number
-          _member: string
-          _receives_portal_communications: boolean
-        }
-        Returns: undefined
-      }
-      update_member_task_distribution: {
-        Args: {
-          _capacity: number
-          _function: string
-          _member: string
-          _receives_automatic_tasks: boolean
-          _sector: string
-        }
-        Returns: undefined
-      }
       update_organization_commercial_status: {
         Args: { _action: string; _days?: number; _organization_id: string }
         Returns: undefined
@@ -9521,6 +9007,10 @@ export type Database = {
           _settings?: Json
           _step: number
         }
+        Returns: Json
+      }
+      start_organization_exploration: {
+        Args: { _organization_id: string }
         Returns: Json
       }
       update_organization_segment: {
@@ -9604,6 +9094,17 @@ export type Database = {
           _organization_id: string
           _process_id: string
           _state?: string
+        }
+        Returns: Json
+      }
+      save_legal_deadline: {
+        Args: {
+          _deadline_id?: string
+          _due_date: string
+          _organization_id: string
+          _process_id: string
+          _status?: string
+          _title: string
         }
         Returns: Json
       }
