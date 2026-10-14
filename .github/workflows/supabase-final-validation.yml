@@ -38,6 +38,16 @@ jobs:
       - name: Run Supabase database tests
         run: supabase test db --local
 
+      - name: Generate local Supabase TypeScript types
+        run: supabase gen types typescript --local --schema public > "$RUNNER_TEMP/fluxa-generated-types.ts"
+
+      - name: Upload generated schema types for parity review
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxa-local-schema-types
+          path: ${{ runner.temp }}/fluxa-generated-types.ts
+          retention-days: 3
+
       - name: Validate schema parity
         run: npm run test:integration:parity
 
