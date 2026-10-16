@@ -179,11 +179,13 @@ export function PropertyContracts({
                 )}
                 {opts.isSuccess && !opts.data.length && (
                   <div className="space-y-2 rounded-md border p-3">
-                    <p className="text-sm font-medium">Nenhuma proposta disponível para novo contrato.</p>
+                    <p className="text-sm font-medium">
+                      Nenhuma proposta disponível para novo contrato.
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       Esta lista mostra apenas propostas aceitas que ainda não têm contrato.
-                      Propostas já vinculadas não aparecem, mesmo quando o contrato foi encerrado
-                      ou cancelado. Para uma nova locação, cadastre e aceite outra proposta em
+                      Propostas já vinculadas não aparecem, mesmo quando o contrato foi encerrado ou
+                      cancelado. Para uma nova locação, cadastre e aceite outra proposta em
                       Propostas e negociações.
                     </p>
                     <Button
