@@ -5,6 +5,7 @@ const { PGlite } = require("@electric-sql/pglite");
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { verifyRealEstateNotifications } from "./real-estate-notifications.database.mjs";
+import { verifyRealEstateCatalog } from "./real-estate-catalog.database.mjs";
 const db = new PGlite();
 const id = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
 const org = id(1),
@@ -336,6 +337,17 @@ await verifyRealEstateNotifications(db, {
   prop,
   otherOwner,
   today,
+});
+await verifyRealEstateCatalog(db, {
+  org,
+  other,
+  actor,
+  viewer,
+  external,
+  property,
+  id,
+  prop,
+  otherOwner,
 });
 await db.close();
 console.log(

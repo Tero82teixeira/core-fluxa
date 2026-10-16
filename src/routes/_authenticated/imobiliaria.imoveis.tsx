@@ -1,4 +1,5 @@
 import { PropertyOverview } from "@/components/real-estate/property-overview";
+import { PropertyCatalogManager } from "@/components/real-estate/property-catalog-manager";
 import { PropertyFinancialSummary } from "@/components/real-estate/property-financial-summary";
 import { PropertyGettingStarted } from "@/components/real-estate/property-getting-started";
 import type { OverviewItem } from "@/hooks/use-real-estate-overview";
@@ -117,6 +118,7 @@ function PropertyWorkspace() {
   const [negotiation, setNegotiation] = useState<PropertyRow | null>(null);
   const [contracts, setContracts] = useState<PropertyRow | "all" | null>(null);
   const [settlements, setSettlements] = useState<PropertyRow | "all" | null>(null);
+  const [catalog, setCatalog] = useState<PropertyRow | "all" | null>(null);
   const [activity, setActivity] = useState<PropertyRow | null>(null);
   const [selected, setSelected] = useState<PropertyRow | null>(null);
   const [overviewSelection, setOverviewSelection] = useState<OverviewItem | null>(null);
@@ -178,6 +180,12 @@ function PropertyWorkspace() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button
+              className="bg-white text-slate-950 hover:bg-slate-100"
+              onClick={() => setCatalog("all")}
+            >
+              Vitrine e compartilhamento
+            </Button>
             <Button
               className="bg-white text-slate-950 hover:bg-slate-100"
               onClick={() => setSettlements("all")}
@@ -335,6 +343,9 @@ function PropertyWorkspace() {
                     Proprietário: {row.owner_name || "Cadastro indisponível"}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setCatalog(row)}>
+                      Fotos e anúncio
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setSettlements(row)}>
                       Comissões e repasses
                     </Button>
@@ -417,6 +428,13 @@ function PropertyWorkspace() {
           property={overviewSelection.property}
           initialSelection={overviewSelection.data}
           onClose={() => setOverviewSelection(null)}
+        />
+      )}
+      {catalog && (
+        <PropertyCatalogManager
+          key={catalog === "all" ? "all" : catalog.id}
+          property={catalog === "all" ? undefined : catalog}
+          onClose={() => setCatalog(null)}
         />
       )}
       {settlements && (
