@@ -1,4 +1,6 @@
 import { PropertyOverview } from "@/components/real-estate/property-overview";
+import { PropertyFinancialSummary } from "@/components/real-estate/property-financial-summary";
+import { PropertyGettingStarted } from "@/components/real-estate/property-getting-started";
 import type { OverviewItem } from "@/hooks/use-real-estate-overview";
 import { realEstateAlertSearch } from "@/lib/real-estate-notifications";
 import { PropertySettlements } from "@/components/real-estate/property-settlements";
@@ -197,6 +199,11 @@ function PropertyWorkspace() {
           </div>
         </div>
       </header>
+      <PropertyGettingStarted
+        onCreate={canWrite ? () => edit() : undefined}
+        onSettlements={() => setSettlements("all")}
+      />
+      <PropertyFinancialSummary onOpen={() => setSettlements("all")} />
       <PropertyOverview
         alertSearch={alertSearch}
         onOpen={(item) => {

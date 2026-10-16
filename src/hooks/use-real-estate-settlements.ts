@@ -6,6 +6,7 @@ import type {
   SettlementEvent,
   SettlementValues,
 } from "@/lib/real-estate-settlements";
+import type { SettlementPage } from "@/lib/real-estate-finance";
 const rpc = supabase as unknown as {
   rpc: (
     name: string,
@@ -17,6 +18,19 @@ async function call<T>(name: string, args: Record<string, unknown>): Promise<T> 
   if (error) throw error;
   return data as T;
 }
+export function fetchSettlementPage(
+  org: string,
+  property: string | null,
+  status: string,
+  page: number,
+) {
+  return call<SettlementPage>("list_real_estate_settlements", {
+    _organization_id: org,
+    _property_id: property,
+    _status: status || null,
+    _page: page,
+  });
+}
 export function useSettlements(
   org: string | null,
   property: string | null,
@@ -26,17 +40,7 @@ export function useSettlements(
   return useQuery({
     queryKey: ["real-estate-settlements", org, property, status, page],
     enabled: Boolean(org),
-    queryFn: () =>
-      call<{
-        items: SettlementRow[];
-        total: number;
-        totals: { commission_received: number; owner_pending: number; owner_paid: number };
-      }>("list_real_estate_settlements", {
-        _organization_id: org,
-        _property_id: property,
-        _status: status || null,
-        _page: page,
-      }),
+    queryFn: () => fetchSettlementPage(org!, property, status, page),
   });
 }
 export function useSettlementOptions(org: string | null, property: string | null) {
