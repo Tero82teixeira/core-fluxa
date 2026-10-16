@@ -1,5 +1,85 @@
 /** Português (Brasil) — idioma padrão e fonte da verdade das chaves. */
 export const pt = {
+  realEstateDemo: {
+    "title": "FLUXA Imobiliária",
+    "intro": "Explore uma carteira fictícia, simule uma proposta aceita e acompanhe o caminho até o contrato e o repasse ao proprietário.",
+    "scenario": "Cenário ilustrativo em {{date}}. Todos os imóveis, nomes e valores são fictícios.",
+    "trial": "Testar grátis por 14 dias",
+    "trialNote": "No teste real, crie sua conta, confirme o e-mail e escolha Imobiliária na configuração inicial.",
+    "reset": "Reiniciar demonstração",
+    "resetDone": "Demonstração reiniciada com os exemplos originais.",
+    "modules": {
+      "overview": "Visão geral",
+      "properties": "Imóveis",
+      "proposals": "Propostas",
+      "contracts": "Contratos",
+      "settlements": "Comissões e repasses"
+    },
+    "titles": {
+      "house": "Casa com jardim",
+      "apartment": "Apartamento perto da praia",
+      "commercial": "Sala comercial"
+    },
+    "purpose": {
+      "locacao": "Locação",
+      "venda": "Venda"
+    },
+    "status": {
+      "aberta": "Aberta",
+      "contraproposta": "Contraproposta",
+      "aceita": "Aceita",
+      "recusada": "Recusada",
+      "expired": "Validade vencida · aguardando decisão",
+      "expiring": "Contrato próximo do vencimento",
+      "previsto": "Previsto",
+      "recebido": "Recebido · repasse pendente",
+      "repassado": "Repassado",
+      "atrasado": "Repasse atrasado"
+    },
+    "pending": {
+      "proposals": "Propostas aguardando decisão",
+      "contracts": "Contratos vencidos ou vencendo em até 30 dias",
+      "late": "Repasses atrasados"
+    },
+    "money": {
+      "gross_received": "Bruto recebido",
+      "commission_received": "Comissão recebida",
+      "owner_pending": "Repasse pendente",
+      "owner_paid": "Repasse confirmado"
+    },
+    "financialNote": "Totais de todos os exemplos, independentemente da busca. O bruto inclui a comissão e a parte do proprietário. Demonstrativos previstos não entram nos valores recebidos.",
+    "journeyTitle": "Experimente o fluxo em três passos",
+    "journey": {
+      "proposals": "Simule a aceitação da proposta de Marina no IMOV-001.",
+      "contracts": "Na proposta aceita, simule o contrato e depois crie seu demonstrativo.",
+      "settlements": "Simule o recebimento e o repasse. Os indicadores mudam na hora."
+    },
+    "explore": "Explorar",
+    "search": "Busque imóvel, proprietário, interessado ou contrato",
+    "empty": "Nenhum registro neste filtro.",
+    "owner": "Proprietário",
+    "amount": "Valor",
+    "validity": "Validade",
+    "gross": "Bruto",
+    "commission": "Comissão",
+    "ownerAmount": "Valor do proprietário",
+    "due": "Previsão do repasse",
+    "noEnd": "Sem término informado",
+    "expiredNote": "Na operação real, revise as condições e a validade antes de aceitar uma proposta vencida.",
+    "viewProposals": "Ver propostas",
+    "viewContracts": "Ver contratos",
+    "viewSettlements": "Ver demonstrativos",
+    "actions": {
+      "accept": "Simular aceitação",
+      "refuse": "Simular recusa",
+      "contract": "Simular contrato",
+      "settlement": "Simular demonstrativo",
+      "receive": "Simular recebimento",
+      "pay": "Simular repasse"
+    },
+    "download": "Baixar exemplos filtrados (CSV)",
+    "localNote": "As ações valem somente nesta demonstração e são descartadas ao reiniciar ou recarregar. Nenhuma cobrança ou transferência é realizada."
+  },
   language: {
     label: "Idioma",
     pt: "Português",
