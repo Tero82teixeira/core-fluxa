@@ -130,7 +130,9 @@ export function settlementValues(
       reference < option.starts_on.slice(0, 7) ||
       (option.ends_on && reference > option.ends_on.slice(0, 7)))
   )
-    throw new Error("Use uma competência YYYY-MM dentro do período da locação. Exemplo: 2026-10.");
+    throw new Error(
+      `Use uma competência YYYY-MM de ${option.starts_on.slice(0, 7)}${option.ends_on ? ` até ${option.ends_on.slice(0, 7)}` : " em diante"}, dentro do período da locação.`,
+    );
   if (!validDate(form.due_on))
     throw new Error("Informe uma data válida para a previsão do repasse.");
   if (
