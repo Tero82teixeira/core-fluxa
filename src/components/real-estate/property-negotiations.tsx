@@ -179,6 +179,10 @@ export function PropertyNegotiations({
                     </option>
                   ))}
                 </select>
+                <p className="text-sm text-muted-foreground">
+                  Cada interessado pode ter uma negociação aberta, em contraproposta ou aceita neste
+                  imóvel. Para continuar uma delas, volte à lista de propostas.
+                </p>
                 {opts.isPending && <p>Carregando interessados…</p>}
                 {opts.isError && (
                   <div>
@@ -278,9 +282,27 @@ export function PropertyNegotiations({
               />
             </div>
             {save.isError && (
-              <p role="alert" className="text-sm text-destructive">
-                {proposalError(save.error)}
-              </p>
+              <div role="alert" className="space-y-2">
+                <p className="text-sm text-destructive">{proposalError(save.error)}</p>
+                {edit.version === null &&
+                  proposalError(save.error) ===
+                    "Este interessado já tem uma proposta ativa. Abra a negociação existente." && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setEdit(null);
+                        setSelected(null);
+                        setStatus("");
+                        setPage(1);
+                        save.reset();
+                        void query.refetch();
+                      }}
+                    >
+                      Ver negociações existentes
+                    </Button>
+                  )}
+              </div>
             )}
             <div className="flex flex-wrap gap-2">
               <Button
