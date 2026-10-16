@@ -1,0 +1,16 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_function('public','real_estate_public_catalog',ARRAY['uuid','uuid[]','integer','text','text','numeric','text'],'consulta pública do catálogo existe');
+SELECT has_function('public','real_estate_catalog_manage',ARRAY['uuid','text','uuid','jsonb'],'gerenciamento interno existe');
+SELECT ok(NOT has_function_privilege('anon','public.real_estate_catalog_manage(uuid,text,uuid,jsonb)','EXECUTE'),'anon não gerencia anúncios');
+SELECT ok(has_function_privilege('anon','public.real_estate_public_catalog(uuid,uuid[],integer,text,text,numeric,text)','EXECUTE'),'anon consulta somente a projeção pública');
+SELECT ok((SELECT bool_and(relrowsecurity) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='fluxa_catalog_private' AND c.relname IN ('storefronts','listings','photos')),'RLS ativa nos dados do catálogo');
+SELECT ok(NOT has_table_privilege('anon','fluxa_catalog_private.listings','SELECT') AND NOT has_table_privilege('anon','fluxa_catalog_private.storefronts','SELECT') AND NOT has_table_privilege('anon','fluxa_catalog_private.photos','SELECT'),'anon não lê as tabelas privadas');
+SELECT is((SELECT public FROM storage.buckets WHERE id='real-estate-photos'),false,'bucket das fotos é privado');
+SELECT is((SELECT file_size_limit FROM storage.buckets WHERE id='real-estate-photos'),5242880::bigint,'limita cada foto a 5 MB');
+SELECT is((SELECT allowed_mime_types FROM storage.buckets WHERE id='real-estate-photos'),ARRAY['image/webp']::text[],'permite apenas WebP no bucket');
+SELECT is(public.real_estate_public_catalog('00000000-0000-0000-0000-000000000001'),NULL::jsonb,'token desconhecido não retorna catálogo');
+SELECT * FROM finish();
+ROLLBACK;

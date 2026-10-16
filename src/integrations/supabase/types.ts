@@ -8334,6 +8334,27 @@ export type Database = {
         }
         Returns: Json
       }
+      real_estate_catalog_manage: {
+        Args: {
+          _action: string
+          _organization_id: string
+          _property_id?: string
+          _values?: Json
+        }
+        Returns: Json
+      }
+      real_estate_public_catalog: {
+        Args: {
+          _token: string
+          _ids?: string[]
+          _page?: number
+          _purpose?: string
+          _type?: string
+          _max_price?: number
+          _search?: string
+        }
+        Returns: Json
+      }
       record_organization_access: {
         Args: { _organization_id: string }
         Returns: undefined
