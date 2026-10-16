@@ -43,6 +43,7 @@ const filters = [
   ["integration", "Integrações"],
   ["health", "Saúde"],
   ["legal", "Advocacia"],
+  ["real_estate", "Imobiliária"],
   ["system", "Sistema"],
 ];
 
