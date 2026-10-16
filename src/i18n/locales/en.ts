@@ -1,6 +1,86 @@
 import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
+  realEstateDemo: {
+    "title": "FLUXA Real Estate",
+    "intro": "Explore a fictional property portfolio, simulate an accepted offer and follow the path through contracts and owner payouts.",
+    "scenario": "Illustrative scenario as of {{date}}. All properties, names and amounts are fictional.",
+    "trial": "Start a free 14-day trial",
+    "trialNote": "For the real trial, create your account, verify your email and choose Real Estate during setup.",
+    "reset": "Reset demonstration",
+    "resetDone": "The original demo examples have been restored.",
+    "modules": {
+      "overview": "Overview",
+      "properties": "Properties",
+      "proposals": "Offers",
+      "contracts": "Contracts",
+      "settlements": "Commissions and payouts"
+    },
+    "titles": {
+      "house": "House with a garden",
+      "apartment": "Apartment near the beach",
+      "commercial": "Commercial unit"
+    },
+    "purpose": {
+      "locacao": "Rental",
+      "venda": "Sale"
+    },
+    "status": {
+      "aberta": "Open",
+      "contraproposta": "Counteroffer",
+      "aceita": "Accepted",
+      "recusada": "Declined",
+      "expired": "Expired · awaiting a decision",
+      "expiring": "Contract nearing expiry",
+      "previsto": "Expected",
+      "recebido": "Received · payout pending",
+      "repassado": "Paid to owner",
+      "atrasado": "Overdue payout"
+    },
+    "pending": {
+      "proposals": "Offers awaiting a decision",
+      "contracts": "Expired contracts or expiring within 30 days",
+      "late": "Overdue payouts"
+    },
+    "money": {
+      "gross_received": "Gross received",
+      "commission_received": "Commission received",
+      "owner_pending": "Pending owner payouts",
+      "owner_paid": "Confirmed owner payouts"
+    },
+    "financialNote": "Totals cover all examples regardless of search. Gross includes commission and the owner’s share. Expected statements are excluded from received amounts.",
+    "journeyTitle": "Try the workflow in three steps",
+    "journey": {
+      "proposals": "Simulate accepting Marina’s offer for IMOV-001.",
+      "contracts": "From the accepted offer, simulate a contract and create its statement.",
+      "settlements": "Simulate receipt and payout. The indicators update immediately."
+    },
+    "explore": "Explore",
+    "search": "Search property, owner, prospect or contract",
+    "empty": "No records match this filter.",
+    "owner": "Owner",
+    "amount": "Amount",
+    "validity": "Valid until",
+    "gross": "Gross",
+    "commission": "Commission",
+    "ownerAmount": "Owner’s share",
+    "due": "Expected payout",
+    "noEnd": "No end date",
+    "expiredNote": "In the real workflow, review terms and validity before accepting an expired offer.",
+    "viewProposals": "View offers",
+    "viewContracts": "View contracts",
+    "viewSettlements": "View statements",
+    "actions": {
+      "accept": "Simulate acceptance",
+      "refuse": "Simulate rejection",
+      "contract": "Simulate contract",
+      "settlement": "Simulate statement",
+      "receive": "Simulate receipt",
+      "pay": "Simulate payout"
+    },
+    "download": "Download filtered examples (CSV)",
+    "localNote": "Actions apply only to this demo and are discarded on reset or reload. No charges or transfers are made."
+  },
   language: { label: "Language", pt: "Português", en: "English", es: "Español" },
   landing: {
     nav: {

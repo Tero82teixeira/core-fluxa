@@ -381,6 +381,12 @@ function CommercialLanding() {
               <a href="#para-quem" className="transition-colors hover:text-white">
                 Para quem
               </a>
+              <a
+                href="#imobiliarias"
+                className="hidden transition-colors hover:text-white lg:block"
+              >
+                Imobiliárias
+              </a>
               <a href="#seguranca" className="transition-colors hover:text-white">
                 Segurança
               </a>
@@ -664,6 +670,68 @@ function CommercialLanding() {
               ))}
             </ul>
           </div>
+        </div>
+      </section>
+
+      <section
+        id="imobiliarias"
+        className="scroll-mt-20 border-b bg-amber-50/50 py-20 dark:bg-amber-950/10 sm:py-24"
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
+              FLUXA Imobiliária
+            </p>
+            <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+              Do primeiro interessado à prestação de contas ao proprietário
+            </h2>
+            <p className="mt-4 leading-7 text-muted-foreground">
+              Organize imóveis, proprietários e negociações. Acompanhe contratos, comissões e
+              repasses em uma área própria para a rotina da imobiliária.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {[
+              [
+                Building2,
+                "Carteira e negociações",
+                "Vincule proprietários e interessados aos imóveis e acompanhe propostas, contrapropostas e decisões.",
+              ],
+              [
+                CalendarCheck2,
+                "Contratos e prazos",
+                "Registre contratos a partir de propostas aceitas e acompanhe vencimentos e avisos na Central de Notificações.",
+              ],
+              [
+                CircleDollarSign,
+                "Comissões e prestação de contas",
+                "Veja os valores recebidos e os repasses pendentes. Exporte demonstrativos em CSV para Excel ou Google Sheets.",
+              ],
+            ].map(([Icon, title, description]) => {
+              const FeatureIcon = Icon as LucideIcon;
+              return (
+                <article key={String(title)} className="rounded-2xl border bg-card p-5">
+                  <FeatureIcon className="size-6 text-amber-600" aria-hidden />
+                  <h3 className="mt-4 font-semibold">{String(title)}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    {String(description)}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Button asChild variant="outline">
+              <Link to="/demo" search={{ area: "real_estate" }}>
+                Ver demonstração da imobiliária <ArrowRight className="size-4" aria-hidden />
+              </Link>
+            </Button>
+            <TrialLink>Testar grátis por 14 dias</TrialLink>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
+            A demonstração usa dados fictícios e não exige cadastro. Para usar com sua empresa, crie
+            a conta do teste e escolha Imobiliária na configuração inicial.
+          </p>
         </div>
       </section>
 

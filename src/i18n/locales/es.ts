@@ -1,6 +1,86 @@
 import type { LocaleShape } from "./pt";
 
 export const es: LocaleShape = {
+  realEstateDemo: {
+    "title": "FLUXA Inmobiliaria",
+    "intro": "Explora una cartera ficticia, simula una oferta aceptada y sigue el proceso hasta el contrato y el pago al propietario.",
+    "scenario": "Escenario ilustrativo del {{date}}. Todos los inmuebles, nombres e importes son ficticios.",
+    "trial": "Probar gratis durante 14 días",
+    "trialNote": "Para la prueba real, crea tu cuenta, verifica tu correo y elige Inmobiliaria en la configuración inicial.",
+    "reset": "Reiniciar demostración",
+    "resetDone": "Se han restaurado los ejemplos originales.",
+    "modules": {
+      "overview": "Resumen",
+      "properties": "Inmuebles",
+      "proposals": "Ofertas",
+      "contracts": "Contratos",
+      "settlements": "Comisiones y pagos"
+    },
+    "titles": {
+      "house": "Casa con jardín",
+      "apartment": "Apartamento cerca de la playa",
+      "commercial": "Local comercial"
+    },
+    "purpose": {
+      "locacao": "Alquiler",
+      "venda": "Venta"
+    },
+    "status": {
+      "aberta": "Abierta",
+      "contraproposta": "Contraoferta",
+      "aceita": "Aceptada",
+      "recusada": "Rechazada",
+      "expired": "Vencida · pendiente de decisión",
+      "expiring": "Contrato próximo a vencer",
+      "previsto": "Previsto",
+      "recebido": "Recibido · pago pendiente",
+      "repassado": "Pagado al propietario",
+      "atrasado": "Pago atrasado"
+    },
+    "pending": {
+      "proposals": "Ofertas pendientes de decisión",
+      "contracts": "Contratos vencidos o que vencen en 30 días",
+      "late": "Pagos atrasados"
+    },
+    "money": {
+      "gross_received": "Bruto recibido",
+      "commission_received": "Comisión recibida",
+      "owner_pending": "Pago pendiente",
+      "owner_paid": "Pago confirmado"
+    },
+    "financialNote": "Los totales incluyen todos los ejemplos, sin depender de la búsqueda. El bruto incluye la comisión y la parte del propietario. Los estados previstos no se incluyen en los importes recibidos.",
+    "journeyTitle": "Prueba el flujo en tres pasos",
+    "journey": {
+      "proposals": "Simula aceptar la oferta de Marina para IMOV-001.",
+      "contracts": "Desde la oferta aceptada, simula un contrato y crea su estado de cuenta.",
+      "settlements": "Simula el cobro y el pago. Los indicadores se actualizan al instante."
+    },
+    "explore": "Explorar",
+    "search": "Busca inmueble, propietario, interesado o contrato",
+    "empty": "No hay registros con este filtro.",
+    "owner": "Propietario",
+    "amount": "Importe",
+    "validity": "Validez",
+    "gross": "Bruto",
+    "commission": "Comisión",
+    "ownerAmount": "Parte del propietario",
+    "due": "Previsión de pago",
+    "noEnd": "Sin fecha de fin",
+    "expiredNote": "En el flujo real, revisa las condiciones y la validez antes de aceptar una oferta vencida.",
+    "viewProposals": "Ver ofertas",
+    "viewContracts": "Ver contratos",
+    "viewSettlements": "Ver estados de cuenta",
+    "actions": {
+      "accept": "Simular aceptación",
+      "refuse": "Simular rechazo",
+      "contract": "Simular contrato",
+      "settlement": "Simular estado de cuenta",
+      "receive": "Simular cobro",
+      "pay": "Simular pago"
+    },
+    "download": "Descargar ejemplos filtrados (CSV)",
+    "localNote": "Las acciones solo se aplican a esta demostración y se descartan al reiniciar o recargar. No se realizan cobros ni transferencias."
+  },
   language: { label: "Idioma", pt: "Português", en: "English", es: "Español" },
   landing: {
     nav: {

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
+import { RealEstatePublicDemo } from "@/components/real-estate/real-estate-public-demo";
 import { Button } from "@/components/ui/button";
 import { LOCALE_BY_LANGUAGE, type AppLanguage } from "@/i18n";
 import { SEGMENT_OPTIONS, type BusinessSegment } from "@/lib/organization-segments";
@@ -42,7 +43,7 @@ function PublicDemo() {
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <DemoBanner />
-      {area ? <DemoWorkspace key={area} area={area} /> : <AreaChooser />}
+      {area === "real_estate" ? <RealEstatePublicDemo /> : area ? <DemoWorkspace key={area} area={area} /> : <AreaChooser />}
     </div>
   );
 }
