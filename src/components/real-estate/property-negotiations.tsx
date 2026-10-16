@@ -180,8 +180,8 @@ export function PropertyNegotiations({
                   ))}
                 </select>
                 <p className="text-sm text-muted-foreground">
-                  Cada interessado pode ter uma negociação aberta, em contraproposta ou aceita
-                  neste imóvel. Para continuar uma delas, volte à lista de propostas.
+                  Cada interessado pode ter uma negociação aberta, em contraproposta ou aceita neste
+                  imóvel. Para continuar uma delas, volte à lista de propostas.
                 </p>
                 {opts.isPending && <p>Carregando interessados…</p>}
                 {opts.isError && (
