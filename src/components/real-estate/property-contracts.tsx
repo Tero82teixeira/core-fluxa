@@ -178,9 +178,27 @@ export function PropertyContracts({
                   </Button>
                 )}
                 {opts.isSuccess && !opts.data.length && (
-                  <p className="text-sm">
-                    Aceite uma proposta em Propostas e negociações antes de registrar o contrato.
-                  </p>
+                  <div className="space-y-2 rounded-md border p-3">
+                    <p className="text-sm font-medium">Nenhuma proposta disponível para novo contrato.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Esta lista mostra apenas propostas aceitas que ainda não têm contrato.
+                      Propostas já vinculadas não aparecem, mesmo quando o contrato foi encerrado
+                      ou cancelado. Para uma nova locação, cadastre e aceite outra proposta em
+                      Propostas e negociações.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setEdit(null);
+                        setSelected(null);
+                        setStatus("");
+                        setPage(1);
+                      }}
+                    >
+                      Ver contratos existentes
+                    </Button>
+                  </div>
                 )}
               </div>
             )}
@@ -269,7 +287,7 @@ export function PropertyContracts({
                   : "O encerramento preserva os valores e datas anteriores no histórico."}
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button disabled={save.isPending}>
+              <Button disabled={save.isPending || (edit.action === "criado" && !edit.proposal)}>
                 {save.isPending ? "Registrando…" : "Registrar"}
               </Button>
               <Button
