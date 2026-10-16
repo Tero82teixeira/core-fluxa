@@ -16,12 +16,6 @@ export type OverviewPage = {
   total: number;
   counts: Record<"proposta" | "contrato" | "repasse", number>;
 };
-const rpc = supabase as unknown as {
-  rpc: (
-    name: string,
-    args: Record<string, unknown>,
-  ) => PromiseLike<{ data: unknown; error: unknown }>;
-};
 export function useRealEstateOverview(
   org: string | null,
   search: string,
@@ -33,15 +27,15 @@ export function useRealEstateOverview(
     queryKey: ["real-estate-overview", org, search, kind, scope, page],
     enabled: Boolean(org),
     queryFn: async () => {
-      const { data, error } = await rpc.rpc("real_estate_overview", {
-        _organization_id: org,
-        _search: search || null,
-        _kind: kind || null,
+      const { data, error } = await supabase.rpc("real_estate_overview", {
+        _organization_id: org!,
+        _search: search || undefined,
+        _kind: kind || undefined,
         _scope: scope,
         _page: page,
       });
       if (error) throw error;
-      return data as OverviewPage;
+      return data as unknown as OverviewPage;
     },
   });
 }
