@@ -68,11 +68,17 @@ export function PropertySettlements({
   const [historyPage, setHistoryPage] = useState(1);
   const [edit, setEdit] = useState<Edit | null>(null);
   const [form, setForm] = useState<SettlementForm>(blank);
+  const [formError, setFormError] = useState("");
   const query = useSettlements(organizationId, property?.id || null, status, page);
   const opts = useSettlementOptions(organizationId, property?.id || null);
   const history = useSettlementHistory(organizationId, selected, historyPage);
   const save = useRecordSettlement(organizationId);
   const initial = edit?.action === "criado";
+  const rental = initial && edit.option?.purpose === "locacao" ? edit.option : null;
+  const firstMonth = rental?.starts_on.slice(0, 7);
+  const lastMonth = rental?.ends_on?.slice(0, 7);
+  const duplicate =
+    save.isError && (save.error as { message?: string })?.message?.includes("DUPLICATE");
   const cash = edit && ["recebido", "repassado"].includes(edit.action);
   let preview: { commission: number; owner: number } | null = null;
   try {
@@ -86,6 +92,7 @@ export function PropertySettlements({
   }
   function begin(action: SettlementAction, row?: SettlementRow) {
     save.reset();
+    setFormError("");
     setEdit({
       settlement: row?.id || crypto.randomUUID(),
       request: crypto.randomUUID(),
@@ -121,13 +128,17 @@ export function PropertySettlements({
       setSelected(null);
       setPage(1);
     } catch (error) {
-      toast.error(
-        error instanceof Error && !("code" in error) ? error.message : settlementError(error),
-      );
+      const message =
+        error instanceof Error && !("code" in error) ? error.message : settlementError(error);
+      setFormError(message);
+      toast.error(message);
     }
   }
-  const change = (field: keyof SettlementForm, value: string) =>
+  function change(field: keyof SettlementForm, value: string) {
+    setFormError("");
+    save.reset();
     setForm((f) => ({ ...f, [field]: value }));
+  }
   return (
     <Dialog
       open
@@ -165,6 +176,8 @@ export function PropertySettlements({
                   value={edit.contract}
                   onChange={(e) => {
                     const o = opts.data?.find((v) => v.id === e.target.value);
+                    setFormError("");
+                    save.reset();
                     setEdit(
                       (v) =>
                         v && {
@@ -202,6 +215,12 @@ export function PropertySettlements({
                     Nenhum contrato elegível. Registre um contrato antes de criar o demonstrativo.
                   </p>
                 )}
+                {edit.option?.contract_status === "encerrado" && (
+                  <p className="text-sm text-muted-foreground">
+                    Contrato encerrado: o período permitido considera a data do encerramento, mesmo
+                    que o término originalmente previsto fosse posterior.
+                  </p>
+                )}
                 {edit.option && (
                   <p className="text-sm">
                     Proprietário: {edit.option.owner_name}. Período:{" "}
@@ -224,11 +243,31 @@ export function PropertySettlements({
               <Input
                 id="rp-reference"
                 required
+                type={rental ? "month" : "text"}
+                min={firstMonth}
+                max={lastMonth}
                 maxLength={60}
+                aria-describedby={initial ? "rp-reference-help" : undefined}
                 value={form.reference}
                 disabled={save.isPending || !initial}
                 onChange={(e) => change("reference", e.target.value)}
               />
+              {initial && (
+                <div id="rp-reference-help" className="space-y-1 text-sm text-muted-foreground">
+                  {rental && (
+                    <p>
+                      {firstMonth === lastMonth
+                        ? `Este contrato permite apenas a competência ${firstMonth}.`
+                        : `Competências permitidas: de ${firstMonth}${lastMonth ? ` até ${lastMonth}` : " em diante"}.`}
+                    </p>
+                  )}
+                  <p>
+                    Cada contrato permite um demonstrativo não cancelado por competência ou
+                    referência. Se já existir, consulte a lista. Para corrigir um demonstrativo
+                    previsto, cancele-o antes de registrar outro para a mesma competência.
+                  </p>
+                </div>
+              )}
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-1">
@@ -330,8 +369,29 @@ export function PropertySettlements({
                   ? "Confirme somente depois que a operação aconteceu. O registro será preservado no histórico."
                   : "O cancelamento está disponível somente antes do recebimento."}
             </p>
+            {formError && (
+              <div role="alert" className="space-y-2">
+                <p className="text-sm text-destructive">{formError}</p>
+                {duplicate && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEdit(null);
+                      setSelected(null);
+                      setStatus("");
+                      setPage(1);
+                      setFormError("");
+                      save.reset();
+                    }}
+                  >
+                    Ver demonstrativos existentes
+                  </Button>
+                )}
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
-              <Button disabled={save.isPending}>
+              <Button disabled={save.isPending || (initial && !edit.contract)}>
                 {save.isPending ? "Registrando…" : "Registrar"}
               </Button>
               <Button
