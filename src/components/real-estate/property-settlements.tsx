@@ -56,15 +56,17 @@ type Edit = {
 export function PropertySettlements({
   property,
   onClose,
+  initialSelection,
 }: {
   property?: PropertyRow;
   onClose: () => void;
+  initialSelection?: SettlementRow;
 }) {
   const { organizationId, role } = useWorkspace();
   const writable = canWriteSettlements(role);
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<SettlementRow | null>(null);
+  const [selected, setSelected] = useState<SettlementRow | null>(initialSelection || null);
   const [historyPage, setHistoryPage] = useState(1);
   const [edit, setEdit] = useState<Edit | null>(null);
   const [form, setForm] = useState<SettlementForm>(blank);

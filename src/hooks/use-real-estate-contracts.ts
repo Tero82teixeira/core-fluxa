@@ -80,6 +80,7 @@ export function useRecordContract(org: string | null) {
         _values: args.values,
       }),
     onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ["real-estate-overview", org] });
       await Promise.all(
         [
           "real-estate-contracts",

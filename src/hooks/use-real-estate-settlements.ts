@@ -84,6 +84,7 @@ export function useRecordSettlement(org: string | null) {
         _values: args.values,
       }),
     onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ["real-estate-overview", org] });
       await Promise.all(
         ["real-estate-settlements", "real-estate-settlement-history"].map((key) =>
           client.invalidateQueries({ queryKey: [key, org] }),

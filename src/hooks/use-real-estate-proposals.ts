@@ -82,6 +82,7 @@ export function useRecordNegotiation(org: string | null, property: string) {
         _values: args.values,
       }),
     onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ["real-estate-overview", org] });
       await client.invalidateQueries({ queryKey: ["real-estate-proposals", org, property] });
       await client.invalidateQueries({ queryKey: ["real-estate-proposal-history", org, property] });
     },

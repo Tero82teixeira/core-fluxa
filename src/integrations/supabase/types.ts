@@ -8324,6 +8324,16 @@ export type Database = {
           trial_started_at: string
         }[]
       }
+      real_estate_overview: {
+        Args: {
+          _kind?: string
+          _organization_id: string
+          _page?: number
+          _scope?: string
+          _search?: string
+        }
+        Returns: Json
+      }
       record_organization_access: {
         Args: { _organization_id: string }
         Returns: undefined
