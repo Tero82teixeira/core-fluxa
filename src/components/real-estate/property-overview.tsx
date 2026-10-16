@@ -10,6 +10,7 @@ import { PROPOSAL_STATUSES, proposalDate } from "@/lib/real-estate-proposals";
 import { CONTRACT_STATUSES } from "@/lib/real-estate-contracts";
 import { SETTLEMENT_STATUSES } from "@/lib/real-estate-settlements";
 import { useRealEstateOverview, type OverviewItem } from "@/hooks/use-real-estate-overview";
+import type { RealEstateAlertSearch } from "@/lib/real-estate-notifications";
 const labels = { imovel: "Imóvel", proposta: "Proposta", contrato: "Contrato", repasse: "Repasse" };
 const cards = {
   proposta: "Propostas aguardando decisão",
@@ -17,10 +18,26 @@ const cards = {
   repasse: "Repasses atrasados",
 } as const;
 const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm";
-export function PropertyOverview({ onOpen }: { onOpen: (item: OverviewItem) => void }) {
+export function PropertyOverview({
+  onOpen,
+  alertSearch,
+}: {
+  onOpen: (item: OverviewItem) => void;
+  alertSearch?: RealEstateAlertSearch;
+}) {
   const { organizationId } = useWorkspace();
   const [text, setText] = useState("");
   const [filters, setFilters] = useState({ search: "", kind: "", scope: "pendencias", page: 1 });
+  useEffect(() => {
+    if (!alertSearch?.pendencia) return;
+    setText(alertSearch.busca || "");
+    setFilters({
+      search: alertSearch.busca || "",
+      kind: alertSearch.pendencia,
+      scope: "pendencias",
+      page: 1,
+    });
+  }, [alertSearch?.pendencia, alertSearch?.busca]);
   useEffect(() => {
     const timer = setTimeout(
       () => setFilters((f) => ({ ...f, search: text.trim(), page: 1 })),

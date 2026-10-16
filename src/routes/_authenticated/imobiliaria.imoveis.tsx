@@ -1,5 +1,6 @@
 import { PropertyOverview } from "@/components/real-estate/property-overview";
 import type { OverviewItem } from "@/hooks/use-real-estate-overview";
+import { realEstateAlertSearch } from "@/lib/real-estate-notifications";
 import { PropertySettlements } from "@/components/real-estate/property-settlements";
 import { PropertyContracts } from "@/components/real-estate/property-contracts";
 import { PropertyNegotiations } from "@/components/real-estate/property-negotiations";
@@ -43,6 +44,7 @@ import {
 } from "@/lib/real-estate";
 
 export const Route = createFileRoute("/_authenticated/imobiliaria/imoveis")({
+  validateSearch: realEstateAlertSearch,
   head: () => ({ meta: [{ title: "Imóveis — FLUXA Imobiliária" }] }),
   component: PropertiesPage,
 });
@@ -83,6 +85,7 @@ function formFor(row: PropertyRow): PropertyForm {
   };
 }
 function PropertyWorkspace() {
+  const alertSearch = Route.useSearch();
   const { organizationId, role, membership } = useWorkspace();
   const settings = membership?.organizations?.organization_settings;
   const allowed = routeVisibleForModules(
@@ -195,6 +198,7 @@ function PropertyWorkspace() {
         </div>
       </header>
       <PropertyOverview
+        alertSearch={alertSearch}
         onOpen={(item) => {
           if (item.kind === "imovel") setSelected(item.property);
           else setOverviewSelection(item);

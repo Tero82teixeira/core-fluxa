@@ -51,7 +51,7 @@ SELECT ok(
     SELECT 1
       FROM cron.job AS job
      WHERE job.jobname = 'core-fluxa-process-due-scheduled-automations'
-       AND job.command = 'SELECT public.run_temporal_automation_cycle();'
+       AND job.command = 'SELECT fluxa_real_estate_private.run_temporal_with_real_estate();'
   ),
   'the established temporal command remains unchanged'
 );
