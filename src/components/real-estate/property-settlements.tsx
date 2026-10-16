@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { useSettlementExport } from "@/hooks/use-settlement-export";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +67,7 @@ export function PropertySettlements({
   const writable = canWriteSettlements(role);
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
+  const csv = useSettlementExport(organizationId, property?.id || null, status);
   const [selected, setSelected] = useState<SettlementRow | null>(initialSelection || null);
   const [historyPage, setHistoryPage] = useState(1);
   const [edit, setEdit] = useState<Edit | null>(null);
@@ -415,6 +417,13 @@ export function PropertySettlements({
               {SETTLEMENT_STATUSES[selected.display_status]} · {selected.property_code}
             </p>
             <p>Proprietário: {selected.owner_name || "Cadastro indisponível"}</p>
+            <Button
+              variant="outline"
+              disabled={csv.busy}
+              onClick={() => void csv.exportRows(selected)}
+            >
+              {csv.busy ? "Exportando…" : "Baixar demonstrativo (CSV)"}
+            </Button>
             <div className="rounded-md border p-3">
               <p>Bruto: {formatCurrency(Number(selected.gross))}</p>
               <p>Comissão: {formatCurrency(Number(selected.commission_amount))}</p>
@@ -533,8 +542,24 @@ export function PropertySettlements({
               <Button variant="outline" disabled={query.isFetching} onClick={() => query.refetch()}>
                 Atualizar
               </Button>
+              <Button
+                variant="outline"
+                disabled={csv.busy || query.isPending || query.isError || !query.data?.total}
+                onClick={() => void csv.exportRows()}
+              >
+                {csv.busy ? "Exportando…" : "Exportar lista (CSV)"}
+              </Button>
               {writable && <Button onClick={() => begin("criado")}>Novo demonstrativo</Button>}
             </div>
+            <p className="text-xs text-muted-foreground">
+              O CSV inclui todas as páginas do imóvel e da situação selecionados, até 10.000
+              demonstrativos, e pode ser aberto no Excel ou Google Sheets.
+            </p>
+            {csv.busy && (
+              <p role="status" className="text-sm">
+                {csv.progress}
+              </p>
+            )}
             {query.isPending ? (
               <p>Carregando demonstrativos…</p>
             ) : query.isError ? (
