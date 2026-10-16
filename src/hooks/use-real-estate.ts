@@ -79,6 +79,7 @@ export function useSaveProperty(org: string | null) {
       return data as PropertyRow;
     },
     onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ["real-estate-overview", org] });
       await client.invalidateQueries({ queryKey: ["real-estate-properties", org] });
       await client.invalidateQueries({ queryKey: ["real-estate-options", org] });
     },

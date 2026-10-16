@@ -1,3 +1,5 @@
+import { PropertyOverview } from "@/components/real-estate/property-overview";
+import type { OverviewItem } from "@/hooks/use-real-estate-overview";
 import { PropertySettlements } from "@/components/real-estate/property-settlements";
 import { PropertyContracts } from "@/components/real-estate/property-contracts";
 import { PropertyNegotiations } from "@/components/real-estate/property-negotiations";
@@ -112,6 +114,7 @@ function PropertyWorkspace() {
   const [settlements, setSettlements] = useState<PropertyRow | "all" | null>(null);
   const [activity, setActivity] = useState<PropertyRow | null>(null);
   const [selected, setSelected] = useState<PropertyRow | null>(null);
+  const [overviewSelection, setOverviewSelection] = useState<OverviewItem | null>(null);
   useEffect(() => {
     const timer = setTimeout(
       () => setFilters((f) => ({ ...f, search: search.trim(), page: 1 })),
@@ -191,6 +194,12 @@ function PropertyWorkspace() {
           </div>
         </div>
       </header>
+      <PropertyOverview
+        onOpen={(item) => {
+          if (item.kind === "imovel") setSelected(item.property);
+          else setOverviewSelection(item);
+        }}
+      />
       <div className="grid gap-3 sm:grid-cols-3">
         {[
           ["Imóveis encontrados", data?.total],
@@ -375,6 +384,30 @@ function PropertyWorkspace() {
           )}
         </CardContent>
       </Card>
+      {overviewSelection?.kind === "contrato" && (
+        <PropertyContracts
+          key={overviewSelection.id}
+          property={overviewSelection.property}
+          initialSelection={overviewSelection.data}
+          onClose={() => setOverviewSelection(null)}
+        />
+      )}
+      {overviewSelection?.kind === "proposta" && (
+        <PropertyNegotiations
+          key={overviewSelection.id}
+          property={overviewSelection.property}
+          initialSelection={overviewSelection.data}
+          onClose={() => setOverviewSelection(null)}
+        />
+      )}
+      {overviewSelection?.kind === "repasse" && (
+        <PropertySettlements
+          key={overviewSelection.id}
+          property={overviewSelection.property}
+          initialSelection={overviewSelection.data}
+          onClose={() => setOverviewSelection(null)}
+        />
+      )}
       {settlements && (
         <PropertySettlements
           key={settlements === "all" ? "all" : settlements.id}

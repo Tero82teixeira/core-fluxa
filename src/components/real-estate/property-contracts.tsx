@@ -53,15 +53,17 @@ type Edit = {
 export function PropertyContracts({
   property,
   onClose,
+  initialSelection,
 }: {
   property?: PropertyRow;
   onClose: () => void;
+  initialSelection?: ContractRow;
 }) {
   const { organizationId, role } = useWorkspace();
   const writable = canWriteProperties(role);
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<ContractRow | null>(null);
+  const [selected, setSelected] = useState<ContractRow | null>(initialSelection || null);
   const [historyPage, setHistoryPage] = useState(1);
   const [edit, setEdit] = useState<Edit | null>(null);
   const [form, setForm] = useState<ContractForm>(blank);

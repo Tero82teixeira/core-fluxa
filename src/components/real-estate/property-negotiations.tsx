@@ -46,17 +46,19 @@ export function PropertyNegotiations({
   property,
   onClose,
   initialInterest,
+  initialSelection,
 }: {
   property: PropertyRow;
   onClose: () => void;
   initialInterest?: InterestRow;
+  initialSelection?: ProposalRow;
 }) {
   const { organizationId, role } = useWorkspace();
   const writable = canWriteProperties(role);
   const closed = !["disponivel", "reservado"].includes(property.status);
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<ProposalRow | null>(null);
+  const [selected, setSelected] = useState<ProposalRow | null>(initialSelection || null);
   const [historyPage, setHistoryPage] = useState(1);
   const [edit, setEdit] = useState<Edit | null>(() =>
     initialInterest
