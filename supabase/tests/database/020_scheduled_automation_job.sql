@@ -20,7 +20,7 @@ SELECT is(
 SELECT is(
   (SELECT command FROM cron.job
    WHERE jobname = 'core-fluxa-process-due-scheduled-automations'),
-  'SELECT public.run_temporal_automation_cycle();',
+  'SELECT fluxa_real_estate_private.run_temporal_with_real_estate();',
   'job invokes only the private tenant-derived temporal cycle'
 );
 SELECT ok(
