@@ -5,12 +5,16 @@ export const INQUIRY_STATUSES = {
   encerrado: "Encerrado",
 } as const;
 export type Inquiry = {
+  origin: "vitrine" | "whatsapp" | "telefone" | "presencial" | "outro";
+  closure_reason: "fechou_negocio" | "desistiu" | "sem_imovel" | "outro" | null;
+  closure_note: string;
+  closed_at: string | null;
   next_contact_at: string | null;
   last_contact_at: string | null;
   id: string;
-  property_id: string;
-  property_code: string;
-  property_title: string;
+  property_id: string | null;
+  property_code: string | null;
+  property_title: string | null;
   name: string;
   phone: string;
   purpose: "venda" | "locacao";

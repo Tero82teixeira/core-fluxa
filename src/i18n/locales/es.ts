@@ -2,6 +2,42 @@ import type { LocaleShape } from "./pt";
 
 export const es: LocaleShape = {
   realEstateDemo: {
+    manual: {
+      "new": "Nueva consulta manual",
+      "create": "Crear consulta y guardar preferencias",
+      "name": "Nombre del interesado",
+      "phone": "Teléfono/WhatsApp con código de área",
+      "origin": "Canal de origen",
+      "whatsapp": "WhatsApp",
+      "telefone": "Teléfono",
+      "presencial": "Presencial",
+      "outro": "Otro",
+      "vitrine": "Catálogo público",
+      "responsible": "Responsable",
+      "unassigned": "Sin responsable",
+      "nextContact": "Próximo contacto (opcional)",
+      "note": "Nota interna (opcional)",
+      "preferences": "Define las preferencias abajo. La consulta puede empezar sin un inmueble elegido.",
+      "invalid": "Revisa el nombre, el teléfono con código de área y el próximo contacto. La fecha debe ser futura.",
+      "noProperty": "Sin inmueble definido",
+      "closed": "Consulta cerrada",
+      "close": "Cerrar consulta",
+      "reopen": "Reabrir consulta",
+      "reason": "Motivo del cierre",
+      "closureNote": "Detalles del cierre",
+      "closureInvalid": "Elige un motivo. Para Otro, indica los detalles.",
+      "closeNote": "Se eliminará el próximo contacto. Visitas y contratos mantienen sus propias situaciones.",
+      "fechou_negocio": "Negocio cerrado",
+      "desistiu": "Desistió",
+      "sem_imovel": "Sin inmueble adecuado",
+      "choose": "Selecciona",
+      "attach": "Vincular inmueble",
+      "demoNote": "Simulación con datos ficticios, sin cambios en el sistema real. Escenario del 16/10/2026.",
+      "demoTeam": "Equipo Ejemplo",
+      "duplicate": "Ya existe una consulta abierta para este contacto y finalidad, sin inmueble definido.",
+      "created": "Consulta ficticia creada con preferencias guardadas."
+},
+
     preferences: {
       open: "Preferencias e inmuebles compatibles",
       title: "Preferencias del interesado",

@@ -2,6 +2,42 @@ import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
   realEstateDemo: {
+    manual: {
+      "new": "New manual inquiry",
+      "create": "Create inquiry and save preferences",
+      "name": "Contact name",
+      "phone": "Phone/WhatsApp with area code",
+      "origin": "Contact source",
+      "whatsapp": "WhatsApp",
+      "telefone": "Phone",
+      "presencial": "In person",
+      "outro": "Other",
+      "vitrine": "Public catalog",
+      "responsible": "Assignee",
+      "unassigned": "Unassigned",
+      "nextContact": "Next follow-up (optional)",
+      "note": "Internal note (optional)",
+      "preferences": "Set preferences below. An inquiry can start before a property is chosen.",
+      "invalid": "Review the name, phone with area code and follow-up. Follow-ups must be in the future.",
+      "noProperty": "No property selected",
+      "closed": "Inquiry closed",
+      "close": "Close inquiry",
+      "reopen": "Reopen inquiry",
+      "reason": "Closing reason",
+      "closureNote": "Closing details",
+      "closureInvalid": "Choose a reason. For Other, provide details.",
+      "closeNote": "The next follow-up will be cleared. Visits and contracts keep their own statuses.",
+      "fechou_negocio": "Deal closed",
+      "desistiu": "Withdrew",
+      "sem_imovel": "No suitable property",
+      "choose": "Select",
+      "attach": "Link property",
+      "demoNote": "Fictional simulation with no real system changes. Scenario dated October 16, 2026.",
+      "demoTeam": "Example team",
+      "duplicate": "An open inquiry already exists for this contact and purpose, with no property selected.",
+      "created": "Fictional inquiry created with saved preferences."
+},
+
     preferences: {
       open: "Preferences and matching properties",
       title: "Buyer or tenant preferences",

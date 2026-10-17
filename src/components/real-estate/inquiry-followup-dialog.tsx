@@ -54,7 +54,8 @@ export function InquiryFollowupDialog({
                 : "Registrar resultado da conversa"}
           </DialogTitle>
           <DialogDescription>
-            {request.name} · {request.property_code}. Informações internas da imobiliária.
+            {request.name} · {request.property_code || "Sem imóvel definido"}. Informações internas
+            da imobiliária.
           </DialogDescription>
         </DialogHeader>
         {mode === "history" ? (
@@ -94,7 +95,7 @@ export function InquiryFollowupDialog({
                             } as Record<string, string>
                           )[item.kind]
                         }{" "}
-                        · {item.property_code}
+                        · {item.property_code || "Sem imóvel definido"}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {when(item.happened_at)} ·{" "}
