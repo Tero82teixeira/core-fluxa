@@ -23,7 +23,7 @@ export async function catalogManage(
   if (error) throw error;
   return data as unknown as ManagedCatalog;
 }
-async function signedPhotos<T extends CatalogListing>(items: T[]): Promise<T[]> {
+export async function signedPhotos<T extends CatalogListing>(items: T[]): Promise<T[]> {
   const paths = [...new Set(items.flatMap((item) => item.photos.map((photo) => photo.path)))];
   if (!paths.length) return items;
   const { data } = await supabase.storage.from(CATALOG_BUCKET).createSignedUrls(paths, 120);

@@ -1,3 +1,5 @@
+import { DemoPreferencesDialog } from "./demo-preferences-dialog";
+import type { PropertyPreferences } from "@/lib/real-estate-preferences";
 import type { DemoProposal } from "@/lib/real-estate-public-demo";
 import { DemoInquiryQueue } from "./demo-inquiry-queue";
 import { addDemoInquiry, buildDemoInquiries } from "@/lib/real-estate-demo-inquiries";
@@ -39,6 +41,8 @@ export function RealEstateDemoCatalog({
   const { t, i18n } = useTranslation();
   const l = (key: string, values: Record<string, unknown> = {}) =>
     t(`realEstateDemo.catalog.${key}`, values);
+  const [preferenceRequest, setPreferenceRequest] = useState<string | null>(null);
+  const [preferences, setPreferences] = useState<Record<string, PropertyPreferences>>({});
   const [requests, setRequests] = useState(buildDemoInquiries);
   const [requesting, setRequesting] = useState<{
     listingId: string;
@@ -118,8 +122,31 @@ export function RealEstateDemoCatalog({
       `${l(visit ? "requestVisit" : "requestInfo", { title: title(p), id: p.id })}\n${url}`,
     );
   }
-  if (mode === "attendance")
-    return <DemoInquiryQueue rows={requests} onChange={setRequests} proposals={proposals} />;
+  if (mode === "attendance") {
+    const selectedRequest = requests.find((r) => r.id === preferenceRequest);
+    return (
+      <>
+        <DemoInquiryQueue
+          rows={requests}
+          onChange={setRequests}
+          proposals={proposals}
+          onPreferences={setPreferenceRequest}
+        />
+        {selectedRequest && (
+          <DemoPreferencesDialog
+            key={selectedRequest.id}
+            name={selectedRequest.name}
+            initial={preferences[selectedRequest.id] || null}
+            purpose={items.find((p) => p.id === selectedRequest.listingId)?.purpose || "venda"}
+            items={items}
+            title={title}
+            onSave={(p) => setPreferences((rows) => ({ ...rows, [selectedRequest.id]: p }))}
+            onClose={() => setPreferenceRequest(null)}
+          />
+        )}
+      </>
+    );
+  }
   return (
     <section className="space-y-5">
       <div className="rounded-2xl bg-slate-950 p-5 text-white sm:p-7">
