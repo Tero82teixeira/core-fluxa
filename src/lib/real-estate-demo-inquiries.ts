@@ -1,5 +1,8 @@
 /** Fluxo de atendimento fictício, sem rede nem persistência. */
 export type DemoInquiry = {
+  clientKey?: string;
+  nextContactAt?: string;
+  contacts?: { note: string; at: string }[];
   id: string;
   listingId: string;
   name: string;
@@ -16,8 +19,10 @@ export function buildDemoInquiries(): DemoInquiry[] {
   return [
     {
       id: "PEDIDO-DEMO-001",
+      clientKey: "marina",
+      nextContactAt: "2026-10-15T12:00:00Z",
       listingId: "IMOV-005",
-      name: "Marina Exemplo",
+      name: "Marina Costa",
       phone: "27999990000",
       kind: "visita",
       preference: "2026-10-22",
@@ -99,4 +104,31 @@ export function actDemoInquiry(
     changes = { stage: action, outcome: value.trim(), confirmed: false };
   }
   return rows.map((r) => (r.id === id ? { ...r, ...changes } : r));
+}
+
+export function planDemoReturn(
+  rows: DemoInquiry[],
+  id: string,
+  value: string,
+  now = new Date("2026-10-16T12:00:00Z"),
+) {
+  if (value && (!Number.isFinite(Date.parse(value)) || Date.parse(value) <= now.getTime()))
+    throw new Error("DEMO_INVALID");
+  return rows.map((r) =>
+    r.id === id ? { ...r, nextContactAt: value ? new Date(value).toISOString() : "" } : r,
+  );
+}
+export function logDemoContact(
+  rows: DemoInquiry[],
+  id: string,
+  note: string,
+  next: string,
+  now = new Date("2026-10-16T12:00:00Z"),
+) {
+  if (!note.trim() || note.trim().length > 2000) throw new Error("DEMO_INVALID");
+  return planDemoReturn(rows, id, next, now).map((r) =>
+    r.id === id
+      ? { ...r, contacts: [...(r.contacts || []), { note: note.trim(), at: now.toISOString() }] }
+      : r,
+  );
 }

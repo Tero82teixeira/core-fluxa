@@ -1,3 +1,4 @@
+import type { DemoProposal } from "@/lib/real-estate-public-demo";
 import { DemoInquiryQueue } from "./demo-inquiry-queue";
 import { addDemoInquiry, buildDemoInquiries } from "@/lib/real-estate-demo-inquiries";
 import { useEffect, useRef, useState } from "react";
@@ -29,8 +30,10 @@ const inputClass = "h-10 rounded-md border bg-background px-3 text-sm";
 export function RealEstateDemoCatalog({
   selection,
   mode = "catalog",
+  proposals = [],
 }: {
   selection?: string;
+  proposals?: DemoProposal[];
   mode?: "catalog" | "attendance";
 }) {
   const { t, i18n } = useTranslation();
@@ -115,7 +118,8 @@ export function RealEstateDemoCatalog({
       `${l(visit ? "requestVisit" : "requestInfo", { title: title(p), id: p.id })}\n${url}`,
     );
   }
-  if (mode === "attendance") return <DemoInquiryQueue rows={requests} onChange={setRequests} />;
+  if (mode === "attendance")
+    return <DemoInquiryQueue rows={requests} onChange={setRequests} proposals={proposals} />;
   return (
     <section className="space-y-5">
       <div className="rounded-2xl bg-slate-950 p-5 text-white sm:p-7">

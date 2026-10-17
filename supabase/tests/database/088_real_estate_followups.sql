@@ -1,0 +1,13 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_function('public','real_estate_followups',ARRAY['uuid','text','uuid','jsonb'],'endpoint de retornos existe');
+SELECT ok(NOT has_function_privilege('anon','public.real_estate_followups(uuid,text,uuid,jsonb)','EXECUTE'),'anon não consulta histórico');
+SELECT ok(has_function_privilege('authenticated','public.real_estate_followups(uuid,text,uuid,jsonb)','EXECUTE'),'equipe autenticada usa endpoint com autorização interna');
+SELECT ok(NOT has_table_privilege('anon','fluxa_inquiry_private.contact_events','SELECT'),'conversas não são públicas');
+SELECT ok(NOT has_table_privilege('authenticated','fluxa_inquiry_private.contact_events','UPDATE') AND NOT has_table_privilege('authenticated','fluxa_inquiry_private.contact_events','DELETE'),'conversas são acrescentadas sem sobrescrita');
+SELECT ok((SELECT bool_and(relrowsecurity) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='fluxa_inquiry_private' AND c.relname IN ('followups','contact_events')),'RLS no planejamento e nas conversas');
+SELECT ok((SELECT NOT prosecdef FROM pg_proc WHERE oid='public.real_estate_followups(uuid,text,uuid,jsonb)'::regprocedure),'retornos não elevam privilégios');
+SELECT * FROM finish();
+ROLLBACK;
