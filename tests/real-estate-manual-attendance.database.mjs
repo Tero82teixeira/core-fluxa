@@ -261,6 +261,11 @@ export async function verifyRealEstateManualAttendance(
     "encerramento não cancela a visita",
   );
   // O caminho público permanece restrito ao anúncio publicado e não aceita origem manual.
+  await db.query(
+    `INSERT INTO fluxa_inquiry_private.requests(id,organization_id,name,phone,purpose,kind,origin,created_by,creation_hash,consent_version)
+    SELECT gen_random_uuid(),$1,'Volume manual '||n,'552799'||lpad(n::text,7,'0'),'locacao','informacao','telefone',$2,md5(n::text),'staff-contact-v1' FROM generate_series(1,201) n`,
+    [org, actor],
+  );
   const token = (
     await db.query("SELECT token FROM fluxa_catalog_private.storefronts WHERE organization_id=$1", [
       org,

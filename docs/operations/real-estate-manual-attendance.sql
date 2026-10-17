@@ -88,6 +88,42 @@ END $$;
 REVOKE ALL ON FUNCTION public.real_estate_manual_attendance(uuid,text,uuid,jsonb) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.real_estate_manual_attendance(uuid,text,uuid,jsonb) TO authenticated;
 
+-- Cadastros internos não consomem o limite de proteção do formulário anônimo.
+CREATE OR REPLACE FUNCTION fluxa_inquiry_private.submit(_token uuid,_listing_id uuid,_request_id uuid,_values jsonb)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE org uuid; pid uuid; wanted text; v_phone text; day date; period text;
+BEGIN
+ IF _values IS NULL OR jsonb_typeof(_values)<>'object' OR octet_length(_values::text)>6000 OR _request_id IS NULL THEN RAISE EXCEPTION 'INQUIRY_INVALID' USING ERRCODE='22023'; END IF;
+ IF coalesce(_values->>'website','')<>'' THEN RETURN '{"accepted":true}'::jsonb; END IF;
+ IF coalesce(_values->>'consent','')<>'true' OR length(btrim(coalesce(_values->>'name',''))) NOT BETWEEN 2 AND 120
+  OR length(coalesce(_values->>'message',''))>500 OR coalesce(_values->>'kind','') NOT IN ('informacao','visita')
+  THEN RAISE EXCEPTION 'INQUIRY_INVALID' USING ERRCODE='22023'; END IF;
+ v_phone:=regexp_replace(coalesce(_values->>'phone',''),'[^0-9]','','g');
+ IF length(v_phone) IN (10,11) THEN v_phone:='55'||v_phone; END IF;
+ IF v_phone !~ '^55[1-9][0-9]{9,10}$' THEN RAISE EXCEPTION 'INQUIRY_INVALID' USING ERRCODE='22023'; END IF;
+ wanted:=_values->>'purpose';
+ IF coalesce(wanted,'') NOT IN ('venda','locacao') THEN RAISE EXCEPTION 'INQUIRY_INVALID' USING ERRCODE='22023'; END IF;
+ day:=nullif(_values->>'preferred_day','')::date; period:=nullif(_values->>'preferred_period','');
+ IF (day IS NOT NULL AND (day<current_date-1 OR day>current_date+90)) OR (period IS NOT NULL AND period NOT IN ('manha','tarde','noite')) THEN RAISE EXCEPTION 'INQUIRY_INVALID' USING ERRCODE='22023'; END IF;
+ IF to_regclass('public.real_estate_properties') IS NULL THEN RAISE EXCEPTION 'INQUIRY_UNAVAILABLE' USING ERRCODE='22023'; END IF;
+ SELECT l.organization_id,l.property_id INTO org,pid FROM fluxa_catalog_private.listings l
+ JOIN fluxa_catalog_private.storefronts s ON s.organization_id=l.organization_id AND s.token=_token
+ JOIN public.real_estate_properties p ON p.organization_id=l.organization_id AND p.id=l.property_id
+ WHERE l.id=_listing_id AND fluxa_catalog_private.is_public_listing(l.id) AND p.purpose IN (wanted,'venda_locacao');
+ IF org IS NULL THEN RAISE EXCEPTION 'INQUIRY_UNAVAILABLE' USING ERRCODE='22023'; END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended('inquiry:'||org::text,0));
+ -- Reenvios não alteram dados nem revelam se já havia um contato cadastrado.
+ IF EXISTS(SELECT 1 FROM fluxa_inquiry_private.requests WHERE organization_id=org AND (id=_request_id OR (property_id=pid AND requests.phone=v_phone AND purpose=wanted AND status<>'encerrado'))) THEN RETURN '{"accepted":true}'::jsonb; END IF;
+ IF (SELECT count(*) FROM fluxa_inquiry_private.requests WHERE organization_id=org AND origin='vitrine' AND created_at>now()-interval '1 day')>=200
+  OR (SELECT count(*) FROM fluxa_inquiry_private.requests WHERE organization_id=org AND origin='vitrine' AND requests.phone=v_phone AND created_at>now()-interval '1 day')>=5
+ THEN RAISE EXCEPTION 'INQUIRY_LIMIT' USING ERRCODE='P0001'; END IF;
+ INSERT INTO fluxa_inquiry_private.requests(id,organization_id,listing_id,property_id,name,phone,purpose,kind,preferred_day,preferred_period,message)
+ VALUES(_request_id,org,_listing_id,pid,btrim(_values->>'name'),v_phone,wanted,_values->>'kind',day,period,btrim(coalesce(_values->>'message',''))) ON CONFLICT(id) DO NOTHING;
+ RETURN '{"accepted":true}'::jsonb;
+END $$;
+REVOKE ALL ON FUNCTION fluxa_inquiry_private.submit(uuid,uuid,uuid,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fluxa_inquiry_private.submit(uuid,uuid,uuid,jsonb) TO anon,authenticated;
+
 CREATE OR REPLACE FUNCTION public.real_estate_followups(_organization_id uuid,_action text,_request_id uuid DEFAULT NULL,_values jsonb DEFAULT '{}'::jsonb)
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
 DECLARE r fluxa_inquiry_private.requests; previous fluxa_inquiry_private.contact_events;
