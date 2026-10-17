@@ -1,3 +1,4 @@
+import { RealEstateDemoCatalog } from "./real-estate-demo-catalog";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -17,14 +18,24 @@ import {
   type RealEstateDemoAction,
 } from "@/lib/real-estate-public-demo";
 
-const modules = ["overview", "properties", "proposals", "contracts", "settlements"] as const;
+const modules = [
+  "overview",
+  "catalog",
+  "properties",
+  "proposals",
+  "contracts",
+  "settlements",
+] as const;
 type Module = (typeof modules)[number];
 const card = "space-y-3 rounded-2xl border bg-card p-4 sm:p-5";
 
-export function RealEstatePublicDemo() {
+export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: string }) {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState(buildRealEstateDemo);
-  const [active, setActive] = useState<Module>("overview");
+  const [active, setActive] = useState<Module>(
+    catalogSelection !== undefined ? "catalog" : "overview",
+  );
+  const [catalogReset, setCatalogReset] = useState(0);
   const [query, setQuery] = useState("");
   const locale = LOCALE_BY_LANGUAGE[resolveLanguage(i18n.resolvedLanguage)];
   const money = (amount: number) =>
@@ -99,6 +110,7 @@ export function RealEstatePublicDemo() {
             className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
             onClick={() => {
               setData(buildRealEstateDemo());
+              setCatalogReset((n) => n + 1);
               go("overview");
               toast.success(label("resetDone"));
             }}
@@ -124,7 +136,7 @@ export function RealEstatePublicDemo() {
       </nav>
       <main className="space-y-4">
         <h2 className="text-xl font-semibold">{label(`modules.${active}`)}</h2>
-        {active !== "overview" && (
+        {active !== "overview" && active !== "catalog" && (
           <input
             value={query}
             maxLength={120}
@@ -134,6 +146,12 @@ export function RealEstatePublicDemo() {
             placeholder={label("search")}
           />
         )}
+        <div hidden={active !== "catalog"}>
+          <RealEstateDemoCatalog
+            key={`${catalogSelection}-${catalogReset}`}
+            selection={catalogSelection}
+          />
+        </div>
         {active === "overview" && (
           <>
             <div className="grid gap-3 sm:grid-cols-3">
@@ -159,6 +177,14 @@ export function RealEstatePublicDemo() {
             </div>
             {financial}
             <p className="text-xs text-muted-foreground">{label("financialNote")}</p>
+            <section className={card}>
+              <h3 className="font-semibold">{label("catalog.module")}</h3>
+              <p className="text-sm text-muted-foreground">{label("catalog.intro")}</p>
+              <Button variant="outline" onClick={() => go("catalog")}>
+                {label("catalog.preview")}
+                <ArrowRight className="size-4" aria-hidden />
+              </Button>
+            </section>
             <section className={card}>
               <h3 className="font-semibold">{label("journeyTitle")}</h3>
               <ol className="grid gap-3 sm:grid-cols-3">
