@@ -2,6 +2,20 @@
 export const pt = {
   realEstateDemo: {
     attendance: {
+      returns: "Próximos retornos",
+      allReturns: "Todos os retornos",
+      return_overdue: "Retorno vencido",
+      return_today: "Retorno hoje",
+      return_future: "Retorno futuro",
+      return_none: "Sem retorno definido",
+      history: "Histórico do cliente / contato",
+      requestHistory: "Pedido recebido e imóvel de interesse",
+      proposal: "Proposta",
+      returnTime: "Próximo retorno (opcional)",
+      saveReturn: "Salvar / limpar retorno",
+      conversation: "Resultado da conversa fictícia",
+      logContact: "Registrar conversa",
+      contactNote: "Somente simulação. Horário vazio remove o próximo retorno; nenhuma mensagem é enviada.",
       "module": "Atendimento e visitas",
       "intro": "Simule o caminho do pedido recebido até a visita. Use a Vitrine para enviar outro pedido fictício. Nada é enviado ou salvo no sistema real.",
       "queue": "Fila de atendimento",

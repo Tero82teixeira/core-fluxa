@@ -5,6 +5,8 @@ export const INQUIRY_STATUSES = {
   encerrado: "Encerrado",
 } as const;
 export type Inquiry = {
+  next_contact_at: string | null;
+  last_contact_at: string | null;
   id: string;
   property_id: string;
   property_code: string;

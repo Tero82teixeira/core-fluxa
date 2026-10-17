@@ -3,6 +3,20 @@ import type { LocaleShape } from "./pt";
 export const es: LocaleShape = {
   realEstateDemo: {
     attendance: {
+      returns: "Próximos contactos",
+      allReturns: "Todos los contactos",
+      return_overdue: "Contacto vencido",
+      return_today: "Contacto hoy",
+      return_future: "Contacto futuro",
+      return_none: "Sin contacto programado",
+      history: "Historial del cliente / contacto",
+      requestHistory: "Solicitud recibida e inmueble de interés",
+      proposal: "Propuesta",
+      returnTime: "Próximo contacto (opcional)",
+      saveReturn: "Guardar / borrar contacto",
+      conversation: "Resultado de la conversación ficticia",
+      logContact: "Registrar conversación",
+      contactNote: "Solo simulación. La hora vacía elimina el próximo contacto; no se envían mensajes.",
       "module": "Atención y visitas",
       "intro": "Simula el recorrido desde la solicitud recibida hasta la visita. Usa el Catálogo para enviar otra solicitud ficticia. No se envía ni guarda nada en el sistema real.",
       "queue": "Cola de atención",

@@ -1,3 +1,5 @@
+import { InquiryFollowupDialog } from "./inquiry-followup-dialog";
+import { FOLLOWUP_FILTERS, followupState } from "@/lib/real-estate-followups";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,11 +42,16 @@ export function PropertyInquiryManager({
   const writable = canWriteProperties(role);
   const [filters, setFilters] = useState({
     kind: "queue",
-    status: "novo",
+    followup: "",
+    status: "",
     mine: false,
     search: "",
     page: 1,
   });
+  const [followup, setFollowup] = useState<{
+    request: Inquiry;
+    mode: "set" | "contact" | "history";
+  } | null>(null);
   const query = useInquiries(organizationId, filters);
   const save = useManageInquiry(organizationId);
   const options = usePropertyOptions(organizationId, true);
@@ -86,6 +93,15 @@ export function PropertyInquiryManager({
     });
     setEdit({ action, request, visit });
   }
+  if (followup)
+    return (
+      <InquiryFollowupDialog
+        key={`${followup.request.id}-${followup.mode}`}
+        request={followup.request}
+        mode={followup.mode}
+        onClose={() => setFollowup(null)}
+      />
+    );
   return (
     <>
       <Dialog
@@ -105,7 +121,7 @@ export function PropertyInquiryManager({
           <div className="flex flex-wrap gap-2">
             <Button
               variant={filters.kind === "queue" ? "default" : "outline"}
-              onClick={() => setFilters({ ...filters, kind: "queue", status: "novo", page: 1 })}
+              onClick={() => setFilters({ ...filters, kind: "queue", status: "", page: 1 })}
             >
               Fila de atendimento
             </Button>
@@ -157,6 +173,25 @@ export function PropertyInquiryManager({
               Somente meus atendimentos
             </Label>
           </div>
+          {filters.kind === "queue" && (
+            <Label className="block space-y-2">
+              Próximos retornos
+              <select
+                className={field}
+                value={filters.followup}
+                onChange={(e) =>
+                  setFilters({ ...filters, followup: e.target.value, status: "", page: 1 })
+                }
+              >
+                <option value="">Todos os retornos</option>
+                {Object.entries(FOLLOWUP_FILTERS).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Label>
+          )}
           {query.isPending ? (
             <p>Carregando…</p>
           ) : query.isError ? (
@@ -216,12 +251,58 @@ export function PropertyInquiryManager({
                             Nota interna: {q.internal_note}
                           </p>
                         )}
+                        {q.status !== "encerrado" && (
+                          <p
+                            className={`text-sm ${followupState(q.next_contact_at) === "overdue" ? "font-semibold text-destructive" : "text-muted-foreground"}`}
+                          >
+                            {q.next_contact_at
+                              ? `${FOLLOWUP_FILTERS[followupState(q.next_contact_at) as keyof typeof FOLLOWUP_FILTERS]}: ${when(q.next_contact_at)}`
+                              : "Sem próximo retorno definido"}
+                          </p>
+                        )}
+                        {q.last_contact_at && (
+                          <p className="text-sm text-muted-foreground">
+                            Última conversa registrada: {when(q.last_contact_at)}
+                          </p>
+                        )}
                         {q.client_name && (
                           <p className="text-sm">Cliente vinculado: {q.client_name}</p>
                         )}
                         <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setFollowup({ request: q, mode: "history" })}
+                          >
+                            Histórico do cliente
+                          </Button>
+                          <Button asChild size="sm" variant="outline">
+                            <a
+                              href={`https://wa.me/${q.phone}?text=${encodeURIComponent(`Olá! Recebemos seu interesse no imóvel ${q.property_code}. Podemos conversar?`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Abrir WhatsApp
+                            </a>
+                          </Button>
                           {writable && (
                             <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setFollowup({ request: q, mode: "contact" })}
+                              >
+                                Registrar conversa
+                              </Button>
+                              {q.status !== "encerrado" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setFollowup({ request: q, mode: "set" })}
+                                >
+                                  Próximo retorno
+                                </Button>
+                              )}
                               <Button size="sm" variant="outline" onClick={() => open("update", q)}>
                                 Atender / atribuir
                               </Button>

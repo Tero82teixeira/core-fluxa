@@ -3,6 +3,20 @@ import type { LocaleShape } from "./pt";
 export const en: LocaleShape = {
   realEstateDemo: {
     attendance: {
+      returns: "Next follow-ups",
+      allReturns: "All follow-ups",
+      return_overdue: "Overdue follow-up",
+      return_today: "Follow-up today",
+      return_future: "Future follow-up",
+      return_none: "No follow-up set",
+      history: "Client / contact history",
+      requestHistory: "Inquiry received and property of interest",
+      proposal: "Offer",
+      returnTime: "Next follow-up (optional)",
+      saveReturn: "Save / clear follow-up",
+      conversation: "Fictional conversation outcome",
+      logContact: "Log conversation",
+      contactNote: "Simulation only. An empty time clears the next follow-up; no messages are sent.",
       "module": "Inquiries and viewings",
       "intro": "Simulate the journey from an incoming inquiry to a viewing. Use Listings to send another fictional inquiry. Nothing is sent to or saved in the live system.",
       "queue": "Inquiry queue",

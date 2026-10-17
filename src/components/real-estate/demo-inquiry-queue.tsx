@@ -1,19 +1,31 @@
+import type { DemoProposal } from "@/lib/real-estate-public-demo";
+import { followupState } from "@/lib/real-estate-followups";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { actDemoInquiry, type DemoInquiry } from "@/lib/real-estate-demo-inquiries";
+import {
+  actDemoInquiry,
+  planDemoReturn,
+  logDemoContact,
+  type DemoInquiry,
+} from "@/lib/real-estate-demo-inquiries";
 export function DemoInquiryQueue({
   rows,
   onChange,
+  proposals = [],
 }: {
   rows: DemoInquiry[];
+  proposals?: DemoProposal[];
   onChange: (rows: DemoInquiry[]) => void;
 }) {
   const { t, i18n } = useTranslation();
   const l = (key: string) => t(`realEstateDemo.attendance.${key}`);
+  const [returnFilter, setReturnFilter] = useState("");
+  const [returns, setReturns] = useState<Record<string, string>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [tab, setTab] = useState("queue");
   const [times, setTimes] = useState<Record<string, string>>({});
   const [outcomes, setOutcomes] = useState<Record<string, string>>({});
@@ -25,7 +37,24 @@ export function DemoInquiryQueue({
       toast.error(l(e instanceof Error && e.message === "DEMO_OVERLAP" ? "overlap" : "invalid"));
     }
   };
-  const visible = rows.filter((r) => tab === "queue" || r.startsAt);
+  const demoNow = new Date("2026-10-16T12:00:00Z");
+  const saveContact = (id: string, contact: boolean) => {
+    try {
+      onChange(
+        contact
+          ? logDemoContact(rows, id, notes[id] || "", returns[id] || "")
+          : planDemoReturn(rows, id, returns[id] || ""),
+      );
+      toast.success(t("demo.table.tempChange"));
+    } catch {
+      toast.error(l("invalid"));
+    }
+  };
+  const visible = rows.filter(
+    (r) =>
+      (tab === "queue" || r.startsAt) &&
+      (!returnFilter || followupState(r.nextContactAt, demoNow) === returnFilter),
+  );
   return (
     <section className="space-y-4">
       <p className="text-sm text-muted-foreground">{l("intro")}</p>
@@ -37,6 +66,21 @@ export function DemoInquiryQueue({
           {l("agenda")}
         </Button>
       </div>
+      <Label className="block space-y-2">
+        {l("returns")}
+        <select
+          className="min-h-11 w-full rounded-md border bg-background px-3"
+          value={returnFilter}
+          onChange={(e) => setReturnFilter(e.target.value)}
+        >
+          <option value="">{l("allReturns")}</option>
+          {["overdue", "today", "future", "none"].map((key) => (
+            <option key={key} value={key}>
+              {l(`return_${key}`)}
+            </option>
+          ))}
+        </select>
+      </Label>
       {visible.map((r) => (
         <article key={r.id} className="space-y-3 rounded-xl border bg-card p-4">
           <h3 className="font-semibold">
@@ -56,6 +100,70 @@ export function DemoInquiryQueue({
             </p>
           )}
           {r.outcome && <p className="text-sm">{r.outcome}</p>}
+          <p
+            className={`text-sm ${followupState(r.nextContactAt, demoNow) === "overdue" ? "font-semibold text-destructive" : "text-muted-foreground"}`}
+          >
+            {l(`return_${followupState(r.nextContactAt, demoNow)}`)}
+            {r.nextContactAt &&
+              ` · ${new Date(r.nextContactAt).toLocaleString(i18n.resolvedLanguage)}`}
+          </p>
+          <details className="rounded-lg border p-3">
+            <summary className="cursor-pointer font-medium">{l("history")}</summary>
+            <div className="mt-3 space-y-2 text-sm">
+              <p>
+                {l("requestHistory")} · {r.listingId}
+              </p>
+              {r.startsAt && (
+                <p>
+                  {l("agenda")}: {new Date(r.startsAt).toLocaleString(i18n.resolvedLanguage)} ·{" "}
+                  {l(r.stage)}
+                </p>
+              )}
+              {r.clientKey === "marina" &&
+                proposals
+                  .filter((p) => p.id === "PROP-DEMO-001")
+                  .map((p) => (
+                    <p key={p.id}>
+                      {l("proposal")}: {p.id} · {p.property} ·{" "}
+                      {t(`realEstateDemo.status.${p.status}`)}
+                    </p>
+                  ))}
+              {r.contacts?.map((contact, index) => (
+                <p className="whitespace-pre-wrap break-words" key={index}>
+                  {new Date(contact.at).toLocaleString(i18n.resolvedLanguage)} · {contact.note}
+                </p>
+              ))}
+            </div>
+          </details>
+          <div className="space-y-3 rounded-lg bg-muted/40 p-3">
+            <Label className="block space-y-2">
+              {l("returnTime")}
+              <Input
+                type="datetime-local"
+                value={returns[r.id] || ""}
+                onChange={(e) => setReturns({ ...returns, [r.id]: e.target.value })}
+              />
+            </Label>
+            <Button size="sm" variant="outline" onClick={() => saveContact(r.id, false)}>
+              {l("saveReturn")}
+            </Button>
+            <Label className="block space-y-2">
+              {l("conversation")}
+              <Input
+                maxLength={2000}
+                value={notes[r.id] || ""}
+                onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })}
+              />
+            </Label>
+            <Button
+              size="sm"
+              disabled={!notes[r.id]?.trim()}
+              onClick={() => saveContact(r.id, true)}
+            >
+              {l("logContact")}
+            </Button>
+            <p className="text-xs text-muted-foreground">{l("contactNote")}</p>
+          </div>
           <div className="flex flex-wrap gap-2">
             {!r.assigned && (
               <Button size="sm" onClick={() => act(r.id, "assign")}>

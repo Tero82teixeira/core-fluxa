@@ -171,6 +171,7 @@ export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: 
           <RealEstateDemoCatalog
             key={`${catalogSelection}-${catalogReset}`}
             selection={catalogSelection}
+            proposals={data.proposals}
             mode={active === "attendance" ? "attendance" : "catalog"}
           />
         </div>
