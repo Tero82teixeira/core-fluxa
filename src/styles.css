@@ -301,3 +301,21 @@
   .panel, [data-slot="card"] { box-shadow: none !important; break-inside: avoid; }
   .table-card { break-before: page; }
 }
+
+/* Public demos: readable controls and text at phone widths, without changing the workspace. */
+@media (max-width: 47.999rem) {
+  .demo-surface { overflow-wrap: anywhere; }
+  :is(.demo-surface, .demo-mobile-dialog) .text-xs { font-size: 0.875rem; line-height: 1.55; }
+  :is(.demo-surface, .demo-mobile-dialog) .text-sm { font-size: 1rem; line-height: 1.55; }
+  :is(.demo-surface, .demo-mobile-dialog) :is(button, [role="button"]) {
+    min-height: 2.75rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  :is(.demo-surface, .demo-mobile-dialog) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+  .demo-surface .demo-hero-actions > * { width: 100%; min-height: 3rem; }
+  .demo-surface article { min-width: 0; }
+}
