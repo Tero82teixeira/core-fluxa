@@ -86,7 +86,7 @@ export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: 
   );
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+    <div className="mx-auto w-full min-w-0 max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
       <header className="rounded-3xl bg-slate-950 p-5 text-white sm:p-8">
         <Link to="/demo" className="text-sm text-slate-300 hover:text-white">
           ← {t("demo.changeArea")}
@@ -99,7 +99,7 @@ export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: 
         <p className="mt-2 text-xs text-amber-200">
           {t("realEstateDemo.scenario", { date: date(REAL_ESTATE_DEMO_DATE) })}
         </p>
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className="demo-hero-actions mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button asChild className="bg-amber-300 text-slate-950 hover:bg-amber-200">
             <Link to="/entrar" search={{ mode: "signup" }}>
               {label("trial")}
@@ -122,7 +122,27 @@ export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: 
         </div>
         <p className="mt-3 text-xs text-slate-300">{label("trialNote")}</p>
       </header>
-      <nav aria-label={t("demo.nav.operation")} className="my-5 flex gap-2 overflow-x-auto pb-2">
+      <div className="sticky top-0 z-30 my-5 rounded-xl border bg-background p-3 shadow-sm md:hidden">
+        <label htmlFor="real-estate-demo-section" className="mb-2 block text-sm font-medium">
+          {t("demo.nav.operation")}
+        </label>
+        <select
+          id="real-estate-demo-section"
+          value={active}
+          onChange={(event) => go(event.target.value as Module)}
+          className="min-h-12 w-full min-w-0 rounded-lg border bg-background px-3 text-base font-medium"
+        >
+          {modules.map((module) => (
+            <option key={module} value={module}>
+              {label(`modules.${module}`)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <nav
+        aria-label={t("demo.nav.operation")}
+        className="my-5 hidden gap-2 overflow-x-auto pb-2 md:flex"
+      >
         {modules.map((module) => (
           <Button
             key={module}

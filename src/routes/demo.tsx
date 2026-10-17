@@ -41,7 +41,7 @@ function useFormat() {
 function PublicDemo() {
   const { area, catalogo } = Route.useSearch();
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div className="demo-surface min-h-dvh min-w-0 bg-background text-foreground">
       <DemoBanner />
       {area === "real_estate" ? <RealEstatePublicDemo key={catalogo ?? "all"} catalogSelection={catalogo} /> : area ? <DemoWorkspace key={area} area={area} /> : <AreaChooser />}
     </div>
@@ -51,14 +51,14 @@ function PublicDemo() {
 function DemoBanner() {
   const { t } = useTranslation();
   return (
-    <div role="status" className="sticky top-0 z-40 border-b border-amber-500/30 bg-amber-50 text-amber-950 dark:bg-amber-950/60 dark:text-amber-100">
+    <div role="status" className="md:sticky md:top-0 z-40 border-b border-amber-500/30 bg-amber-50 text-amber-950 dark:bg-amber-950/60 dark:text-amber-100">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-xs sm:px-6">
         <FlaskConical className="size-4 shrink-0" aria-hidden />
         <strong className="font-semibold">{t("demo.banner")}</strong>
         <span className="hidden opacity-80 md:inline">{t("demo.bannerDetail")}</span>
         <div className="ml-auto flex items-center gap-2">
-          <LanguageSwitcher className="h-8" />
-          <Button asChild size="sm" className="h-8">
+          <LanguageSwitcher className="h-11 sm:h-8" />
+          <Button asChild size="sm" className="min-h-11 sm:min-h-8 sm:h-8">
             <Link to="/entrar" search={{ mode: "signup" }}>
               <span className="hidden sm:inline">{t("demo.createAccount")}</span>
               <span className="sm:hidden">{t("demo.createShort")}</span>

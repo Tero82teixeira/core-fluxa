@@ -309,7 +309,7 @@ export function RealEstateDemoCatalog({
           if (!open) setDetail(null);
         }}
       >
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="demo-mobile-dialog max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{current ? title(current) : l("details")}</DialogTitle>
             <DialogDescription>{l("note")}</DialogDescription>
@@ -369,7 +369,7 @@ export function RealEstateDemoCatalog({
           if (!open && !uploading) setEditing(null);
         }}
       >
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+        <DialogContent className="demo-mobile-dialog max-h-[90dvh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{l("edit")}</DialogTitle>
             <DialogDescription>{t("demo.table.tempChange")}</DialogDescription>
@@ -493,7 +493,7 @@ export function RealEstateDemoCatalog({
           if (!open) setContact("");
         }}
       >
-        <DialogContent>
+        <DialogContent className="demo-mobile-dialog">
           <DialogHeader>
             <DialogTitle>{l("contactTitle")}</DialogTitle>
             <DialogDescription>{t("realEstateDemo.attendance.requestNote")}</DialogDescription>
