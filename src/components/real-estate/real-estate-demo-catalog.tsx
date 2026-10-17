@@ -1,8 +1,14 @@
+import { ManualAttendanceForm } from "./manual-attendance-form";
 import { DemoPreferencesDialog } from "./demo-preferences-dialog";
 import type { PropertyPreferences } from "@/lib/real-estate-preferences";
 import type { DemoProposal } from "@/lib/real-estate-public-demo";
 import { DemoInquiryQueue } from "./demo-inquiry-queue";
-import { addDemoInquiry, buildDemoInquiries } from "@/lib/real-estate-demo-inquiries";
+import {
+  addDemoInquiry,
+  buildDemoInquiries,
+  addManualDemoInquiry,
+  attachDemoInquiry,
+} from "@/lib/real-estate-demo-inquiries";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -41,6 +47,7 @@ export function RealEstateDemoCatalog({
   const { t, i18n } = useTranslation();
   const l = (key: string, values: Record<string, unknown> = {}) =>
     t(`realEstateDemo.catalog.${key}`, values);
+  const [creatingManual, setCreatingManual] = useState(false);
   const [preferenceRequest, setPreferenceRequest] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<Record<string, PropertyPreferences>>({});
   const [requests, setRequests] = useState(buildDemoInquiries);
@@ -131,13 +138,53 @@ export function RealEstateDemoCatalog({
           onChange={setRequests}
           proposals={proposals}
           onPreferences={setPreferenceRequest}
+          onCreate={() => setCreatingManual(true)}
+          properties={items.map((p) => ({ id: p.id, purpose: p.purpose, title: title(p) }))}
+          onAttach={(id, pid) => {
+            const p = items.find((p) => p.id === pid);
+            if (p) {
+              try {
+                setRequests(attachDemoInquiry(requests, id, p));
+              } catch {
+                toast.error(t("realEstateDemo.manual.duplicate"));
+              }
+            }
+          }}
         />
+        <Dialog open={creatingManual} onOpenChange={setCreatingManual}>
+          <DialogContent className="demo-mobile-dialog max-h-[92dvh] overflow-y-auto sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{t("realEstateDemo.manual.new")}</DialogTitle>
+              <DialogDescription>{t("realEstateDemo.manual.demoNote")}</DialogDescription>
+            </DialogHeader>
+            <ManualAttendanceForm
+              responsibles={[{ id: "demo", name: t("realEstateDemo.manual.demoTeam") }]}
+              initialResponsible="demo"
+              busy={false}
+              now={Date.parse("2026-10-16T12:00:00Z")}
+              onCreate={async (values) => {
+                const result = addManualDemoInquiry(requests, values);
+                setRequests(result.rows);
+                if (!result.duplicate)
+                  setPreferences((p) => ({ ...p, [result.id]: values.preferences }));
+                setCreatingManual(false);
+                toast[result.duplicate ? "info" : "success"](
+                  t(`realEstateDemo.manual.${result.duplicate ? "duplicate" : "created"}`),
+                );
+              }}
+            />
+          </DialogContent>
+        </Dialog>
         {selectedRequest && (
           <DemoPreferencesDialog
             key={selectedRequest.id}
             name={selectedRequest.name}
             initial={preferences[selectedRequest.id] || null}
-            purpose={items.find((p) => p.id === selectedRequest.listingId)?.purpose || "venda"}
+            purpose={
+              selectedRequest.purpose ||
+              items.find((p) => p.id === selectedRequest.listingId)?.purpose ||
+              "venda"
+            }
             items={items}
             title={title}
             onSave={(p) => setPreferences((rows) => ({ ...rows, [selectedRequest.id]: p }))}

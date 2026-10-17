@@ -34,8 +34,8 @@ export function followupError(error: unknown): string | null {
 export type HistoryEvent = {
   kind: "pedido" | "interesse" | "visita" | "proposta" | "contato" | "retorno";
   id: string;
-  property_code: string;
-  property_title: string;
+  property_code: string | null;
+  property_title: string | null;
   happened_at: string;
   status: string;
   note: string | null;

@@ -43,17 +43,21 @@ export function useManageInquiry(org: string | null) {
       values: Record<string, unknown>;
     }) => {
       if (!org) throw new Error("INQUIRY_READ_DENIED");
-      const { data, error } = await supabase.rpc("real_estate_inquiry_manage", {
-        _organization_id: org,
-        _action: action,
-        _request_id: id,
-        _values: values as never,
-      });
+      const { data, error } = await supabase.rpc(
+        action === "update" ? "real_estate_manual_attendance" : "real_estate_inquiry_manage",
+        {
+          _organization_id: org,
+          _action: action,
+          _request_id: id!,
+          _values: values as never,
+        },
+      );
       if (error) throw error;
       return data;
     },
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: ["real-estate-inquiries", org] });
+      await client.invalidateQueries({ queryKey: ["real-estate-contact-history", org] });
       await client.invalidateQueries({ queryKey: ["real-estate-activity", org] });
       await client.invalidateQueries({ queryKey: ["real-estate-overview", org] });
     },

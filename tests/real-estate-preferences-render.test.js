@@ -78,6 +78,23 @@ test("preferências carregam traduções ao abrir diretamente no sistema, sem vi
     assert(form.includes(save));
     assert(selection.includes(matches));
     assert.doesNotMatch(form + selection, /realEstateDemo\.preferences\./);
+    const { ManualAttendanceForm } =
+      await import("../src/components/real-estate/manual-attendance-form.tsx");
+    const manual = renderToStaticMarkup(
+      React.createElement(ManualAttendanceForm, {
+        responsibles: [{ id: "demo", name: "Equipe Exemplo" }],
+        initialResponsible: "demo",
+        busy: false,
+        onCreate: async () => {},
+      }),
+    );
+    assert.equal(
+      (manual.match(/<form/g) || []).length,
+      1,
+      "cadastro e preferências usam um único formulário",
+    );
+    assert.doesNotMatch(manual, /realEstateDemo\.(preferences|manual)\./);
+    assert(manual.includes(i18n.t("realEstateDemo.manual.create")));
   }
   hooks.deregister();
 });

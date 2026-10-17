@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { toast } from "sonner";
@@ -16,7 +16,11 @@ export function PreferencesForm({
   writable,
   busy,
   onSave,
+  children,
+  submitLabel,
 }: {
+  children?: ReactNode;
+  submitLabel?: string;
   initial: PropertyPreferences;
   writable: boolean;
   busy: boolean;
@@ -54,6 +58,7 @@ export function PreferencesForm({
       className="min-w-0 space-y-3"
     >
       <fieldset disabled={!writable || busy} className="grid min-w-0 gap-3 sm:grid-cols-2">
+        {children}
         <Label className="block min-w-0 space-y-2">
           {l("purpose")}
           <select
@@ -118,7 +123,7 @@ export function PreferencesForm({
         </div>
         {writable && (
           <Button type="submit" disabled={busy} className="sm:col-span-2">
-            {l(busy ? "saving" : "save")}
+            {busy ? l("saving") : submitLabel || l("save")}
           </Button>
         )}
       </fieldset>

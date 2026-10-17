@@ -1,0 +1,14 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_function('public','real_estate_manual_attendance',ARRAY['uuid','text','uuid','jsonb'],'cadastro manual tem endpoint');
+SELECT ok(NOT has_function_privilege('anon','public.real_estate_manual_attendance(uuid,text,uuid,jsonb)','EXECUTE'),'visitante não cadastra atendimento manual');
+SELECT ok(has_function_privilege('authenticated','public.real_estate_manual_attendance(uuid,text,uuid,jsonb)','EXECUTE'),'equipe usa endpoint com autorização interna');
+SELECT ok((SELECT NOT prosecdef FROM pg_proc WHERE oid='public.real_estate_manual_attendance(uuid,text,uuid,jsonb)'::regprocedure),'cadastro manual não eleva privilégios');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid='fluxa_inquiry_private.requests'::regclass),'fila mantém RLS');
+SELECT ok(NOT (SELECT attnotnull FROM pg_attribute WHERE attrelid='fluxa_inquiry_private.requests'::regclass AND attname='property_id'),'atendimento pode começar sem imóvel');
+SELECT has_trigger('fluxa_inquiry_private','requests','validate_manual_request','encerramento e identidade são validados em escritas diretas');
+SELECT ok(EXISTS(SELECT 1 FROM pg_index WHERE indexrelid='fluxa_inquiry_private.inquiry_open_general_contact_idx'::regclass AND indisunique AND indpred IS NOT NULL),'deduplicação parcial de contatos sem imóvel');
+SELECT * FROM finish();
+ROLLBACK;

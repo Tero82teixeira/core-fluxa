@@ -6883,6 +6883,10 @@ export type Database = {
       }
     }
     Functions: {
+      real_estate_manual_attendance: {
+        Args: { _organization_id: string; _action: string; _request_id: string; _values?: Json }
+        Returns: Json
+      }
       real_estate_preferences: {
         Args: { _organization_id: string; _action: string; _request_id: string; _values?: Json }
         Returns: Json

@@ -1,6 +1,42 @@
 /** Português (Brasil) — idioma padrão e fonte da verdade das chaves. */
 export const pt = {
   realEstateDemo: {
+    manual: {
+      "new": "Novo atendimento manual",
+      "create": "Criar atendimento e salvar preferências",
+      "name": "Nome do interessado",
+      "phone": "Telefone/WhatsApp com DDD",
+      "origin": "Canal de origem",
+      "whatsapp": "WhatsApp",
+      "telefone": "Telefone",
+      "presencial": "Presencial",
+      "outro": "Outro",
+      "vitrine": "Vitrine pública",
+      "responsible": "Responsável",
+      "unassigned": "Sem responsável",
+      "nextContact": "Próximo retorno (opcional)",
+      "note": "Nota interna (opcional)",
+      "preferences": "Defina abaixo as preferências. O atendimento pode começar sem um imóvel escolhido.",
+      "invalid": "Revise o nome, telefone com DDD e o retorno. O retorno deve ser futuro.",
+      "noProperty": "Sem imóvel definido",
+      "closed": "Atendimento encerrado",
+      "close": "Encerrar atendimento",
+      "reopen": "Reabrir atendimento",
+      "reason": "Motivo do encerramento",
+      "closureNote": "Detalhes do encerramento",
+      "closureInvalid": "Escolha um motivo. Para Outro, informe os detalhes.",
+      "closeNote": "O próximo retorno será removido. Visitas e contratos mantêm suas próprias situações.",
+      "fechou_negocio": "Fechou negócio",
+      "desistiu": "Desistiu",
+      "sem_imovel": "Sem imóvel adequado",
+      "choose": "Selecione",
+      "attach": "Vincular imóvel",
+      "demoNote": "Simulação com dados fictícios, sem gravação no sistema real. Cenário de 16/10/2026.",
+      "demoTeam": "Equipe Exemplo",
+      "duplicate": "Já existe um atendimento aberto deste contato e finalidade, sem imóvel definido.",
+      "created": "Atendimento fictício criado com preferências salvas."
+},
+
     preferences: {
       open: "Preferências e imóveis compatíveis",
       title: "Preferências do interessado",

@@ -1,0 +1,17 @@
+# Atendimento manual, responsável, retorno e encerramento
+
+Aplicar `real-estate-manual-attendance.sql` no banco operacional, após catálogo, fila, retornos e preferências; depois Lovable → Publish → Update. O script é idêntico à migração versionada, reaplicável e preserva registros. Não aplicar no banco auxiliar de Edge Functions.
+
+Em **Imobiliária → Atendimento e visitas → Novo atendimento manual**, preencher contato recebido, canal (WhatsApp, telefone, presencial ou outro), responsável opcional, próximo retorno opcional, nota interna e preferências. O responsável começa com o usuário atual quando ele tem perfil de edição. Nenhum anúncio, imóvel escolhido ou vitrine pública ativa é necessário para cadastrar o contato. Os dados devem ter sido fornecidos para esse atendimento; cadastro manual não representa consentimento obtido pelo formulário público.
+
+O cadastro, as preferências e o retorno são salvos em uma única transação. Falhas desfazem todo o conjunto. O UUID do formulário e o hash do pedido protegem reenvios; a mesma operação não duplica registros. Contato com o mesmo telefone normalizado/finalidade e sem imóvel, ainda aberto, retorna o atendimento existente sem sobrescrever dados. Solicitações específicas de imóveis mantêm a deduplicação por telefone/finalidade/imóvel. Não há união automática de pessoas por nome ou telefone.
+
+A fila exibe a origem e os contatos sem imóvel. Use **Preferências e imóveis compatíveis** para compartilhar anúncios; use **Vincular imóvel** para escolher um imóvel disponível/reservado da mesma empresa e finalidade, mesmo sem anúncio. Depois, o vínculo com cliente existente e o agendamento seguem as regras atuais. Um imóvel vinculado não pode ser trocado por esse fluxo, preservando interesses e visitas relacionados.
+
+Em **Atender / atribuir / encerrar**, ajustar responsável, retorno e situação no mesmo formulário. Encerrar exige motivo: fechou negócio, desistiu, sem imóvel adequado ou outro; outro exige detalhes. O encerramento limpa o próximo retorno e acrescenta uma conversa imutável ao histórico. **Fechou negócio** é a informação operacional da equipe; o registro não cria nem altera proposta, contrato, recebimento, repasse ou visita. Visitas têm situação própria. Reabrir limpa os campos do encerramento atual e preserva seu evento no histórico, sem restaurar o retorno antigo. Uma duplicidade ativa impede reabertura/vínculo e deve ser revisada na fila.
+
+Segurança: mesmas funções de autorização/RLS da imobiliária. Perfis que editam imóveis criam e alteram atendimentos; visualizador consulta. Anônimo e cliente externo não usam o endpoint manual. RPC SECURITY INVOKER, nenhuma nova função privilegiada. Validação em trigger protege origem, identidade, responsável, vínculo e motivo de encerramento também em escrita direta. A função pública de solicitações pela vitrine continua derivando empresa/imóvel do anúncio publicado; não permite escolher origem manual. Nenhuma mensagem é enviada automaticamente.
+
+Demonstração: cadastro com dados fictícios e mesmas preferências, um responsável de exemplo, retorno, vínculo de imóvel, motivo, histórico e reabertura em memória. Cenário fixo de 16/10/2026; recarregar restaura os exemplos. Sem gravação no banco.
+
+Validação: PGlite de transação, reenvio, duplicidade, rollback, papel/empresa, ausência de imóvel, preferências, vínculo, agenda, encerramento/histórico e reabertura; pgTAP de privilégios/RLS/índice/trigger; renderização real do formulário e traduções em três idiomas, além de tipos, lint, testes e build.

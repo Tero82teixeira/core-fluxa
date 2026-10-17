@@ -1,3 +1,11 @@
+import { ManualAttendanceDialog } from "./manual-attendance-dialog";
+import { InquiryPropertyDialog } from "./inquiry-property-dialog";
+import {
+  INQUIRY_ORIGINS,
+  CLOSURE_REASONS,
+  manualAttendanceError,
+  validClosure,
+} from "@/lib/real-estate-manual-attendance";
 import { InquiryPreferencesDialog } from "./inquiry-preferences-dialog";
 import { InquiryFollowupDialog } from "./inquiry-followup-dialog";
 import { FOLLOWUP_FILTERS, followupState } from "@/lib/real-estate-followups";
@@ -49,6 +57,8 @@ export function PropertyInquiryManager({
     search: "",
     page: 1,
   });
+  const [creating, setCreating] = useState(false);
+  const [attachProperty, setAttachProperty] = useState<Inquiry | null>(null);
   const [preferences, setPreferences] = useState<Inquiry | null>(null);
   const [followup, setFollowup] = useState<{
     request: Inquiry;
@@ -70,6 +80,9 @@ export function PropertyInquiryManager({
     starts_at: "",
     ends_at: "",
     outcome: "",
+    next_contact_at: "",
+    closure_reason: "",
+    closure_note: "",
   });
   const change = (key: keyof typeof form, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -79,15 +92,19 @@ export function PropertyInquiryManager({
       toast.success("Registro atualizado.");
       return true;
     } catch (e) {
-      toast.error(inquiryError(e) || activityError(e));
+      toast.error(manualAttendanceError(e) || inquiryError(e) || activityError(e));
       return false;
     }
   };
   function open(action: string, request?: Inquiry, visit?: AgendaVisit) {
     setForm({
-      status: request?.status || visit?.status || "novo",
+      status:
+        request?.status === "encerrado" ? "em_contato" : request?.status || visit?.status || "novo",
       responsible_user_id: request?.responsible_user_id || visit?.responsible_user_id || "",
       internal_note: request?.internal_note || "",
+      next_contact_at: request?.next_contact_at ? toLocalVisitDate(request.next_contact_at) : "",
+      closure_reason: request?.closure_reason || "",
+      closure_note: request?.closure_note || "",
       client_id: "",
       starts_at: visit ? toLocalVisitDate(visit.starts_at) : "",
       ends_at: visit ? toLocalVisitDate(visit.ends_at) : "",
@@ -95,6 +112,27 @@ export function PropertyInquiryManager({
     });
     setEdit({ action, request, visit });
   }
+  if (creating)
+    return (
+      <ManualAttendanceDialog
+        onClose={() => setCreating(false)}
+        onCreated={(name) => {
+          setCreating(false);
+          setFilters({
+            kind: "queue",
+            status: "",
+            followup: "",
+            mine: false,
+            search: name,
+            page: 1,
+          });
+        }}
+      />
+    );
+  if (attachProperty)
+    return (
+      <InquiryPropertyDialog request={attachProperty} onClose={() => setAttachProperty(null)} />
+    );
   if (preferences)
     return (
       <InquiryPreferencesDialog
@@ -124,11 +162,13 @@ export function PropertyInquiryManager({
           <DialogHeader>
             <DialogTitle>Atendimento e visitas</DialogTitle>
             <DialogDescription>
-              Pedidos da vitrine e agenda da empresa. Preferências recebidas não confirmam um
-              horário. Datas exibidas em {Intl.DateTimeFormat().resolvedOptions().timeZone}.
+              Contatos da vitrine, WhatsApp, telefone e atendimento presencial. Preferências
+              recebidas não confirmam um horário. Datas exibidas em{" "}
+              {Intl.DateTimeFormat().resolvedOptions().timeZone}.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-wrap gap-2">
+            {writable && <Button onClick={() => setCreating(true)}>Novo atendimento manual</Button>}
             <Button
               variant={filters.kind === "queue" ? "default" : "outline"}
               onClick={() => setFilters({ ...filters, kind: "queue", status: "", page: 1 })}
@@ -219,12 +259,13 @@ export function PropertyInquiryManager({
                       <article key={q.id} className="space-y-3 rounded-xl border p-4">
                         <div className="flex flex-wrap justify-between gap-2">
                           <h3 className="font-semibold">
-                            {q.name} · {q.property_code}
+                            {q.name} · {q.property_code || "Sem imóvel definido"}
                           </h3>
                           <span className="text-sm">{INQUIRY_STATUSES[q.status]}</span>
                         </div>
                         <p className="text-sm">
-                          {q.property_title} · {q.purpose === "venda" ? "Compra" : "Locação"} ·{" "}
+                          {q.property_title || "Busca de imóvel"} ·{" "}
+                          {q.purpose === "venda" ? "Compra" : "Locação"} ·{" "}
                           {q.kind === "visita" ? "Pedido de visita" : "Informações"}
                         </p>
                         <p className="text-sm">
@@ -239,6 +280,13 @@ export function PropertyInquiryManager({
                           </a>{" "}
                           · Recebido: {when(q.created_at)}
                         </p>
+                        <p className="text-sm">Origem: {INQUIRY_ORIGINS[q.origin || "vitrine"]}</p>
+                        {q.closure_reason && (
+                          <p className="text-sm">
+                            Encerramento: {CLOSURE_REASONS[q.closure_reason]}
+                            {q.closure_note && ` · ${q.closure_note}`}
+                          </p>
+                        )}
                         <p className="text-sm">
                           Responsável: {q.responsible_name || "Sem responsável"}
                         </p>
@@ -291,7 +339,7 @@ export function PropertyInquiryManager({
                           </Button>
                           <Button asChild size="sm" variant="outline">
                             <a
-                              href={`https://wa.me/${q.phone}?text=${encodeURIComponent(`Olá! Recebemos seu interesse no imóvel ${q.property_code}. Podemos conversar?`)}`}
+                              href={`https://wa.me/${q.phone}?text=${encodeURIComponent(`Olá! Recebemos seu interesse ${q.property_code ? `no imóvel ${q.property_code}` : "em encontrar um imóvel"}. Podemos conversar?`)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
@@ -317,9 +365,20 @@ export function PropertyInquiryManager({
                                 </Button>
                               )}
                               <Button size="sm" variant="outline" onClick={() => open("update", q)}>
-                                Atender / atribuir
+                                {q.status === "encerrado"
+                                  ? "Reabrir atendimento"
+                                  : "Atender / atribuir / encerrar"}
                               </Button>
-                              {!q.interest_id && q.status !== "encerrado" && (
+                              {!q.property_id && q.status !== "encerrado" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setAttachProperty(q)}
+                                >
+                                  Vincular imóvel
+                                </Button>
+                              )}
+                              {q.property_id && !q.interest_id && q.status !== "encerrado" && (
                                 <Button size="sm" variant="outline" onClick={() => open("link", q)}>
                                   Vincular cliente
                                 </Button>
@@ -340,7 +399,7 @@ export function PropertyInquiryManager({
                                   ...filters,
                                   kind: "agenda",
                                   status: "",
-                                  search: q.property_code,
+                                  search: q.property_code || "",
                                   page: 1,
                                 })
                               }
@@ -351,7 +410,10 @@ export function PropertyInquiryManager({
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => onLocate(q.property_code)}
+                            disabled={!q.property_code}
+                            onClick={() => {
+                              if (q.property_code) onLocate(q.property_code);
+                            }}
                           >
                             Localizar imóvel / proposta
                           </Button>
@@ -483,6 +545,20 @@ export function PropertyInquiryManager({
                     visit_id: edit.visit?.id,
                     visit_version: edit.visit?.version,
                   };
+                  if (edit.action === "update") {
+                    if (
+                      form.status === "encerrado" &&
+                      !validClosure(form.closure_reason, form.closure_note)
+                    )
+                      throw new Error("Escolha e detalhe o motivo do encerramento.");
+                    values.next_contact_at =
+                      form.status === "encerrado" || !form.next_contact_at
+                        ? null
+                        : edit.request?.next_contact_at &&
+                            form.next_contact_at === toLocalVisitDate(edit.request.next_contact_at)
+                          ? edit.request.next_contact_at
+                          : localVisitDate(form.next_contact_at);
+                  }
                   if (edit.action === "schedule" || edit.action === "visit_result") {
                     values.starts_at = localVisitDate(form.starts_at);
                     values.ends_at = localVisitDate(form.ends_at);
@@ -543,13 +619,61 @@ export function PropertyInquiryManager({
                           value={form.status}
                           onChange={(e) => change("status", e.target.value)}
                         >
-                          {Object.entries(INQUIRY_STATUSES).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
+                          {Object.entries(INQUIRY_STATUSES)
+                            .filter(
+                              ([value]) =>
+                                edit.request?.status !== "encerrado" || value !== "encerrado",
+                            )
+                            .map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
                         </select>
                       </Label>
+                      {form.status === "encerrado" ? (
+                        <>
+                          <Label className="block space-y-2">
+                            Motivo do encerramento
+                            <select
+                              required
+                              className={field}
+                              value={form.closure_reason}
+                              onChange={(e) => change("closure_reason", e.target.value)}
+                            >
+                              <option value="">Selecione</option>
+                              {Object.entries(CLOSURE_REASONS).map(([key, label]) => (
+                                <option key={key} value={key}>
+                                  {label}
+                                </option>
+                              ))}
+                            </select>
+                          </Label>
+                          <Label className="block space-y-2">
+                            Detalhes do encerramento
+                            <textarea
+                              required={form.closure_reason === "outro"}
+                              maxLength={1500}
+                              className="w-full rounded-md border bg-background p-3"
+                              value={form.closure_note}
+                              onChange={(e) => change("closure_note", e.target.value)}
+                            />
+                          </Label>
+                          <p className="text-sm text-muted-foreground">
+                            O próximo retorno será removido. Visitas e contratos mantêm suas
+                            próprias situações.
+                          </p>
+                        </>
+                      ) : (
+                        <Label className="block space-y-2">
+                          Próximo retorno
+                          <Input
+                            type="datetime-local"
+                            value={form.next_contact_at}
+                            onChange={(e) => change("next_contact_at", e.target.value)}
+                          />
+                        </Label>
+                      )}
                       <Label className="block space-y-2">
                         Nota interna
                         <textarea
