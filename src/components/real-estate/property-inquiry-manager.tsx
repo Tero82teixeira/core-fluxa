@@ -1,3 +1,4 @@
+import { InquiryPreferencesDialog } from "./inquiry-preferences-dialog";
 import { InquiryFollowupDialog } from "./inquiry-followup-dialog";
 import { FOLLOWUP_FILTERS, followupState } from "@/lib/real-estate-followups";
 import { useState } from "react";
@@ -48,6 +49,7 @@ export function PropertyInquiryManager({
     search: "",
     page: 1,
   });
+  const [preferences, setPreferences] = useState<Inquiry | null>(null);
   const [followup, setFollowup] = useState<{
     request: Inquiry;
     mode: "set" | "contact" | "history";
@@ -93,6 +95,14 @@ export function PropertyInquiryManager({
     });
     setEdit({ action, request, visit });
   }
+  if (preferences)
+    return (
+      <InquiryPreferencesDialog
+        key={preferences.id}
+        request={preferences}
+        onClose={() => setPreferences(null)}
+      />
+    );
   if (followup)
     return (
       <InquiryFollowupDialog
@@ -269,6 +279,9 @@ export function PropertyInquiryManager({
                           <p className="text-sm">Cliente vinculado: {q.client_name}</p>
                         )}
                         <div className="flex flex-wrap gap-2">
+                          <Button size="sm" variant="outline" onClick={() => setPreferences(q)}>
+                            Preferências e imóveis compatíveis
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"

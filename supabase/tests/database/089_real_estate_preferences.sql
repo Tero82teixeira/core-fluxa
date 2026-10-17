@@ -1,0 +1,12 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_function('public','real_estate_preferences',ARRAY['uuid','text','uuid','jsonb'],'preferências têm endpoint');
+SELECT ok(NOT has_function_privilege('anon','public.real_estate_preferences(uuid,text,uuid,jsonb)','EXECUTE'),'anon não acessa preferências');
+SELECT ok(has_function_privilege('authenticated','public.real_estate_preferences(uuid,text,uuid,jsonb)','EXECUTE'),'equipe usa endpoint com autorização interna');
+SELECT ok(NOT has_table_privilege('anon','fluxa_inquiry_private.preferences','SELECT'),'preferências não são públicas');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid='fluxa_inquiry_private.preferences'::regclass),'RLS nas preferências');
+SELECT ok((SELECT NOT prosecdef FROM pg_proc WHERE oid='public.real_estate_preferences(uuid,text,uuid,jsonb)'::regprocedure),'preferências não elevam privilégios');
+SELECT * FROM finish();
+ROLLBACK;

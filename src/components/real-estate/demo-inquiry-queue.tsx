@@ -16,8 +16,10 @@ export function DemoInquiryQueue({
   rows,
   onChange,
   proposals = [],
+  onPreferences,
 }: {
   rows: DemoInquiry[];
+  onPreferences: (id: string) => void;
   proposals?: DemoProposal[];
   onChange: (rows: DemoInquiry[]) => void;
 }) {
@@ -107,6 +109,9 @@ export function DemoInquiryQueue({
             {r.nextContactAt &&
               ` · ${new Date(r.nextContactAt).toLocaleString(i18n.resolvedLanguage)}`}
           </p>
+          <Button variant="outline" onClick={() => onPreferences(r.id)}>
+            {t("realEstateDemo.preferences.open")}
+          </Button>
           <details className="rounded-lg border p-3">
             <summary className="cursor-pointer font-medium">{l("history")}</summary>
             <div className="mt-3 space-y-2 text-sm">
