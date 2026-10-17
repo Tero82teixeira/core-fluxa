@@ -21,6 +21,7 @@ import {
 const modules = [
   "overview",
   "catalog",
+  "attendance",
   "properties",
   "proposals",
   "contracts",
@@ -146,10 +147,11 @@ export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: 
             placeholder={label("search")}
           />
         )}
-        <div hidden={active !== "catalog"}>
+        <div hidden={active !== "catalog" && active !== "attendance"}>
           <RealEstateDemoCatalog
             key={`${catalogSelection}-${catalogReset}`}
             selection={catalogSelection}
+            mode={active === "attendance" ? "attendance" : "catalog"}
           />
         </div>
         {active === "overview" && (

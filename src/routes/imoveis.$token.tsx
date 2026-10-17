@@ -1,3 +1,4 @@
+import { PublicInquiryForm } from "@/components/real-estate/public-inquiry-form";
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -56,6 +57,10 @@ function PublicCatalogPage() {
     page: 1,
   });
   const [form, setForm] = useState({ purpose: "", type: "", price: "", search: "" });
+  const [inquiry, setInquiry] = useState<{
+    listing: CatalogListing;
+    kind: "informacao" | "visita";
+  } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const query = usePublicCatalog(token, isCatalogId(token) ? ids : null, filters);
   const selected = query.data?.items.find((item) => item.id === selectedId) || null;
@@ -267,6 +272,9 @@ function PublicCatalogPage() {
                       <Button variant="outline" onClick={() => setSelectedId(item.id)}>
                         Ver fotos e detalhes
                       </Button>
+                      <Button onClick={() => setInquiry({ listing: item, kind: "informacao" })}>
+                        Pedir informações
+                      </Button>
                       <Button asChild>
                         <a href={contact(item)} target="_blank" rel="noopener noreferrer">
                           <MessageCircle className="size-4" aria-hidden />
@@ -300,8 +308,8 @@ function PublicCatalogPage() {
           )}
           <p className="text-xs text-muted-foreground">
             Informações fornecidas pela imobiliária. Confirme valores e disponibilidade com a equipe
-            antes de contratar. Os botões abrem uma conversa no WhatsApp e não confirmam uma reserva
-            ou visita automaticamente.
+            antes de contratar. Solicitações e conversas no WhatsApp não confirmam uma reserva ou
+            visita automaticamente.
           </p>
         </>
       )}
@@ -336,6 +344,15 @@ function PublicCatalogPage() {
                 </div>
               )}
               <div className="flex flex-wrap gap-3">
+                <Button onClick={() => setInquiry({ listing: selected, kind: "informacao" })}>
+                  Enviar pedido de informações
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setInquiry({ listing: selected, kind: "visita" })}
+                >
+                  Solicitar visita
+                </Button>
                 <Button asChild>
                   <a href={contact(selected)} target="_blank" rel="noopener noreferrer">
                     Quero mais informações
@@ -351,6 +368,15 @@ function PublicCatalogPage() {
           )}
         </DialogContent>
       </Dialog>
+      {inquiry && (
+        <PublicInquiryForm
+          key={`${inquiry.listing.id}-${inquiry.kind}`}
+          token={token}
+          listing={inquiry.listing}
+          kind={inquiry.kind}
+          onClose={() => setInquiry(null)}
+        />
+      )}
       <footer className="border-t pt-5 text-xs text-muted-foreground">
         Vitrine apresentada com FLUXA
       </footer>

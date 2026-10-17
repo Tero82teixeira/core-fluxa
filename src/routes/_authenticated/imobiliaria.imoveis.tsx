@@ -1,3 +1,4 @@
+import { PropertyInquiryManager } from "@/components/real-estate/property-inquiry-manager";
 import { PropertyOverview } from "@/components/real-estate/property-overview";
 import { PropertyCatalogManager } from "@/components/real-estate/property-catalog-manager";
 import { PropertyFinancialSummary } from "@/components/real-estate/property-financial-summary";
@@ -119,6 +120,7 @@ function PropertyWorkspace() {
   const [contracts, setContracts] = useState<PropertyRow | "all" | null>(null);
   const [settlements, setSettlements] = useState<PropertyRow | "all" | null>(null);
   const [catalog, setCatalog] = useState<PropertyRow | "all" | null>(null);
+  const [inquiries, setInquiries] = useState(false);
   const [activity, setActivity] = useState<PropertyRow | null>(null);
   const [selected, setSelected] = useState<PropertyRow | null>(null);
   const [overviewSelection, setOverviewSelection] = useState<OverviewItem | null>(null);
@@ -180,6 +182,12 @@ function PropertyWorkspace() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button
+              className="bg-white text-slate-950 hover:bg-slate-100"
+              onClick={() => setInquiries(true)}
+            >
+              Atendimento e visitas
+            </Button>
             <Button
               className="bg-white text-slate-950 hover:bg-slate-100"
               onClick={() => setCatalog("all")}
@@ -428,6 +436,15 @@ function PropertyWorkspace() {
           property={overviewSelection.property}
           initialSelection={overviewSelection.data}
           onClose={() => setOverviewSelection(null)}
+        />
+      )}
+      {inquiries && (
+        <PropertyInquiryManager
+          onClose={() => setInquiries(false)}
+          onLocate={(code) => {
+            setSearch(code);
+            setInquiries(false);
+          }}
         />
       )}
       {catalog && (
