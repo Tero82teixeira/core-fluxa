@@ -1,0 +1,14 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_function('public','real_estate_submit_inquiry',ARRAY['uuid','uuid','uuid','jsonb'],'formulário de atendimento existe');
+SELECT has_function('public','real_estate_inquiry_manage',ARRAY['uuid','text','uuid','jsonb'],'gerenciamento existe');
+SELECT ok(has_function_privilege('anon','public.real_estate_submit_inquiry(uuid,uuid,uuid,jsonb)','EXECUTE'),'anon pode enviar pedido');
+SELECT ok(NOT has_function_privilege('anon','public.real_estate_inquiry_manage(uuid,text,uuid,jsonb)','EXECUTE'),'anon não lê atendimentos');
+SELECT ok(NOT has_table_privilege('anon','fluxa_inquiry_private.requests','SELECT'),'nomes e telefones não são públicos');
+SELECT ok(NOT has_table_privilege('anon','fluxa_inquiry_private.requests','INSERT'),'escrita anônima só ocorre no endpoint limitado');
+SELECT ok((SELECT bool_and(relrowsecurity) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='fluxa_inquiry_private' AND c.relname IN ('requests','confirmations')),'RLS na fila e confirmações');
+SELECT ok((SELECT NOT prosecdef FROM pg_proc WHERE oid='public.real_estate_submit_inquiry(uuid,uuid,uuid,jsonb)'::regprocedure),'wrapper público invoker');
+SELECT * FROM finish();
+ROLLBACK;

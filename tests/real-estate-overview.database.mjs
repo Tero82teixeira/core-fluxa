@@ -5,6 +5,7 @@ const { PGlite } = require("@electric-sql/pglite");
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { verifyRealEstateNotifications } from "./real-estate-notifications.database.mjs";
+import { verifyRealEstateInquiries } from "./real-estate-inquiries.database.mjs";
 import { verifyRealEstateCatalog } from "./real-estate-catalog.database.mjs";
 const db = new PGlite();
 const id = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
@@ -349,6 +350,7 @@ await verifyRealEstateCatalog(db, {
   prop,
   otherOwner,
 });
+await verifyRealEstateInquiries(db, { org, other, actor, viewer, external, property, id, owner });
 await db.close();
 console.log(
   "Visão geral: busca global, percentuais literais, pendências, decisões, atalhos, contagens, paginação e isolamento por empresa/perfil OK.",

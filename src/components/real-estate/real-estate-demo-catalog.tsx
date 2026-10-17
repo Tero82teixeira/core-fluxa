@@ -1,3 +1,5 @@
+import { DemoInquiryQueue } from "./demo-inquiry-queue";
+import { addDemoInquiry, buildDemoInquiries } from "@/lib/real-estate-demo-inquiries";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -24,10 +26,26 @@ import { LOCALE_BY_LANGUAGE } from "@/i18n";
 import { resolveLanguage } from "@/i18n/language";
 
 const inputClass = "h-10 rounded-md border bg-background px-3 text-sm";
-export function RealEstateDemoCatalog({ selection }: { selection?: string }) {
+export function RealEstateDemoCatalog({
+  selection,
+  mode = "catalog",
+}: {
+  selection?: string;
+  mode?: "catalog" | "attendance";
+}) {
   const { t, i18n } = useTranslation();
   const l = (key: string, values: Record<string, unknown> = {}) =>
     t(`realEstateDemo.catalog.${key}`, values);
+  const [requests, setRequests] = useState(buildDemoInquiries);
+  const [requesting, setRequesting] = useState<{
+    listingId: string;
+    kind: "informacao" | "visita";
+  } | null>(null);
+  const [requestForm, setRequestForm] = useState({
+    name: "Cliente Exemplo",
+    phone: "27999990000",
+    preference: "",
+  });
   const [items, setItems] = useState(buildDemoCatalog);
   const [selected, setSelected] = useState<string[]>(demoCatalogSelection(selection) ?? []);
   const [client, setClient] = useState(selection !== undefined);
@@ -91,11 +109,13 @@ export function RealEstateDemoCatalog({ selection }: { selection?: string }) {
     }
   }
   function request(p: DemoListing, visit: boolean) {
+    setRequesting({ listingId: p.id, kind: visit ? "visita" : "informacao" });
     const url = demoCatalogUrl(window.location.origin, [p.id]);
     setContact(
       `${l(visit ? "requestVisit" : "requestInfo", { title: title(p), id: p.id })}\n${url}`,
     );
   }
+  if (mode === "attendance") return <DemoInquiryQueue rows={requests} onChange={setRequests} />;
   return (
     <section className="space-y-5">
       <div className="rounded-2xl bg-slate-950 p-5 text-white sm:p-7">
@@ -476,12 +496,59 @@ export function RealEstateDemoCatalog({ selection }: { selection?: string }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{l("contactTitle")}</DialogTitle>
-            <DialogDescription>{l("contactNote")}</DialogDescription>
+            <DialogDescription>{t("realEstateDemo.attendance.requestNote")}</DialogDescription>
           </DialogHeader>
           <p className="break-words whitespace-pre-line rounded-xl bg-muted p-4 text-sm">
             {contact}
           </p>
-          <Button onClick={() => setContact("")}>{l("close")}</Button>
+          {requesting && (
+            <form
+              className="space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                try {
+                  setRequests(addDemoInquiry(requests, { ...requesting, ...requestForm }));
+                  setContact("");
+                  toast.success(t("realEstateDemo.attendance.sent"));
+                } catch {
+                  toast.error(t("realEstateDemo.attendance.invalid"));
+                }
+              }}
+            >
+              <Label className="block space-y-2">
+                {t("realEstateDemo.attendance.name")}
+                <Input
+                  required
+                  minLength={2}
+                  maxLength={120}
+                  value={requestForm.name}
+                  onChange={(e) => setRequestForm({ ...requestForm, name: e.target.value })}
+                />
+              </Label>
+              <Label className="block space-y-2">
+                {t("realEstateDemo.attendance.phone")}
+                <Input
+                  required
+                  type="tel"
+                  maxLength={20}
+                  value={requestForm.phone}
+                  onChange={(e) => setRequestForm({ ...requestForm, phone: e.target.value })}
+                />
+              </Label>
+              <Label className="block space-y-2">
+                {t("realEstateDemo.attendance.day")}
+                <Input
+                  type="date"
+                  value={requestForm.preference}
+                  onChange={(e) => setRequestForm({ ...requestForm, preference: e.target.value })}
+                />
+              </Label>
+              <Button type="submit">{t("realEstateDemo.attendance.send")}</Button>
+            </form>
+          )}
+          <Button variant="outline" onClick={() => setContact("")}>
+            {l("close")}
+          </Button>
         </DialogContent>
       </Dialog>
     </section>
