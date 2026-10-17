@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +30,7 @@ export function InquiryPreferencesDialog({
   onClose: () => void;
 }) {
   const { organizationId, role } = useWorkspace();
-  const { t } = useTranslation();
+  const { t } = useTranslation(undefined, { i18n });
   const l = (k: string) => t(`realEstateDemo.preferences.${k}`);
   const query = usePreferences(organizationId, request.id);
   const save = useSavePreferences(organizationId, request.id);

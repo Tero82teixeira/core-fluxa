@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,7 @@ export function PreferencesForm({
   busy: boolean;
   onSave: (p: PropertyPreferences) => Promise<void>;
 }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(undefined, { i18n });
   const l = (k: string) => t(`realEstateDemo.preferences.${k}`);
   const [purpose, setPurpose] = useState(initial.purpose);
   const [kind, setKind] = useState(initial.property_type);
@@ -50,10 +51,10 @@ export function PreferencesForm({
           toast.error(l("invalid"));
         }
       }}
-      className="space-y-3"
+      className="min-w-0 space-y-3"
     >
-      <fieldset disabled={!writable || busy} className="grid gap-3 sm:grid-cols-2">
-        <Label className="space-y-2">
+      <fieldset disabled={!writable || busy} className="grid min-w-0 gap-3 sm:grid-cols-2">
+        <Label className="block min-w-0 space-y-2">
           {l("purpose")}
           <select
             className={field}
@@ -64,7 +65,7 @@ export function PreferencesForm({
             <option value="locacao">{l("rent")}</option>
           </select>
         </Label>
-        <Label className="space-y-2">
+        <Label className="block min-w-0 space-y-2">
           {l("property_type")}
           <select className={field} value={kind} onChange={(e) => setKind(e.target.value)}>
             {["", "casa", "apartamento", "terreno", "comercial", "rural", "outro"].map((k) => (
@@ -74,7 +75,7 @@ export function PreferencesForm({
             ))}
           </select>
         </Label>
-        <Label className="space-y-2 sm:col-span-2">
+        <Label className="block min-w-0 space-y-2 sm:col-span-2">
           {l("districts")}
           <Input
             maxLength={809}
@@ -86,7 +87,7 @@ export function PreferencesForm({
             {l("districtNote")}
           </span>
         </Label>
-        <Label className="space-y-2">
+        <Label className="block min-w-0 space-y-2">
           {l("max_price")}
           <Input
             inputMode="decimal"
@@ -99,9 +100,9 @@ export function PreferencesForm({
             {l(purpose === "locacao" ? "monthly" : "saleBudget")}
           </span>
         </Label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid min-w-0 grid-cols-2 gap-3">
           {(["bedrooms", "parking"] as const).map((key) => (
-            <Label key={key} className="space-y-2">
+            <Label key={key} className="block min-w-0 space-y-2">
               {l(key)}
               <Input
                 type="number"
@@ -155,7 +156,7 @@ export function PreferenceSelection({
   phone?: string;
   demo?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(undefined, { i18n });
   const l = (k: string) => t(`realEstateDemo.preferences.${k}`);
   return (
     <section className="space-y-4 border-t pt-4">
