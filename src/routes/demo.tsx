@@ -12,8 +12,8 @@ import { SEGMENT_OPTIONS, type BusinessSegment } from "@/lib/organization-segmen
 import { buildDemoData, demoModulesFor, isDemoArea, type DemoData, type DemoModule } from "@/lib/public-demo";
 
 export const Route = createFileRoute("/demo")({
-  validateSearch: (search: Record<string, unknown>): { area?: BusinessSegment } =>
-    isDemoArea(search.area) ? { area: search.area } : {},
+  validateSearch: (search: Record<string, unknown>): { area?: BusinessSegment; catalogo?: string } =>
+    isDemoArea(search.area) ? { area: search.area, ...(search.area === "real_estate" && search.catalogo !== undefined ? { catalogo: typeof search.catalogo === "string" && search.catalogo.length <= 200 ? search.catalogo : "invalid" } : {}) } : {},
   head: () => ({
     meta: [
       { title: "Demonstração ao vivo — FLUXA" },
@@ -39,11 +39,11 @@ function useFormat() {
 }
 
 function PublicDemo() {
-  const { area } = Route.useSearch();
+  const { area, catalogo } = Route.useSearch();
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <DemoBanner />
-      {area === "real_estate" ? <RealEstatePublicDemo /> : area ? <DemoWorkspace key={area} area={area} /> : <AreaChooser />}
+      {area === "real_estate" ? <RealEstatePublicDemo key={catalogo ?? "all"} catalogSelection={catalogo} /> : area ? <DemoWorkspace key={area} area={area} /> : <AreaChooser />}
     </div>
   );
 }
