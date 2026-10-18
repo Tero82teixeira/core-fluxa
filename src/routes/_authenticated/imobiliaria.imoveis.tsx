@@ -1,4 +1,5 @@
 import { PropertyCommercialDialog } from "@/components/real-estate/property-commercial-dialog";
+import { VoiceSearch } from "@/components/real-estate/voice-search";
 import type { CommercialFilters } from "@/lib/real-estate-commercial";
 import { PropertyInquiryManager } from "@/components/real-estate/property-inquiry-manager";
 import { PropertyOverview } from "@/components/real-estate/property-overview";
@@ -140,7 +141,12 @@ function PropertyWorkspace() {
   const change = (key: keyof PropertyForm, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
   const filter = (key: keyof PropertyFilters, value: string) =>
-    setFilters((f) => ({ ...f, [key]: value, page: 1 }));
+    setFilters((f) => ({
+      ...f,
+      [key]: value,
+      ...(key === "purpose" && !["venda", "locacao"].includes(value) ? { maxPrice: null } : {}),
+      page: 1,
+    }));
   const edit = (row?: PropertyRow) => {
     setSelected(null);
     setForm(row ? formFor(row) : emptyPropertyForm());
@@ -310,6 +316,61 @@ function PropertyWorkspace() {
                 <option key={city}>{city}</option>
               ))}
             </select>
+          </div>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <VoiceSearch
+              onApply={(criteria) => {
+                setSearch(criteria.search);
+                setFilters({
+                  ...criteria,
+                  maxPrice: criteria.maxPrice,
+                  status: "",
+                  city: "",
+                  page: 1,
+                  voice: true,
+                });
+              }}
+            />
+            {filters.voice && (
+              <>
+                <Label className="flex items-center gap-2">
+                  Valor máximo (R$)
+                  <Input
+                    className="w-36"
+                    aria-label="Valor máximo da busca"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    disabled={!["venda", "locacao"].includes(filters.purpose)}
+                    value={filters.maxPrice ?? ""}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setFilters((f) => ({
+                        ...f,
+                        maxPrice: e.target.value && n > 0 && n < 1e12 ? n : null,
+                        page: 1,
+                      }));
+                    }}
+                  />
+                </Label>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearch("");
+                    setFilters({
+                      search: "",
+                      type: "",
+                      purpose: "",
+                      status: "",
+                      city: "",
+                      page: 1,
+                    });
+                  }}
+                >
+                  Limpar busca por voz
+                </Button>
+              </>
+            )}
           </div>
           {query.isLoading ? (
             <p className="flex items-center gap-2 py-8">

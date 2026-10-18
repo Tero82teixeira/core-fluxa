@@ -1,4 +1,5 @@
 import { verifyRealEstateCommercial } from "./real-estate-commercial.database.mjs";
+import { verifyRealEstateVoiceProfile } from "./real-estate-voice-profile.database.mjs";
 import { verifyRealEstateManualAttendance } from "./real-estate-manual-attendance.database.mjs";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
@@ -359,6 +360,7 @@ await verifyRealEstateFollowups(db, { org, other, actor, viewer, external, id })
 await verifyRealEstatePreferences(db, { org, other, actor, viewer, external, id, property, owner });
 await verifyRealEstateManualAttendance(db, { org, other, actor, viewer, external, id, owner });
 await verifyRealEstateCommercial(db, { org, other, actor, viewer, external, id });
+await verifyRealEstateVoiceProfile(db, { org, other, actor, viewer, external, id, owner });
 await db.close();
 console.log(
   "Visão geral: busca global, percentuais literais, pendências, decisões, atalhos, contagens, paginação e isolamento por empresa/perfil OK.",

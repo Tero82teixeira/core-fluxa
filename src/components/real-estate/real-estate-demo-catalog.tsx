@@ -1,4 +1,7 @@
 import { DemoCommercialPanel } from "./demo-commercial-panel";
+import { VoiceSearch } from "./voice-search";
+import { BusinessProfileCard, BusinessProfileForm } from "./business-profile";
+import { emptyBusinessProfile, type BusinessProfile } from "@/lib/real-estate-profile";
 import { CommercialQueueNotice } from "./commercial-panel";
 import {
   filterCommercialRows,
@@ -90,6 +93,13 @@ export function RealEstateDemoCatalog({
   const [photo, setPhoto] = useState(0);
   const [editing, setEditing] = useState<DemoListing | null>(null);
   const [contact, setContact] = useState("");
+  const [profile, setProfile] = useState<BusinessProfile>(() => ({
+    ...emptyBusinessProfile(),
+    agent_name: t("realEstateDemo.profile.demoAgent"),
+    bio: t("realEstateDemo.profile.demoBio"),
+  }));
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [link, setLink] = useState("");
   const [uploading, setUploading] = useState(false);
   const objectUrls = useRef<string[]>([]);
@@ -255,6 +265,74 @@ export function RealEstateDemoCatalog({
         <p className="mt-3 text-xs text-amber-200">{l("note")}</p>
       </div>
       <p className="text-sm text-muted-foreground">{l("privacy")}</p>
+      <BusinessProfileCard
+        profile={profile}
+        company={t("realEstateDemo.profile.demoCompany")}
+        url=""
+        demo
+        onDemoContact={() => toast.info(t("realEstateDemo.profile.demoOpened"))}
+      />
+      {!client && (
+        <details className="rounded-xl border p-4">
+          <summary className="cursor-pointer font-semibold">
+            {t("realEstateDemo.profile.title")}
+          </summary>
+          <p className="my-3 text-sm text-muted-foreground">
+            {t("realEstateDemo.profile.demoNote")}
+          </p>
+          {editingProfile ? (
+            <BusinessProfileForm
+              initial={profile}
+              busy={savingProfile}
+              onCancel={() => setEditingProfile(false)}
+              onSave={async (values, files) => {
+                setSavingProfile(true);
+                try {
+                  const next = { ...values };
+                  for (const [slot, key, url] of [
+                    ["logo", "logo_path", "logo_url"],
+                    ["agent", "agent_photo_path", "agent_photo_url"],
+                  ] as const) {
+                    const file = files[slot];
+                    if (!file) continue;
+                    const blob = await prepareCatalogPhoto(file);
+                    if (!alive.current) return;
+                    const src = URL.createObjectURL(blob);
+                    objectUrls.current.push(src);
+                    next[key] = `demo/${crypto.randomUUID()}.webp`;
+                    next[url] = src;
+                  }
+                  if (alive.current) {
+                    setProfile({ ...next, version: profile.version + 1 });
+                    setEditingProfile(false);
+                    toast.success(t("demo.table.tempChange"));
+                  }
+                } finally {
+                  if (alive.current) setSavingProfile(false);
+                }
+              }}
+            />
+          ) : (
+            <Button variant="outline" className="mt-2" onClick={() => setEditingProfile(true)}>
+              {t("realEstateDemo.profile.edit")}
+            </Button>
+          )}
+        </details>
+      )}
+      <VoiceSearch
+        onApply={(criteria) => {
+          setPurpose(criteria.purpose);
+          setKind(
+            criteria.type === "casa"
+              ? "house"
+              : criteria.type === "apartamento"
+                ? "apartment"
+                : criteria.type,
+          );
+          setBudget(criteria.maxPrice === null ? "" : String(criteria.maxPrice));
+          setSearch(criteria.search);
+        }}
+      />
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <select
           aria-label={l("allPurposes")}
@@ -275,6 +353,11 @@ export function RealEstateDemoCatalog({
           <option value="">{l("allKinds")}</option>
           <option value="house">{l("house")}</option>
           <option value="apartment">{l("apartment")}</option>
+          {["terreno", "comercial", "rural", "outro"].map((type) => (
+            <option key={type} value={type}>
+              {t(`realEstateDemo.preferences.${type}`)}
+            </option>
+          ))}
         </select>
         <Input
           type="number"

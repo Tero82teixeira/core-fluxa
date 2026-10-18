@@ -1,4 +1,7 @@
 import { RealEstateDemoCatalog } from "./real-estate-demo-catalog";
+import { VoiceSearch } from "./voice-search";
+import { normalizeVoice, type VoiceCriteria } from "@/lib/real-estate-voice";
+import { buildDemoCatalog } from "@/lib/real-estate-demo-catalog";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -39,6 +42,7 @@ export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: 
   );
   const [catalogReset, setCatalogReset] = useState(0);
   const [query, setQuery] = useState("");
+  const [voiceFilters, setVoiceFilters] = useState<VoiceCriteria | null>(null);
   const locale = LOCALE_BY_LANGUAGE[resolveLanguage(i18n.resolvedLanguage)];
   const money = (amount: number) =>
     new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" }).format(amount);
@@ -238,9 +242,47 @@ export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: 
           </>
         )}
         {active === "properties" && (
+          <div className="flex flex-wrap gap-3">
+            <VoiceSearch
+              onApply={(criteria) => {
+                setQuery(criteria.search);
+                setVoiceFilters(criteria);
+              }}
+            />
+            {voiceFilters && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setVoiceFilters(null);
+                  setQuery("");
+                }}
+              >
+                {t("realEstateDemo.voice.clear")}
+              </Button>
+            )}
+          </div>
+        )}
+        {active === "properties" && (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {data.properties
-              .filter((p) => matches(p.id))
+              .filter((p) => {
+                if (!voiceFilters) return matches(p.id);
+                const item = buildDemoCatalog().find((v) => v.id === p.id);
+                const type =
+                  p.titleKey === "house"
+                    ? "casa"
+                    : p.titleKey === "apartment"
+                      ? "apartamento"
+                      : "comercial";
+                return (
+                  (!voiceFilters.type || voiceFilters.type === type) &&
+                  (!voiceFilters.purpose || voiceFilters.purpose === p.purpose) &&
+                  (voiceFilters.maxPrice === null || p.amount <= voiceFilters.maxPrice) &&
+                  normalizeVoice(
+                    `${p.id} ${p.owner} ${label(`titles.${p.titleKey}`)} ${item?.district || ""} Anchieta`,
+                  ).includes(normalizeVoice(query))
+                );
+              })
               .map((p) => (
                 <article key={p.id} className={card}>
                   <p className="font-mono text-xs text-muted-foreground">{p.id}</p>

@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CLIENT_STATUS } from "@/lib/domain";
+import { VoiceSearch } from "@/components/real-estate/voice-search";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState, LoadingState } from "@/components/shared/async-state";
@@ -54,7 +55,7 @@ export const Route = createFileRoute("/_authenticated/clientes/")({
 const PAGE_SIZE = 20;
 
 function ClientsPage() {
-  const { organizationId } = useWorkspace();
+  const { organizationId, membership } = useWorkspace();
   const permissions = usePermissions();
   const owners = useClientOwners(organizationId);
 
@@ -227,6 +228,16 @@ function ClientsPage() {
                 className="h-10 w-full rounded-xl border-border/70 bg-muted/20 pl-9"
               />
             </div>
+            {membership?.organizations?.organization_settings?.business_segment ===
+              "real_estate" && (
+              <VoiceSearch
+                mode="contact"
+                onApply={({ search }) => {
+                  setTerm(search);
+                  setPage(0);
+                }}
+              />
+            )}
             <Select value={status} onValueChange={resetPage(setStatus)}>
               <SelectTrigger
                 aria-label="Filtrar por status"
