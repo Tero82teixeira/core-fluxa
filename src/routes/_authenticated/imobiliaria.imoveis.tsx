@@ -528,6 +528,9 @@ function PropertyWorkspace() {
           onClose={() => setInquiries(false)}
           onLocate={(code) => {
             setSearch(code);
+            setFilters((f) =>
+              f.voice ? { search: code, type: "", purpose: "", status: "", city: "", page: 1 } : f,
+            );
             setInquiries(false);
           }}
         />
