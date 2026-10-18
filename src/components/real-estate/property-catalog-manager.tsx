@@ -29,6 +29,7 @@ import {
 } from "@/hooks/use-real-estate-catalog";
 import type { PropertyRow } from "@/hooks/use-real-estate";
 import { CatalogGallery } from "./catalog-gallery";
+import { BusinessProfileSettings } from "./business-profile-settings";
 
 export function PropertyCatalogManager({
   property,
@@ -186,6 +187,13 @@ export function PropertyCatalogManager({
                 </p>
               </form>
             </details>
+            {organizationId && query.data?.store && (
+              <BusinessProfileSettings
+                org={organizationId}
+                writable={writable}
+                company={query.data.store.company_name}
+              />
+            )}
             {propertyId && form && query.data?.source ? (
               <section className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">

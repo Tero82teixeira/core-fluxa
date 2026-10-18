@@ -1,0 +1,15 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_table('fluxa_catalog_private','business_profiles','perfil tem armazenamento privado');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid='fluxa_catalog_private.business_profiles'::regclass),'perfil tem RLS');
+SELECT ok(NOT has_table_privilege('anon','fluxa_catalog_private.business_profiles','SELECT'),'anon não lê a tabela');
+SELECT ok(NOT has_function_privilege('anon','public.real_estate_profile_manage(uuid,text,jsonb)','EXECUTE'),'anon não gerencia perfis');
+SELECT ok(has_function_privilege('anon','public.real_estate_public_profile(uuid)','EXECUTE'),'anon lê somente perfil da vitrine por token');
+SELECT ok(NOT has_function_privilege('anon','public.search_real_estate_properties(uuid,text,text,text,text,text,integer,numeric)','EXECUTE'),'busca interna não é pública');
+SELECT ok((SELECT NOT prosecdef FROM pg_proc WHERE oid='public.real_estate_profile_manage(uuid,text,jsonb)'::regprocedure),'gestão de perfil não eleva privilégios');
+SELECT ok((SELECT NOT prosecdef FROM pg_proc WHERE oid='public.search_real_estate_properties(uuid,text,text,text,text,text,integer,numeric)'::regprocedure),'busca respeita o chamador');
+SELECT ok((SELECT NOT public AND allowed_mime_types=ARRAY['image/webp'] FROM storage.buckets WHERE id='real-estate-branding'),'fotos ficam em bucket privado WebP');
+SELECT * FROM finish();
+ROLLBACK;

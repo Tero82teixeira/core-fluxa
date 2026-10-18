@@ -1,4 +1,5 @@
 import { CommercialQueueNotice } from "./commercial-panel";
+import { VoiceSearch } from "./voice-search";
 import type { CommercialFilters } from "@/lib/real-estate-commercial";
 import { ManualAttendanceDialog } from "./manual-attendance-dialog";
 import { InquiryPropertyDialog } from "./inquiry-property-dialog";
@@ -211,6 +212,10 @@ export function PropertyInquiryManager({
             </Button>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
+            <VoiceSearch
+              mode="contact"
+              onApply={({ search }) => setFilters({ ...filters, search, page: 1 })}
+            />
             <Input
               aria-label="Buscar atendimento"
               placeholder="Buscar nome, código ou imóvel"

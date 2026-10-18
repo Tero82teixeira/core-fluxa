@@ -1,4 +1,6 @@
 import type { DemoProposal } from "@/lib/real-estate-public-demo";
+import { VoiceSearch } from "./voice-search";
+import { normalizeVoice } from "@/lib/real-estate-voice";
 import { followupState } from "@/lib/real-estate-followups";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -39,6 +41,7 @@ export function DemoInquiryQueue({
   const [closureNotes, setClosureNotes] = useState<Record<string, string>>({});
   const m = (key: string) => t(`realEstateDemo.manual.${key}`);
   const [returnFilter, setReturnFilter] = useState("");
+  const [search, setSearch] = useState("");
   const [returns, setReturns] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [tab, setTab] = useState("queue");
@@ -68,6 +71,9 @@ export function DemoInquiryQueue({
   const visible = rows.filter(
     (r) =>
       (!scopeIds || scopeIds.has(r.id)) &&
+      normalizeVoice(`${r.name} ${r.phone} ${r.listingId || ""}`).includes(
+        normalizeVoice(search),
+      ) &&
       (tab === "queue" || r.startsAt) &&
       (!returnFilter || (!r.closed && followupState(r.nextContactAt, demoNow) === returnFilter)),
   );
@@ -75,6 +81,15 @@ export function DemoInquiryQueue({
     <section className="space-y-4">
       <p className="text-sm text-muted-foreground">{l("intro")}</p>
       <Button onClick={onCreate}>{m("new")}</Button>
+      <div className="flex flex-wrap gap-2">
+        <Input
+          className="sm:max-w-sm"
+          aria-label={t("realEstateDemo.voice.search")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <VoiceSearch mode="contact" onApply={(criteria) => setSearch(criteria.search)} />
+      </div>
       <div className="flex gap-2">
         <Button variant={tab === "queue" ? "default" : "outline"} onClick={() => setTab("queue")}>
           {l("queue")}

@@ -1,4 +1,6 @@
 import { PublicInquiryForm } from "@/components/real-estate/public-inquiry-form";
+import { BusinessProfileCard } from "@/components/real-estate/business-profile";
+import { usePublicBusinessProfile } from "@/hooks/use-real-estate-profile";
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -63,6 +65,10 @@ function PublicCatalogPage() {
   } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const query = usePublicCatalog(token, isCatalogId(token) ? ids : null, filters);
+  const profile = usePublicBusinessProfile(
+    token,
+    Boolean(query.data) && isCatalogId(token) && ids !== null,
+  );
   const selected = query.data?.items.find((item) => item.id === selectedId) || null;
   const prices = (item: CatalogListing) => (
     <div className="space-y-1 text-sm">
@@ -135,6 +141,12 @@ function PublicCatalogPage() {
         </div>
       ) : (
         <>
+          <BusinessProfileCard
+            profile={profile.data || null}
+            company={query.data.company_name}
+            whatsapp={query.data.whatsapp}
+            url={origin ? catalogUrl(origin, token, ids || []) : ""}
+          />
           <form
             className="grid items-end gap-3 rounded-2xl border p-4 sm:grid-cols-2 lg:grid-cols-5"
             onSubmit={(e) => {

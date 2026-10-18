@@ -11,6 +11,8 @@ export type PropertyRow = PropertyValues & {
   created_at: string;
 };
 export type PropertyFilters = {
+  maxPrice?: number | null;
+  voice?: boolean;
   search: string;
   type: string;
   purpose: string;
@@ -40,15 +42,19 @@ export function useProperties(org: string | null, filters: PropertyFilters, enab
     queryKey: ["real-estate-properties", org, filters],
     enabled: Boolean(org) && enabled,
     queryFn: async () => {
-      const { data, error } = await rpc.rpc("list_real_estate_properties", {
-        _organization_id: org,
-        _search: filters.search || null,
-        _type: filters.type || null,
-        _purpose: filters.purpose || null,
-        _status: filters.status || null,
-        _city: filters.city || null,
-        _page: filters.page,
-      });
+      const { data, error } = await rpc.rpc(
+        filters.voice ? "search_real_estate_properties" : "list_real_estate_properties",
+        {
+          _organization_id: org,
+          _search: filters.search || null,
+          _type: filters.type || null,
+          _purpose: filters.purpose || null,
+          _status: filters.status || null,
+          _city: filters.city || null,
+          _page: filters.page,
+          ...(filters.voice ? { _max_price: filters.maxPrice ?? null } : {}),
+        },
+      );
       if (error) throw error;
       return data as PropertyPage;
     },

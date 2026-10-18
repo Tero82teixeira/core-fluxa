@@ -122,6 +122,37 @@ test("preferências carregam traduções ao abrir diretamente no sistema, sem vi
       );
     assert(dashboard.includes(i18n.t("realEstateDemo.commercial.apply")));
     assert.doesNotMatch(dashboard, /realEstateDemo\.(commercial|manual)\./);
+    const { BusinessProfileCard, BusinessProfileForm } =
+      await import("../src/components/real-estate/business-profile.tsx");
+    const { VoiceSearch } = await import("../src/components/real-estate/voice-search.tsx");
+    const { emptyBusinessProfile } = await import("../src/lib/real-estate-profile.ts");
+    const profile = {
+      ...emptyBusinessProfile(),
+      agent_name: "Corretor Exemplo",
+      bio: "<script>privado</script>",
+    };
+    const profileHtml = renderToStaticMarkup(
+      React.createElement(BusinessProfileCard, {
+        profile,
+        company: "Imobiliária Exemplo",
+        whatsapp: "5527999999999",
+        url: "https://example.com/imoveis/token",
+      }),
+    );
+    const formHtml = renderToStaticMarkup(
+      React.createElement(BusinessProfileForm, {
+        initial: profile,
+        onSave: async () => {},
+        onCancel: () => {},
+      }),
+    );
+    const voiceHtml = renderToStaticMarkup(React.createElement(VoiceSearch, { onApply: () => {} }));
+    assert(profileHtml.includes("https://wa.me/5527999999999"));
+    assert(profileHtml.includes("&lt;script&gt;"));
+    assert(!profileHtml.includes("<script>"));
+    assert(formHtml.includes(i18n.t("realEstateDemo.profile.save")));
+    assert(voiceHtml.includes(i18n.t("realEstateDemo.voice.open")));
+    assert.doesNotMatch(profileHtml + formHtml + voiceHtml, /realEstateDemo\.(profile|voice)\./);
     const { DemoInquiryQueue } =
       await import("../src/components/real-estate/demo-inquiry-queue.tsx");
     const { buildCommercialDemoInquiries } =
