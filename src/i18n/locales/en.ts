@@ -263,6 +263,7 @@ export const en: LocaleShape = {
     "reset": "Reset demonstration",
     "resetDone": "The original demo examples have been restored.",
     "modules": {
+      "commercial": "Commercial dashboard",
       "attendance": "Inquiries and viewings",
       "catalog": "Listings and sharing",
       "overview": "Overview",
@@ -392,7 +393,6 @@ export const en: LocaleShape = {
       other: { label: "Other industry", description: "FLUXA's operational core, customizable later." },
     },
     modules: {
-      commercial: "Commercial dashboard",
       overview: "Dashboard",
       records: "Clients",
       cases: "Cases",

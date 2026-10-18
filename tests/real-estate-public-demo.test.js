@@ -102,6 +102,8 @@ test("busca conecta imóvel, proprietário, interessado e contrato, inclusive se
 test("demo e ações fictícias têm rótulos nas três línguas e exportam os exemplos", () => {
   const data = buildRealEstateDemo();
   for (const language of [pt, en, es]) {
+    for (const module of ["overview", "catalog", "attendance", "commercial", "properties", "proposals", "contracts", "settlements"])
+      assert(language.realEstateDemo.modules[module], `Rótulo ausente: realEstateDemo.modules.${module}`);
     for (const property of data.properties)
       assert(language.realEstateDemo.titles[property.titleKey]);
     for (const row of data.settlements) assert(language.realEstateDemo.status[row.display_status]);
