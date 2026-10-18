@@ -264,6 +264,7 @@ export const es: LocaleShape = {
     "reset": "Reiniciar demostración",
     "resetDone": "Se han restaurado los ejemplos originales.",
     "modules": {
+      "commercial": "Panel comercial",
       "attendance": "Atención y visitas",
       "catalog": "Catálogo y compartir",
       "overview": "Resumen",
@@ -393,7 +394,6 @@ export const es: LocaleShape = {
       other: { label: "Otro segmento", description: "Núcleo operativo de FLUXA, personalizable después." },
     },
     modules: {
-      commercial: "Panel comercial",
       overview: "Panel",
       records: "Clientes",
       cases: "Procesos",

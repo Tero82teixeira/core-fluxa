@@ -263,6 +263,7 @@ export const pt = {
     "reset": "Reiniciar demonstração",
     "resetDone": "Demonstração reiniciada com os exemplos originais.",
     "modules": {
+      "commercial": "Painel comercial",
       "attendance": "Atendimento e visitas",
       "catalog": "Vitrine e compartilhamento",
       "overview": "Visão geral",
@@ -397,7 +398,6 @@ export const pt = {
       other: { label: "Outro segmento", description: "Núcleo operacional da FLUXA, personalizável depois." },
     },
     modules: {
-      commercial: "Painel comercial",
       overview: "Painel",
       records: "Clientes",
       cases: "Processos",
