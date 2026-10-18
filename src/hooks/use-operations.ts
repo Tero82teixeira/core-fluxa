@@ -475,6 +475,9 @@ export function useCompleteTask(organizationId: string | null) {
         .eq("organization_id", organizationId);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks", organizationId] }),
+    onSuccess: () => Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["tasks", organizationId] }),
+      queryClient.invalidateQueries({ queryKey: ["legal-workspace", organizationId] }),
+    ]),
   });
 }

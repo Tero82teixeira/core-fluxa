@@ -15,8 +15,7 @@ const types = read("src/integrations/supabase/types.ts");
 describe("FLUXA Advocacia — Agenda Jurídica e alertas", () => {
   test("reúne audiências, prazos e tarefas no módulo jurídico", () => {
     assert.match(page, /useLegalAgenda/);
-    assert.match(page, /useProcesses/);
-    assert.match(page, /useTasks/);
+    assert.match(page, /useLegalAgendaPage/);
     assert.match(navigation, /\/advocacia\/agenda-juridica/);
     assert.match(modules, /"\/advocacia\/agenda-juridica": "legal_workspace"/);
   });

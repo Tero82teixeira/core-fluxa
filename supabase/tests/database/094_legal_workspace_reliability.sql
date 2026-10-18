@@ -1,0 +1,13 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_function('public','read_legal_workspace',ARRAY['uuid','text','jsonb'],'consulta jurídica agregada existe');
+SELECT ok(NOT has_function_privilege('anon','public.read_legal_workspace(uuid,text,jsonb)','EXECUTE'),'agenda interna não é pública');
+SELECT ok(NOT has_function_privilege('service_role','public.read_legal_workspace(uuid,text,jsonb)','EXECUTE'),'sem nova permissão para automação');
+SELECT ok(has_function_privilege('authenticated','public.read_legal_workspace(uuid,text,jsonb)','EXECUTE'),'equipe pode chamar a consulta autenticada');
+SELECT ok((SELECT prosecdef AND provolatile='s' FROM pg_proc WHERE oid='public.read_legal_workspace(uuid,text,jsonb)'::regprocedure),'leitura estável das tabelas jurídicas privadas');
+SELECT ok((SELECT proconfig @> ARRAY['search_path=public, pg_temp'] FROM pg_proc WHERE oid='public.read_legal_workspace(uuid,text,jsonb)'::regprocedure),'search_path fixo');
+SELECT throws_ok($$ SELECT public.read_legal_workspace('00000000-0000-0000-0000-000000000001','dashboard','{"date":"2026-10-18"}') $$,'42501','LEGAL_WORKSPACE_ACCESS_DENIED','sem sessão não consulta os dados');
+SELECT * FROM finish();
+ROLLBACK;

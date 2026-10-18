@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { refreshLegalQueries } from "@/lib/legal-query-cache";
 import { supabase } from "@/integrations/supabase/client";
 
 export const LEGAL_AREAS = {
@@ -123,11 +124,7 @@ export function useUpsertLegalCaseProfile(organizationId: string | null, process
       if (error) throw error;
       return data as LegalCaseProfile;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["legal-case-profile", organizationId, processId],
-      });
-    },
+    onSuccess: () => refreshLegalQueries(queryClient, organizationId, "profile", processId),
   });
 }
 
@@ -188,9 +185,7 @@ export function useSaveLegalDeadline(organizationId: string | null, processId: s
       if (error) throw error;
       return data as LegalDeadline;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["legal-deadlines", organizationId] });
-    },
+    onSuccess: () => refreshLegalQueries(queryClient, organizationId, "deadline"),
   });
 }
 
@@ -212,4 +207,95 @@ export function formatCnjNumber(value: string | null | undefined) {
   if (digits.length <= 14) return `${parts[0]}-${parts[1]}.${parts[2]}.${parts[3]}`;
   if (digits.length <= 16) return `${parts[0]}-${parts[1]}.${parts[2]}.${parts[3]}.${parts[4]}`;
   return `${parts[0]}-${parts[1]}.${parts[2]}.${parts[3]}.${parts[4]}.${parts[5]}`;
+}
+
+export type LegalDashboard = {
+  counts: {
+    active: number;
+    overdue: number;
+    today: number;
+    nextSeven: number;
+    requirement: number;
+    withoutOwner: number;
+  };
+  urgentTotal: number;
+  urgentProcesses: {
+    id: string;
+    process_id: string;
+    code: string;
+    title: string | null;
+    stage: import("@/lib/domain").ProcessStage;
+    due_date: string;
+    client_name: string;
+    source: "general" | "individual";
+  }[];
+  taskTotal: number;
+  urgentTasks: { id: string; title: string; assignee_name: string | null; due_at: string }[];
+  stageCounts: { key: import("@/lib/domain").ProcessStage; count: number }[];
+};
+export type LegalAgendaEvent = {
+  id: string;
+  kind: "hearing" | "deadline" | "task";
+  at: string;
+  civil_date: string | null;
+  title: string;
+  subtitle: string;
+  process_id: string | null;
+  confidential: boolean;
+};
+export type LegalAgendaPage = {
+  total: number;
+  counts: { hearing: number; deadline: number; task: number };
+  items: LegalAgendaEvent[];
+};
+export function useLegalDashboard(organizationId: string | null, date: string) {
+  return useQuery({
+    queryKey: ["legal-workspace", organizationId, "dashboard", date],
+    enabled: Boolean(organizationId),
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data, error } = await rpc.rpc("read_legal_workspace", {
+        _organization_id: organizationId,
+        _action: "dashboard",
+        _values: { date },
+      });
+      if (error) throw error;
+      return data as LegalDashboard;
+    },
+  });
+}
+export function useLegalAgendaPage(
+  organizationId: string | null,
+  range: { startDate: string; endDate: string; from: string; to: string },
+  page: number,
+) {
+  return useQuery({
+    queryKey: [
+      "legal-workspace",
+      organizationId,
+      "agenda",
+      range.startDate,
+      range.endDate,
+      range.from,
+      range.to,
+      page,
+    ],
+    enabled: Boolean(organizationId),
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data, error } = await rpc.rpc("read_legal_workspace", {
+        _organization_id: organizationId,
+        _action: "agenda",
+        _values: {
+          date: range.startDate,
+          endDate: range.endDate,
+          from: range.from,
+          to: range.to,
+          page,
+        },
+      });
+      if (error) throw error;
+      return data as LegalAgendaPage;
+    },
+  });
 }
