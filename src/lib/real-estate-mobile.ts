@@ -1,3 +1,5 @@
+import type { MobilePreview } from "./real-estate-mobile-actions.ts";
+import type { VoiceCriteria } from "./real-estate-voice.ts";
 import { normalizeVoice, parseVoiceCriteria } from "./real-estate-voice.ts";
 export type MobileClient = {
   id: string;
@@ -44,7 +46,9 @@ export type MobileProperty = {
   rent_price: number | null;
 };
 export type MobileSource = {
-  properties: (search: string, page: number) => Promise<MobilePage<MobileProperty>>;
+  preview: (ids: string[]) => Promise<MobilePreview[]>;
+  share: (ids: string[], origin: string) => Promise<string>;
+  properties: (filters: VoiceCriteria, page: number) => Promise<MobilePage<MobileProperty>>;
   scope: string;
   search: (search: string, page: number) => Promise<MobilePage<MobileClient>>;
   client: (id: string, page: number) => Promise<MobileSummary>;

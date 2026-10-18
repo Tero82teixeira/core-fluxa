@@ -28,6 +28,7 @@ const hooks = registerHooks({
   load(url, context, next) {
     if (url.startsWith(pathToFileURL(root).href) && /\.tsx?$/.test(url)) {
       const source = ts.transpileModule(readFileSync(new URL(url), "utf8"), {
+        fileName: fileURLToPath(url),
         compilerOptions: {
           module: ts.ModuleKind.ESNext,
           target: ts.ScriptTarget.ES2022,
@@ -189,6 +190,60 @@ test("preferências carregam traduções ao abrir diretamente no sistema, sem vi
     assert(!mobile.includes("javascript:"));
     assert(directVoice.includes(i18n.t("realEstateDemo.mobile.voice")));
     assert.doesNotMatch(mobile + directVoice, /realEstateDemo\.mobile\./);
+    const { MobilePropertySearch } =
+      await import("../src/components/real-estate/mobile-property-search.tsx");
+    const { MobileSelectionPreview } =
+      await import("../src/components/real-estate/mobile-property-selection.tsx");
+    const { buildMobileDemo } = await import("../src/lib/real-estate-mobile-demo.ts");
+    const { buildRealEstateDemo } = await import("../src/lib/real-estate-public-demo.ts");
+    const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
+    const source = buildMobileDemo(buildRealEstateDemo());
+    const mobileFilters = {
+      search: "centro",
+      type: "apartamento",
+      purpose: "locacao",
+      maxPrice: 2000,
+    };
+    const cache = new QueryClient();
+    cache.setQueryData(
+      ["real-estate-mobile-properties", source.scope, mobileFilters, 1],
+      await source.properties(mobileFilters, 1),
+    );
+    const properties = renderToStaticMarkup(
+      React.createElement(
+        QueryClientProvider,
+        { client: cache },
+        React.createElement(MobilePropertySearch, {
+          source,
+          filters: mobileFilters,
+          onFilters: () => {},
+          ids: [],
+          onIds: () => {},
+          demo: true,
+        }),
+      ),
+    );
+    const selectedItems = await source.preview(["IMOV-002"]);
+    selectedItems[0].listing.description = "<script>conteúdo público</script>";
+    const selectedHtml = renderToStaticMarkup(
+      React.createElement(MobileSelectionPreview, {
+        items: selectedItems,
+        demo: true,
+        onRemove: () => {},
+      }),
+    );
+    assert(properties.includes("IMOV-002"));
+    assert(!properties.includes("IMOV-005"));
+    assert(properties.includes(i18n.t("realEstateDemo.mobile.selectProperty")));
+    assert(selectedHtml.includes("/demo/imoveis/sala.webp"));
+    assert(selectedHtml.includes("&lt;script&gt;"));
+    assert(!selectedHtml.includes("<script>"));
+    const workspaceVoice = renderToStaticMarkup(
+      React.createElement(DirectClientVoice, { mode: "workspace", onSearch: () => {} }),
+    );
+    assert(workspaceVoice.includes(i18n.t("realEstateDemo.mobile.voiceWorkspace")));
+    assert.doesNotMatch(properties + selectedHtml + workspaceVoice, /realEstateDemo\.mobile\./);
+    cache.clear();
     const { DemoInquiryQueue } =
       await import("../src/components/real-estate/demo-inquiry-queue.tsx");
     const { buildCommercialDemoInquiries } =

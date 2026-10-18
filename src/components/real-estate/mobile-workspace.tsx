@@ -1,3 +1,5 @@
+import { MobilePropertySearch } from "./mobile-property-search";
+import { emptyMobileFilters, mobileCommand } from "@/lib/real-estate-mobile-actions";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Building2, CalendarDays, Users, ArrowLeft, ArrowRight } from "lucide-react";
@@ -129,9 +131,13 @@ export function MobileWorkspace({
   const [selected, setSelected] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [agendaPage, setAgendaPage] = useState(1);
-  const [propertyPage, setPropertyPage] = useState(1);
-  const [propertyTerm, setPropertyTerm] = useState("");
-  const [propertySearch, setPropertySearch] = useState("");
+  const [propertyFilters, setPropertyFilters] = useState(emptyMobileFilters);
+  const [propertyRevision, setPropertyRevision] = useState(0);
+  function applyPropertyFilters(filters: ReturnType<typeof emptyMobileFilters>) {
+    setPropertyFilters(filters);
+    setPropertyRevision((value) => value + 1);
+  }
+  const [propertyIds, setPropertyIds] = useState<string[]>([]);
   const request = useRef(0);
   const searchInput = useRef<HTMLInputElement>(null);
   useEffect(
@@ -145,11 +151,6 @@ export function MobileWorkspace({
     queryKey: ["real-estate-mobile-today", source.scope, day.start, agendaPage],
     queryFn: () => source.today(day.start, day.end, agendaPage),
     refetchInterval: 60_000,
-  });
-  const properties = useQuery({
-    queryKey: ["real-estate-mobile-properties", source.scope, propertySearch, propertyPage],
-    enabled: screen === "properties",
-    queryFn: () => source.properties(propertySearch, propertyPage),
   });
   const summary = useQuery({
     queryKey: ["real-estate-mobile-client", source.scope, selected, page],
@@ -183,6 +184,23 @@ export function MobileWorkspace({
     } catch {
       if (current === request.current)
         setLookup({ term: name, page: currentPage, busy: false, error: true });
+    }
+  }
+  function command(text: string) {
+    const parsed = mobileCommand(text);
+    if (parsed.kind === "client") {
+      void search(parsed.name);
+      return;
+    }
+    request.current++;
+    setSelected(null);
+    if (parsed.kind === "agenda") {
+      setScreen("agenda");
+      setAgendaPage(1);
+      void today.refetch();
+    } else {
+      applyPropertyFilters(parsed.filters);
+      setScreen("properties");
     }
   }
   function home() {
@@ -323,12 +341,12 @@ export function MobileWorkspace({
           )}
           {(screen === "home" || screen === "clients") && (
             <>
-              <DirectClientVoice onSearch={(name) => void search(name)} />
+              <DirectClientVoice mode="workspace" onSearch={command} />
               <form
                 className="flex gap-2"
                 onSubmit={(event) => {
                   event.preventDefault();
-                  void search(term);
+                  command(term);
                 }}
               >
                 <Input
@@ -336,8 +354,8 @@ export function MobileWorkspace({
                   value={term}
                   maxLength={100}
                   onChange={(event) => setTerm(event.target.value)}
-                  placeholder={l("placeholder")}
-                  aria-label={l("clients")}
+                  placeholder={l("commandPlaceholder")}
+                  aria-label={l("commandLabel")}
                   className="min-h-12 min-w-0 text-base"
                 />
                 <Button type="submit" className="min-h-12">
@@ -409,71 +427,15 @@ export function MobileWorkspace({
             </section>
           )}
           {screen === "properties" && (
-            <section className="space-y-3">
-              <h2 className="text-lg font-semibold">{l("properties")}</h2>
-              <form
-                className="flex gap-2"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  setPropertySearch(propertyTerm.trim());
-                  setPropertyPage(1);
-                }}
-              >
-                <Input
-                  aria-label={l("properties")}
-                  placeholder={l("propertySearch")}
-                  value={propertyTerm}
-                  onChange={(event) => setPropertyTerm(event.target.value)}
-                  className="min-h-12 min-w-0 text-base"
-                  maxLength={100}
-                />
-                <Button type="submit" className="min-h-12">
-                  {l("search")}
-                </Button>
-              </form>
-              {properties.isLoading ? (
-                busy
-              ) : properties.isError ? (
-                failure(() => void properties.refetch())
-              ) : (
-                <>
-                  {!properties.data?.items.length && <p className={card}>{l("emptyProperties")}</p>}
-                  {properties.data?.items.map((p) => (
-                    <article className={card} key={p.id}>
-                      <p className="text-sm text-muted-foreground">
-                        {p.code} ·{" "}
-                        {t(`realEstateDemo.mobile.status.${p.status}`, { defaultValue: p.status })}
-                      </p>
-                      <h3 className="break-words text-lg font-semibold">
-                        {demo
-                          ? t(`realEstateDemo.titles.${p.title}`, { defaultValue: p.title })
-                          : p.title}
-                      </h3>
-                      <p>{[p.district, p.city, p.state].filter(Boolean).join(" · ")}</p>
-                      {p.sale_price != null && (
-                        <p>
-                          {l("sale")} ·{" "}
-                          {new Intl.NumberFormat(locale, {
-                            style: "currency",
-                            currency: "BRL",
-                          }).format(p.sale_price)}
-                        </p>
-                      )}
-                      {p.rent_price != null && (
-                        <p>
-                          {l("rent")} ·{" "}
-                          {new Intl.NumberFormat(locale, {
-                            style: "currency",
-                            currency: "BRL",
-                          }).format(p.rent_price)}
-                        </p>
-                      )}
-                    </article>
-                  ))}
-                  {pagination(propertyPage, properties.data?.total ?? 0, setPropertyPage)}
-                </>
-              )}
-            </section>
+            <MobilePropertySearch
+              key={propertyRevision}
+              source={source}
+              filters={propertyFilters}
+              onFilters={applyPropertyFilters}
+              ids={propertyIds}
+              onIds={setPropertyIds}
+              demo={demo}
+            />
           )}
           {(screen === "home" || screen === "agenda") && agenda}
         </>
