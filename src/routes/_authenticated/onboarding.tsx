@@ -1,3 +1,8 @@
+import {
+  directOnboardingSubtype,
+  initialOnboardingStep,
+  previousOnboardingStep,
+} from "@/lib/onboarding-entry";
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Building2, CheckCircle2, Loader2, MapPin, Settings2, Sparkles } from "lucide-react";
@@ -90,9 +95,7 @@ function Onboarding() {
     const resolvedSubtype = savedSubtype as BusinessSubtype | null;
     setSegment(resolvedSegment);
     setSubtype(resolvedSubtype);
-    if (!resolvedSegment) setStep(0);
-    else if (!resolvedSubtype) setStep(1);
-    else setStep(Math.min(onboardingStep + 2, 5));
+    setStep(initialOnboardingStep(resolvedSegment, resolvedSubtype, onboardingStep));
   }, [onboardingStep, savedSegment, savedSubtype]);
 
   const [company, setCompany] = useState({
@@ -239,28 +242,35 @@ function Onboarding() {
     return true;
   };
 
-  const advance = async (selectedSubtype?: BusinessSubtype) => {
+  const advance = async (selectedSubtype?: BusinessSubtype, selectedSegment?: BusinessSegment) => {
     if (saving) return;
     setSaving(true);
     setError(null);
     try {
-      if (step === 1) {
+      if (step === 1 || (selectedSegment && selectedSubtype)) {
+        const nextSegment = selectedSegment ?? segment;
         const nextSubtype = selectedSubtype ?? subtype;
-        if (!segment || !nextSubtype) {
+        if (!nextSegment || !nextSubtype) {
           setError("Escolha o tipo de operação que melhor representa sua empresa.");
           return;
         }
         const id = ensureOrganization();
         const { error: segmentError } = await (supabase as any).rpc("update_organization_segment", {
           _organization_id: id,
-          _segment: segment,
+          _segment: nextSegment,
           _subtype: nextSubtype,
-          _enabled_modules: recommendedModulesForSubtype(segment, nextSubtype),
+          _enabled_modules: recommendedModulesForSubtype(nextSegment, nextSubtype),
         });
         if (segmentError) throw segmentError;
+        setSegment(nextSegment);
+        setSubtype(nextSubtype);
         await refreshWorkspace();
-        captureProductEvent("organization_segment_selected", { segment });
-        toast.success("Perfil da operação salvo. Agora vamos configurar sua empresa.");
+        captureProductEvent("organization_segment_selected", { segment: nextSegment });
+        toast.success(
+          nextSegment === "real_estate"
+            ? "Área imobiliária configurada. Agora informe os dados da empresa."
+            : "Perfil da operação salvo. Agora vamos configurar sua empresa.",
+        );
         setStep(2);
         return;
       }
@@ -363,7 +373,7 @@ function Onboarding() {
               <Sparkles className="size-6" aria-hidden />
             </span>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">
-              Antes de entrar no sistema · {step + 1} de 2
+              Antes de entrar no sistema
             </p>
             <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
               {step === 0
@@ -395,7 +405,14 @@ function Onboarding() {
                         setSegment(option.key);
                         setSubtype(null);
                         setError(null);
-                        setStep(1);
+                        const directSubtype = directOnboardingSubtype(option.key);
+                        if (directSubtype) {
+                          const existingSubtype =
+                            savedSegment === option.key
+                              ? subtypeByKey(option.key, savedSubtype)?.key
+                              : null;
+                          void advance(existingSubtype ?? directSubtype, option.key);
+                        } else setStep(1);
                       }}
                       disabled={!ready || saving}
                       className={`rounded-2xl border p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${segment === option.key ? "border-blue-300 bg-blue-400/20" : "border-white/15 bg-white/[0.06] hover:border-blue-300/60 hover:bg-white/10"}`}
@@ -717,7 +734,7 @@ function Onboarding() {
               className="rounded-xl"
               variant="ghost"
               disabled={step === 0 || saving}
-              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              onClick={() => setStep((s) => previousOnboardingStep(s, segment))}
             >
               Voltar
             </Button>
