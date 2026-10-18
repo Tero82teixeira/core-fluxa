@@ -1,3 +1,15 @@
+import { DemoCommercialPanel } from "./demo-commercial-panel";
+import { CommercialQueueNotice } from "./commercial-panel";
+import {
+  filterCommercialRows,
+  commercialDefaults,
+  type CommercialFilters,
+} from "@/lib/real-estate-commercial";
+import {
+  buildCommercialDemoInquiries,
+  demoCommercialRows,
+  COMMERCIAL_DEMO_NOW,
+} from "@/lib/real-estate-demo-commercial";
 import { ManualAttendanceForm } from "./manual-attendance-form";
 import { DemoPreferencesDialog } from "./demo-preferences-dialog";
 import type { PropertyPreferences } from "@/lib/real-estate-preferences";
@@ -5,7 +17,6 @@ import type { DemoProposal } from "@/lib/real-estate-public-demo";
 import { DemoInquiryQueue } from "./demo-inquiry-queue";
 import {
   addDemoInquiry,
-  buildDemoInquiries,
   addManualDemoInquiry,
   attachDemoInquiry,
 } from "@/lib/real-estate-demo-inquiries";
@@ -39,18 +50,26 @@ export function RealEstateDemoCatalog({
   selection,
   mode = "catalog",
   proposals = [],
+  onOpenAttendance,
 }: {
+  onOpenAttendance?: () => void;
   selection?: string;
   proposals?: DemoProposal[];
-  mode?: "catalog" | "attendance";
+  mode?: "catalog" | "attendance" | "commercial";
 }) {
   const { t, i18n } = useTranslation();
   const l = (key: string, values: Record<string, unknown> = {}) =>
     t(`realEstateDemo.catalog.${key}`, values);
+  const [commercialFilters, setCommercialFilters] = useState<CommercialFilters>(() => ({
+    ...commercialDefaults(COMMERCIAL_DEMO_NOW),
+    timezone: "America/Sao_Paulo",
+  }));
+  const [queueScope, setQueueScope] = useState<CommercialFilters | null>(null);
+  const [queueReset, setQueueReset] = useState(0);
   const [creatingManual, setCreatingManual] = useState(false);
   const [preferenceRequest, setPreferenceRequest] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<Record<string, PropertyPreferences>>({});
-  const [requests, setRequests] = useState(buildDemoInquiries);
+  const [requests, setRequests] = useState(buildCommercialDemoInquiries);
   const [requesting, setRequesting] = useState<{
     listingId: string;
     kind: "informacao" | "visita";
@@ -129,12 +148,41 @@ export function RealEstateDemoCatalog({
       `${l(visit ? "requestVisit" : "requestInfo", { title: title(p), id: p.id })}\n${url}`,
     );
   }
+  if (mode === "commercial")
+    return (
+      <DemoCommercialPanel
+        rows={requests}
+        filters={commercialFilters}
+        onFiltersChange={setCommercialFilters}
+        onQueue={(f) => {
+          setQueueScope(f);
+          onOpenAttendance?.();
+        }}
+      />
+    );
   if (mode === "attendance") {
+    const ids = queueScope
+      ? new Set(
+          filterCommercialRows(demoCommercialRows(requests), queueScope, COMMERCIAL_DEMO_NOW).map(
+            (r) => r.id,
+          ),
+        )
+      : null;
+
     const selectedRequest = requests.find((r) => r.id === preferenceRequest);
     return (
       <>
+        {queueScope && (
+          <CommercialQueueNotice
+            filters={queueScope}
+            responsibleLabel={t("realEstateDemo.manual.demoTeam")}
+            onClear={() => setQueueScope(null)}
+          />
+        )}
         <DemoInquiryQueue
+          key={queueReset}
           rows={requests}
+          scopeIds={ids || undefined}
           onChange={setRequests}
           proposals={proposals}
           onPreferences={setPreferenceRequest}
@@ -168,6 +216,8 @@ export function RealEstateDemoCatalog({
                 if (!result.duplicate)
                   setPreferences((p) => ({ ...p, [result.id]: values.preferences }));
                 setCreatingManual(false);
+                setQueueScope(null);
+                setQueueReset((n) => n + 1);
                 toast[result.duplicate ? "info" : "success"](
                   t(`realEstateDemo.manual.${result.duplicate ? "duplicate" : "created"}`),
                 );

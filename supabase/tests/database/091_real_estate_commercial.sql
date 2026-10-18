@@ -1,0 +1,13 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_function('public','real_estate_commercial',ARRAY['uuid','text','jsonb'],'painel comercial tem endpoint');
+SELECT ok(NOT has_function_privilege('anon','public.real_estate_commercial(uuid,text,jsonb)','EXECUTE'),'anon não acessa indicadores');
+SELECT ok(NOT has_function_privilege('anon','fluxa_inquiry_private.commercial_scope(uuid,jsonb)','EXECUTE'),'anon não acessa o filtro interno');
+SELECT ok(has_function_privilege('authenticated','public.real_estate_commercial(uuid,text,jsonb)','EXECUTE'),'equipe usa endpoint com autorização interna');
+SELECT ok((SELECT NOT prosecdef FROM pg_proc WHERE oid='public.real_estate_commercial(uuid,text,jsonb)'::regprocedure),'painel não eleva privilégios');
+SELECT ok((SELECT NOT prosecdef FROM pg_proc WHERE oid='fluxa_inquiry_private.commercial_scope(uuid,jsonb)'::regprocedure),'fila e indicadores usam o mesmo filtro como chamador');
+SELECT has_index('fluxa_inquiry_private','requests','inquiry_org_created_idx','período tem índice por empresa e criação');
+SELECT * FROM finish();
+ROLLBACK;

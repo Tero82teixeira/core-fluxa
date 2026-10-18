@@ -6,6 +6,7 @@ import {
 } from "./real-estate-manual-attendance.ts";
 /** Fluxo de atendimento fictício, sem rede nem persistência. */
 export type DemoInquiry = {
+  createdAt?: string;
   origin?: "vitrine" | "whatsapp" | "telefone" | "presencial" | "outro";
   purpose?: "venda" | "locacao";
   closed?: boolean;
@@ -30,6 +31,7 @@ export function buildDemoInquiries(): DemoInquiry[] {
   return [
     {
       id: "PEDIDO-DEMO-001",
+      createdAt: "2026-10-14T15:00:00Z",
       clientKey: "marina",
       nextContactAt: "2026-10-15T12:00:00Z",
       listingId: "IMOV-005",
@@ -68,6 +70,7 @@ export function addDemoInquiry(
       phone,
       name: input.name.trim(),
       id: `PEDIDO-DEMO-${rows.length + 1}`,
+      createdAt: "2026-10-16T12:00:00Z",
       stage: "novo",
       assigned: false,
       startsAt: "",
@@ -170,6 +173,7 @@ export function addManualDemoInquiry(
       ...rows,
       {
         id,
+        createdAt: new Date(now).toISOString(),
         listingId: "",
         name: v.name,
         phone: v.phone,

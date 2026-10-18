@@ -22,6 +22,7 @@ const modules = [
   "overview",
   "catalog",
   "attendance",
+  "commercial",
   "properties",
   "proposals",
   "contracts",
@@ -157,7 +158,7 @@ export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: 
       </nav>
       <main className="space-y-4">
         <h2 className="text-xl font-semibold">{label(`modules.${active}`)}</h2>
-        {active !== "overview" && active !== "catalog" && (
+        {active !== "overview" && active !== "catalog" && active !== "commercial" && (
           <input
             value={query}
             maxLength={120}
@@ -167,12 +168,19 @@ export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: 
             placeholder={label("search")}
           />
         )}
-        <div hidden={active !== "catalog" && active !== "attendance"}>
+        <div hidden={active !== "catalog" && active !== "attendance" && active !== "commercial"}>
           <RealEstateDemoCatalog
             key={`${catalogSelection}-${catalogReset}`}
             selection={catalogSelection}
             proposals={data.proposals}
-            mode={active === "attendance" ? "attendance" : "catalog"}
+            mode={
+              active === "commercial"
+                ? "commercial"
+                : active === "attendance"
+                  ? "attendance"
+                  : "catalog"
+            }
+            onOpenAttendance={() => go("attendance")}
           />
         </div>
         {active === "overview" && (

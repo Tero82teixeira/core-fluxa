@@ -1,27 +1,36 @@
+import type { CommercialFilters } from "@/lib/real-estate-commercial";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { AgendaVisit, Inquiry } from "@/lib/real-estate-inquiries";
-export function useInquiries(
-  org: string | null,
-  filters: {
-    kind: string;
-    status: string;
-    mine: boolean;
-    search: string;
-    page: number;
-    followup?: string;
-  },
-) {
+export type InquiryFilters = {
+  kind: string;
+  status: string;
+  mine: boolean;
+  search: string;
+  page: number;
+  followup?: string;
+  commercial?: CommercialFilters;
+};
+export function useInquiries(org: string | null, filters: InquiryFilters) {
   return useQuery({
     queryKey: ["real-estate-inquiries", org, filters],
     enabled: Boolean(org),
     queryFn: async () => {
       const { data, error } = await supabase.rpc(
-        filters.kind === "queue" ? "real_estate_followups" : "real_estate_inquiry_manage",
+        filters.kind === "queue"
+          ? filters.commercial
+            ? "real_estate_commercial"
+            : "real_estate_followups"
+          : "real_estate_inquiry_manage",
         {
           _organization_id: org!,
-          _action: "load",
-          _values: { ...filters, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+          _action: filters.kind === "queue" && filters.commercial ? "queue" : "load",
+          _values: {
+            ...filters,
+            ...filters.commercial,
+            timezone:
+              filters.commercial?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
         },
       );
       if (error) throw error;

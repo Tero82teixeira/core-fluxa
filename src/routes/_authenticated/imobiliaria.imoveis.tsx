@@ -1,3 +1,5 @@
+import { PropertyCommercialDialog } from "@/components/real-estate/property-commercial-dialog";
+import type { CommercialFilters } from "@/lib/real-estate-commercial";
 import { PropertyInquiryManager } from "@/components/real-estate/property-inquiry-manager";
 import { PropertyOverview } from "@/components/real-estate/property-overview";
 import { PropertyCatalogManager } from "@/components/real-estate/property-catalog-manager";
@@ -120,6 +122,8 @@ function PropertyWorkspace() {
   const [contracts, setContracts] = useState<PropertyRow | "all" | null>(null);
   const [settlements, setSettlements] = useState<PropertyRow | "all" | null>(null);
   const [catalog, setCatalog] = useState<PropertyRow | "all" | null>(null);
+  const [commercial, setCommercial] = useState(false);
+  const [commercialFilters, setCommercialFilters] = useState<CommercialFilters | undefined>();
   const [inquiries, setInquiries] = useState(false);
   const [activity, setActivity] = useState<PropertyRow | null>(null);
   const [selected, setSelected] = useState<PropertyRow | null>(null);
@@ -184,9 +188,18 @@ function PropertyWorkspace() {
           <div className="flex flex-wrap gap-2">
             <Button
               className="bg-white text-slate-950 hover:bg-slate-100"
-              onClick={() => setInquiries(true)}
+              onClick={() => {
+                setCommercialFilters(undefined);
+                setInquiries(true);
+              }}
             >
               Atendimento e visitas
+            </Button>
+            <Button
+              className="bg-white text-slate-950 hover:bg-slate-100"
+              onClick={() => setCommercial(true)}
+            >
+              Painel comercial
             </Button>
             <Button
               className="bg-white text-slate-950 hover:bg-slate-100"
@@ -438,8 +451,19 @@ function PropertyWorkspace() {
           onClose={() => setOverviewSelection(null)}
         />
       )}
+      {commercial && (
+        <PropertyCommercialDialog
+          onClose={() => setCommercial(false)}
+          onQueue={(filters) => {
+            setCommercial(false);
+            setCommercialFilters(filters);
+            setInquiries(true);
+          }}
+        />
+      )}
       {inquiries && (
         <PropertyInquiryManager
+          initialCommercialFilters={commercialFilters}
           onClose={() => setInquiries(false)}
           onLocate={(code) => {
             setSearch(code);

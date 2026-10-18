@@ -1,6 +1,39 @@
 /** Português (Brasil) — idioma padrão e fonte da verdade das chaves. */
 export const pt = {
   realEstateDemo: {
+    commercial: {
+      "title": "Painel comercial",
+      "intro": "Acompanhe os atendimentos recebidos no período e abra a fila pelos indicadores.",
+      "from": "Recebidos a partir de",
+      "to": "Recebidos até",
+      "responsible": "Responsável atual",
+      "all": "Todos os responsáveis",
+      "noResponsible": "Sem responsável",
+      "selectedResponsible": "Responsável selecionado",
+      "periodHint": "Período de até 366 dias. Datas no fuso indicado.",
+      "invalid": "Escolha datas válidas, em ordem, com até 366 dias.",
+      "apply": "Aplicar filtros",
+      "definition": "Situação atual dos atendimentos recebidos no período, por responsável atual. Os indicadores podem se sobrepor. Fechou negócio é o motivo informado pela equipe e não confirma um contrato ou pagamento.",
+      "received": "Contatos recebidos",
+      "waiting": "Aguardando atendimento",
+      "active": "Em aberto",
+      "overdue": "Retornos atrasados",
+      "unassigned": "Em aberto sem responsável",
+      "won": "Negócios informados",
+      "closed": "Encerrados",
+      "openQueue": "Abrir atendimentos",
+      "empty": "Nenhum atendimento recebido neste período e responsável. Ajuste os filtros.",
+      "channels": "Resultados por canal de origem",
+      "outcomes": "Motivos dos encerramentos",
+      "legacy": "Sem motivo registrado",
+      "asOf": "Atualizado em",
+      "loading": "Carregando painel…",
+      "error": "Não foi possível carregar o painel. Confira a ativação e tente novamente.",
+      "retry": "Tentar novamente",
+      "queueScope": "Atendimentos do painel, recebidos de",
+      "clearQueueFilters": "Remover filtros do painel",
+      "demoNote": "Dados fictícios do cenário de 16/10/2026. Criar, atender e encerrar contatos na demonstração atualiza este painel."
+},
     manual: {
       "new": "Novo atendimento manual",
       "create": "Criar atendimento e salvar preferências",
@@ -364,6 +397,7 @@ export const pt = {
       other: { label: "Outro segmento", description: "Núcleo operacional da FLUXA, personalizável depois." },
     },
     modules: {
+      commercial: "Painel comercial",
       overview: "Painel",
       records: "Clientes",
       cases: "Processos",

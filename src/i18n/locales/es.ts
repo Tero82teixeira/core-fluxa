@@ -2,6 +2,39 @@ import type { LocaleShape } from "./pt";
 
 export const es: LocaleShape = {
   realEstateDemo: {
+    commercial: {
+      "title": "Panel comercial",
+      "intro": "Consulta los contactos recibidos en el período y abre la fila desde cada indicador.",
+      "from": "Recibidos desde",
+      "to": "Recibidos hasta",
+      "responsible": "Responsable actual",
+      "all": "Todos los responsables",
+      "noResponsible": "Sin responsable",
+      "selectedResponsible": "Responsable seleccionado",
+      "periodHint": "Hasta 366 días. Las fechas usan la zona horaria indicada.",
+      "invalid": "Elige fechas válidas y en orden, con hasta 366 días.",
+      "apply": "Aplicar filtros",
+      "definition": "Situación actual de las consultas recibidas en el período, por responsable actual. Los indicadores pueden superponerse. Negocio cerrado es el motivo informado por el equipo y no confirma un contrato o pago.",
+      "received": "Contactos recibidos",
+      "waiting": "Esperando atención",
+      "active": "Abiertos",
+      "overdue": "Contactos pendientes vencidos",
+      "unassigned": "Abiertos sin responsable",
+      "won": "Negocios informados",
+      "closed": "Cerrados",
+      "openQueue": "Abrir consultas",
+      "empty": "No hay consultas recibidas para este período y responsable. Ajusta los filtros.",
+      "channels": "Resultados por canal de origen",
+      "outcomes": "Motivos del cierre",
+      "legacy": "Sin motivo registrado",
+      "asOf": "Actualizado el",
+      "loading": "Cargando panel…",
+      "error": "No se pudo cargar el panel. Verifica la activación e inténtalo de nuevo.",
+      "retry": "Reintentar",
+      "queueScope": "Consultas del panel recibidas desde",
+      "clearQueueFilters": "Quitar filtros del panel",
+      "demoNote": "Escenario ficticio del 16/10/2026. Crear, atender y cerrar contactos en la demo actualiza este panel."
+},
     manual: {
       "new": "Nueva consulta manual",
       "create": "Crear consulta y guardar preferencias",
@@ -360,6 +393,7 @@ export const es: LocaleShape = {
       other: { label: "Otro segmento", description: "Núcleo operativo de FLUXA, personalizable después." },
     },
     modules: {
+      commercial: "Panel comercial",
       overview: "Panel",
       records: "Clientes",
       cases: "Procesos",

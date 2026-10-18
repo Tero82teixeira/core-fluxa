@@ -95,6 +95,53 @@ test("preferências carregam traduções ao abrir diretamente no sistema, sem vi
     );
     assert.doesNotMatch(manual, /realEstateDemo\.(preferences|manual)\./);
     assert(manual.includes(i18n.t("realEstateDemo.manual.create")));
+    const { CommercialPanel, CommercialFilterForm } =
+      await import("../src/components/real-estate/commercial-panel.tsx");
+    const { summarizeCommercialRows } = await import("../src/lib/real-estate-commercial.ts");
+    const filters = {
+      date_from: "2026-10-01",
+      date_to: "2026-10-16",
+      timezone: "America/Sao_Paulo",
+      responsible: "",
+    };
+    const dashboard =
+      renderToStaticMarkup(
+        React.createElement(CommercialPanel, {
+          data: summarizeCommercialRows([], filters),
+          filters,
+          onQueue: () => {},
+        }),
+      ) +
+      renderToStaticMarkup(
+        React.createElement(CommercialFilterForm, {
+          initial: filters,
+          responsibles: [],
+          busy: false,
+          onApply: () => {},
+        }),
+      );
+    assert(dashboard.includes(i18n.t("realEstateDemo.commercial.apply")));
+    assert.doesNotMatch(dashboard, /realEstateDemo\.(commercial|manual)\./);
+    const { DemoInquiryQueue } =
+      await import("../src/components/real-estate/demo-inquiry-queue.tsx");
+    const { buildCommercialDemoInquiries } =
+      await import("../src/lib/real-estate-demo-commercial.ts");
+    const queue = renderToStaticMarkup(
+      React.createElement(DemoInquiryQueue, {
+        rows: buildCommercialDemoInquiries(),
+        scopeIds: new Set(["PEDIDO-DEMO-001"]),
+        onChange: () => {},
+        onCreate: () => {},
+        onAttach: () => {},
+        onPreferences: () => {},
+        properties: [],
+      }),
+    );
+    assert(queue.includes("Marina Costa"));
+    assert(
+      !queue.includes("Rafael Souza"),
+      "o filtro limita a apresentação sem retirar os demais atendimentos da coleção",
+    );
   }
   hooks.deregister();
 });
