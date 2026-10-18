@@ -1,3 +1,4 @@
+import type { RealEstateSection } from "./real-estate-workspace.ts";
 import {
   Bell,
   Bot,
@@ -15,6 +16,7 @@ import {
   ListTodo,
   LayoutDashboard,
   HeartPulse,
+  Handshake,
   LifeBuoy,
   ListChecks,
   MessagesSquare,
@@ -32,6 +34,7 @@ import type { AppRole, IconType } from "@/lib/domain";
 export type NavGroupKey = "operacao" | "gestao" | "sistema";
 
 export type NavItem = {
+  search?: {secao: RealEstateSection};
   to: string;
   label: string;
   icon: IconType;
@@ -192,4 +195,26 @@ export function navItemVisibleForRole(to: string, role: AppRole | null) {
     return true;
   }
   return ROLE_NAVIGATION[role]?.includes(to) ?? false;
+}
+
+/** Recebe somente itens já autorizados por papel e módulos. Não altera as rotas gerais. */
+export function realEstateNavigation(visible: readonly NavItem[]) {
+  const byRoute=(route:string)=>visible.find(item=>item.to===route);
+  const property=byRoute("/imobiliaria/imoveis");
+  const shortcut=(secao:RealEstateSection,label:string,icon:IconType,description:string):NavItem[]=>property ? [{...property,label,icon,description,search:{secao}}]:[];
+  const original=(route:string):NavItem[]=>{const item=byRoute(route);return item ? [item]:[];};
+  const operation=[
+    ...shortcut("pendencias","Visão do dia",ListTodo,"Agenda pessoal e pendências imobiliárias"),
+    ...original("/imobiliaria/imoveis"),...original("/clientes"),
+    ...shortcut("agenda","Agenda",CalendarClock,"Suas visitas e retornos por dia"),
+    ...shortcut("atendimentos","Atendimentos",MessagesSquare,"Interessados, preferências e visitas"),
+    ...shortcut("negociacoes","Negociações",Handshake,"Propostas de venda e locação por imóvel e cliente"),
+    ...original("/documentos"),
+  ];
+  const finance=[...shortcut("contratos","Contratos",FileText,"Vigências e vencimentos de contratos imobiliários"),...shortcut("repasses","Comissões e repasses",Wallet,"Demonstrativos e confirmações da imobiliária"),...original("/financeiro").map(item=>({...item,label:"Contas da empresa"}))];
+  const system=visible.filter(item=>["/notificacoes","/ajuda","/novidades"].includes(item.to));
+  const used=new Set([...operation,...finance,...system].map(item=>item.to));
+  const genericLabels:Record<string,string>={"/processos":"Processos gerais","/meu-dia":"Meu Dia geral","/central":"Central geral","/monitoramento":"Monitoramento geral"};
+  const administration=visible.filter(item=>!used.has(item.to)).map(item=>({...item,label:genericLabels[item.to] || item.label}));
+  return {operation,finance,administration,system};
 }

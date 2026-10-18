@@ -1,3 +1,5 @@
+import { PropertyAgenda } from "@/components/real-estate/property-agenda";
+import { currentRealEstateSection, REAL_ESTATE_SECTION_INFO } from "@/lib/real-estate-workspace";
 import { MobileWorkspace } from "@/components/real-estate/mobile-workspace";
 import { useRealEstateMobile } from "@/hooks/use-real-estate-mobile";
 import { useCompactRealEstate } from "@/hooks/use-compact-real-estate";
@@ -77,7 +79,7 @@ function PropertyEntry() {
       settings.business_segment,
       settings.enabled_modules,
     );
-  if (compact && !full && !search.pendencia && enabled)
+  if (compact && !full && !search.pendencia && !search.secao && !search.localizar && enabled)
     return (
       <MobileWorkspace
         source={source}
@@ -89,14 +91,23 @@ function PropertyEntry() {
     );
   return (
     <>
-      {compact && enabled && !search.pendencia && (
+      {compact && enabled && (
         <div className="px-4 pt-4">
-          <Button variant="outline" className="min-h-12" onClick={() => setFull(false)}>
+          <Button
+            variant="outline"
+            className="min-h-12"
+            onClick={() => {
+              setFull(false);
+              void navigate({ to: "/imobiliaria/imoveis", search: {} });
+            }}
+          >
             Início rápido
           </Button>
         </div>
       )}
-      <PropertyWorkspace />
+      <PropertyWorkspace
+        key={`${currentRealEstateSection(search)}:${search.pendencia ?? ""}:${search.busca ?? ""}:${search.localizar ?? ""}`}
+      />
     </>
   );
 }
@@ -134,6 +145,9 @@ function formFor(row: PropertyRow): PropertyForm {
 }
 function PropertyWorkspace() {
   const alertSearch = Route.useSearch();
+  const navigate = useNavigate();
+  const section = currentRealEstateSection(alertSearch);
+  const sectionInfo = section === "imoveis" ? null : REAL_ESTATE_SECTION_INFO[section];
   const { organizationId, role, membership } = useWorkspace();
   const settings = membership?.organizations?.organization_settings;
   const allowed = routeVisibleForModules(
@@ -142,17 +156,17 @@ function PropertyWorkspace() {
     settings?.enabled_modules,
   );
   const canWrite = canWriteProperties(role);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(alertSearch.localizar ?? "");
   const [filters, setFilters] = useState<PropertyFilters>({
-    search: "",
+    search: alertSearch.localizar ?? "",
     type: "",
     purpose: "",
     status: "",
     city: "",
     page: 1,
   });
-  const query = useProperties(organizationId, filters, allowed);
-  const options = usePropertyOptions(organizationId, allowed);
+  const query = useProperties(organizationId, filters, allowed && section === "imoveis");
+  const options = usePropertyOptions(organizationId, allowed && section === "imoveis");
   const save = useSaveProperty(organizationId);
   const [form, setForm] = useState<PropertyForm>(emptyPropertyForm);
   const [editing, setEditing] = useState<{
@@ -167,6 +181,9 @@ function PropertyWorkspace() {
   const [commercial, setCommercial] = useState(false);
   const [commercialFilters, setCommercialFilters] = useState<CommercialFilters | undefined>();
   const [inquiries, setInquiries] = useState(false);
+  useEffect(() => {
+    if (allowed && section === "atendimentos") setInquiries(true);
+  }, [allowed, section]);
   const [activity, setActivity] = useState<PropertyRow | null>(null);
   const [selected, setSelected] = useState<PropertyRow | null>(null);
   const [overviewSelection, setOverviewSelection] = useState<OverviewItem | null>(null);
@@ -226,309 +243,357 @@ function PropertyWorkspace() {
             </p>
             <h1 className="mt-2 flex items-center gap-3 text-2xl font-semibold">
               <Building2 aria-hidden className="size-6" />
-              Imóveis
+              {sectionInfo?.title ?? "Imóveis"}
             </h1>
             <p className="mt-3 max-w-xl text-sm text-slate-300">
-              Organize sua carteira, proprietários, valores e responsáveis pela negociação.
+              {sectionInfo?.description ??
+                "Organize sua carteira, proprietários, valores e responsáveis pela negociação."}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              className="bg-white text-slate-950 hover:bg-slate-100"
-              onClick={() => {
-                setCommercialFilters(undefined);
-                setInquiries(true);
-              }}
-            >
-              Atendimento e visitas
-            </Button>
-            <Button
-              className="bg-white text-slate-950 hover:bg-slate-100"
-              onClick={() => setCommercial(true)}
-            >
-              Painel comercial
-            </Button>
-            <Button
-              className="bg-white text-slate-950 hover:bg-slate-100"
-              onClick={() => setCatalog("all")}
-            >
-              Vitrine e compartilhamento
-            </Button>
-            <Button
-              className="bg-white text-slate-950 hover:bg-slate-100"
-              onClick={() => setSettlements("all")}
-            >
-              Comissões e repasses
-            </Button>
-            <Button
-              className="bg-white text-slate-950 hover:bg-slate-100"
-              onClick={() => setContracts("all")}
-            >
-              Contratos e vencimentos
-            </Button>
-            {canWrite && (
-              <Button className="bg-white text-slate-950 hover:bg-slate-100" onClick={() => edit()}>
-                <Plus className="size-4" />
-                Novo imóvel
+          {section === "imoveis" ? (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                className="bg-white text-slate-950 hover:bg-slate-100"
+                onClick={() => {
+                  setCommercialFilters(undefined);
+                  setInquiries(true);
+                }}
+              >
+                Atendimento e visitas
               </Button>
-            )}
-          </div>
+              <Button
+                className="bg-white text-slate-950 hover:bg-slate-100"
+                onClick={() => setCommercial(true)}
+              >
+                Painel comercial
+              </Button>
+              <Button
+                className="bg-white text-slate-950 hover:bg-slate-100"
+                onClick={() => setCatalog("all")}
+              >
+                Vitrine e compartilhamento
+              </Button>
+              <Button
+                className="bg-white text-slate-950 hover:bg-slate-100"
+                onClick={() => setSettlements("all")}
+              >
+                Comissões e repasses
+              </Button>
+              <Button
+                className="bg-white text-slate-950 hover:bg-slate-100"
+                onClick={() => setContracts("all")}
+              >
+                Contratos e vencimentos
+              </Button>
+              {canWrite && (
+                <Button
+                  className="bg-white text-slate-950 hover:bg-slate-100"
+                  onClick={() => edit()}
+                >
+                  <Plus className="size-4" />
+                  Novo imóvel
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {section === "atendimentos" && (
+                <Button onClick={() => setInquiries(true)}>Abrir fila de atendimentos</Button>
+              )}
+              {section === "contratos" && (
+                <Button onClick={() => setContracts("all")}>Gerenciar contratos</Button>
+              )}
+              {section === "repasses" && (
+                <Button onClick={() => setSettlements("all")}>Gerenciar demonstrativos</Button>
+              )}
+              {section === "negociacoes" && (
+                <Button asChild>
+                  <Link to="/imobiliaria/imoveis" search={{}}>
+                    Escolher imóvel para negociar
+                  </Link>
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </header>
-      <PropertyGettingStarted
-        onCreate={canWrite ? () => edit() : undefined}
-        onSettlements={() => setSettlements("all")}
-      />
-      <PropertyFinancialSummary onOpen={() => setSettlements("all")} />
-      <PropertyOverview
-        alertSearch={alertSearch}
-        onOpen={(item) => {
-          if (item.kind === "imovel") setSelected(item.property);
-          else setOverviewSelection(item);
-        }}
-      />
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[
-          ["Imóveis encontrados", data?.total],
-          ["Disponíveis", data?.available],
-          ["Reservados", data?.reserved],
-        ].map(([label, value]) => (
-          <Card key={String(label)}>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="mt-1 text-xl font-semibold">
-                {query.isError || query.isLoading ? "—" : (value ?? 0)}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <Card>
-        <CardContent className="space-y-4 p-4 sm:p-5">
-          <p className="text-xs text-muted-foreground">
-            Os indicadores acompanham os filtros da lista.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="relative">
-              <Search aria-hidden className="absolute left-3 top-3 size-4 text-muted-foreground" />
-              <Input
-                aria-label="Buscar imóveis"
-                className="pl-9"
-                placeholder="Código, título, endereço ou proprietário"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <select
-              aria-label="Filtrar tipo"
-              className={selectClass}
-              value={filters.type}
-              onChange={(e) => filter("type", e.target.value)}
-            >
-              <option value="">Todos os tipos</option>
-              {enumOptions(PROPERTY_TYPES)}
-            </select>
-            <select
-              aria-label="Filtrar finalidade"
-              className={selectClass}
-              value={filters.purpose}
-              onChange={(e) => filter("purpose", e.target.value)}
-            >
-              <option value="">Todas as finalidades</option>
-              {enumOptions(PROPERTY_PURPOSES)}
-            </select>
-            <select
-              aria-label="Filtrar situação"
-              className={selectClass}
-              value={filters.status}
-              onChange={(e) => filter("status", e.target.value)}
-            >
-              <option value="">Todas as situações</option>
-              {enumOptions(PROPERTY_STATUSES)}
-            </select>
-            <select
-              aria-label="Filtrar cidade"
-              className={selectClass}
-              value={filters.city}
-              onChange={(e) => filter("city", e.target.value)}
-            >
-              <option value="">Todas as cidades</option>
-              {options.data?.cities.map((city) => (
-                <option key={city}>{city}</option>
-              ))}
-            </select>
+      {section === "imoveis" && (
+        <PropertyGettingStarted
+          onCreate={canWrite ? () => edit() : undefined}
+          onSettlements={() => setSettlements("all")}
+        />
+      )}
+      {(section === "agenda" || section === "pendencias") && (
+        <PropertyAgenda compact={section === "pendencias"} />
+      )}
+      {section === "atendimentos" && (
+        <Card>
+          <CardContent className="space-y-3 p-5">
+            <p>Acompanhe os interessados e seus próximos contatos na fila de atendimentos.</p>
+            <Button onClick={() => setInquiries(true)}>Ver atendimentos e visitas</Button>
+          </CardContent>
+        </Card>
+      )}
+      {section === "repasses" && <PropertyFinancialSummary onOpen={() => setSettlements("all")} />}
+      {["pendencias", "negociacoes", "contratos", "repasses"].includes(section) && (
+        <PropertyOverview
+          title={sectionInfo?.title}
+          alertSearch={alertSearch}
+          onOpen={(item) => {
+            if (item.kind === "imovel") setSelected(item.property);
+            else setOverviewSelection(item);
+          }}
+        />
+      )}
+      {section === "imoveis" && (
+        <>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              ["Imóveis encontrados", data?.total],
+              ["Disponíveis", data?.available],
+              ["Reservados", data?.reserved],
+            ].map(([label, value]) => (
+              <Card key={String(label)}>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className="mt-1 text-xl font-semibold">
+                    {query.isError || query.isLoading ? "—" : (value ?? 0)}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <VoiceSearch
-              onApply={(criteria) => {
-                setSearch(criteria.search);
-                setFilters({
-                  ...criteria,
-                  maxPrice: criteria.maxPrice,
-                  status: "",
-                  city: "",
-                  page: 1,
-                  voice: true,
-                });
-              }}
-            />
-            {filters.voice && (
-              <>
-                <Label className="flex items-center gap-2">
-                  Valor máximo (R$)
-                  <Input
-                    className="w-36"
-                    aria-label="Valor máximo da busca"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    disabled={!["venda", "locacao"].includes(filters.purpose)}
-                    value={filters.maxPrice ?? ""}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      setFilters((f) => ({
-                        ...f,
-                        maxPrice: e.target.value && n > 0 && n < 1e12 ? n : null,
-                        page: 1,
-                      }));
-                    }}
+          <Card>
+            <CardContent className="space-y-4 p-4 sm:p-5">
+              <p className="text-xs text-muted-foreground">
+                Os indicadores acompanham os filtros da lista.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <div className="relative">
+                  <Search
+                    aria-hidden
+                    className="absolute left-3 top-3 size-4 text-muted-foreground"
                   />
-                </Label>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSearch("");
+                  <Input
+                    aria-label="Buscar imóveis"
+                    className="pl-9"
+                    placeholder="Código, título, endereço ou proprietário"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                <select
+                  aria-label="Filtrar tipo"
+                  className={selectClass}
+                  value={filters.type}
+                  onChange={(e) => filter("type", e.target.value)}
+                >
+                  <option value="">Todos os tipos</option>
+                  {enumOptions(PROPERTY_TYPES)}
+                </select>
+                <select
+                  aria-label="Filtrar finalidade"
+                  className={selectClass}
+                  value={filters.purpose}
+                  onChange={(e) => filter("purpose", e.target.value)}
+                >
+                  <option value="">Todas as finalidades</option>
+                  {enumOptions(PROPERTY_PURPOSES)}
+                </select>
+                <select
+                  aria-label="Filtrar situação"
+                  className={selectClass}
+                  value={filters.status}
+                  onChange={(e) => filter("status", e.target.value)}
+                >
+                  <option value="">Todas as situações</option>
+                  {enumOptions(PROPERTY_STATUSES)}
+                </select>
+                <select
+                  aria-label="Filtrar cidade"
+                  className={selectClass}
+                  value={filters.city}
+                  onChange={(e) => filter("city", e.target.value)}
+                >
+                  <option value="">Todas as cidades</option>
+                  {options.data?.cities.map((city) => (
+                    <option key={city}>{city}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <VoiceSearch
+                  onApply={(criteria) => {
+                    setSearch(criteria.search);
                     setFilters({
-                      search: "",
-                      type: "",
-                      purpose: "",
+                      ...criteria,
+                      maxPrice: criteria.maxPrice,
                       status: "",
                       city: "",
                       page: 1,
+                      voice: true,
                     });
                   }}
-                >
-                  Limpar busca por voz
-                </Button>
-              </>
-            )}
-          </div>
-          {query.isLoading ? (
-            <p className="flex items-center gap-2 py-8">
-              <Loader2 aria-hidden className="size-4 animate-spin" />
-              Carregando imóveis…
-            </p>
-          ) : query.isError ? (
-            <div role="alert" className="space-y-3 rounded-xl border p-5">
-              <p>{realEstateError(query.error)}</p>
-              <Button variant="outline" onClick={() => void query.refetch()}>
-                Tentar novamente
-              </Button>
-            </div>
-          ) : !data?.items.length ? (
-            <div className="rounded-xl border border-dashed p-8 text-center">
-              <p className="font-medium">Nenhum imóvel encontrado.</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Cadastre o primeiro imóvel ou ajuste os filtros.
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2">
-              {data.items.map((row) => (
-                <article key={row.id} className="rounded-xl border p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        {row.code} · {PROPERTY_TYPES[row.property_type]}
-                      </p>
-                      <h2 className="mt-1 break-words font-semibold">{row.title}</h2>
-                    </div>
-                    <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs">
-                      {PROPERTY_STATUSES[row.status]}
-                    </span>
-                  </div>
+                />
+                {filters.voice && (
+                  <>
+                    <Label className="flex items-center gap-2">
+                      Valor máximo (R$)
+                      <Input
+                        className="w-36"
+                        aria-label="Valor máximo da busca"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        disabled={!["venda", "locacao"].includes(filters.purpose)}
+                        value={filters.maxPrice ?? ""}
+                        onChange={(e) => {
+                          const n = Number(e.target.value);
+                          setFilters((f) => ({
+                            ...f,
+                            maxPrice: e.target.value && n > 0 && n < 1e12 ? n : null,
+                            page: 1,
+                          }));
+                        }}
+                      />
+                    </Label>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSearch("");
+                        setFilters({
+                          search: "",
+                          type: "",
+                          purpose: "",
+                          status: "",
+                          city: "",
+                          page: 1,
+                        });
+                      }}
+                    >
+                      Limpar busca por voz
+                    </Button>
+                  </>
+                )}
+              </div>
+              {query.isLoading ? (
+                <p className="flex items-center gap-2 py-8">
+                  <Loader2 aria-hidden className="size-4 animate-spin" />
+                  Carregando imóveis…
+                </p>
+              ) : query.isError ? (
+                <div role="alert" className="space-y-3 rounded-xl border p-5">
+                  <p>{realEstateError(query.error)}</p>
+                  <Button variant="outline" onClick={() => void query.refetch()}>
+                    Tentar novamente
+                  </Button>
+                </div>
+              ) : !data?.items.length ? (
+                <div className="rounded-xl border border-dashed p-8 text-center">
+                  <p className="font-medium">Nenhum imóvel encontrado.</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {row.city} / {row.state} · {PROPERTY_PURPOSES[row.purpose]}
+                    Cadastre o primeiro imóvel ou ajuste os filtros.
                   </p>
-                  <div className="mt-3 text-sm">
-                    {row.sale_price !== null && (
-                      <p>
-                        Venda: <strong>{formatCurrency(row.sale_price)}</strong>
+                </div>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {data.items.map((row) => (
+                    <article key={row.id} className="rounded-xl border p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            {row.code} · {PROPERTY_TYPES[row.property_type]}
+                          </p>
+                          <h2 className="mt-1 break-words font-semibold">{row.title}</h2>
+                        </div>
+                        <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs">
+                          {PROPERTY_STATUSES[row.status]}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {row.city} / {row.state} · {PROPERTY_PURPOSES[row.purpose]}
                       </p>
-                    )}
-                    {row.rent_price !== null && (
-                      <p>
-                        Aluguel mensal: <strong>{formatCurrency(row.rent_price)}</strong>
+                      <div className="mt-3 text-sm">
+                        {row.sale_price !== null && (
+                          <p>
+                            Venda: <strong>{formatCurrency(row.sale_price)}</strong>
+                          </p>
+                        )}
+                        {row.rent_price !== null && (
+                          <p>
+                            Aluguel mensal: <strong>{formatCurrency(row.rent_price)}</strong>
+                          </p>
+                        )}
+                      </div>
+                      <p className="mt-3 truncate text-sm">
+                        Proprietário: {row.owner_name || "Cadastro indisponível"}
                       </p>
-                    )}
-                  </div>
-                  <p className="mt-3 truncate text-sm">
-                    Proprietário: {row.owner_name || "Cadastro indisponível"}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setCatalog(row)}>
-                      Fotos e anúncio
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setSettlements(row)}>
-                      Comissões e repasses
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setContracts(row)}>
-                      Contratos e vencimentos
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setNegotiation(row)}>
-                      Propostas e negociações
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setActivity(row)}>
-                      Interessados e visitas
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setCatalog(row)}>
+                          Fotos e anúncio
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setSettlements(row)}>
+                          Comissões e repasses
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setContracts(row)}>
+                          Contratos e vencimentos
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setNegotiation(row)}>
+                          Propostas e negociações
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setActivity(row)}>
+                          Interessados e visitas
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          aria-label={`Ver detalhes de ${row.code}`}
+                          onClick={() => setSelected(row)}
+                        >
+                          Ver detalhes
+                        </Button>
+                        {canWrite && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            aria-label={`Editar ${row.code}`}
+                            onClick={() => edit(row)}
+                          >
+                            Editar
+                          </Button>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+              {(data?.total ?? 0) > 20 && (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-sm">
+                    Página {filters.page} de {Math.ceil((data?.total ?? 0) / 20)}
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      disabled={filters.page === 1 || query.isFetching}
+                      onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}
+                    >
+                      Anterior
                     </Button>
                     <Button
                       variant="outline"
-                      size="sm"
-                      aria-label={`Ver detalhes de ${row.code}`}
-                      onClick={() => setSelected(row)}
+                      disabled={filters.page * 20 >= (data?.total ?? 0) || query.isFetching}
+                      onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}
                     >
-                      Ver detalhes
+                      Próxima
                     </Button>
-                    {canWrite && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        aria-label={`Editar ${row.code}`}
-                        onClick={() => edit(row)}
-                      >
-                        Editar
-                      </Button>
-                    )}
                   </div>
-                </article>
-              ))}
-            </div>
-          )}
-          {(data?.total ?? 0) > 20 && (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="text-sm">
-                Página {filters.page} de {Math.ceil((data?.total ?? 0) / 20)}
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  disabled={filters.page === 1 || query.isFetching}
-                  onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={filters.page * 20 >= (data?.total ?? 0) || query.isFetching}
-                  onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}
-                >
-                  Próxima
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
       {overviewSelection?.kind === "contrato" && (
         <PropertyContracts
           key={overviewSelection.id}
@@ -568,6 +633,10 @@ function PropertyWorkspace() {
           initialCommercialFilters={commercialFilters}
           onClose={() => setInquiries(false)}
           onLocate={(code) => {
+            if (section === "atendimentos") {
+              void navigate({ to: "/imobiliaria/imoveis", search: { localizar: code } });
+              return;
+            }
             setSearch(code);
             setFilters((f) =>
               f.voice ? { search: code, type: "", purpose: "", status: "", city: "", page: 1 } : f,

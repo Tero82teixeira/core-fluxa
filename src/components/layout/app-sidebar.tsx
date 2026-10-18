@@ -1,3 +1,4 @@
+import { realEstateItemActive } from "@/lib/real-estate-workspace";
 import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
@@ -30,7 +31,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { organizationDisplayName } from "@/lib/organization-name";
-import { NAV_GROUPS, NAV_ITEMS, navItemVisibleForRole, type NavItem } from "@/lib/navigation";
+import {
+  NAV_GROUPS,
+  NAV_ITEMS,
+  navItemVisibleForRole,
+  realEstateNavigation,
+  type NavItem,
+} from "@/lib/navigation";
 import { initials } from "@/lib/format";
 import { useTheme } from "@/lib/theme";
 import { useWorkspace } from "@/lib/workspace";
@@ -45,6 +52,7 @@ import {
 import { toast } from "sonner";
 
 const NAV_ICON_TONE: Record<string, string> = {
+  "/imobiliaria/imoveis": "bg-amber-400/10 text-amber-300",
   "/meu-dia": "bg-amber-400/10 text-amber-300",
   "/central": "bg-blue-400/12 text-blue-300",
   "/clientes": "bg-cyan-400/10 text-cyan-300",
@@ -101,6 +109,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const routeSearch = useRouterState({ select: (s) => s.location.search });
   const { theme, toggleTheme } = useTheme();
   const {
     displayName,
@@ -112,6 +121,8 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   } = useWorkspace();
   const organizationSettings = membership?.organizations?.organization_settings;
   const isHealthWorkspace = organizationSettings?.business_segment === "health";
+  const isRealEstate = organizationSettings?.business_segment === "real_estate";
+  const [administrationOpen, setAdministrationOpen] = useState(false);
   const focusedHealth = isFocusedHealthWorkspace(organizationSettings);
   const [billingOpen, setBillingOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -149,6 +160,14 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
       (item.to !== "/assinatura" || canManageSubscription(role)),
   );
 
+  const realEstate = realEstateNavigation(visibleItems);
+  useEffect(() => {
+    if (
+      isRealEstate &&
+      realEstate.administration.some((item) => realEstateItemActive(item, pathname, routeSearch))
+    )
+      setAdministrationOpen(true);
+  }, [isRealEstate, pathname, routeSearch, role]);
   const routineItems = HEALTH_ROUTINE_ORDER.flatMap((route) =>
     visibleItems.filter((item) => item.to === route),
   );
@@ -167,7 +186,9 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   };
 
   const renderItem = (item: NavItem) => {
-    const active = isCurrentRoute(pathname, item.to);
+    const active = isRealEstate
+      ? realEstateItemActive(item, pathname, routeSearch)
+      : isCurrentRoute(pathname, item.to);
     const navIcon = collapsed ? (
       <item.icon className="size-4.5 shrink-0 text-sidebar-primary" aria-hidden />
     ) : (
@@ -181,7 +202,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
       </span>
     );
     return (
-      <SidebarMenuItem key={item.to}>
+      <SidebarMenuItem key={item.to + (item.search?.secao ?? "")}>
         <SidebarMenuButton
           asChild={!locked}
           isActive={active}
@@ -198,7 +219,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
               <span className="truncate">{item.label}</span>
             </span>
           ) : (
-            <Link to={item.to} onClick={closeOnMobile} className="gap-3">
+            <Link to={item.to} search={item.search ?? {}} onClick={closeOnMobile} className="gap-3">
               {navIcon}
               <span className="truncate">{item.label}</span>
               {!item.ready && !collapsed && (
@@ -284,7 +305,16 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
       <SidebarHeader className="border-b border-sidebar-border/80 px-3 py-4">
         <Link
           to={
-            focusedHealth ? healthWorkspaceHome(organizationSettings?.enabled_modules) : "/meu-dia"
+            isRealEstate && realEstate.operation.some((item) => item.to === "/imobiliaria/imoveis")
+              ? "/imobiliaria/imoveis"
+              : focusedHealth
+                ? healthWorkspaceHome(organizationSettings?.enabled_modules)
+                : "/meu-dia"
+          }
+          search={
+            isRealEstate && realEstate.operation.some((item) => item.to === "/imobiliaria/imoveis")
+              ? { secao: "pendencias" }
+              : {}
           }
           onClick={closeOnMobile}
           className="flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
@@ -306,7 +336,21 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
       </SidebarHeader>
 
       <SidebarContent className="gap-1 px-2">
-        {focusedHealth ? (
+        {isRealEstate ? (
+          <>
+            {renderGroup("rotina-imobiliaria", "Imobiliária", realEstate.operation)}
+            {renderGroup("financeiro-imobiliaria", "Financeiro", realEstate.finance)}
+            {renderCollapsibleGroup(
+              "administracao-imobiliaria",
+              "Administração",
+              realEstate.administration,
+              administrationOpen,
+              setAdministrationOpen,
+              FileStack,
+            )}
+            {renderGroup("sistema", "Sistema", realEstate.system)}
+          </>
+        ) : focusedHealth ? (
           <>
             {renderGroup("rotina-clinica", "Clínica", routineItems)}
             {renderCollapsibleGroup(

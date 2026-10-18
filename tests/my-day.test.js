@@ -135,5 +135,5 @@ test("Meu Dia continua acessível aos segmentos gerais e Saúde focada abre a cl
   assert.match(layout, /isFocusedHealthWorkspace\(settings\)/);
   assert.match(layout, /workspaceHomeForSegment\(/);
   assert.match(layout, /isFocusedHealthWorkspace\(settings\)/);
-  assert.match(sidebar, /focusedHealth \? healthWorkspaceHome[\s\S]*: "\/meu-dia"/);
+  assert.match(sidebar, /focusedHealth\s*\? healthWorkspaceHome[\s\S]*: "\/meu-dia"/);
 });
