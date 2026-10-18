@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { LegalPublicDemo } from "@/components/legal/legal-public-demo";
+import { buildLegalDemo, type LegalDemoState } from "@/lib/legal-demo";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { RealEstatePublicDemo } from "@/components/real-estate/real-estate-public-demo";
 import { Button } from "@/components/ui/button";
@@ -138,6 +140,7 @@ function DemoWorkspace({ area }: { area: BusinessSegment }) {
   const modules = demoModulesFor(area);
   const [active, setActive] = useState<DemoModule>("overview");
   const [data, setData] = useState<DemoData>(() => buildDemoData(area));
+  const [legal, setLegal] = useState<LegalDemoState>(buildLegalDemo);
   const Icon = SEGMENT_OPTIONS.find((s) => s.key === area)?.icon ?? Sparkles;
 
   return (
@@ -151,14 +154,14 @@ function DemoWorkspace({ area }: { area: BusinessSegment }) {
           <Icon className="size-4 text-primary" aria-hidden />
           <span className="truncate font-medium">{t(`demo.segments.${area}.label`)}</span>
         </div>
-        <nav aria-label={t("demo.nav.operation")} className="flex gap-1 overflow-x-auto md:flex-col">
+        <nav aria-label={t("demo.nav.operation")} className={area === "legal" ? "grid grid-cols-2 gap-1 sm:grid-cols-3 md:flex md:flex-col" : "flex gap-1 overflow-x-auto md:flex-col"}>
           {modules.map((m) => (
             <button
               key={m}
               type="button"
               aria-current={active === m ? "page" : undefined}
               onClick={() => setActive(m)}
-              className={`shrink-0 rounded-lg px-3 py-2 text-left text-sm transition ${active === m ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-muted"}`}
+              className={`${area === "legal" ? "min-h-11 min-w-0 break-words" : "shrink-0"} rounded-lg px-3 py-2 text-left text-sm transition ${active === m ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-muted"}`}
             >
               {moduleLabel(t, area, m)}
             </button>
@@ -176,7 +179,9 @@ function DemoWorkspace({ area }: { area: BusinessSegment }) {
           </div>
           <Link to="/demo" className="text-sm text-muted-foreground hover:text-foreground md:hidden">← {t("demo.changeArea")}</Link>
         </div>
-        <ModuleView area={area} module={active} data={data} setData={setData} goTo={setActive} />
+        {area === "legal" && ["overview", "schedule", "cases"].includes(active) ? (
+          <LegalPublicDemo module={active} data={data} setData={setData} legal={legal} setLegal={setLegal} goTo={setActive} />
+        ) : <ModuleView area={area} module={active} data={data} setData={setData} goTo={setActive} />}
       </main>
     </div>
   );

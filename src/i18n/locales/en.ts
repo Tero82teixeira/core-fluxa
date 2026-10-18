@@ -1,6 +1,66 @@
 import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
+  legalDemo: {
+    requirement: "Pending requirements",
+    withoutOwner: "Unassigned",
+    "active": "Active cases",
+    "overdue": "Overdue deadlines",
+    "today": "Due on reference date",
+    "nextSeven": "Next 7 days",
+    "priority": "Priority deadlines",
+    "openAgenda": "Open Legal Calendar",
+    "openCase": "Open case details",
+    "countHint": "Indicators include open general and individual deadlines. Each commitment is counted separately.",
+    "preview": "Showing {{shown}} of {{total}} priority deadlines. Open case details or browse the calendar.",
+    "tasks": "Tasks",
+    "hearing": "Fictional hearing",
+    "hearings": "Hearings",
+    "deadlines": "Case deadlines",
+    "allDay": "All day",
+    "empty": "No results for this period or filter.",
+    "date": "Calendar date",
+    "previous": "Previous period",
+    "next": "Next period",
+    "reference": "Reference date",
+    "day": "Day",
+    "week": "Week",
+    "period": "Period starting {{date}}",
+    "timeHint": "Simulated local times; deadlines keep their calendar date.",
+    "total": "{{total}} commitments in this period",
+    "previousPage": "Previous",
+    "nextPage": "Next",
+    "search": "Search by client, case or fictional CNJ number",
+    "referenceHint": "Fictional scenario as of {{date}}",
+    "simulationHint": "Try completing a deadline or changing a hearing. Changes update the dashboard and calendar and are discarded on reload.",
+    "cnj": "Fictional CNJ number",
+    "caseHint": "Demonstration only. No court lookup, document submission or changes to real data.",
+    "court": "Illustrative court · fictional district and judicial unit",
+    "nextHearing": "Next hearing (simulated local time)",
+    "saveHearing": "Simulate hearing change",
+    "invalidDate": "Enter a valid date and time.",
+    "generalDue": "General deadline",
+    "finishCase": "Simulate case completion",
+    "reopenCase": "Reopen case in demo",
+    "status": {
+        "open": "Open",
+        "done": "Completed",
+        "cancelled": "Cancelled"
+    },
+    "kinds": {
+        "general": "General deadline",
+        "individual": "Individual deadline",
+        "hearing": "Hearing",
+        "task": "Task"
+    },
+    "deadlineNames": {
+        "d1": "Submit a statement",
+        "d2": "Check documentation",
+        "d3": "Review draft",
+        "d4": "Attach documents",
+        "d5": "Prepare response"
+    }
+},
   realEstateDemo: {
     mobile: {
       voiceWorkspace: "What do you need?",
@@ -572,6 +632,7 @@ export const en: LocaleShape = {
       other: { label: "Other industry", description: "FLUXA's operational core, customizable later." },
     },
     modules: {
+      legal: {"overview": "Legal Dashboard", "schedule": "Legal Calendar"},
       overview: "Dashboard",
       records: "Clients",
       cases: "Cases",
