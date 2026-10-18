@@ -1,3 +1,4 @@
+import { realEstateItemActive } from "@/lib/real-estate-workspace";
 import { useEffect, useState } from "react";
 import { organizationDisplayName } from "@/lib/organization-name";
 import { DEMO_MODE } from "@/lib/demo";
@@ -48,7 +49,7 @@ import {
   useUnreadNotificationCount,
 } from "@/hooks/use-notifications";
 import { initials, relativeTime } from "@/lib/format";
-import { NAV_ITEMS, navItemVisibleForRole } from "@/lib/navigation";
+import { NAV_ITEMS, navItemVisibleForRole, realEstateNavigation } from "@/lib/navigation";
 import { isFocusedHealthWorkspace, routeVisibleForModules } from "@/lib/organization-segments";
 import {
   notificationDestination,
@@ -80,9 +81,30 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
   const subscription = useSubscriptionCheckout();
   const platformSupport = usePlatformSupportOpenCount(platformAdmin);
 
-  const current = NAV_ITEMS.find(
-    (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
+  const routeSearch = useRouterState({ select: (s) => s.location.search });
+  const isRealEstate = organizationSettings?.business_segment === "real_estate";
+  const estateNav = realEstateNavigation(
+    NAV_ITEMS.filter(
+      (item) =>
+        navItemVisibleForRole(item.to, role) &&
+        routeVisibleForModules(
+          item.to,
+          organizationSettings?.business_segment,
+          organizationSettings?.enabled_modules,
+          focusedHealth,
+        ),
+    ),
   );
+  const current =
+    (isRealEstate
+      ? [
+          ...estateNav.operation,
+          ...estateNav.finance,
+          ...estateNav.administration,
+          ...estateNav.system,
+        ].find((item) => realEstateItemActive(item, pathname, routeSearch))
+      : null) ??
+    NAV_ITEMS.find((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
   const CurrentIcon = current?.icon;
   const isDetail = Boolean(current) && pathname !== current?.to;
 
@@ -165,7 +187,16 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
         focusedHealth,
       ),
   );
-  const quickActions = focusedHealth ? healthQuickActions : generalQuickActions;
+  const estateQuickActions = [...estateNav.operation, ...estateNav.finance].filter(
+    (item) =>
+      ["atendimentos", "negociacoes", "repasses"].includes(item.search?.secao || "") ||
+      (item.to === "/imobiliaria/imoveis" && !item.search),
+  );
+  const quickActions = focusedHealth
+    ? healthQuickActions
+    : isRealEstate
+      ? estateQuickActions
+      : generalQuickActions;
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-card/90 shadow-[0_1px_18px_-12px_rgba(15,23,42,0.45)] backdrop-blur-xl">
@@ -273,7 +304,15 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
                 <DropdownMenuLabel>Ações rápidas</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {quickActions.map((action) => (
-                  <DropdownMenuItem key={action.label} onSelect={() => navigate({ to: action.to })}>
+                  <DropdownMenuItem
+                    key={action.label}
+                    onSelect={() =>
+                      navigate({
+                        to: action.to,
+                        ...("search" in action ? { search: action.search } : {}),
+                      })
+                    }
+                  >
                     <action.icon className="size-4" aria-hidden />
                     {action.label}
                   </DropdownMenuItem>

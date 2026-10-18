@@ -1,3 +1,4 @@
+import { realEstateOverviewStart } from "@/lib/real-estate-workspace";
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,23 +22,22 @@ const selectClass = "h-10 w-full rounded-md border border-input bg-background px
 export function PropertyOverview({
   onOpen,
   alertSearch,
+  title = "Visão geral da imobiliária",
 }: {
+  title?: string;
   onOpen: (item: OverviewItem) => void;
   alertSearch?: RealEstateAlertSearch;
 }) {
   const { organizationId } = useWorkspace();
+  const contextual =
+    !!realEstateOverviewStart({ secao: alertSearch?.secao }).kind && !alertSearch?.pendencia;
   const [text, setText] = useState("");
-  const [filters, setFilters] = useState({ search: "", kind: "", scope: "pendencias", page: 1 });
+  const [filters, setFilters] = useState(() => realEstateOverviewStart(alertSearch ?? {}));
   useEffect(() => {
-    if (!alertSearch?.pendencia) return;
-    setText(alertSearch.busca || "");
-    setFilters({
-      search: alertSearch.busca || "",
-      kind: alertSearch.pendencia,
-      scope: "pendencias",
-      page: 1,
-    });
-  }, [alertSearch?.pendencia, alertSearch?.busca]);
+    const initial = realEstateOverviewStart(alertSearch ?? {});
+    setText(initial.search);
+    setFilters(initial);
+  }, [alertSearch?.pendencia, alertSearch?.busca, alertSearch?.secao]);
   useEffect(() => {
     const timer = setTimeout(
       () => setFilters((f) => ({ ...f, search: text.trim(), page: 1 })),
@@ -55,14 +55,14 @@ export function PropertyOverview({
   const count = query.data?.total || 0;
   function clear() {
     setText("");
-    setFilters({ search: "", kind: "", scope: "pendencias", page: 1 });
+    setFilters(realEstateOverviewStart({ secao: alertSearch?.secao }));
   }
   return (
     <Card>
       <CardContent className="space-y-4 p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Visão geral da imobiliária</h2>
+            <h2 className="text-lg font-semibold">{title}</h2>
             <p className="text-sm text-muted-foreground">
               Encontre um registro ou abra uma pendência para continuar o atendimento.
             </p>
@@ -75,31 +75,35 @@ export function PropertyOverview({
             Atualizar painel
           </Button>
         </div>
-        <div className="grid gap-3 lg:grid-cols-3">
-          {Object.entries(cards).map(([kind, label]) => (
-            <button
-              key={kind}
-              type="button"
-              aria-pressed={filters.kind === kind && filters.scope === "pendencias"}
-              className="rounded-xl border p-4 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              onClick={() => {
-                setText("");
-                setFilters({ search: "", kind, scope: "pendencias", page: 1 });
-              }}
-            >
-              <span className="block text-sm">{label}</span>
-              <strong className="mt-1 block text-2xl">
-                {query.isPending || query.isError
-                  ? "—"
-                  : (query.data?.counts[kind as keyof typeof cards] ?? 0)}
-              </strong>
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Os totais acima consideram toda a empresa. Propostas com validade vencida continuam
-          pendentes até uma decisão. Datas no horário de Brasília.
-        </p>
+        {!contextual && (
+          <div className="grid gap-3 lg:grid-cols-3">
+            {Object.entries(cards).map(([kind, label]) => (
+              <button
+                key={kind}
+                type="button"
+                aria-pressed={filters.kind === kind && filters.scope === "pendencias"}
+                className="rounded-xl border p-4 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => {
+                  setText("");
+                  setFilters({ search: "", kind, scope: "pendencias", page: 1 });
+                }}
+              >
+                <span className="block text-sm">{label}</span>
+                <strong className="mt-1 block text-2xl">
+                  {query.isPending || query.isError
+                    ? "—"
+                    : (query.data?.counts[kind as keyof typeof cards] ?? 0)}
+                </strong>
+              </button>
+            ))}
+          </div>
+        )}
+        {!contextual && (
+          <p className="text-xs text-muted-foreground">
+            Os totais acima consideram toda a empresa. Propostas com validade vencida continuam
+            pendentes até uma decisão. Datas no horário de Brasília.
+          </p>
+        )}
         <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1 lg:col-span-2">
             <Label htmlFor="overview-search">Buscar por imóvel, cliente ou contrato</Label>
@@ -118,22 +122,24 @@ export function PropertyOverview({
               />
             </div>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="overview-kind">Tipo de registro</Label>
-            <select
-              id="overview-kind"
-              className={selectClass}
-              value={filters.kind}
-              onChange={(e) => setFilters((f) => ({ ...f, kind: e.target.value, page: 1 }))}
-            >
-              <option value="">Todos os tipos</option>
-              {Object.entries(labels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!contextual && (
+            <div className="space-y-1">
+              <Label htmlFor="overview-kind">Tipo de registro</Label>
+              <select
+                id="overview-kind"
+                className={selectClass}
+                value={filters.kind}
+                onChange={(e) => setFilters((f) => ({ ...f, kind: e.target.value, page: 1 }))}
+              >
+                <option value="">Todos os tipos</option>
+                {Object.entries(labels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="space-y-1">
             <Label htmlFor="overview-scope">Exibir</Label>
             <select
