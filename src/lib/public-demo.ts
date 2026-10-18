@@ -19,7 +19,7 @@ export const DEMO_AREAS: BusinessSegment[] = [
 
 /** Módulos compatíveis por área (espelha a segmentação real: nada jurídico em Saúde etc.). */
 export const DEMO_AREA_MODULES: Record<BusinessSegment, DemoModule[]> = {
-  legal: ["overview", "records", "cases", "tasks", "documents", "finance"],
+  legal: ["overview", "schedule", "records", "cases", "tasks", "documents", "finance"],
   accounting: ["overview", "records", "cases", "tasks", "documents", "finance"],
   engineering: ["overview", "records", "cases", "tasks", "documents", "finance"],
   health: ["overview", "records", "schedule", "cases", "tasks", "finance"],

@@ -20,7 +20,7 @@ test("demo cobre todas as áreas reais do cadastro", () => {
 test("saúde mostra agenda e não processos jurídicos; advocacia não mostra agenda clínica", () => {
   assert.ok(DEMO_AREA_MODULES.health.includes("schedule"));
   assert.ok(!DEMO_AREA_MODULES.health.includes("documents"));
-  assert.ok(!DEMO_AREA_MODULES.legal.includes("schedule"));
+  assert.ok(DEMO_AREA_MODULES.legal.includes("schedule"));
   assert.equal(buildDemoData("legal").schedule.length, 0);
   assert.ok(buildDemoData("health").cases.every((c) => c.titleKey.startsWith("demo.data.health.")));
 });

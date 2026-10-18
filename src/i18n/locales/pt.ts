@@ -1,5 +1,65 @@
 /** Português (Brasil) — idioma padrão e fonte da verdade das chaves. */
 export const pt = {
+  legalDemo: {
+    requirement: "Em exigência",
+    withoutOwner: "Sem responsável",
+    "active": "Carteira ativa",
+    "overdue": "Prazos vencidos",
+    "today": "Vencem na data de referência",
+    "nextSeven": "Próximos 7 dias",
+    "priority": "Prazos prioritários",
+    "openAgenda": "Abrir Agenda Jurídica",
+    "openCase": "Abrir ficha do processo",
+    "countHint": "Os indicadores incluem prazos gerais e individuais em aberto. Cada compromisso é contado separadamente.",
+    "preview": "Mostrando {{shown}} de {{total}} prazos prioritários. Abra as fichas ou navegue pela agenda.",
+    "tasks": "Tarefas",
+    "hearing": "Audiência fictícia",
+    "hearings": "Audiências",
+    "deadlines": "Prazos do processo",
+    "allDay": "Dia inteiro",
+    "empty": "Nenhum resultado neste período ou filtro.",
+    "date": "Data da agenda",
+    "previous": "Período anterior",
+    "next": "Próximo período",
+    "reference": "Data de referência",
+    "day": "Dia",
+    "week": "Semana",
+    "period": "Período a partir de {{date}}",
+    "timeHint": "Horários locais simulados; prazos mantêm sua data.",
+    "total": "{{total}} compromissos no período",
+    "previousPage": "Anterior",
+    "nextPage": "Próxima",
+    "search": "Buscar por cliente, processo ou CNJ fictício",
+    "referenceHint": "Cenário fictício com referência em {{date}}",
+    "simulationHint": "Experimente concluir um prazo ou alterar uma audiência. As mudanças atualizam o painel e a agenda e são descartadas ao recarregar.",
+    "cnj": "CNJ fictício",
+    "caseHint": "Exemplo demonstrativo. Não há consulta a tribunais, envio de documentos ou gravação em dados reais.",
+    "court": "Órgão judicial ilustrativo · comarca e vara fictícias",
+    "nextHearing": "Próxima audiência (horário local simulado)",
+    "saveHearing": "Simular alteração da audiência",
+    "invalidDate": "Informe uma data e um horário válidos.",
+    "generalDue": "Prazo geral",
+    "finishCase": "Simular conclusão do processo",
+    "reopenCase": "Reabrir processo na demonstração",
+    "status": {
+        "open": "Em aberto",
+        "done": "Concluído",
+        "cancelled": "Cancelado"
+    },
+    "kinds": {
+        "general": "Prazo geral",
+        "individual": "Prazo individual",
+        "hearing": "Audiência",
+        "task": "Tarefa"
+    },
+    "deadlineNames": {
+        "d1": "Apresentar manifestação",
+        "d2": "Conferir documentação",
+        "d3": "Revisar minuta",
+        "d4": "Juntar documentos",
+        "d5": "Preparar resposta"
+    }
+},
   realEstateDemo: {
     mobile: {
       voiceWorkspace: "O que você precisa?",
@@ -580,6 +640,7 @@ export const pt = {
       other: { label: "Outro segmento", description: "Núcleo operacional da FLUXA, personalizável depois." },
     },
     modules: {
+      legal: {"overview": "Painel Jurídico", "schedule": "Agenda Jurídica"},
       overview: "Painel",
       records: "Clientes",
       cases: "Processos",

@@ -1,6 +1,66 @@
 import type { LocaleShape } from "./pt";
 
 export const es: LocaleShape = {
+  legalDemo: {
+    requirement: "Con requerimientos",
+    withoutOwner: "Sin responsable",
+    "active": "Casos activos",
+    "overdue": "Plazos vencidos",
+    "today": "Vencen en la fecha de referencia",
+    "nextSeven": "Próximos 7 días",
+    "priority": "Plazos prioritarios",
+    "openAgenda": "Abrir Agenda Jurídica",
+    "openCase": "Abrir ficha del caso",
+    "countHint": "Los indicadores incluyen plazos generales e individuales abiertos. Cada compromiso se cuenta por separado.",
+    "preview": "Mostrando {{shown}} de {{total}} plazos prioritarios. Abra las fichas o consulte la agenda.",
+    "tasks": "Tareas",
+    "hearing": "Audiencia ficticia",
+    "hearings": "Audiencias",
+    "deadlines": "Plazos del caso",
+    "allDay": "Todo el día",
+    "empty": "Sin resultados para este período o filtro.",
+    "date": "Fecha de la agenda",
+    "previous": "Período anterior",
+    "next": "Próximo período",
+    "reference": "Fecha de referencia",
+    "day": "Día",
+    "week": "Semana",
+    "period": "Período desde {{date}}",
+    "timeHint": "Horarios locales simulados; los plazos conservan su fecha.",
+    "total": "{{total}} compromisos en el período",
+    "previousPage": "Anterior",
+    "nextPage": "Siguiente",
+    "search": "Buscar por cliente, caso o CNJ ficticio",
+    "referenceHint": "Escenario ficticio con referencia en {{date}}",
+    "simulationHint": "Pruebe completar un plazo o cambiar una audiencia. Los cambios actualizan el panel y la agenda y se descartan al recargar.",
+    "cnj": "CNJ ficticio",
+    "caseHint": "Solo demostración. Sin consultas a tribunales, envío de documentos ni cambios en datos reales.",
+    "court": "Órgano judicial ilustrativo · distrito y juzgado ficticios",
+    "nextHearing": "Próxima audiencia (hora local simulada)",
+    "saveHearing": "Simular cambio de audiencia",
+    "invalidDate": "Introduzca una fecha y hora válidas.",
+    "generalDue": "Plazo general",
+    "finishCase": "Simular finalización del caso",
+    "reopenCase": "Reabrir caso en la demostración",
+    "status": {
+        "open": "Abierto",
+        "done": "Completado",
+        "cancelled": "Cancelado"
+    },
+    "kinds": {
+        "general": "Plazo general",
+        "individual": "Plazo individual",
+        "hearing": "Audiencia",
+        "task": "Tarea"
+    },
+    "deadlineNames": {
+        "d1": "Presentar manifestación",
+        "d2": "Verificar documentación",
+        "d3": "Revisar borrador",
+        "d4": "Adjuntar documentos",
+        "d5": "Preparar respuesta"
+    }
+},
   realEstateDemo: {
     mobile: {
       voiceWorkspace: "¿Qué necesitas?",
@@ -576,6 +636,7 @@ export const es: LocaleShape = {
       other: { label: "Otro segmento", description: "Núcleo operativo de FLUXA, personalizable después." },
     },
     modules: {
+      legal: {"overview": "Panel Jurídico", "schedule": "Agenda Jurídica"},
       overview: "Panel",
       records: "Clientes",
       cases: "Procesos",
