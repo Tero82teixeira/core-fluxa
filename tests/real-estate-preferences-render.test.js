@@ -153,6 +153,42 @@ test("preferências carregam traduções ao abrir diretamente no sistema, sem vi
     assert(formHtml.includes(i18n.t("realEstateDemo.profile.save")));
     assert(voiceHtml.includes(i18n.t("realEstateDemo.voice.open")));
     assert.doesNotMatch(profileHtml + formHtml + voiceHtml, /realEstateDemo\.(profile|voice)\./);
+    const { MobileClientSummary } =
+      await import("../src/components/real-estate/mobile-workspace.tsx");
+    const { DirectClientVoice } =
+      await import("../src/components/real-estate/direct-client-voice.tsx");
+    const mobile = renderToStaticMarkup(
+      React.createElement(MobileClientSummary, {
+        data: {
+          client: {
+            id: "test",
+            name: "<script>cliente</script>",
+            status: "ativo",
+            phone: "javascript:alert(1)",
+          },
+          total: 1,
+          items: [
+            {
+              id: "p",
+              kind: "proposal",
+              title: "IMOV-001",
+              status: "aceita",
+              amount: 1600,
+              purpose: "locacao",
+              at: "2026-10-18T12:00:00Z",
+            },
+          ],
+        },
+      }),
+    );
+    const directVoice = renderToStaticMarkup(
+      React.createElement(DirectClientVoice, { onSearch: () => {} }),
+    );
+    assert(mobile.includes(i18n.t("realEstateDemo.mobile.acceptedNotice")));
+    assert(mobile.includes("&lt;script&gt;"));
+    assert(!mobile.includes("javascript:"));
+    assert(directVoice.includes(i18n.t("realEstateDemo.mobile.voice")));
+    assert.doesNotMatch(mobile + directVoice, /realEstateDemo\.mobile\./);
     const { DemoInquiryQueue } =
       await import("../src/components/real-estate/demo-inquiry-queue.tsx");
     const { buildCommercialDemoInquiries } =

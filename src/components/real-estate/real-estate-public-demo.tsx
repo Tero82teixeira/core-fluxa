@@ -1,3 +1,6 @@
+import { MobileWorkspace } from "./mobile-workspace";
+import { useCompactRealEstate } from "@/hooks/use-compact-real-estate";
+import { buildMobileDemo } from "@/lib/real-estate-mobile-demo";
 import { RealEstateDemoCatalog } from "./real-estate-demo-catalog";
 import { VoiceSearch } from "./voice-search";
 import { normalizeVoice, type VoiceCriteria } from "@/lib/real-estate-voice";
@@ -37,6 +40,8 @@ const card = "space-y-3 rounded-2xl border bg-card p-4 sm:p-5";
 export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: string }) {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState(buildRealEstateDemo);
+  const compact = useCompactRealEstate();
+  const [full, setFull] = useState(false);
   const [active, setActive] = useState<Module>(
     catalogSelection !== undefined ? "catalog" : "overview",
   );
@@ -90,8 +95,22 @@ export function RealEstatePublicDemo({ catalogSelection }: { catalogSelection?: 
     </p>
   );
 
+  if (compact && !full && catalogSelection === undefined)
+    return (
+      <MobileWorkspace
+        key="mobile-demo"
+        source={buildMobileDemo(data)}
+        demo
+        onFull={() => setFull(true)}
+      />
+    );
   return (
     <div className="mx-auto w-full min-w-0 max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+      {compact && catalogSelection === undefined && (
+        <Button variant="outline" className="mb-4 min-h-12" onClick={() => setFull(false)}>
+          {label("mobile.home")}
+        </Button>
+      )}
       <header className="rounded-3xl bg-slate-950 p-5 text-white sm:p-8">
         <Link to="/demo" className="text-sm text-slate-300 hover:text-white">
           ← {t("demo.changeArea")}

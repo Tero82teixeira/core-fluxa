@@ -1,3 +1,6 @@
+import { MobileWorkspace } from "@/components/real-estate/mobile-workspace";
+import { useRealEstateMobile } from "@/hooks/use-real-estate-mobile";
+import { useCompactRealEstate } from "@/hooks/use-compact-real-estate";
 import { PropertyCommercialDialog } from "@/components/real-estate/property-commercial-dialog";
 import { VoiceSearch } from "@/components/real-estate/voice-search";
 import type { CommercialFilters } from "@/lib/real-estate-commercial";
@@ -13,7 +16,7 @@ import { PropertyContracts } from "@/components/real-estate/property-contracts";
 import { PropertyNegotiations } from "@/components/real-estate/property-negotiations";
 import { PropertyActivity } from "@/components/real-estate/property-activity";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Building2, Loader2, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -57,7 +60,45 @@ export const Route = createFileRoute("/_authenticated/imobiliaria/imoveis")({
 });
 function PropertiesPage() {
   const { organizationId } = useWorkspace();
-  return <PropertyWorkspace key={organizationId ?? "none"} />;
+  return <PropertyEntry key={organizationId ?? "none"} />;
+}
+function PropertyEntry() {
+  const navigate = useNavigate();
+  const { organizationId, membership } = useWorkspace();
+  const compact = useCompactRealEstate();
+  const [full, setFull] = useState(false);
+  const source = useRealEstateMobile(organizationId);
+  const search = Route.useSearch();
+  const settings = membership?.organizations?.organization_settings;
+  const enabled =
+    settings?.business_segment === "real_estate" &&
+    routeVisibleForModules(
+      "/imobiliaria/imoveis",
+      settings.business_segment,
+      settings.enabled_modules,
+    );
+  if (compact && !full && !search.pendencia && enabled)
+    return (
+      <MobileWorkspace
+        source={source}
+        onFull={() => setFull(true)}
+        onClientRecord={(clientId) =>
+          void navigate({ to: "/clientes/$clientId", params: { clientId } })
+        }
+      />
+    );
+  return (
+    <>
+      {compact && enabled && !search.pendencia && (
+        <div className="px-4 pt-4">
+          <Button variant="outline" className="min-h-12" onClick={() => setFull(false)}>
+            Início rápido
+          </Button>
+        </div>
+      )}
+      <PropertyWorkspace />
+    </>
+  );
 }
 const selectClass =
   "h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
