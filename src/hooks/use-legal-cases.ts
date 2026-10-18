@@ -299,3 +299,27 @@ export function useLegalAgendaPage(
     },
   });
 }
+
+export function useLegalCnjProcesses(
+  organizationId: string | null,
+  cnj: string | null,
+  filters: import("@/hooks/use-operations").ProcessFilters,
+) {
+  return useQuery({
+    queryKey: ["legal-cnj-processes", organizationId, cnj, filters],
+    enabled: Boolean(organizationId && cnj),
+    queryFn: async () => {
+      const { data, error } = await rpc.rpc("search_legal_processes", {
+        _organization_id: organizationId,
+        _cnj: cnj,
+        _filters: filters,
+      });
+      if (error) throw error;
+      const result = data as {
+        items: import("@/hooks/use-operations").ProcessRow[];
+        total: number;
+      };
+      return { rows: result.items, count: result.total };
+    },
+  });
+}

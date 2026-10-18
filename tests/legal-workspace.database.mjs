@@ -171,4 +171,6 @@ assert(flags.proconfig.includes("search_path=public, pg_temp"));
 console.log(
   "Legal workspace: complete totals, individual deadlines, >500 events, pagination, mutations, boundaries and access rules passed.",
 );
+const { verifyLegalSearch } = await import("./legal-search.database.mjs");
+await verifyLegalSearch({ db,org,other,actor,viewer,external,inactive,client,caseId,id });
 await db.close();

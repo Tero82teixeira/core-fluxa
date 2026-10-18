@@ -1,3 +1,6 @@
+import { routeVisibleForModules } from "@/lib/organization-segments";
+import { legalCnjSearch } from "@/lib/legal-search";
+import { useLegalCnjProcesses, formatCnjNumber } from "@/hooks/use-legal-cases";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -95,12 +98,13 @@ function deadlineTone(due: string | null) {
 function ProcessesPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
-  const { organizationId } = useWorkspace();
+  const { organizationId, membership } = useWorkspace();
+  const settings = membership?.organizations?.organization_settings;
+  const isLegal = settings?.business_segment === "legal" && routeVisibleForModules("/advocacia/painel-juridico", settings.business_segment, settings.enabled_modules);
   const permissions = usePermissions();
 
   const clients = useClients(organizationId);
   const serviceTypes = useServiceTypes(organizationId);
-  const board = useProcesses(organizationId);
   const moveStage = useMoveProcessStage(organizationId);
 
   const [view, setView] = useState<"kanban" | "tabela">("kanban");
@@ -225,10 +229,17 @@ function ProcessesPage() {
     ],
   );
 
-  const list = useProcessesPage(organizationId, filters);
+  const cnj = isLegal ? legalCnjSearch(debounced) : null;
+  const searchingCnj = Boolean(cnj);
+  const currentView = searchingCnj ? "tabela" : view;
+  const board = useProcesses(organizationId, !searchingCnj);
+  const regularList = useProcessesPage(organizationId, filters, !searchingCnj);
+  const cnjList = useLegalCnjProcesses(organizationId, cnj, filters);
+  const list = searchingCnj ? cnjList : regularList;
   const rows = list.data?.rows ?? [];
   const count = list.data?.count ?? 0;
   const pages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+  useEffect(() => { if (searchingCnj && list.data && page >= pages) setPage(pages-1); }, [searchingCnj,list.data,page,pages]);
   const activeFilterCount = [
     term.trim().length > 0,
     clientId !== "todos",
@@ -256,7 +267,7 @@ function ProcessesPage() {
     setPage(0);
   };
 
-  const all = board.data ?? [];
+  const all = searchingCnj ? rows : (board.data ?? []);
   const owners = useMemo(
     () =>
       Array.from(
@@ -266,6 +277,7 @@ function ProcessesPage() {
   );
 
   const cards = useMemo(() => {
+    if (searchingCnj) return all;
     const needle = debounced.trim().toLowerCase();
     const today = new Date().toISOString().slice(0, 10);
     return all.filter((process) => {
@@ -295,13 +307,13 @@ function ProcessesPage() {
         (stage === "todos" || process.stage === stage)
       );
     });
-  }, [all, debounced, clientId, serviceTypeId, priority, owner, financial, deadline, stage]);
+  }, [all, searchingCnj, debounced, clientId, serviceTypeId, priority, owner, financial, deadline, stage]);
   const atRiskCount = cards.filter((process) => {
     const days = daysUntil(process.due_date);
     return days !== null && days <= 0;
   }).length;
   const unassignedCount = cards.filter((process) => !process.owner_name).length;
-  const visibleCount = view === "kanban" ? cards.length : count;
+  const visibleCount = currentView === "kanban" ? cards.length : count;
 
   const drop = async (target: ProcessStage) => {
     setDropTarget(null);
@@ -382,9 +394,10 @@ function ProcessesPage() {
                 size="sm"
                 className={cn(
                   "min-w-0 whitespace-nowrap rounded-lg px-3 text-slate-300 hover:bg-white/10 hover:text-white",
-                  view === "kanban" &&
+                  currentView === "kanban" &&
                     "bg-white text-slate-950 shadow-sm hover:bg-white hover:text-slate-950",
                 )}
+                disabled={searchingCnj}
                 onClick={() => setView("kanban")}
               >
                 <LayoutGrid className="size-4" aria-hidden />
@@ -395,7 +408,7 @@ function ProcessesPage() {
                 size="sm"
                 className={cn(
                   "min-w-0 whitespace-nowrap rounded-lg px-3 text-slate-300 hover:bg-white/10 hover:text-white",
-                  view === "tabela" &&
+                  currentView === "tabela" &&
                     "bg-white text-slate-950 shadow-sm hover:bg-white hover:text-slate-950",
                 )}
                 onClick={() => setView("tabela")}
@@ -440,10 +453,11 @@ function ProcessesPage() {
                 value={term}
                 onChange={(event) => setTerm(event.target.value)}
                 aria-label="Buscar processos"
-                placeholder="Código, título, protocolo ou cliente"
+                placeholder={isLegal ? "Código, título, cliente ou CNJ completo" : "Código, título, protocolo ou cliente"}
                 className="h-10 w-full rounded-xl border-border/70 bg-muted/20 pl-9"
               />
             </div>
+            {isLegal && <p className="w-full text-xs text-muted-foreground">CNJ completo com ou sem pontuação. Para um prefixo, digite “CNJ: 0000041” (mínimo de 7 dígitos).</p>}
             <Select value={clientId} onValueChange={resetPage(setClientId)}>
               <SelectTrigger
                 aria-label="Filtrar por cliente"
@@ -560,7 +574,7 @@ function ProcessesPage() {
                 <SelectItem value="sem_prazo">Sem prazo</SelectItem>
               </SelectContent>
             </Select>
-            {view === "tabela" && (
+            {currentView === "tabela" && (
               <Select
                 value={sort}
                 onValueChange={resetPage((value: string) =>
@@ -596,8 +610,9 @@ function ProcessesPage() {
       </Card>
 
       <ActiveFilters count={activeFilterCount} onClear={clearFilters} />
+      {searchingCnj && <p className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">Busca pelo CNJ ou seu prefixo (mínimo de 7 dígitos), com filtros e paginação. Resultados apresentados na lista. Os indicadores de risco e responsável consideram esta página.</p>}
 
-      {view === "kanban" ? (
+      {currentView === "kanban" ? (
         board.isLoading ? (
           <LoadingState label="Carregando quadro de processos" rows={5} />
         ) : board.isError ? (
@@ -775,6 +790,7 @@ function ProcessesPage() {
                           className="block min-w-0"
                         >
                           <span className="block truncate text-sm font-medium">{process.code}</span>
+                          {process.cnj_number && <span className="block break-all text-xs text-muted-foreground">CNJ {formatCnjNumber(process.cnj_number)}</span>}
                           <span className="block truncate text-xs text-muted-foreground">
                             {process.title ?? process.service_types?.name ?? "Processo"}
                           </span>
@@ -833,6 +849,7 @@ function ProcessesPage() {
                     <div className="flex min-w-0 items-start justify-between gap-3">
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-semibold">{process.code}</span>
+                        {process.cnj_number && <span className="block break-all text-xs text-muted-foreground">CNJ {formatCnjNumber(process.cnj_number)}</span>}
                         <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                           {process.clients?.name ?? "Cliente não informado"}
                         </span>

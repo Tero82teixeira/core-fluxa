@@ -260,6 +260,7 @@ export function useCreateProcess(organizationId: string | null) {
     onSuccess: () => {
       captureProductEvent("process_created");
       queryClient.invalidateQueries({ queryKey: ["processes", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["legal-cnj-processes", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["legal-workspace", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["activity", organizationId] });
     },
@@ -311,6 +312,7 @@ export function useMoveProcessStage(organizationId: string | null) {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["processes", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["legal-cnj-processes", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["legal-workspace", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["process", variables.processId] });
       queryClient.invalidateQueries({ queryKey: ["process-movements", variables.processId] });
@@ -359,6 +361,7 @@ export function useUpdateProcess(organizationId: string | null) {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["processes", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["legal-cnj-processes", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["legal-workspace", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["process", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["process-movements", variables.id] });

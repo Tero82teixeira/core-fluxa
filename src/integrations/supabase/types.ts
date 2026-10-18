@@ -7985,6 +7985,10 @@ export type Database = {
         Args: { _organization_id: string; _search?: string }
         Returns: Json
       }
+      search_legal_processes: {
+        Args: { _organization_id: string; _cnj: string; _filters?: Json }
+        Returns: Json
+      }
       read_legal_workspace: {
         Args: { _organization_id: string; _action: string; _values?: Json }
         Returns: Json
