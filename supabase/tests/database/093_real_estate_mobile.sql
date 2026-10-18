@@ -1,0 +1,11 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_function('public','real_estate_mobile',ARRAY['uuid','text','jsonb'],'consulta móvel existe');
+SELECT ok(NOT has_function_privilege('anon','public.real_estate_mobile(uuid,text,jsonb)','EXECUTE'),'consulta interna não é pública');
+SELECT ok(has_function_privilege('authenticated','public.real_estate_mobile(uuid,text,jsonb)','EXECUTE'),'equipe autenticada pode chamar consulta');
+SELECT ok((SELECT NOT prosecdef FROM pg_proc WHERE oid='public.real_estate_mobile(uuid,text,jsonb)'::regprocedure),'consulta não eleva privilégios');
+SELECT ok(position('public.clients_secure' in pg_get_functiondef('public.real_estate_mobile(uuid,text,jsonb)'::regprocedure))>0,'consulta usa visão segura de clientes');
+SELECT * FROM finish();
+ROLLBACK;
