@@ -13,8 +13,7 @@ const migration = readFileSync(
 
 describe("FLUXA Advocacia — Painel Jurídico", () => {
   test("reaproveita o núcleo de processos, tarefas e movimentações", () => {
-    assert.match(page, /useProcesses/);
-    assert.match(page, /useTasks/);
+    assert.match(page, /useLegalDashboard/);
     assert.match(page, /useRecentActivity/);
     assert.doesNotMatch(page, /supabase\.rpc/);
   });

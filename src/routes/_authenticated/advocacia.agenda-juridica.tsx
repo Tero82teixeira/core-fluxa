@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -16,20 +16,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useLegalAgenda, useLegalDeadlines } from "@/hooks/use-legal-cases";
-import { useProcesses, useTasks } from "@/hooks/use-operations";
+import { useLegalAgendaPage, type LegalAgendaEvent } from "@/hooks/use-legal-cases";
+import { legalAgendaRange, validLegalDate } from "@/lib/legal-agenda";
 import { localCivilDate } from "@/lib/legal-workspace";
 import { useWorkspace } from "@/lib/workspace";
 
 type ViewMode = "day" | "week";
-type AgendaKind = "hearing" | "deadline" | "task";
 
 export const Route = createFileRoute("/_authenticated/advocacia/agenda-juridica")({
   validateSearch: (search: Record<string, unknown>) => ({
-    date:
-      typeof search.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(search.date)
-        ? search.date
-        : undefined,
+    date: validLegalDate(search.date) ? search.date : undefined,
     view: search.view === "week" ? ("week" as const) : undefined,
   }),
   head: () => ({
@@ -59,23 +55,6 @@ function addDays(value: string, amount: number) {
   return localCivilDate(date);
 }
 
-function mondayOf(value: string) {
-  const date = new Date(`${value}T12:00:00`);
-  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-  return localCivilDate(date);
-}
-
-function rangeIso(date: string, view: ViewMode) {
-  const startDate = view === "week" ? mondayOf(date) : date;
-  const endDate = addDays(startDate, view === "week" ? 7 : 1);
-  return {
-    startDate,
-    endDate,
-    from: new Date(`${startDate}T00:00:00`).toISOString(),
-    to: new Date(`${endDate}T00:00:00`).toISOString(),
-  };
-}
-
 function eventDate(value: string) {
   const date = new Date(value);
   return localCivilDate(date);
@@ -86,102 +65,43 @@ function LegalAgendaPage() {
   const search = Route.useSearch();
   const [date, setDate] = useState(search.date ?? localCivilDate());
   const [view, setView] = useState<ViewMode>(search.view ?? "week");
-  const range = useMemo(() => rangeIso(date, view), [date, view]);
-  const hearings = useLegalAgenda(organizationId, range.from, range.to);
-  const legalDeadlines = useLegalDeadlines(organizationId, {
-    from: range.startDate,
-    to: range.endDate,
-  });
-  const processes = useProcesses(organizationId);
-  const tasks = useTasks(organizationId);
-
-  const events = useMemo(() => {
-    const hearingEvents = (hearings.data ?? []).map((hearing) => ({
-      id: `hearing:${hearing.id}`,
-      kind: "hearing" as const,
-      at: hearing.next_hearing_at,
-      title: `Audiência · ${hearing.process_code}`,
-      subtitle: `${hearing.client_name}${hearing.judicial_unit ? ` · ${hearing.judicial_unit}` : ""}`,
-      processId: hearing.process_id,
-      confidential: hearing.confidential,
-    }));
-
-    const deadlineEvents = (processes.data ?? [])
-      .filter(
-        (process) =>
-          process.due_date &&
-          !["finalizado", "arquivado", "cancelado"].includes(process.stage) &&
-          process.due_date >= range.startDate &&
-          process.due_date < range.endDate,
-      )
-      .map((process) => ({
-        id: `deadline:${process.id}`,
-        kind: "deadline" as const,
-        at: `${process.due_date}T12:00:00`,
-        title: `Prazo geral · ${process.code}`,
-        subtitle: `${process.clients?.name ?? "Cliente não informado"} · ${process.title ?? "Processo"}`,
-        processId: process.id,
-        confidential: false,
-      }));
-
-    const individualDeadlines = (legalDeadlines.data ?? []).map((deadline) => ({
-      id: `legal-deadline:${deadline.id}`,
-      kind: "deadline" as const,
-      at: `${deadline.due_date}T12:00:00`,
-      title: `${deadline.title} · ${deadline.process_code}`,
-      subtitle: `${deadline.client_name} · ${deadline.process_title ?? "Processo"}`,
-      processId: deadline.process_id,
-      confidential: deadline.confidential,
-    }));
-
-    const taskEvents = (tasks.data ?? [])
-      .filter(
-        (task) =>
-          task.due_at &&
-          !["concluida", "cancelada"].includes(task.status) &&
-          eventDate(task.due_at) >= range.startDate &&
-          eventDate(task.due_at) < range.endDate,
-      )
-      .map((task) => ({
-        id: `task:${task.id}`,
-        kind: "task" as const,
-        at: task.due_at!,
-        title: task.title,
-        subtitle: task.assignee_name || "Sem responsável",
-        processId: task.process_id,
-        confidential: false,
-      }));
-
-    return [...hearingEvents, ...deadlineEvents, ...individualDeadlines, ...taskEvents].sort(
-      (a, b) => new Date(a.at).getTime() - new Date(b.at).getTime(),
-    );
-  }, [
-    hearings.data,
-    legalDeadlines.data,
-    processes.data,
-    range.endDate,
-    range.startDate,
-    tasks.data,
-  ]);
-
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    if (validLegalDate(search.date)) {
+      setDate(search.date);
+      setPage(1);
+    }
+  }, [search.date]);
+  const range = useMemo(() => legalAgendaRange(date, view), [date, view]);
+  const agenda = useLegalAgendaPage(organizationId, range, page);
+  useEffect(() => {
+    if (agenda.data) {
+      const last = Math.max(1, Math.ceil(agenda.data.total / 20));
+      if (page > last) setPage(last);
+    }
+  }, [agenda.data, page]);
   const days = useMemo(
     () =>
       Array.from({ length: view === "week" ? 7 : 1 }, (_, index) => {
         const day = addDays(range.startDate, index);
-        return { day, events: events.filter((event) => eventDate(event.at) === day) };
+        return {
+          day,
+          events: (agenda.data?.items ?? []).filter(
+            (event) => (event.civil_date ?? eventDate(event.at)) === day,
+          ),
+        };
       }),
-    [events, range.startDate, view],
+    [agenda.data, range.startDate, view],
   );
-
-  const isLoading =
-    hearings.isLoading || legalDeadlines.isLoading || processes.isLoading || tasks.isLoading;
-  const hasError = hearings.isError || legalDeadlines.isError || processes.isError || tasks.isError;
-  const move = (direction: number) => setDate(addDays(date, direction * (view === "week" ? 7 : 1)));
-  const counts = {
-    hearing: events.filter((event) => event.kind === "hearing").length,
-    deadline: events.filter((event) => event.kind === "deadline").length,
-    task: events.filter((event) => event.kind === "task").length,
+  const changeDate = (next: string) => {
+    if (validLegalDate(next)) {
+      setDate(next);
+      setPage(1);
+    }
   };
+  const move = (direction: number) =>
+    changeDate(addDays(date, direction * (view === "week" ? 7 : 1)));
+  const counts = agenda.data?.counts;
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
@@ -205,14 +125,19 @@ function LegalAgendaPage() {
       </header>
 
       <section className="grid gap-3 sm:grid-cols-3">
-        <Metric label="Audiências" value={counts.hearing} icon={Gavel} tone="amber" />
-        <Metric label="Prazos processuais" value={counts.deadline} icon={FileWarning} tone="rose" />
-        <Metric label="Tarefas" value={counts.task} icon={ListTodo} tone="blue" />
+        <Metric label="Audiências" value={counts?.hearing} icon={Gavel} tone="amber" />
+        <Metric
+          label="Prazos processuais"
+          value={counts?.deadline}
+          icon={FileWarning}
+          tone="rose"
+        />
+        <Metric label="Tarefas" value={counts?.task} icon={ListTodo} tone="blue" />
       </section>
 
       <Card>
         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="icon"
@@ -224,9 +149,11 @@ function LegalAgendaPage() {
             <input
               aria-label="Data da agenda"
               type="date"
-              className="h-10 rounded-xl border bg-background px-3 text-sm"
+              min="2000-01-01"
+              max="2100-12-31"
+              className="h-11 min-w-0 rounded-xl border bg-background px-3 text-base"
               value={date}
-              onChange={(event) => setDate(event.target.value)}
+              onChange={(event) => changeDate(event.target.value)}
             />
             <Button
               variant="outline"
@@ -236,7 +163,7 @@ function LegalAgendaPage() {
             >
               <ChevronRight className="size-4" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setDate(localCivilDate())}>
+            <Button variant="ghost" size="sm" onClick={() => changeDate(localCivilDate())}>
               Hoje
             </Button>
           </div>
@@ -244,14 +171,20 @@ function LegalAgendaPage() {
             <Button
               size="sm"
               variant={view === "day" ? "secondary" : "ghost"}
-              onClick={() => setView("day")}
+              onClick={() => {
+                setView("day");
+                setPage(1);
+              }}
             >
               Dia
             </Button>
             <Button
               size="sm"
               variant={view === "week" ? "secondary" : "ghost"}
-              onClick={() => setView("week")}
+              onClick={() => {
+                setView("week");
+                setPage(1);
+              }}
             >
               Semana
             </Button>
@@ -259,16 +192,19 @@ function LegalAgendaPage() {
         </CardContent>
       </Card>
 
-      {isLoading ? (
+      {agenda.isLoading ? (
         <Card>
           <CardContent className="flex min-h-52 items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> Carregando agenda jurídica…
           </CardContent>
         </Card>
-      ) : hasError ? (
+      ) : agenda.isError ? (
         <Card>
           <CardContent className="min-h-40 p-6 text-sm text-destructive">
             Não foi possível carregar toda a agenda jurídica.
+            <Button variant="outline" onClick={() => void agenda.refetch()}>
+              Tentar novamente
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -284,7 +220,10 @@ function LegalAgendaPage() {
               <CardContent className="space-y-3">
                 {dayEvents.length === 0 ? (
                   <div className="flex items-center gap-2 rounded-2xl border border-dashed p-4 text-sm text-muted-foreground">
-                    <CalendarDays className="size-4" /> Nenhum compromisso jurídico.
+                    <CalendarDays className="size-4" />{" "}
+                    {(agenda.data?.total ?? 0) > 20
+                      ? "Nenhum item deste dia nesta página."
+                      : "Nenhum compromisso jurídico."}
                   </div>
                 ) : (
                   dayEvents.map((event) => <AgendaItem key={event.id} event={event} />)
@@ -294,23 +233,36 @@ function LegalAgendaPage() {
           ))}
         </div>
       )}
+      {!agenda.isLoading && !agenda.isError && agenda.data && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+          <p className="text-sm text-muted-foreground">
+            {agenda.data.total} compromissos no período · horário deste aparelho. Datas de prazo são
+            dias inteiros.
+          </p>
+          {agenda.data.total > 20 && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" disabled={page === 1} onClick={() => setPage(page - 1)}>
+                Anterior
+              </Button>
+              <span className="text-sm">
+                {page} / {Math.ceil(agenda.data.total / 20)}
+              </span>
+              <Button
+                variant="outline"
+                disabled={page * 20 >= agenda.data.total}
+                onClick={() => setPage(page + 1)}
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-function AgendaItem({
-  event,
-}: {
-  event: {
-    id: string;
-    kind: AgendaKind;
-    at: string;
-    title: string;
-    subtitle: string;
-    processId: string | null;
-    confidential: boolean;
-  };
-}) {
+function AgendaItem({ event }: { event: LegalAgendaEvent }) {
   const icon =
     event.kind === "hearing" ? Gavel : event.kind === "deadline" ? FileWarning : ListTodo;
   const Icon = icon;
@@ -335,9 +287,9 @@ function AgendaItem({
           <Clock3 className="size-3.5" /> {time}
         </p>
       </div>
-      {event.processId ? (
+      {event.process_id ? (
         <Button asChild size="icon" variant="ghost" aria-label="Abrir processo">
-          <Link to="/processos/$processId" params={{ processId: event.processId }}>
+          <Link to="/processos/$processId" params={{ processId: event.process_id }}>
             <ArrowRight className="size-4" />
           </Link>
         </Button>
@@ -359,7 +311,7 @@ function Metric({
   tone,
 }: {
   label: string;
-  value: number;
+  value: number | undefined;
   icon: typeof Gavel;
   tone: "amber" | "rose" | "blue";
 }) {
@@ -373,7 +325,7 @@ function Metric({
       <CardContent className="flex items-center justify-between p-5">
         <div>
           <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-1 text-3xl font-semibold">{value}</p>
+          <p className="mt-1 text-3xl font-semibold">{value ?? "—"}</p>
         </div>
         <span className={`grid size-11 place-items-center rounded-2xl ${tones[tone]}`}>
           <Icon className="size-5" />

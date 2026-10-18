@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -20,9 +19,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useProcesses, useRecentActivity, useTasks } from "@/hooks/use-operations";
+import { useRecentActivity } from "@/hooks/use-operations";
 import { PROCESS_STAGE } from "@/lib/domain";
-import { localCivilDate, summarizeLegalWorkspace } from "@/lib/legal-workspace";
+import { useLegalDashboard } from "@/hooks/use-legal-cases";
+import { legalToday } from "@/lib/legal-agenda";
 import { useWorkspace } from "@/lib/workspace";
 
 export const Route = createFileRoute("/_authenticated/advocacia/painel-juridico")({
@@ -45,26 +45,13 @@ function civilDate(value: string | null | undefined) {
 
 function LegalWorkspaceDashboardPage() {
   const { organizationId } = useWorkspace();
-  const processes = useProcesses(organizationId);
-  const tasks = useTasks(organizationId);
+  const dashboard = useLegalDashboard(organizationId, legalToday());
   const activity = useRecentActivity(organizationId);
-  const today = localCivilDate();
-
-  const summary = useMemo(
-    () =>
-      summarizeLegalWorkspace({
-        processes: processes.data ?? [],
-        tasks: tasks.data ?? [],
-        today,
-      }),
-    [processes.data, tasks.data, today],
-  );
-
-  const isLoading = processes.isLoading || tasks.isLoading || activity.isLoading;
-  const hasError = processes.isError || tasks.isError || activity.isError;
+  const summary = dashboard.data;
+  const isLoading = dashboard.isLoading || activity.isLoading;
+  const hasError = dashboard.isError || activity.isError;
   const refresh = () => {
-    void processes.refetch();
-    void tasks.refetch();
+    void dashboard.refetch();
     void activity.refetch();
   };
 
@@ -88,7 +75,8 @@ function LegalWorkspaceDashboardPage() {
             </div>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-200">
               Uma visão direta da carteira: processos ativos, prazos prioritários, exigências e
-              responsabilidades da equipe.
+              responsabilidades da equipe. Prazos e indicadores no horário de Brasília. Prazos e
+              indicadores no horário de Brasília.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -116,7 +104,7 @@ function LegalWorkspaceDashboardPage() {
             Carregando a operação jurídica…
           </CardContent>
         </Card>
-      ) : hasError ? (
+      ) : hasError || !summary ? (
         <Card className="border-destructive/30">
           <CardContent className="flex min-h-44 flex-col items-center justify-center gap-3 text-center">
             <AlertTriangle className="size-7 text-destructive" />
@@ -137,37 +125,37 @@ function LegalWorkspaceDashboardPage() {
           >
             <MetricCard
               label="Carteira ativa"
-              value={summary.activeProcesses.length}
+              value={summary.counts.active}
               icon={BriefcaseBusiness}
               tone="blue"
             />
             <MetricCard
               label="Prazos vencidos"
-              value={summary.overdueProcesses.length}
+              value={summary.counts.overdue}
               icon={FileWarning}
               tone="rose"
             />
             <MetricCard
               label="Vencem hoje"
-              value={summary.dueToday.length}
+              value={summary.counts.today}
               icon={Clock3}
               tone="amber"
             />
             <MetricCard
               label="Próximos 7 dias"
-              value={summary.dueNextSevenDays.length}
+              value={summary.counts.nextSeven}
               icon={CalendarClock}
               tone="violet"
             />
             <MetricCard
               label="Em exigência"
-              value={summary.inRequirement.length}
+              value={summary.counts.requirement}
               icon={CircleAlert}
               tone="rose"
             />
             <MetricCard
               label="Sem responsável"
-              value={summary.withoutOwner.length}
+              value={summary.counts.withoutOwner}
               icon={UserRoundX}
               tone="amber"
             />
@@ -182,7 +170,8 @@ function LegalWorkspaceDashboardPage() {
                     Prazos prioritários
                   </CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Vencidos, de hoje e dos próximos sete dias.
+                    Prazos gerais e individuais em aberto: vencidos, de hoje e dos próximos sete
+                    dias.
                   </p>
                 </div>
                 <Button asChild size="sm" variant="ghost">
@@ -205,13 +194,16 @@ function LegalWorkspaceDashboardPage() {
                     <Link
                       key={process.id}
                       to="/processos/$processId"
-                      params={{ processId: process.id }}
+                      params={{ processId: process.process_id }}
                       className="flex flex-col gap-2 rounded-2xl border bg-muted/15 p-4 transition-colors hover:bg-muted/35 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="min-w-0">
                         <p className="truncate font-medium">{process.title || process.code}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {process.source === "individual" ? "Prazo individual" : "Prazo geral"}
+                        </p>
                         <p className="truncate text-sm text-muted-foreground">
-                          {process.code} · {process.clients?.name || "Cliente não informado"}
+                          {process.code} · {process.client_name || "Cliente não informado"}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
@@ -220,6 +212,12 @@ function LegalWorkspaceDashboardPage() {
                       </div>
                     </Link>
                   ))
+                )}
+                {summary.urgentTotal > 8 && (
+                  <p className="text-sm text-muted-foreground">
+                    Mostrando os 8 primeiros de {summary.urgentTotal} prazos. Consulte a agenda para
+                    navegar por período e a ficha para os prazos de cada processo.
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -243,10 +241,18 @@ function LegalWorkspaceDashboardPage() {
                       <div key={task.id} className="rounded-xl border p-3">
                         <p className="font-medium">{task.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {task.assignee_name || "Sem responsável"} · {civilDate(task.due_at)}
+                          {task.assignee_name || "Sem responsável"} ·{" "}
+                          {new Intl.DateTimeFormat("pt-BR", {
+                            timeZone: "America/Sao_Paulo",
+                          }).format(new Date(task.due_at))}
                         </p>
                       </div>
                     ))
+                  )}
+                  {summary.taskTotal > 6 && (
+                    <p className="text-xs text-muted-foreground">
+                      Mostrando 6 de {summary.taskTotal} tarefas prioritárias.
+                    </p>
                   )}
                   <Button asChild variant="outline" className="w-full">
                     <Link to="/tarefas">Abrir Tarefas</Link>
@@ -267,7 +273,9 @@ function LegalWorkspaceDashboardPage() {
                         key={stage.key}
                         className="flex items-center justify-between gap-3 text-sm"
                       >
-                        <span className="text-muted-foreground">{stage.label}</span>
+                        <span className="text-muted-foreground">
+                          {PROCESS_STAGE[stage.key].short}
+                        </span>
                         <Badge variant="secondary">{stage.count}</Badge>
                       </div>
                     ))

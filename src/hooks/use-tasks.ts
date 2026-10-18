@@ -149,6 +149,7 @@ function useInvalidateTasks() {
   return (organizationId: string | null, taskId?: string | null) => {
     queryClient.invalidateQueries({ queryKey: ["task-list", organizationId] });
     queryClient.invalidateQueries({ queryKey: ["tasks", organizationId] });
+    queryClient.invalidateQueries({ queryKey: ["legal-workspace", organizationId] });
     queryClient.invalidateQueries({ queryKey: ["activity", organizationId] });
     if (taskId) {
       queryClient.invalidateQueries({ queryKey: ["task-history", taskId] });
