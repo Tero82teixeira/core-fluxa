@@ -54,6 +54,9 @@ export const en: LocaleShape = {
         return: "Follow-up",
       },
       status: {
+        vencido: "Term expired",
+        futuro: "Future start",
+        a_vencer: "Expiring soon",
         disponivel: "Available",
         reservado: "Reserved",
         vendido: "Sold",

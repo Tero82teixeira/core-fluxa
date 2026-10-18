@@ -56,6 +56,9 @@ export const pt = {
         return: "Retorno",
       },
       status: {
+        vencido: "Prazo vencido",
+        futuro: "Início futuro",
+        a_vencer: "A vencer",
         disponivel: "Disponível",
         reservado: "Reservado",
         vendido: "Vendido",

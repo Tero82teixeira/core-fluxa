@@ -65,7 +65,9 @@ export function MobileClientSummary({
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
             <strong>{l(`kinds.${item.kind}`)}</strong>
             <span className="rounded-full bg-muted px-3 py-1">
-              {t(`realEstateDemo.mobile.status.${item.status}`, { defaultValue: item.status })}
+              {t(`realEstateDemo.mobile.status.${item.display_status || item.status}`, {
+                defaultValue: item.display_status || item.status,
+              })}
             </span>
           </div>
           <p className="break-words text-base font-semibold">

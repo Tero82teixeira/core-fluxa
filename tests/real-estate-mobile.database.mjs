@@ -80,6 +80,15 @@ export async function verifyRealEstateMobile(
     assert.equal(entry.status, c.status);
     assert.equal(entry.amount, Number(c.amount));
   }
+  const list = (
+    await db.query("SELECT list_real_estate_contracts($1,NULL,NULL,1) result", [org])
+  ).rows[0].result;
+  for (const item of list.items.filter((x) => contracts.some((c) => c.id === x.id)))
+    assert.equal(
+      all.find((x) => x.kind === "contract" && x.id === item.id).display_status,
+      item.display_status,
+      "prazo acompanha a tela completa",
+    );
   const proposals = all.filter((x) => x.kind === "proposal");
   assert(proposals.length > 0);
   assert.equal(

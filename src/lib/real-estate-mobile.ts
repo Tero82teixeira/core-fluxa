@@ -16,6 +16,7 @@ export type MobileEntry = {
   title: string;
   location?: string | null;
   status: string;
+  display_status?: string | null;
   purpose?: string;
   amount?: number | null;
   at: string;

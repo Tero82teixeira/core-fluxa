@@ -34,29 +34,30 @@ BEGIN
   IF person IS NULL THEN RAISE EXCEPTION 'MOBILE_READ_DENIED' USING ERRCODE='42501'; END IF;
   WITH entries AS (
    SELECT i.id::text AS id,'interest'::text AS kind,p.code||' · '||p.title AS title,concat_ws(' · ',p.district,p.city,p.state) AS location,i.status,i.purpose,
-    CASE WHEN i.purpose='locacao' THEN p.rent_price ELSE p.sale_price END AS amount,i.updated_at AS at,NULL::text AS detail
+    CASE WHEN i.purpose='locacao' THEN p.rent_price ELSE p.sale_price END AS amount,i.updated_at AS at,NULL::text AS detail,NULL::text AS display_status
    FROM public.real_estate_interests i JOIN public.real_estate_properties p ON p.organization_id=i.organization_id AND p.id=i.property_id
    WHERE i.organization_id=_organization_id AND i.client_id=client
    UNION ALL
-   SELECT v.id::text,'visit',p.code||' · '||p.title,concat_ws(' · ',p.district,p.city,p.state),v.status,i.purpose,NULL,v.starts_at,NULL
+   SELECT v.id::text,'visit',p.code||' · '||p.title,concat_ws(' · ',p.district,p.city,p.state),v.status,i.purpose,NULL,v.starts_at,NULL,NULL
    FROM public.real_estate_visits v JOIN public.real_estate_interests i ON i.organization_id=v.organization_id AND i.property_id=v.property_id AND i.id=v.interest_id JOIN public.real_estate_properties p ON p.organization_id=v.organization_id AND p.id=v.property_id
    WHERE v.organization_id=_organization_id AND i.client_id=client
    UNION ALL
-   SELECT r.id::text,'proposal',p.code||' · '||p.title,concat_ws(' · ',p.district,p.city,p.state),e.status,i.purpose,e.amount,e.created_at,NULL
+   SELECT r.id::text,'proposal',p.code||' · '||p.title,concat_ws(' · ',p.district,p.city,p.state),e.status,i.purpose,e.amount,e.created_at,NULL,NULL
    FROM public.real_estate_proposals r JOIN public.real_estate_interests i ON i.organization_id=r.organization_id AND i.property_id=r.property_id AND i.id=r.interest_id JOIN public.real_estate_properties p ON p.organization_id=r.organization_id AND p.id=r.property_id
    CROSS JOIN LATERAL(SELECT e.status,e.amount,e.created_at FROM public.real_estate_proposal_events e WHERE e.organization_id=r.organization_id AND e.property_id=r.property_id AND e.proposal_id=r.id ORDER BY e.version DESC LIMIT 1)e
    WHERE r.organization_id=_organization_id AND i.client_id=client
    UNION ALL
-   SELECT c.id::text,'contract',c.reference||' · '||p.title,concat_ws(' · ',p.district,p.city,p.state),e.status,c.purpose,e.amount,e.created_at,e.starts_on::text||coalesce(' — '||e.ends_on::text,'')
+   SELECT c.id::text,'contract',c.reference||' · '||p.title,concat_ws(' · ',p.district,p.city,p.state),e.status,c.purpose,e.amount,e.created_at,e.starts_on::text||coalesce(' — '||e.ends_on::text,''),
+    CASE WHEN e.status<>'ativo' THEN e.status WHEN e.starts_on>(now() AT TIME ZONE 'America/Sao_Paulo')::date THEN 'futuro' WHEN e.ends_on<(now() AT TIME ZONE 'America/Sao_Paulo')::date THEN 'vencido' WHEN e.ends_on<=(now() AT TIME ZONE 'America/Sao_Paulo')::date+30 THEN 'a_vencer' ELSE 'ativo' END
    FROM public.real_estate_contracts c JOIN public.real_estate_properties p ON p.organization_id=c.organization_id AND p.id=c.property_id
    CROSS JOIN LATERAL(SELECT e.status,e.amount,e.created_at,e.starts_on,e.ends_on FROM public.real_estate_contract_events e WHERE e.organization_id=c.organization_id AND e.property_id=c.property_id AND e.contract_id=c.id ORDER BY e.version DESC LIMIT 1)e
    WHERE c.organization_id=_organization_id AND c.client_id=client
    UNION ALL
-   SELECT r.id::text,'preference',coalesce(nullif(pref.property_type,''),'—'),array_to_string(pref.districts,', '),r.status,pref.purpose,pref.max_price,r.updated_at,NULL
+   SELECT r.id::text,'preference',coalesce(nullif(pref.property_type,''),'—'),array_to_string(pref.districts,', '),r.status,pref.purpose,pref.max_price,r.updated_at,NULL,NULL
    FROM fluxa_inquiry_private.requests r JOIN public.real_estate_interests i ON i.organization_id=r.organization_id AND i.id=r.interest_id AND i.property_id=r.property_id JOIN fluxa_inquiry_private.preferences pref ON pref.organization_id=r.organization_id AND pref.request_id=r.id
    WHERE r.organization_id=_organization_id AND i.client_id=client
    UNION ALL
-   SELECT r.id::text,'return',r.name,NULL,r.status,r.purpose,NULL,f.next_contact_at,NULL
+   SELECT r.id::text,'return',r.name,NULL,r.status,r.purpose,NULL,f.next_contact_at,NULL,NULL
    FROM fluxa_inquiry_private.requests r JOIN public.real_estate_interests i ON i.organization_id=r.organization_id AND i.id=r.interest_id AND i.property_id=r.property_id JOIN fluxa_inquiry_private.followups f ON f.organization_id=r.organization_id AND f.request_id=r.id
    WHERE r.organization_id=_organization_id AND i.client_id=client AND r.status<>'encerrado' AND f.next_contact_at IS NOT NULL
   ), rows AS (SELECT * FROM entries ORDER BY at DESC,id,kind LIMIT 20 OFFSET (page-1)*20)
