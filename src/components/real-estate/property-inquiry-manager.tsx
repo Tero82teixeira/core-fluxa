@@ -1,3 +1,5 @@
+import { CommercialQueueNotice } from "./commercial-panel";
+import type { CommercialFilters } from "@/lib/real-estate-commercial";
 import { ManualAttendanceDialog } from "./manual-attendance-dialog";
 import { InquiryPropertyDialog } from "./inquiry-property-dialog";
 import {
@@ -22,7 +24,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useWorkspace } from "@/lib/workspace";
-import { useInquiries, useManageInquiry } from "@/hooks/use-real-estate-inquiries";
+import {
+  useInquiries,
+  useManageInquiry,
+  type InquiryFilters,
+} from "@/hooks/use-real-estate-inquiries";
 import { usePropertyOptions } from "@/hooks/use-real-estate";
 import {
   INQUIRY_STATUSES,
@@ -43,13 +49,16 @@ const when = (value: string) =>
 export function PropertyInquiryManager({
   onClose,
   onLocate,
+  initialCommercialFilters,
 }: {
+  initialCommercialFilters?: CommercialFilters;
   onClose: () => void;
   onLocate: (code: string) => void;
 }) {
   const { organizationId, role } = useWorkspace();
   const writable = canWriteProperties(role);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<InquiryFilters>({
+    commercial: initialCommercialFilters,
     kind: "queue",
     followup: "",
     status: "",
@@ -167,6 +176,16 @@ export function PropertyInquiryManager({
               {Intl.DateTimeFormat().resolvedOptions().timeZone}.
             </DialogDescription>
           </DialogHeader>
+          {filters.commercial && filters.kind === "queue" && (
+            <CommercialQueueNotice
+              filters={filters.commercial}
+              responsibleLabel={
+                options.data?.responsibles.find((r) => r.id === filters.commercial?.responsible)
+                  ?.name
+              }
+              onClear={() => setFilters({ ...filters, commercial: undefined, page: 1 })}
+            />
+          )}
           <div className="flex flex-wrap gap-2">
             {writable && <Button onClick={() => setCreating(true)}>Novo atendimento manual</Button>}
             <Button

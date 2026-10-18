@@ -22,8 +22,10 @@ export function DemoInquiryQueue({
   onCreate,
   onAttach,
   properties,
+  scopeIds,
 }: {
   rows: DemoInquiry[];
+  scopeIds?: ReadonlySet<string>;
   onCreate: () => void;
   onAttach: (request: string, property: string) => void;
   properties: { id: string; title: string; purpose: string }[];
@@ -65,6 +67,7 @@ export function DemoInquiryQueue({
   };
   const visible = rows.filter(
     (r) =>
+      (!scopeIds || scopeIds.has(r.id)) &&
       (tab === "queue" || r.startsAt) &&
       (!returnFilter || (!r.closed && followupState(r.nextContactAt, demoNow) === returnFilter)),
   );

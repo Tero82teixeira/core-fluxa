@@ -2,6 +2,39 @@ import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
   realEstateDemo: {
+    commercial: {
+      "title": "Commercial dashboard",
+      "intro": "Track inquiries received in the period and open the queue from each indicator.",
+      "from": "Received from",
+      "to": "Received through",
+      "responsible": "Current assignee",
+      "all": "All assignees",
+      "noResponsible": "Unassigned",
+      "selectedResponsible": "Selected assignee",
+      "periodHint": "Up to 366 days. Dates use the displayed timezone.",
+      "invalid": "Choose valid dates in order, covering no more than 366 days.",
+      "apply": "Apply filters",
+      "definition": "Current status of inquiries received in the period, by current assignee. Indicators may overlap. Deal closed is a team-reported reason and does not confirm a contract or payment.",
+      "received": "Inquiries received",
+      "waiting": "Awaiting attention",
+      "active": "Open",
+      "overdue": "Overdue follow-ups",
+      "unassigned": "Open and unassigned",
+      "won": "Reported deals",
+      "closed": "Closed",
+      "openQueue": "Open inquiries",
+      "empty": "No inquiries received for this period and assignee. Adjust the filters.",
+      "channels": "Results by source channel",
+      "outcomes": "Closing reasons",
+      "legacy": "No reason recorded",
+      "asOf": "Updated at",
+      "loading": "Loading dashboard…",
+      "error": "Could not load the dashboard. Check activation and try again.",
+      "retry": "Try again",
+      "queueScope": "Dashboard inquiries received from",
+      "clearQueueFilters": "Clear dashboard filters",
+      "demoNote": "Fictional scenario dated October 16, 2026. Creating, handling and closing demo inquiries updates this dashboard."
+},
     manual: {
       "new": "New manual inquiry",
       "create": "Create inquiry and save preferences",
@@ -359,6 +392,7 @@ export const en: LocaleShape = {
       other: { label: "Other industry", description: "FLUXA's operational core, customizable later." },
     },
     modules: {
+      commercial: "Commercial dashboard",
       overview: "Dashboard",
       records: "Clients",
       cases: "Cases",
