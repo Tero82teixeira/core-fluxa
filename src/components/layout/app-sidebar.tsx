@@ -36,6 +36,7 @@ import {
   NAV_ITEMS,
   navItemVisibleForRole,
   realEstateNavigation,
+  legalNavigation,
   type NavItem,
 } from "@/lib/navigation";
 import { initials } from "@/lib/format";
@@ -121,6 +122,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   } = useWorkspace();
   const organizationSettings = membership?.organizations?.organization_settings;
   const isHealthWorkspace = organizationSettings?.business_segment === "health";
+  const isLegal = organizationSettings?.business_segment === "legal";
   const isRealEstate = organizationSettings?.business_segment === "real_estate";
   const [administrationOpen, setAdministrationOpen] = useState(false);
   const focusedHealth = isFocusedHealthWorkspace(organizationSettings);
@@ -161,13 +163,16 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   );
 
   const realEstate = realEstateNavigation(visibleItems);
+  const legal = legalNavigation(visibleItems);
   useEffect(() => {
     if (
       isRealEstate &&
       realEstate.administration.some((item) => realEstateItemActive(item, pathname, routeSearch))
     )
       setAdministrationOpen(true);
-  }, [isRealEstate, pathname, routeSearch, role]);
+    if (isLegal && legal.administration.some((item) => isCurrentRoute(pathname, item.to)))
+      setAdministrationOpen(true);
+  }, [isRealEstate, isLegal, pathname, routeSearch, role]);
   const routineItems = HEALTH_ROUTINE_ORDER.flatMap((route) =>
     visibleItems.filter((item) => item.to === route),
   );
@@ -307,9 +312,11 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
           to={
             isRealEstate && realEstate.operation.some((item) => item.to === "/imobiliaria/imoveis")
               ? "/imobiliaria/imoveis"
-              : focusedHealth
-                ? healthWorkspaceHome(organizationSettings?.enabled_modules)
-                : "/meu-dia"
+              : isLegal && legal.operation.some((item) => item.to === "/advocacia/painel-juridico")
+                ? "/advocacia/painel-juridico"
+                : focusedHealth
+                  ? healthWorkspaceHome(organizationSettings?.enabled_modules)
+                  : "/meu-dia"
           }
           search={
             isRealEstate && realEstate.operation.some((item) => item.to === "/imobiliaria/imoveis")
@@ -349,6 +356,20 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
               FileStack,
             )}
             {renderGroup("sistema", "Sistema", realEstate.system)}
+          </>
+        ) : isLegal ? (
+          <>
+            {renderGroup("rotina-juridica", "Advocacia", legal.operation)}
+            {renderGroup("gestao-juridica", "Gestão do escritório", legal.management)}
+            {renderCollapsibleGroup(
+              "administracao-juridica",
+              "Administração",
+              legal.administration,
+              administrationOpen,
+              setAdministrationOpen,
+              FileStack,
+            )}
+            {renderGroup("sistema", "Sistema", legal.system)}
           </>
         ) : focusedHealth ? (
           <>

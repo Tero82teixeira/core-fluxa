@@ -218,3 +218,14 @@ export function realEstateNavigation(visible: readonly NavItem[]) {
   const administration=visible.filter(item=>!used.has(item.to)).map(item=>({...item,label:genericLabels[item.to] || item.label}));
   return {operation,finance,administration,system};
 }
+
+/** Recebe itens já filtrados por papel e módulos; não cria permissões nem destinos. */
+export function legalNavigation(visible: readonly NavItem[]) {
+  const select=(routes:readonly string[])=>routes.flatMap(route=>visible.filter(item=>item.to===route));
+  const operation=select(["/advocacia/painel-juridico","/advocacia/agenda-juridica","/clientes","/processos","/tarefas","/documentos"]);
+  const management=select(["/comunicacao","/financeiro"]);
+  const system=select(["/notificacoes","/ajuda","/novidades"]);
+  const used=new Set([...operation,...management,...system].map(item=>item.to));
+  const administration=visible.filter(item=>!used.has(item.to));
+  return { operation,management,administration,system };
+}

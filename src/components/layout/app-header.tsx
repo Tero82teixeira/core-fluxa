@@ -49,7 +49,12 @@ import {
   useUnreadNotificationCount,
 } from "@/hooks/use-notifications";
 import { initials, relativeTime } from "@/lib/format";
-import { NAV_ITEMS, navItemVisibleForRole, realEstateNavigation } from "@/lib/navigation";
+import {
+  NAV_ITEMS,
+  navItemVisibleForRole,
+  realEstateNavigation,
+  legalNavigation,
+} from "@/lib/navigation";
 import { isFocusedHealthWorkspace, routeVisibleForModules } from "@/lib/organization-segments";
 import {
   notificationDestination,
@@ -192,11 +197,26 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
       ["atendimentos", "negociacoes", "repasses"].includes(item.search?.secao || "") ||
       (item.to === "/imobiliaria/imoveis" && !item.search),
   );
+  const legalQuickActions = legalNavigation(
+    NAV_ITEMS.filter(
+      (item) =>
+        navItemVisibleForRole(item.to, role) &&
+        routeVisibleForModules(
+          item.to,
+          organizationSettings?.business_segment,
+          organizationSettings?.enabled_modules,
+        ),
+    ),
+  ).operation.filter((item) =>
+    ["/advocacia/agenda-juridica", "/clientes", "/processos", "/documentos"].includes(item.to),
+  );
   const quickActions = focusedHealth
     ? healthQuickActions
     : isRealEstate
       ? estateQuickActions
-      : generalQuickActions;
+      : organizationSettings?.business_segment === "legal"
+        ? legalQuickActions
+        : generalQuickActions;
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-card/90 shadow-[0_1px_18px_-12px_rgba(15,23,42,0.45)] backdrop-blur-xl">

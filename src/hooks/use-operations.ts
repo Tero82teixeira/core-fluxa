@@ -42,6 +42,7 @@ export type ClientRow = {
 };
 
 export type ProcessRow = {
+  cnj_number?: string;
   id: string;
   organization_id: string;
   code: string;
@@ -236,9 +237,9 @@ export function useClient(clientId: string) {
  * Processos
  * ------------------------------------------------------------------ */
 
-export function useProcesses(organizationId: string | null) {
+export function useProcesses(organizationId: string | null, enabled = true) {
   return useQuery({
-    enabled: Boolean(organizationId),
+    enabled: Boolean(enabled && organizationId),
     queryKey: ["processes", organizationId],
     queryFn: async (): Promise<ProcessRow[]> => {
       const { data, error } = await db()
@@ -269,9 +270,9 @@ export type ProcessFilters = {
   pageSize: number;
 };
 
-export function useProcessesPage(organizationId: string | null, filters: ProcessFilters) {
+export function useProcessesPage(organizationId: string | null, filters: ProcessFilters, enabled = true) {
   return useQuery({
-    enabled: Boolean(organizationId),
+    enabled: Boolean(enabled && organizationId),
     queryKey: ["processes-page", organizationId, filters],
     queryFn: async (): Promise<{ rows: ProcessRow[]; count: number }> => {
       let q = db()

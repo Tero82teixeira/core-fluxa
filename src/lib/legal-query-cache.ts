@@ -13,8 +13,8 @@ export async function refreshLegalQueries(
         ]
       : [["legal-deadlines", organizationId]];
   await Promise.all(
-    [...keys, ["legal-workspace", organizationId]].map((queryKey) =>
-      client.invalidateQueries({ queryKey }),
+    [...keys, ["legal-workspace", organizationId], ["legal-cnj-processes", organizationId]].map(
+      (queryKey) => client.invalidateQueries({ queryKey }),
     ),
   );
 }

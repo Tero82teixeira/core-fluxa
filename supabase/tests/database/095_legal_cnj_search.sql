@@ -1,0 +1,12 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_function('public','search_legal_processes',ARRAY['uuid','text','jsonb'],'consulta CNJ existe');
+SELECT ok(NOT has_function_privilege('anon','public.search_legal_processes(uuid,text,jsonb)','EXECUTE'),'consulta CNJ não é pública');
+SELECT ok(has_function_privilege('authenticated','public.search_legal_processes(uuid,text,jsonb)','EXECUTE'),'consulta CNJ autenticada');
+SELECT ok(NOT has_function_privilege('service_role','public.search_legal_processes(uuid,text,jsonb)','EXECUTE'),'sem nova permissão para automação');
+SELECT has_index('public','legal_case_profiles','legal_case_profiles_org_cnj_idx','índice por organização e CNJ');
+SELECT throws_ok($$ SELECT public.search_legal_processes('00000000-0000-0000-0000-000000000001','0000041','{}') $$,'42501','LEGAL_SEARCH_ACCESS_DENIED','sem sessão não consulta processos');
+SELECT * FROM finish();
+ROLLBACK;
