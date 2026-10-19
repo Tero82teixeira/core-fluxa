@@ -1,6 +1,57 @@
 import type { LocaleShape } from "./pt";
 
 export const es: LocaleShape = {
+  consultingDemo: {
+  "notice": "Demostración con datos ficticios. Referencia: {{date}}. Los cambios permanecen en esta sesión; el envío, la aceptación y el cobro son simulados.",
+  "reset": "Reiniciar demostración",
+  "journey": "Del primer contacto a la entrega",
+  "intro": "Atienda a personas y empresas, prepare una propuesta, simule la aceptación y siga las entregas del proyecto.",
+  "realFlow": "En el sistema de la empresa, una propuesta aceptada ofrece un acceso para crear un proyecto con el cliente ya seleccionado. El responsable define el alcance y confirma el registro.",
+  "meeting": "Reunión de diagnóstico",
+  "scope": "Alcance de ejemplo: diagnóstico, plan de acción y presentación de resultados.",
+  "due": "Entrega prevista",
+  "prepare": "Preparar propuesta",
+  "viewProjects": "Ver proyectos",
+  "viewProposals": "Ver propuestas",
+  "send": "Simular envío",
+  "accept": "Simular aceptación",
+  "start": "Iniciar proyecto de ejemplo",
+  "finish": "Completar proyecto",
+  "advance": "Avanzar etapa",
+  "pending": "Complete todas las entregas antes de finalizar.",
+  "metrics": {
+    "requests": "Atenciones en curso",
+    "proposals": "Propuestas abiertas",
+    "projects": "Proyectos activos",
+    "deliveries": "Entregas pendientes"
+  },
+  "services": {
+    "s1": "Consultoría de organización empresarial",
+    "s2": "Asesoría de planificación personal",
+    "s3": "Consultoría de mejora de procesos"
+  },
+  "deliveries": {
+    "d1": "Diagnóstico y recopilación",
+    "d2": "Plan de acción",
+    "d3": "Presentación de resultados"
+  },
+  "requestStatus": {
+    "new": "Necesidad identificada",
+    "proposal": "Propuesta en seguimiento",
+    "project": "En ejecución"
+  },
+  "proposalStatus": {
+    "draft": "Borrador",
+    "sent": "Enviada — simulación",
+    "accepted": "Aceptada — simulación"
+  },
+  "stages": {
+    "s0": "Diagnóstico",
+    "s1": "En ejecución",
+    "s2": "Validación del cliente",
+    "s3": "Proyecto completado"
+  }
+},
   legalDemo: {
     requirement: "Con requerimientos",
     withoutOwner: "Sin responsable",
@@ -648,7 +699,7 @@ export const es: LocaleShape = {
       real_estate: { records: "Propietarios", cases: "Inmuebles", schedule: "Visitas" },
       engineering: { cases: "Proyectos y obras" },
       accounting: { cases: "Obligaciones" },
-      consulting_services: { cases: "Proyectos" },
+      consulting_services: {"overview": "Visión del día", "records": "Clientes", "attendance": "Atenciones", "proposals": "Propuestas", "cases": "Proyectos y entregas", "schedule": "Agenda"},
       other: { cases: "Demandas" },
     },
     nav: { operation: "Operación", management: "Gestión" },

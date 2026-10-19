@@ -61,7 +61,8 @@ function addDays(days: number) {
 function NewProcess() {
   const navigate = useNavigate();
   const { clientId } = Route.useSearch();
-  const { organizationId, displayName } = useWorkspace();
+  const { organizationId, displayName, membership } = useWorkspace();
+  const isConsulting = membership?.organizations?.organization_settings?.business_segment === "consulting_services";
   const permissions = usePermissions();
   const clients = useClients(organizationId);
   const serviceTypes = useAllServiceTypes(organizationId);
@@ -184,7 +185,7 @@ function NewProcess() {
             <p className="text-xs font-semibold tracking-[0.14em] text-violet-300 uppercase">
               Novo fluxo operacional
             </p>
-            <h1 className="font-display text-2xl font-semibold tracking-tight">Novo processo</h1>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">{isConsulting ? "Novo projeto" : "Novo processo"}</h1>
           </div>
         </div>
         <div className="relative mt-4 flex flex-wrap items-center gap-2">

@@ -34,7 +34,7 @@ import type { AppRole, IconType } from "@/lib/domain";
 export type NavGroupKey = "operacao" | "gestao" | "sistema";
 
 export type NavItem = {
-  search?: {secao: RealEstateSection};
+  search?: {secao?: RealEstateSection; tipo?: "commercial" | "agenda"};
   to: string;
   label: string;
   icon: IconType;
@@ -228,4 +228,18 @@ export function legalNavigation(visible: readonly NavItem[]) {
   const used=new Set([...operation,...management,...system].map(item=>item.to));
   const administration=visible.filter(item=>!used.has(item.to));
   return { operation,management,administration,system };
+}
+
+/** Navegação de consultoria sobre funções existentes e já autorizadas. */
+export function consultingNavigation(visible: readonly NavItem[]) {
+  const take=(route:string,label?:string)=>visible.filter(i=>i.to===route).map(i=>label?{...i,label}:i);
+  const reports=take("/relatorios");
+  const operation=[...take("/meu-dia","Visão do dia"),...take("/clientes"),...take("/comunicacao","Atendimentos"),
+    ...reports.map(i=>({...i,label:"Propostas",icon:FileText,search:{tipo:"commercial" as const}})),
+    ...take("/processos","Projetos e entregas"),...reports.map(i=>({...i,label:"Agenda",icon:CalendarClock,search:{tipo:"agenda" as const}})),
+    ...take("/tarefas"),...take("/documentos")];
+  const finance=take("/financeiro");
+  const system=visible.filter(i=>["/notificacoes","/ajuda","/novidades"].includes(i.to));
+  const used=new Set([...operation.filter(i=>!i.search),...finance,...system].map(i=>i.to));
+  return {operation,finance,system,administration:visible.filter(i=>!used.has(i.to))};
 }

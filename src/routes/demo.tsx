@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { ConsultingPublicDemo } from "@/components/consulting/consulting-public-demo";
+import { buildConsultingDemo, buildConsultingDemoData } from "@/lib/consulting-demo";
 import { LegalPublicDemo } from "@/components/legal/legal-public-demo";
 import { buildLegalDemo, type LegalDemoState } from "@/lib/legal-demo";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
@@ -139,7 +141,8 @@ function DemoWorkspace({ area }: { area: BusinessSegment }) {
   const { t } = useTranslation();
   const modules = demoModulesFor(area);
   const [active, setActive] = useState<DemoModule>("overview");
-  const [data, setData] = useState<DemoData>(() => buildDemoData(area));
+  const [data, setData] = useState<DemoData>(() => area === "consulting_services" ? buildConsultingDemoData() : buildDemoData(area));
+  const [consulting, setConsulting] = useState(buildConsultingDemo);
   const [legal, setLegal] = useState<LegalDemoState>(buildLegalDemo);
   const Icon = SEGMENT_OPTIONS.find((s) => s.key === area)?.icon ?? Sparkles;
 
@@ -154,14 +157,14 @@ function DemoWorkspace({ area }: { area: BusinessSegment }) {
           <Icon className="size-4 text-primary" aria-hidden />
           <span className="truncate font-medium">{t(`demo.segments.${area}.label`)}</span>
         </div>
-        <nav aria-label={t("demo.nav.operation")} className={area === "legal" ? "grid grid-cols-2 gap-1 sm:grid-cols-3 md:flex md:flex-col" : "flex gap-1 overflow-x-auto md:flex-col"}>
+        <nav aria-label={t("demo.nav.operation")} className={["legal", "consulting_services"].includes(area) ? "grid grid-cols-2 gap-1 sm:grid-cols-3 md:flex md:flex-col" : "flex gap-1 overflow-x-auto md:flex-col"}>
           {modules.map((m) => (
             <button
               key={m}
               type="button"
               aria-current={active === m ? "page" : undefined}
               onClick={() => setActive(m)}
-              className={`${area === "legal" ? "min-h-11 min-w-0 break-words" : "shrink-0"} rounded-lg px-3 py-2 text-left text-sm transition ${active === m ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-muted"}`}
+              className={`${["legal", "consulting_services"].includes(area) ? "min-h-11 min-w-0 break-words" : "shrink-0"} rounded-lg px-3 py-2 text-left text-sm transition ${active === m ? "bg-primary/10 font-semibold text-primary" : "text-muted-foreground hover:bg-muted"}`}
             >
               {moduleLabel(t, area, m)}
             </button>
@@ -181,7 +184,7 @@ function DemoWorkspace({ area }: { area: BusinessSegment }) {
         </div>
         {area === "legal" && ["overview", "schedule", "cases"].includes(active) ? (
           <LegalPublicDemo module={active} data={data} setData={setData} legal={legal} setLegal={setLegal} goTo={setActive} />
-        ) : <ModuleView area={area} module={active} data={data} setData={setData} goTo={setActive} />}
+        ) : area === "consulting_services" && ["overview", "attendance", "proposals", "cases", "schedule"].includes(active) ? <ConsultingPublicDemo module={active} data={data} setData={setData} consulting={consulting} setConsulting={setConsulting} goTo={setActive} /> : <ModuleView area={area} module={active} data={data} setData={setData} goTo={setActive} />}
       </main>
     </div>
   );

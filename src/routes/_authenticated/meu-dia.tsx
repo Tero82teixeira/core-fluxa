@@ -1,3 +1,4 @@
+import { ConsultingJourney } from "@/components/consulting/consulting-journey";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -135,6 +136,7 @@ function MyDayPage() {
         </div>
       </header>
 
+      <ConsultingJourney />
       <GettingStartedCard />
 
       <section

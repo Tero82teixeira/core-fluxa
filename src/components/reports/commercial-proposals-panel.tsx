@@ -1,3 +1,6 @@
+import { Link } from "@tanstack/react-router";
+import { useWorkspace } from "@/lib/workspace";
+import { routeVisibleForModules } from "@/lib/organization-segments";
 import { useMemo, useState } from "react";
 import {
   CalendarDays,
@@ -109,6 +112,9 @@ export function CommercialProposalsPanel({
   canEdit: boolean;
   canCancel: boolean;
 }) {
+  const {membership,can}=useWorkspace();
+  const settings=membership?.organizations?.organization_settings;
+  const canStartProject=settings?.business_segment === "consulting_services" && can("processes.create") && routeVisibleForModules("/processos",settings.business_segment,settings.enabled_modules);
   const proposals = useCommercialProposals(organizationId);
   const save = useSaveCommercialProposal(organizationId);
   const publish = usePublishCommercialProposal(organizationId);
@@ -485,6 +491,7 @@ export function CommercialProposalsPanel({
                       <CheckCircle2 className="size-4" /> Conversão concluída
                     </span>
                   )}
+                  {canStartProject && proposal.status === "accepted" && proposal.client_id && <Button asChild size="sm" variant="outline"><Link to="/processos/novo" search={{clientId:proposal.client_id}}>Novo projeto para este cliente</Link></Button>}
                   {canCancel && ["draft", "sent", "viewed"].includes(proposal.status) && (
                     <Button
                       size="sm"

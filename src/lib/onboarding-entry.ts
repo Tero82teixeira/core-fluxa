@@ -7,9 +7,9 @@ export function requiresWorkspaceSetup(
   return !completed && (!explorationEnabled || !businessSegment);
 }
 
-/** A imobiliária começa com o perfil geral; a especialização fica em Configurações. */
+/** Imobiliária e consultoria começam com perfil geral; a especialização fica em Configurações. */
 export function directOnboardingSubtype(segment: string | null | undefined) {
-  return segment === "real_estate" ? "brokerage" : null;
+  return segment === "real_estate" ? "brokerage" : segment === "consulting_services" ? "consulting" : null;
 }
 
 export function initialOnboardingStep(

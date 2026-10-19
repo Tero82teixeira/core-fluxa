@@ -1,3 +1,4 @@
+import { processStageDefinitions } from "@/lib/consulting-workspace";
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BriefcaseBusiness, CheckCircle2, Circle, Loader2, Plus, Trash2 } from "lucide-react";
@@ -79,13 +80,14 @@ export const Route = createFileRoute("/_authenticated/processos/$processId")({
 function ProcessDetail() {
   const { processId } = Route.useParams();
   const { organizationId, membership } = useWorkspace();
+  const stageDefinitions = processStageDefinitions(membership?.organizations?.organization_settings?.business_segment);
   const permissions = usePermissions();
   const process = useProcess(processId);
   const checklist = useProcessChecklist(processId);
   const createChecklistItem = useCreateChecklistItem(organizationId, processId);
   const updateChecklistItem = useUpdateChecklistItem(organizationId, processId);
   const [newDoc, setNewDoc] = useState("");
-  const moveStage = useMoveProcessStage(organizationId);
+  const moveStage = useMoveProcessStage(organizationId, membership?.organizations?.organization_settings?.business_segment);
   const addNote = useAddProcessNote(organizationId);
   const createTask = useCreateTask(organizationId);
   const setTaskStatus = useSetTaskStatus(organizationId);
@@ -171,8 +173,8 @@ function ProcessDetail() {
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <StatusBadge
-                  label={PROCESS_STAGE[data.stage].label}
-                  tone={PROCESS_STAGE[data.stage].tone}
+                  label={stageDefinitions[data.stage].label}
+                  tone={stageDefinitions[data.stage].tone}
                 />
                 <StatusBadge
                   label={PRIORITY[data.priority].label}
@@ -202,7 +204,7 @@ function ProcessDetail() {
                       to,
                       code: data.code,
                     });
-                    toast.success(`${data.code} agora está em ${PROCESS_STAGE[to].label}.`);
+                    toast.success(`${data.code} agora está em ${stageDefinitions[to].label}.`);
                   } catch (error) {
                     toast.error(describeError(error, "etapa"));
                   }
@@ -218,7 +220,7 @@ function ProcessDetail() {
                 <SelectContent>
                   {KANBAN_STAGES.map((stage) => (
                     <SelectItem key={stage} value={stage}>
-                      {PROCESS_STAGE[stage].label}
+                      {stageDefinitions[stage].label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -323,7 +325,7 @@ function ProcessDetail() {
                   ) : (
                     <Circle className="size-3.5" aria-hidden />
                   )}
-                  {PROCESS_STAGE[stage].short ?? PROCESS_STAGE[stage].label}
+                  {stageDefinitions[stage].short ?? stageDefinitions[stage].label}
                   {pending && <span className="sr-only">etapa com pendência</span>}
                 </li>
               );
@@ -369,8 +371,8 @@ function ProcessDetail() {
                       <p className="text-sm font-medium">{movement.description}</p>
                       {movement.from_stage && movement.to_stage && (
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {PROCESS_STAGE[movement.from_stage].label} →{" "}
-                          {PROCESS_STAGE[movement.to_stage].label}
+                          {stageDefinitions[movement.from_stage].label} →{" "}
+                          {stageDefinitions[movement.to_stage].label}
                         </p>
                       )}
                       <p className="mt-0.5 text-xs text-muted-foreground">

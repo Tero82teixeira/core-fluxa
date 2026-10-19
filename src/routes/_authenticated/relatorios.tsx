@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CalendarDays,
@@ -151,6 +151,7 @@ const periods: [PeriodPreset, string][] = [
 const selectClass = "h-10 rounded-xl border border-input bg-background px-3 text-sm";
 
 function ReportsPage() {
+  const navigate = useNavigate();
   const { tipo: requestedReport } = Route.useSearch();
   const { organizationId, membership } = useWorkspace();
   const organizationName =
@@ -181,6 +182,7 @@ function ReportsPage() {
       ? requestedReport
       : "overview",
   );
+  useEffect(()=>{setTab(requestedReport && reportTabs.some(([value])=>value===requestedReport) ? requestedReport : "overview");setPage(0);},[requestedReport,canViewServiceReport]);
   const [period, setPeriod] = useState<PeriodPreset>("30d");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -595,7 +597,7 @@ function ReportsPage() {
             />
             <label className="grid gap-1 text-xs">
               Tipo de relatório
-              <select className={selectClass} value={tab} onChange={(e) => setTab(e.target.value)}>
+              <select className={selectClass} value={tab} onChange={(e) => {setTab(e.target.value);void navigate({to:"/relatorios",search:{tipo:e.target.value},replace:true});}}>
                 {reportTabs.map(([v, l]) => (
                   <option key={v} value={v}>
                     {l}
@@ -626,6 +628,7 @@ function ReportsPage() {
           value={tab}
           onValueChange={(value) => {
             setTab(value);
+            void navigate({to:"/relatorios",search:{tipo:value},replace:true});
             setPage(0);
           }}
         >

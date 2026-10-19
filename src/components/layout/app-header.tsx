@@ -1,3 +1,4 @@
+import { consultingItemActive } from "@/lib/consulting-workspace";
 import { realEstateItemActive } from "@/lib/real-estate-workspace";
 import { useEffect, useState } from "react";
 import { organizationDisplayName } from "@/lib/organization-name";
@@ -54,6 +55,7 @@ import {
   navItemVisibleForRole,
   realEstateNavigation,
   legalNavigation,
+  consultingNavigation,
 } from "@/lib/navigation";
 import { isFocusedHealthWorkspace, routeVisibleForModules } from "@/lib/organization-segments";
 import {
@@ -100,6 +102,17 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
         ),
     ),
   );
+  const consultingNav = consultingNavigation(
+    NAV_ITEMS.filter(
+      (item) =>
+        navItemVisibleForRole(item.to, role) &&
+        routeVisibleForModules(
+          item.to,
+          organizationSettings?.business_segment,
+          organizationSettings?.enabled_modules,
+        ),
+    ),
+  );
   const current =
     (isRealEstate
       ? [
@@ -108,6 +121,11 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
           ...estateNav.administration,
           ...estateNav.system,
         ].find((item) => realEstateItemActive(item, pathname, routeSearch))
+      : null) ??
+    (organizationSettings?.business_segment === "consulting_services"
+      ? Object.values(consultingNav)
+          .flat()
+          .find((item) => consultingItemActive(item, pathname, routeSearch))
       : null) ??
     NAV_ITEMS.find((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
   const CurrentIcon = current?.icon;
@@ -216,7 +234,13 @@ export function AppHeader({ onSignOut }: { onSignOut: () => void }) {
       ? estateQuickActions
       : organizationSettings?.business_segment === "legal"
         ? legalQuickActions
-        : generalQuickActions;
+        : organizationSettings?.business_segment === "consulting_services"
+          ? consultingNav.operation.filter(
+              (i) =>
+                ["/clientes", "/comunicacao", "/processos"].includes(i.to) ||
+                i.search?.tipo === "commercial",
+            )
+          : generalQuickActions;
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-card/90 shadow-[0_1px_18px_-12px_rgba(15,23,42,0.45)] backdrop-blur-xl">

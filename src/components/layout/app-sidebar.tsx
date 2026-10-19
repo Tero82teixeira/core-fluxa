@@ -1,3 +1,4 @@
+import { consultingItemActive } from "@/lib/consulting-workspace";
 import { realEstateItemActive } from "@/lib/real-estate-workspace";
 import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
@@ -37,6 +38,7 @@ import {
   navItemVisibleForRole,
   realEstateNavigation,
   legalNavigation,
+  consultingNavigation,
   type NavItem,
 } from "@/lib/navigation";
 import { initials } from "@/lib/format";
@@ -122,6 +124,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   } = useWorkspace();
   const organizationSettings = membership?.organizations?.organization_settings;
   const isHealthWorkspace = organizationSettings?.business_segment === "health";
+  const isConsulting = organizationSettings?.business_segment === "consulting_services";
   const isLegal = organizationSettings?.business_segment === "legal";
   const isRealEstate = organizationSettings?.business_segment === "real_estate";
   const [administrationOpen, setAdministrationOpen] = useState(false);
@@ -164,6 +167,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
 
   const realEstate = realEstateNavigation(visibleItems);
   const legal = legalNavigation(visibleItems);
+  const consulting = consultingNavigation(visibleItems);
   useEffect(() => {
     if (
       isRealEstate &&
@@ -172,7 +176,12 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
       setAdministrationOpen(true);
     if (isLegal && legal.administration.some((item) => isCurrentRoute(pathname, item.to)))
       setAdministrationOpen(true);
-  }, [isRealEstate, isLegal, pathname, routeSearch, role]);
+    if (
+      isConsulting &&
+      consulting.administration.some((i) => consultingItemActive(i, pathname, routeSearch))
+    )
+      setAdministrationOpen(true);
+  }, [isRealEstate, isLegal, isConsulting, pathname, routeSearch, role]);
   const routineItems = HEALTH_ROUTINE_ORDER.flatMap((route) =>
     visibleItems.filter((item) => item.to === route),
   );
@@ -193,7 +202,9 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
   const renderItem = (item: NavItem) => {
     const active = isRealEstate
       ? realEstateItemActive(item, pathname, routeSearch)
-      : isCurrentRoute(pathname, item.to);
+      : isConsulting
+        ? consultingItemActive(item, pathname, routeSearch)
+        : isCurrentRoute(pathname, item.to);
     const navIcon = collapsed ? (
       <item.icon className="size-4.5 shrink-0 text-sidebar-primary" aria-hidden />
     ) : (
@@ -207,7 +218,7 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
       </span>
     );
     return (
-      <SidebarMenuItem key={item.to + (item.search?.secao ?? "")}>
+      <SidebarMenuItem key={item.to + (item.search?.secao ?? item.search?.tipo ?? "")}>
         <SidebarMenuButton
           asChild={!locked}
           isActive={active}
@@ -370,6 +381,20 @@ export function AppSidebar({ onSignOut }: { onSignOut: () => void }) {
               FileStack,
             )}
             {renderGroup("sistema", "Sistema", legal.system)}
+          </>
+        ) : isConsulting ? (
+          <>
+            {renderGroup("rotina-consultoria", "Consultoria e Serviços", consulting.operation)}
+            {renderGroup("financeiro-consultoria", "Financeiro", consulting.finance)}
+            {renderCollapsibleGroup(
+              "administracao-consultoria",
+              "Administração",
+              consulting.administration,
+              administrationOpen,
+              setAdministrationOpen,
+              FileStack,
+            )}
+            {renderGroup("sistema", "Sistema", consulting.system)}
           </>
         ) : focusedHealth ? (
           <>
