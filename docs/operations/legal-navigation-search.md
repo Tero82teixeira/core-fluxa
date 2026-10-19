@@ -13,7 +13,9 @@ A RPC `search_legal_processes` somente lê dados. Exige sessão, papel e módulo
 
 Migration criada pela CLI e posicionada depois das dependências jurídicas existentes, que já tinham datas futuras no repositório. O script não cria prazos ou processos e pode ser reaplicado.
 
-A demonstração pública mantém os exemplos fictícios locais já entregues; esta RPC atende somente a área interna. A busca global do cabeçalho continua sendo a busca geral; a pesquisa CNJ fica em Processos.
+A demonstração pública mantém os exemplos fictícios locais já entregues; esta RPC atende somente a área interna. A busca global do cabeçalho também reconhece CNJ completo ou prefixo explícito. Reutiliza a mesma RPC existente, com uma prévia de cinco processos. Havendo mais resultados, oferece um link estruturado para Processos com o parâmetro CNJ validado e sem reaproveitar filtros antigos. Resultados mantêm nome, código e CNJ; erros da fonte jurídica exibem nova tentativa. A filtragem local já é feita pelo ranking, evitando uma segunda filtragem visual que ocultaria correspondências de CNJ com outra pontuação.
+
+Painel Jurídico e Agenda Jurídica entram como atalhos locais, somente para usuários com permissão de processos, papel autorizado e módulo jurídico habilitado. A chave de cache inclui esse acesso e a organização. Nenhuma nova migration é necessária para esta extensão: basta publicar no Lovable após a aplicação anterior de `legal-cnj-search.sql`.
 
 Verificação: pgTAP confirma função, privilégios e índice no banco completo; `tests/legal-workspace.database.mjs` inclui `legal-search.database.mjs`, que verifica a SQL real com 507 resultados de prefixo, todas as páginas, filtros, arquivamento e negações de acesso. Testes do menu asseguram preservação dos destinos por papel/módulo; testes da normalização evitam capturar protocolos numéricos curtos.
 
