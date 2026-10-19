@@ -1,6 +1,42 @@
 import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
+  consultingProject: {
+  "title": "Project brief",
+  "objective": "Objective / project name",
+  "scope": "Agreed scope",
+  "owner": "Owner",
+  "due": "Due date",
+  "empty": "Not provided",
+  "edit": "Edit brief",
+  "save": "Save",
+  "saved": "Information saved.",
+  "saving": "Saving…",
+  "saveError": "Could not save. Check your connection and try again.",
+  "cancel": "Cancel",
+  "deliveries": "Project deliverables",
+  "progress": "{{done}} of {{total}} completed · {{pending}} pending · {{overdue}} overdue",
+  "statusHint": "Only completed deliverables count toward progress. Changing a deliverable does not approve it on behalf of the client or complete the project automatically.",
+  "add": "Add deliverable",
+  "editDelivery": "Edit deliverable",
+  "deliveryTitle": "Deliverable name",
+  "details": "Description and delivery criteria",
+  "status": "Status",
+  "required": "Required",
+  "optional": "Optional",
+  "overdue": "Overdue",
+  "noDeliveries": "No deliverables yet. Add the first one to organize the work.",
+  "open": "Open project brief",
+  "back": "Back to projects",
+  "exampleOwner": "FLUXA team (fictional)",
+  "statuses": {
+    "pendente": "Planned",
+    "recebido": "Delivered",
+    "em_analise": "Under review",
+    "aprovado": "Completed",
+    "rejeitado": "Changes requested"
+  }
+},
   consultingDemo: {
   "notice": "Demo with fictional data. Reference: {{date}}. Changes remain in this session; sending, acceptance and billing are simulated.",
   "reset": "Reset demo",

@@ -44,3 +44,36 @@ entrada/retomada do cadastro, fluxo completo e isolamento da demonstração, al�
 da renderização dos componentes reais em PT/EN/ES. `TZ=UTC npm run check` executa
 tipos, lint, testes e build. CI e Supabase Final Validation são obrigatórios
 antes do merge.
+
+## Ficha do projeto e entregas
+
+O segundo lote disponibiliza uma ficha editável para a consultoria. “Objetivo /
+nome do projeto” usa `processes.title` e “Escopo combinado” usa `description`;
+responsável e prazo usam os campos existentes. Não é criado um campo separado
+para objetivo nem se convertem descrições antigas em texto estruturado. Clientes,
+valores e contratos não são alterados pela edição da ficha.
+
+A aba Entregas reaproveita `process_checklist_items`, mantendo os itens anteriores.
+Cada entrega pode ter título, descrição/critérios, responsável por nome, data,
+obrigatoriedade e situação. Os códigos existentes são apresentados assim:
+`pendente` = Planejada, `recebido` = Entregue, `em_analise` = Em validação,
+`aprovado` = Concluída e `rejeitado` = Ajustes solicitados. Somente `aprovado` conta
+como concluído no progresso de consultoria. A marcação é interna, sem representar
+aceite do cliente. Não muda automaticamente a etapa do projeto ou o financeiro.
+
+Apenas editores podem alterar a ficha e as entregas; projetos arquivados ficam em
+leitura. Operações continuam submetidas às políticas existentes do banco. Updates
+confirmam uma linha retornada, evitando sucesso silencioso sem permissão. A edição
+de entrega também restringe o ID ao projeto, organização e item não excluído.
+A ficha atualiza caches de listas, cliente, busca e relatórios. Ficha e histórico
+são operações separadas, conforme os hooks existentes; não se cria transação RPC.
+
+A demonstração usa os mesmos componentes de apresentação, com edições locais e
+reinício completo. Em Projetos e entregas, “Abrir ficha do projeto” abre os detalhes;
+nenhuma edição atinge banco ou envia notificações. Textos de PT/EN/ES estão incluídos.
+A simulação continua impedindo conclusão com entregas pendentes; essa restrição é
+uma regra da demonstração, não um novo bloqueio no fluxo de etapas da empresa.
+
+Validação adicional: persistência dos campos existentes e permissões de leitura /
+escrita em PGlite com DDL e políticas originais (`consulting-project.database.mjs`),
+além de datas civis, limites, progresso e edição/reinício da demo. Sem SQL novo.
