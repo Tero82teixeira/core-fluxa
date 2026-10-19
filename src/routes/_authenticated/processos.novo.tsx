@@ -1,3 +1,5 @@
+import { consultingProjectValid } from "@/lib/consulting-project";
+import { processStageDefinitions } from "@/lib/consulting-workspace";
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BriefcaseBusiness, Loader2 } from "lucide-react";
@@ -130,6 +132,7 @@ function NewProcess() {
       toast.error("Selecione o cliente do processo.");
       return;
     }
+    if(isConsulting && !consultingProjectValid(form)){toast.error("Informe um objetivo de 3 a 160 caracteres e confira o prazo do projeto.");return;}
     try {
       const created = await createProcess.mutateAsync({
         client_id: form.client_id,
@@ -150,7 +153,7 @@ function NewProcess() {
           toast.warning("Processo criado, mas o checklist sugerido não pôde ser gerado.");
         }
       }
-      toast.success(`Processo ${created.code} criado.`);
+      toast.success(`${isConsulting ? "Projeto" : "Processo"} ${created.code} criado.`);
       markSaved();
       navigate({ to: "/processos/$processId", params: { processId: created.id } });
     } catch (error) {
@@ -253,7 +256,7 @@ function NewProcess() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="title">Título</Label>
+              <Label htmlFor="title">{isConsulting ? "Objetivo / nome do projeto" : "Título"}</Label>
               <Input
                 id="title"
                 maxLength={160}
@@ -274,7 +277,7 @@ function NewProcess() {
                 <SelectContent>
                   {KANBAN_STAGES.map((stage) => (
                     <SelectItem key={stage} value={stage}>
-                      {PROCESS_STAGE[stage].label}
+                      {processStageDefinitions(isConsulting ? "consulting_services" : null)[stage].label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -331,11 +334,11 @@ function NewProcess() {
             </div>
 
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="description">Descrição</Label>
+              <Label htmlFor="description">{isConsulting ? "Escopo combinado" : "Descrição"}</Label>
               <Textarea
                 id="description"
                 rows={3}
-                maxLength={600}
+                maxLength={isConsulting ? 4000 : 600}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
@@ -345,11 +348,11 @@ function NewProcess() {
               <Button
                 className="w-full sm:w-auto"
                 type="submit"
-                disabled={createProcess.isPending}
+                disabled={createProcess.isPending || (isConsulting && !consultingProjectValid(form))}
                 aria-busy={createProcess.isPending}
               >
                 {createProcess.isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
-                {createProcess.isPending ? "Criando…" : "Criar processo"}
+                {createProcess.isPending ? "Criando…" : isConsulting ? "Criar projeto" : "Criar processo"}
               </Button>
               <Button
                 className="w-full sm:w-auto"

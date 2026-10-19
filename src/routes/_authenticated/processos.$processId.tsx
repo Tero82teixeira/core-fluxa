@@ -1,3 +1,4 @@
+import { ConsultingProjectPanel, ConsultingProjectDeliveries } from "@/components/consulting/consulting-project-panel";
 import { processStageDefinitions } from "@/lib/consulting-workspace";
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -80,6 +81,7 @@ export const Route = createFileRoute("/_authenticated/processos/$processId")({
 function ProcessDetail() {
   const { processId } = Route.useParams();
   const { organizationId, membership } = useWorkspace();
+  const isConsulting = membership?.organizations?.organization_settings?.business_segment === "consulting_services";
   const stageDefinitions = processStageDefinitions(membership?.organizations?.organization_settings?.business_segment);
   const permissions = usePermissions();
   const process = useProcess(processId);
@@ -139,7 +141,7 @@ function ProcessDetail() {
 
   const secondary = [
     { label: "Número interno", value: data.code },
-    { label: "Protocolo", value: data.protocol ?? "Não protocolado" },
+    ...(!isConsulting ? [{ label: "Protocolo", value: data.protocol ?? "Não protocolado" }] : []),
     { label: "Valor", value: formatCurrency(data.value) },
     { label: "Situação financeira", value: FINANCIAL_STATUS[data.financial_status].label },
     { label: "Abertura", value: formatDate(data.opened_at) },
@@ -169,7 +171,7 @@ function ProcessDetail() {
                 </Link>
               </h1>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                {data.service_types?.name ?? data.title} · Responsável {data.owner_name}
+                {isConsulting ? data.title || data.service_types?.name : data.service_types?.name ?? data.title} · Responsável {data.owner_name}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <StatusBadge
@@ -185,7 +187,7 @@ function ProcessDetail() {
                   Prazo {formatDate(data.due_date)}
                 </span>
               </div>
-              <p className="mt-3 max-w-2xl text-sm text-muted-foreground">{data.description}</p>
+              {!isConsulting && <p className="mt-3 max-w-2xl text-sm text-muted-foreground">{data.description}</p>}
             </div>
 
             <div className="flex flex-col items-stretch gap-2 lg:w-60">
@@ -276,6 +278,8 @@ function ProcessDetail() {
         </CardContent>
       </Card>
 
+      {isConsulting && <ConsultingProjectPanel organizationId={organizationId} project={data} canEdit={permissions.canEdit} />}
+
       {isLegalWorkspace && (
         <LegalCaseProfilePanel
           organizationId={organizationId}
@@ -339,13 +343,13 @@ function ProcessDetail() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <Tabs defaultValue="timeline">
+        <Tabs defaultValue={isConsulting ? "documentos" : "timeline"}>
           <TabsList className="h-auto w-full max-w-full justify-start gap-1.5 overflow-x-auto rounded-2xl border border-border/70 bg-card p-2 shadow-soft">
             <TabsTrigger value="timeline" className="shrink-0 px-4 py-2 text-sm">
               Linha do tempo
             </TabsTrigger>
             <TabsTrigger value="documentos" className="shrink-0 px-4 py-2 text-sm">
-              Checklist ({checklistItems.length})
+              {isConsulting ? "Entregas" : "Checklist"} ({checklistItems.length})
             </TabsTrigger>
             <TabsTrigger value="arquivos" className="shrink-0 px-4 py-2 text-sm">
               Documentos
@@ -391,7 +395,7 @@ function ProcessDetail() {
           </TabsContent>
 
           <TabsContent value="documentos">
-            <Card className="rounded-2xl border-border/70 shadow-soft">
+            {isConsulting ? (checklist.isLoading ? <p className="p-4 text-sm">Carregando entregas…</p> : checklist.isError ? <div className="space-y-3 p-4"><p>Não foi possível carregar as entregas.</p><Button variant="outline" onClick={()=>void checklist.refetch()}>Tentar novamente</Button></div> : <ConsultingProjectDeliveries organizationId={organizationId} project={data} items={checklistItems} canEdit={permissions.canEdit} />) : <Card className="rounded-2xl border-border/70 shadow-soft">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between text-sm">
                   <span className="card-title">Checklist operacional</span>
@@ -521,7 +525,7 @@ function ProcessDetail() {
                   )}
                 </ul>
               </CardContent>
-            </Card>
+            </Card>}
           </TabsContent>
 
           <TabsContent value="tarefas">
@@ -636,8 +640,8 @@ function ProcessDetail() {
 
           <Card className="rounded-2xl border-border/70 shadow-soft">
             <CardContent className="p-5">
-              <h2 className="section-title">Próxima ação sugerida</h2>
-              <p className="mt-2 text-sm text-muted-foreground">{data.description ?? "—"}</p>
+              <h2 className="section-title">{isConsulting ? "Acompanhamento" : "Próxima ação sugerida"}</h2>
+              <p className="mt-2 text-sm text-muted-foreground">{isConsulting ? "Organize as entregas, registre as tarefas e acompanhe o histórico do projeto nas abas ao lado." : data.description ?? "—"}</p>
             </CardContent>
           </Card>
         </div>

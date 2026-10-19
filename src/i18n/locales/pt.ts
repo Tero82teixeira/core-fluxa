@@ -1,5 +1,41 @@
 /** Português (Brasil) — idioma padrão e fonte da verdade das chaves. */
 export const pt = {
+  consultingProject: {
+  "title": "Ficha do projeto",
+  "objective": "Objetivo / nome do projeto",
+  "scope": "Escopo combinado",
+  "owner": "Responsável",
+  "due": "Prazo",
+  "empty": "Não informado",
+  "edit": "Editar ficha",
+  "save": "Salvar",
+  "saved": "Informações salvas.",
+  "saving": "Salvando…",
+  "saveError": "Não foi possível salvar. Confira sua conexão e tente novamente.",
+  "cancel": "Cancelar",
+  "deliveries": "Entregas do projeto",
+  "progress": "{{done}} de {{total}} concluídas · {{pending}} pendentes · {{overdue}} atrasadas",
+  "statusHint": "Somente entregas concluídas contam no progresso. Alterar a entrega não aprova pelo cliente nem conclui o projeto automaticamente.",
+  "add": "Adicionar entrega",
+  "editDelivery": "Editar entrega",
+  "deliveryTitle": "Nome da entrega",
+  "details": "Descrição e critérios da entrega",
+  "status": "Situação",
+  "required": "Obrigatória",
+  "optional": "Opcional",
+  "overdue": "Atrasada",
+  "noDeliveries": "Nenhuma entrega cadastrada. Adicione a primeira para organizar o trabalho.",
+  "open": "Abrir ficha do projeto",
+  "back": "Voltar aos projetos",
+  "exampleOwner": "Equipe FLUXA (fictícia)",
+  "statuses": {
+    "pendente": "Planejada",
+    "recebido": "Entregue",
+    "em_analise": "Em validação",
+    "aprovado": "Concluída",
+    "rejeitado": "Ajustes solicitados"
+  }
+},
   consultingDemo: {
   "notice": "Demonstração com dados fictícios. Referência: {{date}}. As alterações ficam somente nesta sessão; envio, aceite e cobrança são simulados.",
   "reset": "Reiniciar demonstração",

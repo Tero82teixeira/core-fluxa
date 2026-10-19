@@ -333,14 +333,20 @@ export function useUpdateProcess(organizationId: string | null) {
   const actor = useActor();
   return useMutation({
     mutationFn: async ({ id, values }: { id: string; values: Partial<ProcessInput> }) => {
+      if (!organizationId) throw new Error("Organização não selecionada.");
       const nowIso = new Date().toISOString();
       const { error } = await db()
         .from("processes")
         .update({ ...values, updated_by: actor.userId, last_movement_at: nowIso })
         .eq("id", id)
-        .eq("organization_id", organizationId);
+        .eq("organization_id", organizationId).select("id").single();
       if (error) throw error;
 
+      if (values.title !== undefined || values.description !== undefined) {
+        const {error: movementError}=await db().rpc("record_process_movement", {_organization_id:organizationId,_process_id:id,_description:"Objetivo e escopo do projeto atualizados."});
+        if(movementError)throw movementError;
+        await recordAudit({organizationId,actorId:actor.userId,actorName:actor.name,action:"process.updated",entity:"process",entityId:id,metadata:{fields:Object.keys(values)}});
+      }
       for (const [field, meta] of Object.entries(PROCESS_FIELD_AUDIT)) {
         const key = field as keyof ProcessInput;
         if (values[key] === undefined) continue;
@@ -362,6 +368,10 @@ export function useUpdateProcess(organizationId: string | null) {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["processes", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["client-processes"] });
+      queryClient.invalidateQueries({ queryKey: ["activity", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["global-search", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["reports", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["legal-cnj-processes", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["legal-workspace", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["process", variables.id] });
@@ -669,11 +679,12 @@ export function useUpdateChecklistItem(organizationId: string | null, processId:
       values: Partial<ChecklistInput> & { deleted_at?: string | null };
       movement?: string;
     }) => {
+      if (!organizationId) throw new Error("Organização não selecionada.");
       const { error } = await db()
         .from("process_checklist_items")
         .update({ ...values, updated_by: actor.userId })
         .eq("id", id)
-        .eq("organization_id", organizationId);
+        .eq("organization_id", organizationId).eq("process_id", processId).is("deleted_at",null).select("id").single();
       if (error) throw error;
       if (movement) {
         await db().rpc("record_process_movement", {

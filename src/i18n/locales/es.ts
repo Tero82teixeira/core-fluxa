@@ -1,6 +1,42 @@
 import type { LocaleShape } from "./pt";
 
 export const es: LocaleShape = {
+  consultingProject: {
+  "title": "Ficha del proyecto",
+  "objective": "Objetivo / nombre del proyecto",
+  "scope": "Alcance acordado",
+  "owner": "Responsable",
+  "due": "Plazo",
+  "empty": "No informado",
+  "edit": "Editar ficha",
+  "save": "Guardar",
+  "saved": "Información guardada.",
+  "saving": "Guardando…",
+  "saveError": "No se pudo guardar. Revise su conexión e inténtelo de nuevo.",
+  "cancel": "Cancelar",
+  "deliveries": "Entregas del proyecto",
+  "progress": "{{done}} de {{total}} completadas · {{pending}} pendientes · {{overdue}} atrasadas",
+  "statusHint": "Solo las entregas completadas cuentan en el progreso. Cambiar una entrega no la aprueba en nombre del cliente ni completa el proyecto automáticamente.",
+  "add": "Añadir entrega",
+  "editDelivery": "Editar entrega",
+  "deliveryTitle": "Nombre de la entrega",
+  "details": "Descripción y criterios de entrega",
+  "status": "Estado",
+  "required": "Obligatoria",
+  "optional": "Opcional",
+  "overdue": "Atrasada",
+  "noDeliveries": "No hay entregas registradas. Añada la primera para organizar el trabajo.",
+  "open": "Abrir ficha del proyecto",
+  "back": "Volver a los proyectos",
+  "exampleOwner": "Equipo FLUXA (ficticio)",
+  "statuses": {
+    "pendente": "Planificada",
+    "recebido": "Entregada",
+    "em_analise": "En validación",
+    "aprovado": "Completada",
+    "rejeitado": "Cambios solicitados"
+  }
+},
   consultingDemo: {
   "notice": "Demostración con datos ficticios. Referencia: {{date}}. Los cambios permanecen en esta sesión; el envío, la aceptación y el cobro son simulados.",
   "reset": "Reiniciar demostración",

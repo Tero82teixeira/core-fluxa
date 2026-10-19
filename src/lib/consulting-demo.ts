@@ -1,6 +1,13 @@
+import {
+  consultingDeliveryPayload,
+  consultingProjectPayload,
+  type ConsultingProjectValues,
+  type ConsultingDeliveryValues,
+} from "./consulting-project.ts";
 import { buildDemoData, type DemoData } from "./public-demo.ts";
 export const CONSULTING_DEMO_DATE = "2026-10-18";
 export type ConsultingDemoState = {
+  projectProfiles: Record<string, ConsultingProjectValues>;
   requests: {
     id: string;
     recordId: string;
@@ -17,7 +24,18 @@ export type ConsultingDemoState = {
     status: "draft" | "sent" | "accepted";
     projectId?: string;
   }[];
-  deliveries: { id: string; projectId: string; titleKey: string; done: boolean }[];
+  deliveries: {
+    id: string;
+    projectId: string;
+    titleKey: string;
+    done: boolean;
+    title?: string;
+    description?: string;
+    assignee_name?: string;
+    due_date?: string;
+    status?: ConsultingDeliveryValues["status"];
+    required?: boolean;
+  }[];
 };
 export function buildConsultingDemoData(): DemoData {
   const data = buildDemoData("consulting_services");
@@ -32,6 +50,7 @@ export function buildConsultingDemoData(): DemoData {
 }
 export function buildConsultingDemo(): ConsultingDemoState {
   return {
+    projectProfiles: {},
     requests: [
       { id: "q1", recordId: "r1", serviceKey: "consultingDemo.services.s1", status: "new" },
       { id: "q2", recordId: "r3", serviceKey: "consultingDemo.services.s2", status: "proposal" },
@@ -153,7 +172,11 @@ export function toggleConsultingDelivery(
 ): ConsultingDemoState {
   return {
     ...state,
-    deliveries: state.deliveries.map((d) => (d.id === id ? { ...d, done: !d.done } : d)),
+    deliveries: state.deliveries.map((d) =>
+      d.id === id
+        ? { ...d, done: !d.done, status: !d.done ? ("aprovado" as const) : ("pendente" as const) }
+        : d,
+    ),
   };
 }
 export function advanceConsultingDemoProject(
@@ -185,5 +208,65 @@ export function consultingDemoSummary(data: DemoData, state: ConsultingDemoState
     deliveries: state.deliveries.filter(
       (d) => !d.done && data.cases.some((c) => c.id === d.projectId && c.status !== "done"),
     ).length,
+  };
+}
+
+/** Simulação da mesma ficha; texto digitado é preservado como texto, nunca chave de tradução. */
+export function saveConsultingDemoProfile(
+  data: DemoData,
+  state: ConsultingDemoState,
+  id: string,
+  values: ConsultingProjectValues,
+) {
+  consultingProjectPayload(values);
+  if (!data.cases.some((p) => p.id === id)) throw new Error("PROJECT_NOT_FOUND");
+  return {
+    data: {
+      ...data,
+      cases: data.cases.map((p) => (p.id === id ? { ...p, due: values.due_date } : p)),
+    },
+    state: {
+      ...state,
+      projectProfiles: {
+        ...state.projectProfiles,
+        [id]: {
+          ...values,
+          title: values.title.trim(),
+          description: values.description.trim(),
+          owner_name: values.owner_name.trim(),
+        },
+      },
+    },
+  };
+}
+export function saveConsultingDemoDelivery(
+  state: ConsultingDemoState,
+  projectId: string,
+  values: ConsultingDeliveryValues,
+  id?: string,
+): ConsultingDemoState {
+  consultingDeliveryPayload(values);
+  if (id && !state.deliveries.some((d) => d.id === id && d.projectId === projectId))
+    throw new Error("DELIVERY_NOT_FOUND");
+  const patch = {
+    ...values,
+    title: values.title.trim(),
+    description: values.description.trim(),
+    assignee_name: values.assignee_name.trim(),
+    done: values.status === "aprovado",
+  };
+  return {
+    ...state,
+    deliveries: id
+      ? state.deliveries.map((d) => (d.id === id ? { ...d, ...patch } : d))
+      : [
+          ...state.deliveries,
+          {
+            ...patch,
+            id: `custom-${projectId}-${state.deliveries.length + 1}`,
+            projectId,
+            titleKey: "",
+          },
+        ],
   };
 }

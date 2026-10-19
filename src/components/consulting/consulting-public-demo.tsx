@@ -1,9 +1,14 @@
+import { useState } from "react";
+import { ConsultingProjectCard } from "./consulting-project-card";
+import { ConsultingDeliveriesCard } from "./consulting-deliveries-card";
 import "@/i18n";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { LOCALE_BY_LANGUAGE, type AppLanguage } from "@/i18n";
 import {
   CONSULTING_DEMO_DATE,
+  saveConsultingDemoProfile,
+  saveConsultingDemoDelivery,
   buildConsultingDemo,
   buildConsultingDemoData,
   createConsultingDemoProposal,
@@ -32,11 +37,14 @@ export function ConsultingPublicDemo({
   goTo: (module: DemoModule) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const [selected, setSelected] = useState<string | null>(null);
   const locale = LOCALE_BY_LANGUAGE[(i18n.resolvedLanguage ?? "pt") as AppLanguage];
   const date = (value: string) =>
-    new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
-      new Date(`${value.slice(0, 10)}T12:00:00`),
-    );
+    value
+      ? new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+          new Date(`${value.slice(0, 10)}T12:00:00`),
+        )
+      : t("consultingProject.empty");
   const money = (value: number) =>
     new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" }).format(value);
   const client = (id: string) => data.records.find((r) => r.id === id)?.name ?? "—";
@@ -57,6 +65,7 @@ export function ConsultingPublicDemo({
           variant="outline"
           className="min-h-11"
           onClick={() => {
+            setSelected(null);
             setData(buildConsultingDemoData);
             setConsulting(buildConsultingDemo);
           }}
@@ -169,59 +178,121 @@ export function ConsultingPublicDemo({
         </div>
       )}
       {module === "cases" && (
-        <div className="grid gap-4 xl:grid-cols-2">
-          {data.cases.map((project) => {
-            const deliveries = consulting.deliveries.filter((d) => d.projectId === project.id);
-            const blocked = project.stage >= 2 && deliveries.some((d) => !d.done);
-            return (
-              <article key={project.id} className="min-w-0 space-y-3 rounded-xl border bg-card p-5">
-                <p className="text-xs text-primary">{project.code}</p>
-                <h2 className="break-words font-semibold">{t(project.titleKey)}</h2>
-                <p className="break-words text-sm text-muted-foreground">
-                  {client(project.recordId)}
-                </p>
-                <p className="text-sm">
-                  {money(project.amount)} · {date(project.due)}
-                </p>
-                <p className="font-medium">{t(`consultingDemo.stages.s${project.stage}`)}</p>
-                <div>
-                  {deliveries.map((delivery) => (
-                    <label
-                      key={delivery.id}
-                      className="flex min-h-11 cursor-pointer items-center gap-3 py-2 text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        className="size-5 shrink-0"
-                        checked={delivery.done}
-                        disabled={project.status === "done"}
-                        onChange={() =>
-                          setConsulting((s) => toggleConsultingDelivery(s, delivery.id))
+        <div className={selected ? "grid gap-4" : "grid gap-4 xl:grid-cols-2"}>
+          {data.cases
+            .filter((project) => !selected || project.id === selected)
+            .map((project) => {
+              const deliveries = consulting.deliveries.filter((d) => d.projectId === project.id);
+              const blocked = project.stage >= 2 && deliveries.some((d) => !d.done);
+              return (
+                <article
+                  key={project.id}
+                  className="min-w-0 space-y-3 rounded-xl border bg-card p-5"
+                >
+                  <p className="text-xs text-primary">{project.code}</p>
+                  <h2 className="break-words font-semibold">
+                    {consulting.projectProfiles[project.id]?.title ?? t(project.titleKey)}
+                  </h2>
+                  <p className="break-words text-sm text-muted-foreground">
+                    {client(project.recordId)}
+                  </p>
+                  <p className="text-sm">
+                    {money(project.amount)} · {date(project.due)}
+                  </p>
+                  <p className="font-medium">{t(`consultingDemo.stages.s${project.stage}`)}</p>
+                  <Button
+                    className="min-h-11"
+                    variant="outline"
+                    onClick={() => setSelected(selected ? null : project.id)}
+                  >
+                    {t(selected ? "consultingProject.back" : "consultingProject.open")}
+                  </Button>
+                  {selected === project.id && (
+                    <div className="space-y-4">
+                      <ConsultingProjectCard
+                        key={project.id}
+                        canEdit
+                        values={
+                          consulting.projectProfiles[project.id] ?? {
+                            title: t(project.titleKey),
+                            description: t("consultingDemo.scope"),
+                            owner_name: t("consultingProject.exampleOwner"),
+                            due_date: project.due,
+                          }
+                        }
+                        formatDate={date}
+                        onSave={async (values) => {
+                          const next = saveConsultingDemoProfile(
+                            data,
+                            consulting,
+                            project.id,
+                            values,
+                          );
+                          setData(() => next.data);
+                          setConsulting(() => next.state);
+                        }}
+                      />
+                      <ConsultingDeliveriesCard
+                        items={deliveries.map((d) => ({
+                          id: d.id,
+                          title: d.title ?? t(d.titleKey),
+                          description: d.description ?? "",
+                          assignee_name: d.assignee_name ?? "",
+                          due_date: d.due_date ?? "",
+                          status: d.status ?? (d.done ? "aprovado" : "pendente"),
+                          required: d.required ?? true,
+                        }))}
+                        today={CONSULTING_DEMO_DATE}
+                        canEdit={project.status !== "done"}
+                        formatDate={date}
+                        onSave={async (values, id) =>
+                          setConsulting((state) =>
+                            saveConsultingDemoDelivery(state, project.id, values, id),
+                          )
                         }
                       />
-                      {t(delivery.titleKey)}
-                    </label>
-                  ))}
-                </div>
-                {project.status !== "done" && (
-                  <>
-                    <Button
-                      className="min-h-11"
-                      disabled={blocked}
-                      onClick={() =>
-                        setData((d) => advanceConsultingDemoProject(d, consulting, project.id))
-                      }
-                    >
-                      {t(project.stage >= 2 ? "consultingDemo.finish" : "consultingDemo.advance")}
-                    </Button>
-                    {blocked && (
-                      <p className="text-sm text-muted-foreground">{t("consultingDemo.pending")}</p>
-                    )}
-                  </>
-                )}
-              </article>
-            );
-          })}
+                    </div>
+                  )}
+                  <div>
+                    {deliveries.map((delivery) => (
+                      <label
+                        key={delivery.id}
+                        className="flex min-h-11 cursor-pointer items-center gap-3 py-2 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          className="size-5 shrink-0"
+                          checked={delivery.done}
+                          disabled={project.status === "done"}
+                          onChange={() =>
+                            setConsulting((s) => toggleConsultingDelivery(s, delivery.id))
+                          }
+                        />
+                        {delivery.title ?? t(delivery.titleKey)}
+                      </label>
+                    ))}
+                  </div>
+                  {project.status !== "done" && (
+                    <>
+                      <Button
+                        className="min-h-11"
+                        disabled={blocked}
+                        onClick={() =>
+                          setData((d) => advanceConsultingDemoProject(d, consulting, project.id))
+                        }
+                      >
+                        {t(project.stage >= 2 ? "consultingDemo.finish" : "consultingDemo.advance")}
+                      </Button>
+                      {blocked && (
+                        <p className="text-sm text-muted-foreground">
+                          {t("consultingDemo.pending")}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </article>
+              );
+            })}
         </div>
       )}
       {module === "schedule" && (
@@ -239,7 +310,7 @@ export function ConsultingPublicDemo({
             .filter((p) => p.status !== "done")
             .map((project) => (
               <article key={project.id} className="space-y-2 rounded-xl border bg-card p-5">
-                <h2 className="font-semibold">{t(project.titleKey)}</h2>
+                <h2 className="font-semibold">{consulting.projectProfiles[project.id]?.title ?? t(project.titleKey)}</h2>
                 <p className="text-sm">
                   {t("consultingDemo.due")}: {date(project.due)}
                 </p>

@@ -53,3 +53,19 @@ test("consultoria renderiza todas as etapas em PT, EN e ES sem cadastro", async 
   }
  }
 });
+
+test("ficha e entregas reais renderizam com permissões, texto completo e três idiomas", async()=>{
+ const {ConsultingProjectCard}=await import("../src/components/consulting/consulting-project-card.tsx");
+ const {ConsultingDeliveriesCard}=await import("../src/components/consulting/consulting-deliveries-card.tsx");
+ for(const language of ["pt","en","es"]){
+  await i18n.changeLanguage(language);
+  const values={title:"Objetivo com texto longo",description:"Escopo linha 1\nEscopo linha 2",owner_name:"Ana",due_date:"2026-10-20"};
+  const props={values,canEdit:false,onSave:async()=>{},formatDate:d=>d};
+  const readonly=renderToStaticMarkup(React.createElement(ConsultingProjectCard,props));
+  assert(readonly.includes("Escopo linha 2"));assert(readonly.includes("whitespace-pre-wrap"));assert(!readonly.includes("<button"));
+  const editor=renderToStaticMarkup(React.createElement(ConsultingProjectCard,{...props,canEdit:true}));assert(editor.includes("<button"));
+  const html=renderToStaticMarkup(React.createElement(ConsultingDeliveriesCard,{items:[{id:"d1",title:"Plano de ação",description:"Critérios",assignee_name:"Ana",due_date:"2026-10-17",status:"recebido",required:true}],today:"2026-10-18",canEdit:false,onSave:async()=>{},formatDate:d=>d}));
+  assert(html.includes('aria-valuenow="0"'));assert(html.includes("2026-10-17"));assert(!html.includes("<button"));
+  assert(!/consultingProject\./.test(readonly+editor+html));
+ }
+});
