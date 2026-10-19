@@ -1,5 +1,5 @@
 import { routeVisibleForModules } from "@/lib/organization-segments";
-import { legalCnjSearch } from "@/lib/legal-search";
+import { legalCnjSearch, legalCnjSearchParameter } from "@/lib/legal-search";
 import { useLegalCnjProcesses, formatCnjNumber } from "@/hooks/use-legal-cases";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -59,10 +59,11 @@ import { clearRememberedFilters, useFilterMemory } from "@/hooks/use-filter-memo
 import { daysUntil, formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-type Search = { etapa?: string; responsavel?: string; cliente?: string };
+type Search = { etapa?: string; responsavel?: string; cliente?: string; cnj?: string };
 
 export const Route = createFileRoute("/_authenticated/processos/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
+    cnj: legalCnjSearchParameter(search.cnj),
     etapa: typeof search.etapa === "string" ? search.etapa : undefined,
     responsavel: typeof search.responsavel === "string" ? search.responsavel : undefined,
     cliente: typeof search.cliente === "string" ? search.cliente : undefined,
@@ -108,8 +109,8 @@ function ProcessesPage() {
   const moveStage = useMoveProcessStage(organizationId);
 
   const [view, setView] = useState<"kanban" | "tabela">("kanban");
-  const [term, setTerm] = useState("");
-  const [debounced, setDebounced] = useState("");
+  const [term, setTerm] = useState(isLegal && search.cnj ? `CNJ: ${search.cnj}` : "");
+  const [debounced, setDebounced] = useState(isLegal && search.cnj ? `CNJ: ${search.cnj}` : "");
   const [clientId, setClientId] = useState(search.cliente ?? "todos");
   const [serviceTypeId, setServiceTypeId] = useState("todos");
   const [stage, setStage] = useState(search.etapa ?? "todos");
@@ -157,6 +158,7 @@ function ProcessesPage() {
   );
 
   useFilterMemory(filterMemoryScope, rememberedFilters, (remembered) => {
+    if (isLegal && search.cnj) return;
     restoringFilters.current = true;
     if (["kanban", "tabela"].includes(String(remembered.view)))
       setView(remembered.view as "kanban" | "tabela");
@@ -229,6 +231,11 @@ function ProcessesPage() {
     ],
   );
 
+  useEffect(() => {
+    if (!isLegal || !search.cnj) return;
+    setTerm(`CNJ: ${search.cnj}`); setDebounced(`CNJ: ${search.cnj}`);
+    setClientId("todos"); setServiceTypeId("todos"); setStage("todos"); setPriority("todos"); setOwner("todos"); setFinancial("todos"); setDeadline("todos"); setArchived(false); setPage(0);
+  }, [isLegal,search.cnj]);
   const cnj = isLegal ? legalCnjSearch(debounced) : null;
   const searchingCnj = Boolean(cnj);
   const currentView = searchingCnj ? "tabela" : view;

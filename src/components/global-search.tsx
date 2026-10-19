@@ -1,3 +1,7 @@
+import { routeVisibleForModules } from "@/lib/organization-segments";
+import { navItemVisibleForRole } from "@/lib/navigation";
+import { legalCnjSearch } from "@/lib/legal-search";
+import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Compass, FileStack, Gauge, HelpCircle, ListChecks, Loader2, MessagesSquare, Search, Sparkles, Users, Wallet, Files } from "lucide-react";
@@ -13,7 +17,8 @@ const ICONS = { Navegação: Compass, Cliente: Users, Processo: FileStack, Taref
 
 export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const navigate = useNavigate();
-  const { organizationId, can } = useWorkspace();
+  const { organizationId, can, membership, role } = useWorkspace();
+  const settings = membership?.organizations?.organization_settings;
   const [term, setTerm] = useState("");
   const [debouncedTerm, setDebouncedTerm] = useState("");
   useEffect(() => {
@@ -22,25 +27,30 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
   }, [term]);
   useEffect(() => { if (!open) { setTerm(""); setDebouncedTerm(""); } }, [open]);
 
-  const access = useMemo(() => ({ clients: can("clients.view"), processes: can("processes.view"), finance: can("finance.view") }), [can]);
+  const access = useMemo(() => ({ clients: can("clients.view"), processes: can("processes.view"), finance: can("finance.view"), legal: can("processes.view") && navItemVisibleForRole("/advocacia/painel-juridico",role) && settings?.business_segment === "legal" && routeVisibleForModules("/advocacia/painel-juridico", settings.business_segment, settings.enabled_modules) }), [can,role,settings?.business_segment,settings?.enabled_modules]);
   const remote = useGlobalSearch(organizationId, debouncedTerm, access);
   const normalizedTerm = term.trim();
+  const legalCnj = access.legal ? legalCnjSearch(normalizedTerm) : null;
+  const failedLegalSearch = Boolean(legalCnj && normalizedTerm === debouncedTerm && remote.isError);
   const currentRemoteResults = normalizedTerm === debouncedTerm ? remote.data ?? [] : [];
   const results = useMemo(() => composeGlobalSearchResults(normalizedTerm, access, currentRemoteResults), [normalizedTerm, access, currentRemoteResults]);
   const loading = term.trim().length >= 2 && (term.trim() !== debouncedTerm || remote.isFetching);
 
   const select = (result: GlobalSearchResult) => {
     onOpenChange(false);
-    void navigate({ to: result.route });
+    if (result.search) void navigate({ to: result.route, search: result.search });
+    else void navigate({ to: result.route });
   };
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput autoFocus aria-label="Buscar em tudo" placeholder="Buscar clientes, processos, tarefas e muito mais…" value={term} onValueChange={setTerm} />
+    <CommandDialog open={open} onOpenChange={onOpenChange} shouldFilter={false}>
+      <CommandInput autoFocus aria-label="Buscar em tudo" placeholder={access.legal ? "Buscar cliente, processo, CNJ ou agenda jurídica…" : "Buscar clientes, processos, tarefas e muito mais…"} value={term} onValueChange={setTerm} />
       <CommandList className="max-h-[min(70dvh,32rem)]">
         {!term.trim() && <div className="px-6 py-10 text-center text-sm text-muted-foreground">Busque clientes, processos, tarefas e muito mais.</div>}
         {loading && <div role="status" className="flex items-center justify-center gap-2 px-4 py-3 text-xs text-muted-foreground"><Loader2 className="size-3.5 animate-spin" />Buscando na organização...</div>}
-        {term.trim() && !loading && <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>}
+        {access.legal && !term.trim() && <p className="px-6 pb-4 text-center text-xs text-muted-foreground">CNJ completo com ou sem pontuação. Para prefixos: CNJ: 0000041. Você também pode buscar “agenda jurídica”.</p>}
+        {failedLegalSearch && <div role="alert" className="space-y-2 px-4 py-3 text-sm"><p>Não foi possível consultar os processos pelo CNJ.</p><Button variant="outline" onClick={()=>void remote.refetch()}>Tentar novamente</Button></div>}
+        {term.trim() && !loading && !failedLegalSearch && <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>}
         {GROUPS.map((type) => {
           const items = results.filter((item) => item.type === type);
           if (!items.length) return null;

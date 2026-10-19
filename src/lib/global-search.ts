@@ -23,11 +23,12 @@ export type GlobalSearchResult = {
   subtitle?: string;
   keywords?: string[];
   route: string;
+  search?: { cnj: string };
   priority?: number;
   recentAt?: string | null;
 };
 
-export type GlobalSearchAccess = { clients: boolean; processes: boolean; finance: boolean };
+export type GlobalSearchAccess = { clients: boolean; processes: boolean; finance: boolean; legal?: boolean };
 
 type NavigationItem = Omit<GlobalSearchResult, "type" | "id"> & {
   id: string;
@@ -35,6 +36,8 @@ type NavigationItem = Omit<GlobalSearchResult, "type" | "id"> & {
 };
 
 const NAVIGATION_ITEMS: NavigationItem[] = [
+  { id: "painel-juridico", title: "Painel Jurídico", subtitle: "Advocacia", keywords: ["jurídico", "advocacia", "prazos jurídicos"], route: "/advocacia/painel-juridico", permission: "legal" },
+  { id: "agenda-juridica", title: "Agenda Jurídica", subtitle: "Advocacia", keywords: ["agenda jurídica", "audiências", "compromissos jurídicos"], route: "/advocacia/agenda-juridica", permission: "legal" },
   { id: "central", title: "Central de Comando", subtitle: "Navegação", keywords: ["início", "dashboard", "comando"], route: "/central" },
   { id: "clientes", title: "Clientes", subtitle: "Navegação", keywords: ["cliente", "carteira"], route: "/clientes", permission: "clients" },
   { id: "processos", title: "Processos", subtitle: "Navegação", keywords: ["processo", "etapas", "protocolos"], route: "/processos", permission: "processes" },

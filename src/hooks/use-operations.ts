@@ -1,3 +1,4 @@
+import { searchLegalGlobalProcesses } from "@/lib/legal-global-search";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -437,8 +438,10 @@ export function useGlobalSearch(organizationId: string | null, term: string, acc
   const trimmed = term.trim();
   return useQuery({
     enabled: Boolean(organizationId) && trimmed.length >= 2,
-    queryKey: ["global-search", organizationId, trimmed, access.clients, access.processes, access.finance],
+    queryKey: ["global-search", organizationId, trimmed, access.clients, access.processes, access.finance, access.legal],
     queryFn: async (): Promise<GlobalSearchResult[]> => {
+      const legalResults = await searchLegalGlobalProcesses(supabase, organizationId, trimmed, Boolean(access.legal && access.processes));
+      if (legalResults !== null) return rankGlobalSearchResults(legalResults, trimmed);
       const safe = trimmed.replace(/[%,()]/g, " ");
       const like = `%${safe}%`;
       const source = async (name: string, enabled: boolean, run: () => PromiseLike<{ data: any[] | null; error: any }>, map: (row: any) => GlobalSearchResult) => {

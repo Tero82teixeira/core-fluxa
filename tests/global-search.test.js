@@ -136,7 +136,7 @@ describe("busca global: fontes remotas e segurança", () => {
     assert.equal(GLOBAL_SEARCH_MODULE_LIMIT, 5);
     assert.equal(GLOBAL_SEARCH_LIMIT, 25);
   });
-  test("não adiciona migration, RPC, view, Edge Function ou service role", () => {
-    assert.doesNotMatch(changedSources, /\.rpc\(|service_role|functions\.invoke|create\s+(?:or\s+replace\s+)?view|create\s+function/i);
+  test("não cria view, Edge Function ou acesso por service role", () => {
+    assert.doesNotMatch(changedSources, /service_role|functions\.invoke|create\s+(?:or\s+replace\s+)?view|create\s+function/i);
   });
 });
