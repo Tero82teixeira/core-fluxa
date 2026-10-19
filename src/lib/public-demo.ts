@@ -5,7 +5,7 @@
  */
 import type { BusinessSegment } from "./organization-segments";
 
-export type DemoModule = "overview" | "records" | "cases" | "schedule" | "tasks" | "documents" | "finance";
+export type DemoModule = "attendance" | "proposals" | "overview" | "records" | "cases" | "schedule" | "tasks" | "documents" | "finance";
 
 export const DEMO_AREAS: BusinessSegment[] = [
   "legal",
@@ -24,7 +24,7 @@ export const DEMO_AREA_MODULES: Record<BusinessSegment, DemoModule[]> = {
   engineering: ["overview", "records", "cases", "tasks", "documents", "finance"],
   health: ["overview", "records", "schedule", "cases", "tasks", "finance"],
   real_estate: ["overview", "cases", "records", "schedule", "tasks", "finance"],
-  consulting_services: ["overview", "records", "cases", "tasks", "finance"],
+  consulting_services: ["overview", "records", "attendance", "proposals", "cases", "schedule", "tasks", "documents", "finance"],
   other: ["overview", "records", "cases", "tasks", "finance"],
 };
 

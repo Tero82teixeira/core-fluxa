@@ -1,6 +1,57 @@
 import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
+  consultingDemo: {
+  "notice": "Demo with fictional data. Reference: {{date}}. Changes remain in this session; sending, acceptance and billing are simulated.",
+  "reset": "Reset demo",
+  "journey": "From first contact to delivery",
+  "intro": "Assist people and companies, prepare a proposal, simulate acceptance and track project deliverables.",
+  "realFlow": "In the company workspace, an accepted proposal offers a shortcut to create a project with the client prefilled. The owner defines the scope and confirms creation.",
+  "meeting": "Discovery meeting",
+  "scope": "Example scope: assessment, action plan and presentation of results.",
+  "due": "Expected delivery",
+  "prepare": "Prepare proposal",
+  "viewProjects": "View projects",
+  "viewProposals": "View proposals",
+  "send": "Simulate sending",
+  "accept": "Simulate acceptance",
+  "start": "Start example project",
+  "finish": "Complete project",
+  "advance": "Advance stage",
+  "pending": "Complete all deliverables before finishing.",
+  "metrics": {
+    "requests": "Ongoing inquiries",
+    "proposals": "Open proposals",
+    "projects": "Active projects",
+    "deliveries": "Pending deliverables"
+  },
+  "services": {
+    "s1": "Business organization consulting",
+    "s2": "Personal planning advisory",
+    "s3": "Process improvement consulting"
+  },
+  "deliveries": {
+    "d1": "Assessment and discovery",
+    "d2": "Action plan",
+    "d3": "Presentation of results"
+  },
+  "requestStatus": {
+    "new": "Need identified",
+    "proposal": "Proposal in progress",
+    "project": "In execution"
+  },
+  "proposalStatus": {
+    "draft": "Draft",
+    "sent": "Sent — simulation",
+    "accepted": "Accepted — simulation"
+  },
+  "stages": {
+    "s0": "Assessment",
+    "s1": "In execution",
+    "s2": "Client validation",
+    "s3": "Project completed"
+  }
+},
   legalDemo: {
     requirement: "Pending requirements",
     withoutOwner: "Unassigned",
@@ -644,7 +695,7 @@ export const en: LocaleShape = {
       real_estate: { records: "Owners", cases: "Properties", schedule: "Viewings" },
       engineering: { cases: "Projects & sites" },
       accounting: { cases: "Obligations" },
-      consulting_services: { cases: "Projects" },
+      consulting_services: {"overview": "Daily overview", "records": "Clients", "attendance": "Inquiries", "proposals": "Proposals", "cases": "Projects and deliverables", "schedule": "Schedule"},
       other: { cases: "Requests" },
     },
     nav: { operation: "Operations", management: "Management" },

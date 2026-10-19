@@ -74,7 +74,8 @@ function ClientDetail() {
   const { clientId } = Route.useParams();
   const search = Route.useSearch();
   const navigate = useNavigate();
-  const { organizationId, role } = useWorkspace();
+  const { organizationId, role, membership } = useWorkspace();
+  const isConsulting = membership?.organizations?.organization_settings?.business_segment === "consulting_services";
   const permissions = usePermissions();
   const client = useClient(clientId);
   const processes = useClientProcesses(clientId);
@@ -126,8 +127,8 @@ function ClientDetail() {
   const archived = Boolean(data.archived_at);
 
   const summary = [
-    { label: "Processos ativos", value: String(openRelated.length) },
-    { label: "Processos totais", value: String(related.length) },
+    { label: isConsulting ? "Projetos ativos" : "Processos ativos", value: String(openRelated.length) },
+    { label: isConsulting ? "Projetos totais" : "Processos totais", value: String(related.length) },
     { label: "Valor contratado", value: formatCurrency(contracted) },
     { label: "Em aberto", value: formatCurrency(openValue) },
   ];
@@ -264,7 +265,7 @@ function ClientDetail() {
             {permissions.canCreate && !archived && (
               <Button className="bg-white text-slate-950 hover:bg-slate-100" asChild>
                 <Link to="/processos/novo" search={{ clientId }}>
-                  Novo processo
+                  {isConsulting ? "Novo projeto" : "Novo processo"}
                 </Link>
               </Button>
             )}
@@ -292,7 +293,7 @@ function ClientDetail() {
             Visão geral
           </TabsTrigger>
           <TabsTrigger value="processos" className="shrink-0 px-4 py-2 text-sm">
-            Processos ({related.length})
+            {isConsulting ? "Projetos" : "Processos"} ({related.length})
           </TabsTrigger>
           <TabsTrigger value="documentos" className="shrink-0 px-4 py-2 text-sm">
             Documentos

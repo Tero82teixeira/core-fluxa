@@ -1,5 +1,56 @@
 /** Português (Brasil) — idioma padrão e fonte da verdade das chaves. */
 export const pt = {
+  consultingDemo: {
+  "notice": "Demonstração com dados fictícios. Referência: {{date}}. As alterações ficam somente nesta sessão; envio, aceite e cobrança são simulados.",
+  "reset": "Reiniciar demonstração",
+  "journey": "Do primeiro contato à entrega",
+  "intro": "Atenda pessoas e empresas, prepare uma proposta, simule o aceite e acompanhe as entregas do projeto.",
+  "realFlow": "No sistema da empresa, a proposta aceita oferece um atalho para criar um projeto com o cliente preenchido. O responsável define o escopo e confirma o cadastro.",
+  "meeting": "Reunião de diagnóstico",
+  "scope": "Escopo de exemplo: diagnóstico, plano de ação e apresentação dos resultados.",
+  "due": "Previsão de entrega",
+  "prepare": "Preparar proposta",
+  "viewProjects": "Ver projetos",
+  "viewProposals": "Ver propostas",
+  "send": "Simular envio",
+  "accept": "Simular aceite",
+  "start": "Iniciar projeto de exemplo",
+  "finish": "Concluir projeto",
+  "advance": "Avançar etapa",
+  "pending": "Conclua todas as entregas antes de finalizar.",
+  "metrics": {
+    "requests": "Atendimentos em andamento",
+    "proposals": "Propostas em aberto",
+    "projects": "Projetos ativos",
+    "deliveries": "Entregas pendentes"
+  },
+  "services": {
+    "s1": "Consultoria de organização empresarial",
+    "s2": "Assessoria de planejamento pessoal",
+    "s3": "Consultoria de melhoria de processos"
+  },
+  "deliveries": {
+    "d1": "Diagnóstico e levantamento",
+    "d2": "Plano de ação",
+    "d3": "Apresentação dos resultados"
+  },
+  "requestStatus": {
+    "new": "Necessidade identificada",
+    "proposal": "Proposta em acompanhamento",
+    "project": "Em execução"
+  },
+  "proposalStatus": {
+    "draft": "Rascunho",
+    "sent": "Enviada — simulação",
+    "accepted": "Aceita — simulação"
+  },
+  "stages": {
+    "s0": "Diagnóstico",
+    "s1": "Em execução",
+    "s2": "Validação pelo cliente",
+    "s3": "Projeto concluído"
+  }
+},
   legalDemo: {
     requirement: "Em exigência",
     withoutOwner: "Sem responsável",
@@ -652,7 +703,7 @@ export const pt = {
       real_estate: { records: "Proprietários", cases: "Imóveis", schedule: "Visitas" },
       engineering: { cases: "Projetos e obras" },
       accounting: { cases: "Obrigações" },
-      consulting_services: { cases: "Projetos" },
+      consulting_services: {"overview": "Visão do dia", "records": "Clientes", "attendance": "Atendimentos", "proposals": "Propostas", "cases": "Projetos e entregas", "schedule": "Agenda"},
       other: { cases: "Demandas" },
     },
     nav: { operation: "Operação", management: "Gestão" },

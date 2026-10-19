@@ -1,3 +1,4 @@
+import { processStageDefinitions } from "@/lib/consulting-workspace";
 import { routeVisibleForModules } from "@/lib/organization-segments";
 import { legalCnjSearch, legalCnjSearchParameter } from "@/lib/legal-search";
 import { useLegalCnjProcesses, formatCnjNumber } from "@/hooks/use-legal-cases";
@@ -102,11 +103,13 @@ function ProcessesPage() {
   const { organizationId, membership } = useWorkspace();
   const settings = membership?.organizations?.organization_settings;
   const isLegal = settings?.business_segment === "legal" && routeVisibleForModules("/advocacia/painel-juridico", settings.business_segment, settings.enabled_modules);
+  const isConsulting = settings?.business_segment === "consulting_services";
+  const stageDefinitions = processStageDefinitions(settings?.business_segment);
   const permissions = usePermissions();
 
   const clients = useClients(organizationId);
   const serviceTypes = useServiceTypes(organizationId);
-  const moveStage = useMoveProcessStage(organizationId);
+  const moveStage = useMoveProcessStage(organizationId, settings?.business_segment);
 
   const [view, setView] = useState<"kanban" | "tabela">("kanban");
   const [term, setTerm] = useState(isLegal && search.cnj ? `CNJ: ${search.cnj}` : "");
@@ -169,7 +172,7 @@ function ProcessesPage() {
     if (
       !search.etapa &&
       typeof remembered.stage === "string" &&
-      (remembered.stage === "todos" || remembered.stage in PROCESS_STAGE)
+      (remembered.stage === "todos" || remembered.stage in stageDefinitions)
     )
       setStage(remembered.stage);
     if (
@@ -340,7 +343,7 @@ function ProcessesPage() {
         to: target,
         code: process.code,
       });
-      toast.success(`${process.code} movido para ${PROCESS_STAGE[target].label}.`);
+      toast.success(`${process.code} movido para ${stageDefinitions[target].label}.`);
     } catch (error) {
       toast.error(describeError(error, "etapa"));
     }
@@ -375,7 +378,7 @@ function ProcessesPage() {
                   Fluxo operacional
                 </p>
                 <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
-                  Processos
+                  {isConsulting ? "Projetos e entregas" : "Processos"}
                 </h1>
               </div>
             </div>
@@ -430,7 +433,7 @@ function ProcessesPage() {
                 onClick={() => navigate({ to: "/processos/novo" })}
               >
                 <Plus className="size-4" aria-hidden />
-                Novo processo
+                {isConsulting ? "Novo projeto" : "Novo processo"}
               </Button>
             )}
           </div>
@@ -506,7 +509,7 @@ function ProcessesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todas as etapas</SelectItem>
-                {Object.entries(PROCESS_STAGE).map(([key, meta]) => (
+                {Object.entries(stageDefinitions).map(([key, meta]) => (
                   <SelectItem key={key} value={key}>
                     {meta.label}
                   </SelectItem>
@@ -664,7 +667,7 @@ function ProcessesPage() {
                   >
                     <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-muted/10 px-4 py-3.5">
                       <p className="truncate font-display text-sm font-semibold tracking-tight">
-                        {PROCESS_STAGE[column].label}
+                        {stageDefinitions[column].label}
                       </p>
                       <span className="flex shrink-0 items-center gap-1.5">
                         {atRisk > 0 && (
@@ -778,7 +781,7 @@ function ProcessesPage() {
               <Table>
                 <TableHeader className="bg-muted/20">
                   <TableRow>
-                    <TableHead>Processo</TableHead>
+                    <TableHead>{isConsulting ? "Projeto" : "Processo"}</TableHead>
                     <TableHead className="hidden md:table-cell">Cliente</TableHead>
                     <TableHead>Etapa</TableHead>
                     <TableHead className="hidden lg:table-cell">Prioridade</TableHead>
@@ -808,8 +811,8 @@ function ProcessesPage() {
                       </TableCell>
                       <TableCell>
                         <StatusBadge
-                          label={PROCESS_STAGE[process.stage].label}
-                          tone={PROCESS_STAGE[process.stage].tone}
+                          label={stageDefinitions[process.stage].label}
+                          tone={stageDefinitions[process.stage].tone}
                         />
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
@@ -862,8 +865,8 @@ function ProcessesPage() {
                         </span>
                       </span>
                       <StatusBadge
-                        label={PROCESS_STAGE[process.stage].label}
-                        tone={PROCESS_STAGE[process.stage].tone}
+                        label={stageDefinitions[process.stage].label}
+                        tone={stageDefinitions[process.stage].tone}
                       />
                     </div>
                     <p className="mt-3 line-clamp-2 text-sm">

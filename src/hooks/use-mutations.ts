@@ -1,3 +1,4 @@
+import { processStageDefinitions } from "@/lib/consulting-workspace";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -268,7 +269,7 @@ export function useCreateProcess(organizationId: string | null) {
 }
 
 /** Alteração de etapa com registro de movimentação e auditoria. */
-export function useMoveProcessStage(organizationId: string | null) {
+export function useMoveProcessStage(organizationId: string | null, segment?: string | null) {
   const queryClient = useQueryClient();
   const actor = useActor();
   return useMutation({
@@ -296,7 +297,7 @@ export function useMoveProcessStage(organizationId: string | null) {
         _process_id: processId,
         _from_stage: from,
         _to_stage: to,
-        _description: `Etapa alterada de ${PROCESS_STAGE[from].label} para ${PROCESS_STAGE[to].label}.`,
+        _description: `Etapa alterada de ${processStageDefinitions(segment)[from].label} para ${processStageDefinitions(segment)[to].label}.`,
       });
       if (movementError) throw movementError;
 
