@@ -1,4 +1,11 @@
 import {
+  normalizedMonthlyPlan,
+  monthlyDueDate,
+  monthInPlan,
+  type MonthlyPlan,
+  type MonthlyPlanValues,
+} from "./consulting-plans.ts";
+import {
   consultingDeliveryPayload,
   consultingProjectPayload,
   type ConsultingProjectValues,
@@ -7,6 +14,8 @@ import {
 import { buildDemoData, type DemoData } from "./public-demo.ts";
 export const CONSULTING_DEMO_DATE = "2026-10-18";
 export type ConsultingDemoState = {
+  monthlyPlans: Record<string, MonthlyPlan & { example?: boolean }>;
+  monthlyGenerated: Record<string, string[]>;
   projectProfiles: Record<string, ConsultingProjectValues>;
   requests: {
     id: string;
@@ -51,6 +60,28 @@ export function buildConsultingDemoData(): DemoData {
 export function buildConsultingDemo(): ConsultingDemoState {
   return {
     projectProfiles: {},
+    monthlyGenerated: {},
+    monthlyPlans: Object.fromEntries(
+      ["c1", "c2"].map((id, index) => [
+        id,
+        {
+          process_id: id,
+          organization_id: "demo",
+          service_name: "consultingPlans.exampleService",
+          monthly_amount: index ? 800 : 1500,
+          starts_on: "2026-10-01",
+          ends_on: index ? "2026-10-31" : "2026-12-31",
+          return_on: index ? "2026-10-22" : "2026-10-17",
+          status: "ativo" as const,
+          revision: 1,
+          example: true,
+          routine: [
+            { title: "consultingPlans.activity1", day: 5 },
+            { title: "consultingPlans.activity2", day: 25 },
+          ],
+        },
+      ]),
+    ),
     requests: [
       { id: "q1", recordId: "r1", serviceKey: "consultingDemo.services.s1", status: "new" },
       { id: "q2", recordId: "r3", serviceKey: "consultingDemo.services.s2", status: "proposal" },
@@ -268,5 +299,60 @@ export function saveConsultingDemoDelivery(
             titleKey: "",
           },
         ],
+  };
+}
+
+export function saveConsultingDemoPlan(
+  state: ConsultingDemoState,
+  id: string,
+  values: MonthlyPlanValues,
+  revision: number | null,
+): ConsultingDemoState {
+  const previous = state.monthlyPlans[id];
+  if ((previous?.revision ?? null) !== revision) throw new Error("CONSULTING_PLAN_STALE");
+  return {
+    ...state,
+    monthlyPlans: {
+      ...state.monthlyPlans,
+      [id]: {
+        ...normalizedMonthlyPlan(values),
+        process_id: id,
+        organization_id: "demo",
+        revision: (previous?.revision ?? 0) + 1,
+      },
+    },
+  };
+}
+export function generateConsultingDemoMonth(
+  data: DemoData,
+  state: ConsultingDemoState,
+  id: string,
+  reference: string,
+) {
+  const plan = state.monthlyPlans[id],
+    project = data.cases.find((p) => p.id === id),
+    key = `${id}:${reference}`;
+  if (!project || project.status === "done") throw new Error("CONSULTING_PLAN_PROJECT_NOT_FOUND");
+  if (!plan || plan.status !== "ativo") throw new Error("CONSULTING_PLAN_NOT_ACTIVE");
+  if (!monthInPlan(reference, plan)) throw new Error("CONSULTING_PLAN_MONTH_OUTSIDE_PERIOD");
+  if (state.monthlyGenerated[key])
+    return { data, state, created: 0, existing: state.monthlyGenerated[key].length };
+  const tasks = plan.routine.map((activity, index) => ({
+    id: `monthly-${key}-${index}`,
+    titleKey: plan.example ? activity.title : "",
+    ...(plan.example ? {} : { title: activity.title }),
+    due: monthlyDueDate(reference, activity.day, plan),
+    priority: "medium" as const,
+    done: false,
+    owner: "Equipe FLUXA (fictícia)",
+  }));
+  return {
+    data: { ...data, tasks: [...data.tasks, ...tasks] },
+    state: {
+      ...state,
+      monthlyGenerated: { ...state.monthlyGenerated, [key]: tasks.map((task) => task.id) },
+    },
+    created: tasks.length,
+    existing: 0,
   };
 }

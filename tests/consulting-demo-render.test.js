@@ -45,7 +45,7 @@ test("consultoria renderiza todas as etapas em PT, EN e ES sem cadastro", async 
  const { buildConsultingDemo, buildConsultingDemoData } = await import("../src/lib/consulting-demo.ts");
  for(const language of ["pt","en","es"]){
   await i18n.changeLanguage(language);
-  for(const module of ["overview","attendance","proposals","cases","schedule"]){
+  for(const module of ["overview","attendance","proposals","cases","plans","schedule"]){
    const html=renderToStaticMarkup(React.createElement(ConsultingPublicDemo,{module,data:buildConsultingDemoData(),consulting:buildConsultingDemo(),setData:()=>{},setConsulting:()=>{},goTo:()=>{}}));
    assert(html.includes("2026"));assert(!/consultingDemo\.|demo\.data\.|demo\.modules\./.test(html));
    assert(html.includes('min-h-11'));
@@ -67,5 +67,17 @@ test("ficha e entregas reais renderizam com permissões, texto completo e três 
   const html=renderToStaticMarkup(React.createElement(ConsultingDeliveriesCard,{items:[{id:"d1",title:"Plano de ação",description:"Critérios",assignee_name:"Ana",due_date:"2026-10-17",status:"recebido",required:true}],today:"2026-10-18",canEdit:false,onSave:async()=>{},formatDate:d=>d}));
   assert(html.includes('aria-valuenow="0"'));assert(html.includes("2026-10-17"));assert(!html.includes("<button"));
   assert(!/consultingProject\./.test(readonly+editor+html));
+ }
+});
+
+test("planos mensais renderizam valores, rotina e permissões em três idiomas",async()=>{
+ const {ConsultingMonthlyPlanCard}=await import("../src/components/consulting/consulting-monthly-plan-card.tsx");
+ const {ConsultingPlansList}=await import("../src/components/consulting/consulting-plans-list.tsx");
+ for(const language of ["pt","en","es"]){await i18n.changeLanguage(language);
+  const plan={process_id:"c1",organization_id:"demo",revision:1,service_name:"Assessoria",monthly_amount:1500,starts_on:"2026-10-01",ends_on:"2026-10-31",return_on:"2026-10-17",status:"ativo",routine:[{title:"Reunião",day:5}]};
+  const props={workspace:{plan,generated:false,tasks:[]},canEdit:false,canGenerate:false,month:"2026-10",onMonth:()=>{},onSave:async()=>{},onGenerate:async()=>({created:1,existing:0}),formatDate:d=>d,money:v=>String(v),initialTitle:"Exemplo",today:"2026-10-18"};
+  const html=renderToStaticMarkup(React.createElement(ConsultingMonthlyPlanCard,props));assert(html.includes("1500"));assert(html.includes('disabled=""'));assert(!/consultingPlans\./.test(html));assert(html.includes("Reunião"));
+  const generated=renderToStaticMarkup(React.createElement(ConsultingMonthlyPlanCard,{...props,workspace:{plan,generated:true,tasks:[{id:"t1",title:"Rotina gerada",due_date:"2026-10-05",status:"concluida",deleted:false}]}}));assert(generated.includes("Rotina gerada"));assert(!/consultingPlans\./.test(generated));
+  const list=renderToStaticMarkup(React.createElement(ConsultingPlansList,{data:{items:[{...plan,code:"PRJ-01",client_name:"Empresa",client_id:"r1"}],total:11,ending:1,expired:0,returns:1,today:"2026-10-18"},page:0,onPage:()=>{},onOpen:()=>{},formatDate:d=>d}));assert(list.includes("Empresa"));assert(list.includes("1 / 2"));assert(!/consultingPlans\./.test(list));
  }
 });

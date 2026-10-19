@@ -184,7 +184,7 @@ function DemoWorkspace({ area }: { area: BusinessSegment }) {
         </div>
         {area === "legal" && ["overview", "schedule", "cases"].includes(active) ? (
           <LegalPublicDemo module={active} data={data} setData={setData} legal={legal} setLegal={setLegal} goTo={setActive} />
-        ) : area === "consulting_services" && ["overview", "attendance", "proposals", "cases", "schedule"].includes(active) ? <ConsultingPublicDemo module={active} data={data} setData={setData} consulting={consulting} setConsulting={setConsulting} goTo={setActive} /> : <ModuleView area={area} module={active} data={data} setData={setData} goTo={setActive} />}
+        ) : area === "consulting_services" && ["overview", "attendance", "proposals", "cases", "plans", "schedule"].includes(active) ? <ConsultingPublicDemo module={active} data={data} setData={setData} consulting={consulting} setConsulting={setConsulting} goTo={setActive} /> : <ModuleView area={area} module={active} data={data} setData={setData} goTo={setActive} />}
       </main>
     </div>
   );
@@ -210,7 +210,7 @@ function ModuleView({ area, module, data, setData, goTo }: { area: BusinessSegme
       [t("demo.overview.kpiTasks"), data.tasks.filter((x) => !x.done).length, "tasks"],
       [t("demo.overview.kpiReceivable"), f.money(data.finance.filter((x) => x.type === "income" && x.status !== "paid").reduce((s, x) => s + x.amount, 0)), "finance"],
     ] as const;
-    const attention = [...late.map((c) => ({ id: c.id, label: t(c.titleKey), detail: `${c.code} · ${f.date(c.due)}` })), ...data.tasks.filter((x) => !x.done && x.priority === "high").map((x) => ({ id: x.id, label: t(x.titleKey), detail: `${x.owner} · ${f.date(x.due)}` }))];
+    const attention = [...late.map((c) => ({ id: c.id, label: t(c.titleKey), detail: `${c.code} · ${f.date(c.due)}` })), ...data.tasks.filter((x) => !x.done && x.priority === "high").map((x) => ({ id: x.id, label: x.title ?? t(x.titleKey), detail: `${x.owner} · ${f.date(x.due)}` }))];
     const modules = demoModulesFor(area);
     return (
       <div className="space-y-4">
@@ -286,7 +286,7 @@ function ModuleView({ area, module, data, setData, goTo }: { area: BusinessSegme
 
   if (module === "tasks")
     return (<Table head={[t("demo.table.title"), t("demo.table.owner"), t("demo.table.due"), t("demo.table.status"), ""]} rows={data.tasks.map((x) => (
-      <tr key={x.id}><td className="px-4 py-3 font-medium">{t(x.titleKey)}<span className="block text-xs text-muted-foreground">{t(`demo.priority.${x.priority}`)}</span></td><td className="px-4 py-3">{x.owner}</td><td className="px-4 py-3 text-center tabular-nums">{f.date(x.due)}</td><td className="px-4 py-3"><Status value={x.done ? "done" : "open"} /></td>
+      <tr key={x.id}><td className="px-4 py-3 font-medium">{x.title ?? t(x.titleKey)}<span className="block text-xs text-muted-foreground">{t(`demo.priority.${x.priority}`)}</span></td><td className="px-4 py-3">{x.owner}</td><td className="px-4 py-3 text-center tabular-nums">{f.date(x.due)}</td><td className="px-4 py-3"><Status value={x.done ? "done" : "open"} /></td>
         <td className="px-4 py-3 text-right"><Button size="sm" variant="outline" onClick={() => { setData((d) => ({ ...d, tasks: d.tasks.map((y) => y.id === x.id ? { ...y, done: !y.done } : y) })); notify(); }}>{x.done ? t("demo.table.reopen") : t("demo.table.markDone")}</Button></td></tr>))} />);
 
   if (module === "schedule")
