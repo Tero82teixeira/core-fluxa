@@ -1,3 +1,4 @@
+import { ConsultingSummaryCard } from "./consulting-summary-card";
 import { ConsultingMonthlyPlanCard } from "./consulting-monthly-plan-card";
 import { ConsultingPlansList } from "./consulting-plans-list";
 import { monthlyPlanAttention, type PlanOverview, type MonthlyPlan } from "@/lib/consulting-plans";
@@ -251,6 +252,35 @@ export function ConsultingPublicDemo({
                   >
                     {t(selected ? "consultingProject.back" : "consultingProject.open")}
                   </Button>
+                  <ConsultingSummaryCard
+                    input={{
+                      company: "FLUXA Consultoria (demo)",
+                      client: client(project.recordId),
+                      code: project.code,
+                      stage: t(`consultingDemo.stages.s${project.stage}`),
+                      title: consulting.projectProfiles[project.id]?.title ?? t(project.titleKey),
+                      description:
+                        consulting.projectProfiles[project.id]?.description ??
+                        t("consultingDemo.scope"),
+                      owner_name:
+                        consulting.projectProfiles[project.id]?.owner_name ??
+                        t("consultingProject.exampleOwner"),
+                      due_date: consulting.projectProfiles[project.id]?.due_date ?? project.due,
+                      return_on:
+                        consulting.monthlyPlans[project.id]?.status === "ativo"
+                          ? consulting.monthlyPlans[project.id].return_on
+                          : null,
+                      today: CONSULTING_DEMO_DATE,
+                      demo: true,
+                      deliveries: deliveries.map((d) => ({
+                        title: d.title ?? t(d.titleKey),
+                        status: d.status ?? (d.done ? "aprovado" : "pendente"),
+                        assignee_name: d.assignee_name ?? "",
+                        due_date: d.due_date ?? "",
+                      })),
+                    }}
+                    formatDate={date}
+                  />
                   {selected === project.id && (
                     <div className="space-y-4">
                       <ConsultingProjectCard

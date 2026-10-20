@@ -1,3 +1,4 @@
+import { ConsultingSummaryPanel } from "@/components/consulting/consulting-summary-panel";
 import { ConsultingMonthlyPlanPanel } from "@/components/consulting/consulting-monthly-plan-panel";
 import { ConsultingProjectPanel, ConsultingProjectDeliveries } from "@/components/consulting/consulting-project-panel";
 import { processStageDefinitions } from "@/lib/consulting-workspace";
@@ -279,6 +280,7 @@ function ProcessDetail() {
         </CardContent>
       </Card>
 
+      {isConsulting && <ConsultingSummaryPanel project={data} items={checklistItems} loading={checklist.isPending || checklist.isFetching} failed={checklist.isError} onRetry={() => { void checklist.refetch(); }} />}
       {isConsulting && <ConsultingProjectPanel organizationId={organizationId} project={data} canEdit={permissions.canEdit} />}
       {isConsulting && <ConsultingMonthlyPlanPanel project={data} canEdit={permissions.canEdit} canManageTasks={permissions.canManageTasks} />}
 

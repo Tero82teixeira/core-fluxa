@@ -101,3 +101,22 @@ test("exemplos distintos mostram valores e a prévia preserva datas civis em PT/
   assert.equal(renderToStaticMarkup(React.createElement(ConsultingRoutinePreview,{...props,month:"2027-03"})),"");
  }
 });
+
+test("resumo do cliente renderiza texto seguro, revisão e download no sistema e na demo em três idiomas",async()=>{
+ const {ConsultingSummaryCard}=await import("../src/components/consulting/consulting-summary-card.tsx");
+ const {ConsultingPublicDemo}=await import("../src/components/consulting/consulting-public-demo.tsx");
+ const {buildConsultingDemo,buildConsultingDemoData}=await import("../src/lib/consulting-demo.ts");
+ for(const language of ["pt","en","es"]){
+  await i18n.changeLanguage(language);
+  const props={input:{company:"Empresa",client:"Cliente",code:"PRJ-1",stage:"Diagnóstico",title:'<script>alert("x")</script>',description:"Escopo\nCompleto",owner_name:null,due_date:null,return_on:null,today:"2026-10-20",deliveries:[]},formatDate:d=>d};
+  const html=renderToStaticMarkup(React.createElement(ConsultingSummaryCard,props));
+  assert(html.includes("&lt;script&gt;"));assert(!html.includes("<script>"));
+  assert(html.includes(i18n.t("consultingSummary.download")));assert(html.includes(i18n.t("consultingSummary.snapshot")));
+  assert(html.includes("<details"));assert(html.includes("<summary"));assert(!/consultingSummary\./.test(html));
+  const state=buildConsultingDemo();state.projectProfiles.c1={title:"Objetivo atualizado",description:"Escopo atualizado",owner_name:"Ana",due_date:"2026-11-20"};
+  const demo=renderToStaticMarkup(React.createElement(ConsultingPublicDemo,{module:"cases",data:buildConsultingDemoData(),consulting:state,setData:()=>{},setConsulting:()=>{},goTo:()=>{}}));
+  assert(demo.includes("Escopo atualizado"));assert(demo.includes("2026"));assert(demo.includes(i18n.t("consultingSummary.demo")));
+  assert.equal((demo.match(/<details/g)||[]).length,4);
+  assert(!/consultingSummary\./.test(demo));
+ }
+});

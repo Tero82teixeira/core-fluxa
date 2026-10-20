@@ -1,6 +1,46 @@
 import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
+  consultingSummary: {
+    title: "Consulting summary",
+    open: "View summary for the client",
+    project: "Project and follow-up",
+    company: "Consulting company",
+    client: "Client",
+    code: "Project reference",
+    returnOn: "Scheduled follow-up",
+    returnDue: "Check pending follow-up",
+    pending: "Upcoming deliveries and pending items",
+    done: "Completed deliveries",
+    noPending: "No pending deliveries recorded.",
+    noDone: "No completed deliveries recorded.",
+    reference: "Status as of {{date}}",
+    snapshot:
+      "Review the information below before downloading and sending the summary to the client.",
+    demo: "EXAMPLE: fictional demo data. This file does not represent a real engagement.",
+    statusHint:
+      "Completion recorded by the team. This summary does not represent formal client acceptance.",
+    download: "Download summary as PDF",
+    downloading: "Preparing PDF…",
+    downloadError: "The PDF could not be downloaded. Check your connection and try again.",
+    loading: "Loading summary information…",
+    unavailable:
+      "Some information could not be loaded. Refresh the data before generating the summary.",
+    stages: {
+      novo: "Diagnosis",
+      aguardando_documentos: "Information gathering",
+      documentos_conferencia: "Initial analysis",
+      montagem: "In progress",
+      pronto_protocolo: "Preparing delivery",
+      protocolado: "Delivery sent",
+      em_analise: "Client review",
+      exigencia: "Changes requested",
+      deferido: "Delivery approved",
+      finalizado: "Project completed",
+      arquivado: "Project archived",
+      cancelado: "Project canceled",
+    },
+  },
   consultingPlans: {
   "title": "Monthly service plan",
   "notice": "Monthly fee for service tracking. This plan does not create automatic charges.",
