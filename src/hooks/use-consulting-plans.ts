@@ -48,6 +48,7 @@ export function useSaveMonthlyPlan(org: string | null, process: string) {
         _expected_revision: revision,
       }),
     onSuccess: () => {
+      cache.invalidateQueries({ queryKey: ["consulting-day", org] });
       cache.invalidateQueries({ queryKey: ["consulting-plan", org, process] });
       cache.invalidateQueries({ queryKey: ["consulting-plans", org] });
     },

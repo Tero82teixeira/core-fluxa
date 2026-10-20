@@ -12,6 +12,11 @@ import {
   type ConsultingDeliveryValues,
 } from "./consulting-project.ts";
 import { buildDemoData, type DemoData } from "./public-demo.ts";
+import {
+  buildConsultingDay,
+  type ConsultingDayItem,
+  type ConsultingDayKind,
+} from "./consulting-day.ts";
 export const CONSULTING_DEMO_DATE = "2026-10-18";
 export type ConsultingDemoState = {
   monthlyPlans: Record<string, MonthlyPlan & { example?: boolean }>;
@@ -120,8 +125,56 @@ export function buildConsultingDemo(): ConsultingDemoState {
       projectId: `c${Math.floor(i / 3) + 1}`,
       titleKey: `consultingDemo.deliveries.d${(i % 3) + 1}`,
       done: Math.floor(i / 3) === 2 || i % 3 < [1, 2, 3, 0][Math.floor(i / 3)],
+      due_date: ["2026-10-16", "2026-10-17", "2026-10-22"][i % 3],
     })),
   };
+}
+
+export function consultingDemoDay(
+  data: DemoData,
+  state: ConsultingDemoState,
+  label: (key: string) => string,
+  kind: ConsultingDayKind,
+  page: number,
+) {
+  const source: ConsultingDayItem[] = [];
+  for (const project of data.cases) {
+    if (project.status === "done" || project.stage >= 3) continue;
+    const profile = state.projectProfiles[project.id];
+    const base = {
+      process_id: project.id,
+      code: project.code,
+      project_title: profile?.title ?? label(project.titleKey),
+      client_name: data.records.find((record) => record.id === project.recordId)?.name ?? "",
+    };
+    source.push({
+      ...base,
+      kind: "project",
+      id: project.id,
+      title: base.project_title,
+      due_date: profile?.due_date ?? project.due,
+    });
+    const plan = state.monthlyPlans[project.id];
+    if (plan?.status === "ativo" && plan.return_on)
+      source.push({
+        ...base,
+        kind: "followup",
+        id: project.id,
+        title: plan.example ? label(plan.service_name) : plan.service_name,
+        due_date: plan.return_on,
+      });
+    for (const delivery of state.deliveries.filter((item) => item.projectId === project.id)) {
+      if ((delivery.status ?? (delivery.done ? "aprovado" : "pendente")) === "aprovado") continue;
+      source.push({
+        ...base,
+        kind: "delivery",
+        id: delivery.id,
+        title: delivery.title ?? label(delivery.titleKey),
+        due_date: delivery.due_date ?? "",
+      });
+    }
+  }
+  return buildConsultingDay(CONSULTING_DEMO_DATE, source, kind, page);
 }
 export function createConsultingDemoProposal(
   state: ConsultingDemoState,

@@ -1,0 +1,14 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_function('public','read_consulting_day',ARRAY['uuid','text','integer'],'consulta de prioridades disponível');
+SELECT ok(has_function_privilege('authenticated','public.read_consulting_day(uuid,text,integer)','EXECUTE'),'leitura autenticada');
+SELECT ok(NOT has_function_privilege('anon','public.read_consulting_day(uuid,text,integer)','EXECUTE'),'sem leitura pública');
+SELECT ok(NOT has_function_privilege('service_role','public.read_consulting_day(uuid,text,integer)','EXECUTE'),'sem automação via service role');
+SELECT ok(NOT has_function_privilege('authenticated','public.consulting_plan_access(uuid,boolean,boolean)','EXECUTE'),'helper permanece interno');
+SELECT ok((SELECT provolatile='s' FROM pg_proc WHERE oid='public.read_consulting_day(uuid,text,integer)'::regprocedure),'função somente leitura stable');
+SELECT ok((SELECT proconfig @> ARRAY['search_path=""'] FROM pg_proc WHERE oid='public.read_consulting_day(uuid,text,integer)'::regprocedure),'search path fixo');
+SELECT throws_ok($$ SELECT public.read_consulting_day('00000000-0000-0000-0000-000000000001') $$,'42501','CONSULTING_DAY_ACCESS_DENIED','sem sessão não consulta');
+SELECT * FROM finish();
+ROLLBACK;
