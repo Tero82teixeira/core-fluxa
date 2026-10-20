@@ -1,3 +1,4 @@
+import { ConsultingPlansOverview } from "@/components/consulting/consulting-plans-overview";
 import { ConsultingJourney } from "@/components/consulting/consulting-journey";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -137,6 +138,7 @@ function MyDayPage() {
       </header>
 
       <ConsultingJourney />
+      <ConsultingPlansOverview />
       <GettingStartedCard />
 
       <section

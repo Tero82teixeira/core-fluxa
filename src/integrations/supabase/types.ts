@@ -14,6 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
+      consulting_monthly_plans: {
+        Row: {
+          created_at: string
+          created_by: string
+          ends_on: string
+          monthly_amount: number
+          organization_id: string
+          process_id: string
+          return_on: string | null
+          revision: number
+          routine: Json
+          service_name: string
+          starts_on: string
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          ends_on: string
+          monthly_amount: number
+          organization_id: string
+          process_id: string
+          return_on?: string | null
+          revision?: number
+          routine: Json
+          service_name: string
+          starts_on: string
+          status: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          ends_on?: string
+          monthly_amount?: number
+          organization_id?: string
+          process_id?: string
+          return_on?: string | null
+          revision?: number
+          routine?: Json
+          service_name?: string
+          starts_on?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consulting_monthly_plans_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consulting_monthly_plans_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: true
+            referencedRelation: "processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consulting_plan_months: {
+        Row: {
+          created_at: string
+          created_by: string
+          process_id: string
+          reference: string
+          task_ids: string[]
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          process_id: string
+          reference: string
+          task_ids: string[]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          process_id?: string
+          reference?: string
+          task_ids?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consulting_plan_months_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "consulting_monthly_plans"
+            referencedColumns: ["process_id"]
+          },
+        ]
+      }
       asaas_charge_jobs: {
         Row: {
           attempts: number
@@ -6883,6 +6981,22 @@ export type Database = {
       }
     }
     Functions: {
+      consulting_plan_access: {
+        Args: { _organization_id: string; _write?: boolean; _tasks?: boolean }
+        Returns: boolean
+      }
+      save_consulting_monthly_plan: {
+        Args: { _organization_id: string; _process_id: string; _values: Json; _expected_revision?: number }
+        Returns: Json
+      }
+      generate_consulting_plan_month: {
+        Args: { _organization_id: string; _process_id: string; _reference: string }
+        Returns: Json
+      }
+      read_consulting_plans: {
+        Args: { _organization_id: string; _process_id?: string; _reference?: string; _page?: number }
+        Returns: Json
+      }
       real_estate_mobile: {
         Args: { _organization_id: string; _action: string; _values?: Json };
         Returns: Json;

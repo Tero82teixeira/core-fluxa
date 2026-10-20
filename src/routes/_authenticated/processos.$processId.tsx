@@ -1,3 +1,4 @@
+import { ConsultingMonthlyPlanPanel } from "@/components/consulting/consulting-monthly-plan-panel";
 import { ConsultingProjectPanel, ConsultingProjectDeliveries } from "@/components/consulting/consulting-project-panel";
 import { processStageDefinitions } from "@/lib/consulting-workspace";
 import { useState } from "react";
@@ -279,6 +280,7 @@ function ProcessDetail() {
       </Card>
 
       {isConsulting && <ConsultingProjectPanel organizationId={organizationId} project={data} canEdit={permissions.canEdit} />}
+      {isConsulting && <ConsultingMonthlyPlanPanel project={data} canEdit={permissions.canEdit} canManageTasks={permissions.canManageTasks} />}
 
       {isLegalWorkspace && (
         <LegalCaseProfilePanel

@@ -5,7 +5,7 @@
  */
 import type { BusinessSegment } from "./organization-segments";
 
-export type DemoModule = "attendance" | "proposals" | "overview" | "records" | "cases" | "schedule" | "tasks" | "documents" | "finance";
+export type DemoModule = "plans" | "attendance" | "proposals" | "overview" | "records" | "cases" | "schedule" | "tasks" | "documents" | "finance";
 
 export const DEMO_AREAS: BusinessSegment[] = [
   "legal",
@@ -24,7 +24,7 @@ export const DEMO_AREA_MODULES: Record<BusinessSegment, DemoModule[]> = {
   engineering: ["overview", "records", "cases", "tasks", "documents", "finance"],
   health: ["overview", "records", "schedule", "cases", "tasks", "finance"],
   real_estate: ["overview", "cases", "records", "schedule", "tasks", "finance"],
-  consulting_services: ["overview", "records", "attendance", "proposals", "cases", "schedule", "tasks", "documents", "finance"],
+  consulting_services: ["overview", "records", "attendance", "proposals", "cases", "plans", "schedule", "tasks", "documents", "finance"],
   other: ["overview", "records", "cases", "tasks", "finance"],
 };
 
@@ -40,7 +40,7 @@ export type DemoStatus = "active" | "pending" | "late" | "done" | "scheduled" | 
 
 export type DemoRecord = { id: string; name: string; kind: "company" | "person" | "patient" | "owner"; status: DemoStatus; owner: string; city: string };
 export type DemoCase = { id: string; code: string; titleKey: string; recordId: string; status: DemoStatus; stage: number; due: string; amount: number };
-export type DemoTask = { id: string; titleKey: string; due: string; priority: "high" | "medium" | "low"; done: boolean; owner: string };
+export type DemoTask = { title?:string; id: string; titleKey: string; due: string; priority: "high" | "medium" | "low"; done: boolean; owner: string };
 export type DemoFinance = { id: string; descKey: string; type: "income" | "expense"; amount: number; due: string; status: DemoStatus };
 export type DemoSchedule = { id: string; date: string; typeKey: string; recordId: string };
 export type DemoDocument = { id: string; nameKey: string; recordId: string; status: DemoStatus; expires: string };

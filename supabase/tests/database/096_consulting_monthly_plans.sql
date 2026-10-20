@@ -1,0 +1,17 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_table('public','consulting_monthly_plans','plano mensal persistido');
+SELECT has_table('public','consulting_plan_months','competências persistidas');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid='public.consulting_monthly_plans'::regclass),'RLS no plano');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid='public.consulting_plan_months'::regclass),'RLS nas competências');
+SELECT ok(NOT has_table_privilege('authenticated','public.consulting_monthly_plans','SELECT'),'sem leitura direta do plano');
+SELECT ok(NOT has_table_privilege('anon','public.consulting_plan_months','SELECT'),'sem leitura pública das competências');
+SELECT ok(NOT has_function_privilege('anon','public.read_consulting_plans(uuid,uuid,text,integer)','EXECUTE'),'leitura não pública');
+SELECT ok(NOT has_function_privilege('service_role','public.generate_consulting_plan_month(uuid,uuid,text)','EXECUTE'),'geração não exposta à automação');
+SELECT ok(NOT has_function_privilege('authenticated','public.consulting_plan_access(uuid,boolean,boolean)','EXECUTE'),'helper interno');
+SELECT ok(has_function_privilege('authenticated','public.save_consulting_monthly_plan(uuid,uuid,jsonb,integer)','EXECUTE'),'salvar autenticado');
+SELECT throws_ok($$ SELECT public.read_consulting_plans('00000000-0000-0000-0000-000000000001') $$,'42501','CONSULTING_PLAN_ACCESS_DENIED','sem sessão não consulta');
+SELECT * FROM finish();
+ROLLBACK;

@@ -501,6 +501,7 @@ export function useSetTaskStatus(organizationId: string | null) {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["tasks", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["consulting-plan", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["legal-workspace", organizationId] });
       if (variables.processId) {
         queryClient.invalidateQueries({ queryKey: ["process-movements", variables.processId] });

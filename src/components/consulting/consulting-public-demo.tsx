@@ -1,3 +1,6 @@
+import { ConsultingMonthlyPlanCard } from "./consulting-monthly-plan-card";
+import { ConsultingPlansList } from "./consulting-plans-list";
+import type { PlanOverview, MonthlyPlan } from "@/lib/consulting-plans";
 import { useState } from "react";
 import { ConsultingProjectCard } from "./consulting-project-card";
 import { ConsultingDeliveriesCard } from "./consulting-deliveries-card";
@@ -7,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { LOCALE_BY_LANGUAGE, type AppLanguage } from "@/i18n";
 import {
   CONSULTING_DEMO_DATE,
+  saveConsultingDemoPlan,
+  generateConsultingDemoMonth,
   saveConsultingDemoProfile,
   saveConsultingDemoDelivery,
   buildConsultingDemo,
@@ -37,6 +42,8 @@ export function ConsultingPublicDemo({
   goTo: (module: DemoModule) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const [planMonth, setPlanMonth] = useState("2026-10");
+  const [planPage, setPlanPage] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const locale = LOCALE_BY_LANGUAGE[(i18n.resolvedLanguage ?? "pt") as AppLanguage];
   const date = (value: string) =>
@@ -49,6 +56,32 @@ export function ConsultingPublicDemo({
     new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" }).format(value);
   const client = (id: string) => data.records.find((r) => r.id === id)?.name ?? "—";
   const summary = consultingDemoSummary(data, consulting);
+  const displayPlan = (plan: MonthlyPlan & { example?: boolean }) =>
+    plan.example
+      ? {
+          ...plan,
+          service_name: t(plan.service_name),
+          routine: plan.routine.map((item) => ({ ...item, title: t(item.title) })),
+        }
+      : plan;
+  const plans = Object.values(consulting.monthlyPlans).map((plan) => ({
+    ...displayPlan(plan),
+    code: data.cases.find((p) => p.id === plan.process_id)?.code ?? "",
+    client_id: data.cases.find((p) => p.id === plan.process_id)?.recordId ?? "",
+    client_name: client(data.cases.find((p) => p.id === plan.process_id)?.recordId ?? ""),
+  }));
+  const plansOverview: PlanOverview = {
+    items: plans.slice(planPage * 10, (planPage + 1) * 10),
+    total: plans.length,
+    ending: plans.filter(
+      (p) => p.status === "ativo" && p.ends_on >= CONSULTING_DEMO_DATE && p.ends_on <= "2026-11-17",
+    ).length,
+    expired: plans.filter((p) => p.status === "ativo" && p.ends_on < CONSULTING_DEMO_DATE).length,
+    returns: plans.filter(
+      (p) => p.status === "ativo" && p.return_on && p.return_on <= CONSULTING_DEMO_DATE,
+    ).length,
+    today: CONSULTING_DEMO_DATE,
+  };
   const openProject = (id: string) => {
     const next = startConsultingDemoProject(data, consulting, id);
     setData(() => next.data);
@@ -66,6 +99,8 @@ export function ConsultingPublicDemo({
           className="min-h-11"
           onClick={() => {
             setSelected(null);
+            setPlanMonth("2026-10");
+            setPlanPage(0);
             setData(buildConsultingDemoData);
             setConsulting(buildConsultingDemo);
           }}
@@ -95,7 +130,7 @@ export function ConsultingPublicDemo({
             <h2 className="text-lg font-semibold">{t("consultingDemo.journey")}</h2>
             <p className="text-sm text-muted-foreground">{t("consultingDemo.intro")}</p>
             <div className="flex flex-wrap gap-2">
-              {(["records", "attendance", "proposals", "cases"] as const).map((key) => (
+              {(["records", "attendance", "proposals", "cases", "plans"] as const).map((key) => (
                 <Button key={key} variant="outline" className="min-h-11" onClick={() => goTo(key)}>
                   {t(`demo.modules.consulting_services.${key}`)}
                 </Button>
@@ -177,6 +212,18 @@ export function ConsultingPublicDemo({
           ))}
         </div>
       )}
+      {module === "plans" && (
+        <ConsultingPlansList
+          data={plansOverview}
+          page={planPage}
+          onPage={setPlanPage}
+          formatDate={date}
+          onOpen={(id) => {
+            setSelected(id);
+            goTo("cases");
+          }}
+        />
+      )}
       {module === "cases" && (
         <div className={selected ? "grid gap-4" : "grid gap-4 xl:grid-cols-2"}>
           {data.cases
@@ -230,6 +277,59 @@ export function ConsultingPublicDemo({
                           );
                           setData(() => next.data);
                           setConsulting(() => next.state);
+                        }}
+                      />
+                      <ConsultingMonthlyPlanCard
+                        workspace={{
+                          plan: consulting.monthlyPlans[project.id]
+                            ? displayPlan(consulting.monthlyPlans[project.id])
+                            : null,
+                          generated: Boolean(
+                            consulting.monthlyGenerated[`${project.id}:${planMonth}`],
+                          ),
+                          tasks: (
+                            consulting.monthlyGenerated[`${project.id}:${planMonth}`] ?? []
+                          ).flatMap((id) => {
+                            const task = data.tasks.find((task) => task.id === id);
+                            return task
+                              ? [
+                                  {
+                                    id: task.id,
+                                    title: task.title ?? t(task.titleKey),
+                                    due_date: task.due,
+                                    status: task.done ? "concluida" : "pendente",
+                                    deleted: false,
+                                  },
+                                ]
+                              : [];
+                          }),
+                        }}
+                        canEdit
+                        canGenerate={project.status !== "done"}
+                        month={planMonth}
+                        onMonth={(value) => {
+                          if (/^(20\d{2}|2100)-(0[1-9]|1[0-2])$/.test(value)) setPlanMonth(value);
+                        }}
+                        today={CONSULTING_DEMO_DATE}
+                        initialTitle={
+                          consulting.projectProfiles[project.id]?.title ?? t(project.titleKey)
+                        }
+                        formatDate={date}
+                        money={money}
+                        onSave={async (values, revision) => {
+                          const next=saveConsultingDemoPlan(consulting,project.id,values,revision);
+                          setConsulting(()=>next);
+                        }}
+                        onGenerate={async () => {
+                          const next = generateConsultingDemoMonth(
+                            data,
+                            consulting,
+                            project.id,
+                            planMonth,
+                          );
+                          setData(() => next.data);
+                          setConsulting(() => next.state);
+                          return { created: next.created, existing: next.existing };
                         }}
                       />
                       <ConsultingDeliveriesCard
@@ -310,7 +410,9 @@ export function ConsultingPublicDemo({
             .filter((p) => p.status !== "done")
             .map((project) => (
               <article key={project.id} className="space-y-2 rounded-xl border bg-card p-5">
-                <h2 className="font-semibold">{consulting.projectProfiles[project.id]?.title ?? t(project.titleKey)}</h2>
+                <h2 className="font-semibold">
+                  {consulting.projectProfiles[project.id]?.title ?? t(project.titleKey)}
+                </h2>
                 <p className="text-sm">
                   {t("consultingDemo.due")}: {date(project.due)}
                 </p>
