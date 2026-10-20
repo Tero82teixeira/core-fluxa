@@ -59,3 +59,15 @@ PGlite executa o SQL real com cenários de calendário, repetição, mudança de
 pausa, revisão antiga, atomicidade, paginação, papéis e isolamento. pgTAP verifica
 RLS e grants no schema completo. A CI compara os tipos gerados com os tipos
 versionados e executa tipos, lint, testes e build.
+
+## Clareza da demonstração e prévia
+
+Os exemplos de Aurora Tecnologia e Vale Verde agora têm serviços e atividades
+diferentes. Os cartões mostram valor mensal, início/término, próximo retorno e
+avisos por plano, além dos totais já existentes. O mesmo cartão atende o sistema
+autenticado e a demonstração.
+
+Antes de gerar uma competência, a ficha mostra as atividades com as datas civis
+já ajustadas ao calendário e ao período. A prévia não grava tarefas; a geração
+continua no botão existente e com as mesmas proteções no banco. O formulário
+explica o formato do valor e sinaliza entradas inválidas. Não exige novo SQL.

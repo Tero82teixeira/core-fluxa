@@ -9,6 +9,8 @@ import {
   parseMonthlyAmount,
   monthInPlan,
   monthlyPlanError,
+  monthlyDueDate,
+  monthlyPlanAttention,
   type MonthlyPlanValues,
   type MonthlyWorkspace,
 } from "@/lib/consulting-plans";
@@ -55,6 +57,9 @@ export function ConsultingMonthlyPlanCard({
     [revision, setRevision] = useState<number | null>(plan?.revision ?? null),
     [busy, setBusy] = useState(false);
   const values = { ...form, monthly_amount: parseMonthlyAmount(amount) };
+  const amountInvalid =
+    !Number.isFinite(values.monthly_amount) || values.monthly_amount > 9999999999.99;
+  const attention = plan ? monthlyPlanAttention(plan, today) : null;
   return (
     <section className="space-y-4 rounded-2xl border bg-card p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -109,10 +114,21 @@ export function ConsultingMonthlyPlanCard({
             <Input
               id={`${id}-amount`}
               inputMode="decimal"
+              required
+              aria-invalid={amountInvalid}
+              aria-describedby={`${id}-amount-hint`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="1500,00"
             />
+            <span
+              id={`${id}-amount-hint`}
+              className={
+                amountInvalid ? "text-xs text-destructive" : "text-xs text-muted-foreground"
+              }
+            >
+              {t(amountInvalid ? "consultingPlans.amountInvalid" : "consultingPlans.amountHint")}
+            </span>
           </label>
           <label className="grid gap-2 text-sm" htmlFor={`${id}-status`}>
             {t("consultingPlans.status")}
@@ -242,19 +258,11 @@ export function ConsultingMonthlyPlanCard({
               {plan.return_on ? formatDate(plan.return_on) : t("consultingProject.empty")}
             </p>
           </div>
-          {plan.status === "ativo" && (
+          {attention && (attention.ending || attention.expired || attention.returnDue) && (
             <div className="flex flex-wrap gap-2 text-sm text-primary">
-              {plan.ends_on < today ? (
-                <span>{t("consultingPlans.expired")}</span>
-              ) : plan.ends_on <=
-                new Date(new Date(`${today}T12:00:00Z`).getTime() + 30 * 86400000)
-                  .toISOString()
-                  .slice(0, 10) ? (
-                <span>{t("consultingPlans.ending")}</span>
-              ) : null}
-              {plan.return_on && plan.return_on <= today && (
-                <span>{t("consultingPlans.returnDue")}</span>
-              )}
+              {attention.expired && <span>{t("consultingPlans.expired")}</span>}
+              {attention.ending && <span>{t("consultingPlans.ending")}</span>}
+              {attention.returnDue && <span>{t("consultingPlans.returnDue")}</span>}
             </div>
           )}
           <ul className="space-y-1 text-sm text-muted-foreground">
@@ -274,6 +282,9 @@ export function ConsultingMonthlyPlanCard({
                 onChange={(e) => onMonth(e.target.value)}
               />
             </label>
+            {!workspace.generated && monthInPlan(month, plan) && (
+              <ConsultingRoutinePreview plan={plan} month={month} formatDate={formatDate} />
+            )}
             {workspace.generated ? (
               <p className="text-sm font-medium">{t("consultingPlans.generated")}</p>
             ) : (
@@ -307,6 +318,9 @@ export function ConsultingMonthlyPlanCard({
                 {t("consultingPlans.generate")}
               </Button>
             )}
+            {!workspace.generated && plan.status !== "ativo" && (
+              <p className="text-sm text-muted-foreground">{t("consultingPlans.inactive")}</p>
+            )}
             {!monthInPlan(month, plan) && (
               <p className="text-sm text-muted-foreground">{t("consultingPlans.outside")}</p>
             )}
@@ -332,5 +346,36 @@ export function ConsultingMonthlyPlanCard({
         <p className="text-sm text-muted-foreground">{t("consultingPlans.empty")}</p>
       )}
     </section>
+  );
+}
+
+export function ConsultingRoutinePreview({
+  plan,
+  month,
+  formatDate,
+}: {
+  plan: MonthlyPlanValues;
+  month: string;
+  formatDate: (date: string) => string;
+}) {
+  const { t } = useTranslation();
+  if (!monthInPlan(month, plan)) return null;
+  return (
+    <div className="space-y-2 rounded-xl bg-muted/30 p-3">
+      <h3 className="text-sm font-medium">
+        {t("consultingPlans.previewTitle", { count: plan.routine.length })}
+      </h3>
+      <p className="text-xs text-muted-foreground">{t("consultingPlans.previewHint")}</p>
+      <ul className="space-y-2">
+        {plan.routine.map((activity, index) => (
+          <li key={index} className="flex flex-wrap justify-between gap-2 text-sm">
+            <span className="min-w-0 break-words">{activity.title}</span>
+            <span className="tabular-nums text-muted-foreground">
+              {formatDate(monthlyDueDate(month, activity.day, plan))}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

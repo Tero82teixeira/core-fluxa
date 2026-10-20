@@ -67,7 +67,9 @@ export function buildConsultingDemo(): ConsultingDemoState {
         {
           process_id: id,
           organization_id: "demo",
-          service_name: "consultingPlans.exampleService",
+          service_name: index
+            ? "consultingPlans.exampleService2"
+            : "consultingPlans.exampleService",
           monthly_amount: index ? 800 : 1500,
           starts_on: "2026-10-01",
           ends_on: index ? "2026-10-31" : "2026-12-31",
@@ -76,8 +78,14 @@ export function buildConsultingDemo(): ConsultingDemoState {
           revision: 1,
           example: true,
           routine: [
-            { title: "consultingPlans.activity1", day: 5 },
-            { title: "consultingPlans.activity2", day: 25 },
+            {
+              title: index ? "consultingPlans.activity3" : "consultingPlans.activity1",
+              day: index ? 10 : 5,
+            },
+            {
+              title: index ? "consultingPlans.activity4" : "consultingPlans.activity2",
+              day: index ? 20 : 25,
+            },
           ],
         },
       ]),

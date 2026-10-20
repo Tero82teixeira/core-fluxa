@@ -7,7 +7,7 @@ import { routeVisibleForModules } from "@/lib/organization-segments";
 import { useMonthlyPlansOverview } from "@/hooks/use-consulting-plans";
 import { ConsultingPlansList } from "./consulting-plans-list";
 import { Button } from "@/components/ui/button";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatCurrency } from "@/lib/format";
 export function ConsultingPlansOverview() {
   const { t } = useTranslation(),
     navigate = useNavigate(),
@@ -37,6 +37,7 @@ export function ConsultingPlansOverview() {
       page={page}
       onPage={setPage}
       formatDate={formatDate}
+      money={formatCurrency}
       onOpen={(id) => void navigate({ to: "/processos/$processId", params: { processId: id } })}
     />
   ) : null;
