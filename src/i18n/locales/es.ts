@@ -1,6 +1,45 @@
 import type { LocaleShape } from "./pt";
 
 export const es: LocaleShape = {
+  consultingSummary: {
+    title: "Resumen de la consultoría",
+    open: "Ver resumen para el cliente",
+    project: "Proyecto y seguimiento",
+    company: "Empresa responsable",
+    client: "Cliente",
+    code: "Referencia del proyecto",
+    returnOn: "Seguimiento programado",
+    returnDue: "Revisar seguimiento pendiente",
+    pending: "Próximas entregas y pendientes",
+    done: "Entregas completadas",
+    noPending: "No hay entregas pendientes registradas.",
+    noDone: "No hay entregas completadas registradas.",
+    reference: "Estado al {{date}}",
+    snapshot: "Revisa la información antes de descargar y enviar el resumen al cliente.",
+    demo: "EJEMPLO: datos ficticios de la demostración. Este archivo no representa un servicio real.",
+    statusHint:
+      "Finalización registrada por el equipo. Este resumen no representa la aceptación formal del cliente.",
+    download: "Descargar resumen en PDF",
+    downloading: "Preparando PDF…",
+    downloadError: "No se pudo descargar el PDF. Revisa tu conexión e inténtalo de nuevo.",
+    loading: "Cargando información del resumen…",
+    unavailable:
+      "No se pudo cargar toda la información. Actualiza los datos antes de generar el resumen.",
+    stages: {
+      novo: "Diagnóstico",
+      aguardando_documentos: "Recopilación de información",
+      documentos_conferencia: "Análisis inicial",
+      montagem: "En ejecución",
+      pronto_protocolo: "Entrega en preparación",
+      protocolado: "Entrega enviada",
+      em_analise: "Validación del cliente",
+      exigencia: "Ajustes solicitados",
+      deferido: "Entrega aprobada",
+      finalizado: "Proyecto completado",
+      arquivado: "Proyecto archivado",
+      cancelado: "Proyecto cancelado",
+    },
+  },
   consultingPlans: {
   "title": "Plan de atención mensual",
   "notice": "Valor mensual para el seguimiento del servicio. Este plan no genera cobros automáticos.",
