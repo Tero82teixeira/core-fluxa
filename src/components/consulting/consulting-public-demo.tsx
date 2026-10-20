@@ -1,6 +1,6 @@
 import { ConsultingMonthlyPlanCard } from "./consulting-monthly-plan-card";
 import { ConsultingPlansList } from "./consulting-plans-list";
-import type { PlanOverview, MonthlyPlan } from "@/lib/consulting-plans";
+import { monthlyPlanAttention, type PlanOverview, type MonthlyPlan } from "@/lib/consulting-plans";
 import { useState } from "react";
 import { ConsultingProjectCard } from "./consulting-project-card";
 import { ConsultingDeliveriesCard } from "./consulting-deliveries-card";
@@ -73,13 +73,9 @@ export function ConsultingPublicDemo({
   const plansOverview: PlanOverview = {
     items: plans.slice(planPage * 10, (planPage + 1) * 10),
     total: plans.length,
-    ending: plans.filter(
-      (p) => p.status === "ativo" && p.ends_on >= CONSULTING_DEMO_DATE && p.ends_on <= "2026-11-17",
-    ).length,
-    expired: plans.filter((p) => p.status === "ativo" && p.ends_on < CONSULTING_DEMO_DATE).length,
-    returns: plans.filter(
-      (p) => p.status === "ativo" && p.return_on && p.return_on <= CONSULTING_DEMO_DATE,
-    ).length,
+    ending: plans.filter((p) => monthlyPlanAttention(p, CONSULTING_DEMO_DATE).ending).length,
+    expired: plans.filter((p) => monthlyPlanAttention(p, CONSULTING_DEMO_DATE).expired).length,
+    returns: plans.filter((p) => monthlyPlanAttention(p, CONSULTING_DEMO_DATE).returnDue).length,
     today: CONSULTING_DEMO_DATE,
   };
   const openProject = (id: string) => {
@@ -215,6 +211,7 @@ export function ConsultingPublicDemo({
       {module === "plans" && (
         <ConsultingPlansList
           data={plansOverview}
+          money={money}
           page={planPage}
           onPage={setPlanPage}
           formatDate={date}
@@ -317,8 +314,13 @@ export function ConsultingPublicDemo({
                         formatDate={date}
                         money={money}
                         onSave={async (values, revision) => {
-                          const next=saveConsultingDemoPlan(consulting,project.id,values,revision);
-                          setConsulting(()=>next);
+                          const next = saveConsultingDemoPlan(
+                            consulting,
+                            project.id,
+                            values,
+                            revision,
+                          );
+                          setConsulting(() => next);
                         }}
                         onGenerate={async () => {
                           const next = generateConsultingDemoMonth(

@@ -78,6 +78,26 @@ test("planos mensais renderizam valores, rotina e permissões em três idiomas",
   const props={workspace:{plan,generated:false,tasks:[]},canEdit:false,canGenerate:false,month:"2026-10",onMonth:()=>{},onSave:async()=>{},onGenerate:async()=>({created:1,existing:0}),formatDate:d=>d,money:v=>String(v),initialTitle:"Exemplo",today:"2026-10-18"};
   const html=renderToStaticMarkup(React.createElement(ConsultingMonthlyPlanCard,props));assert(html.includes("1500"));assert(html.includes('disabled=""'));assert(!/consultingPlans\./.test(html));assert(html.includes("Reunião"));
   const generated=renderToStaticMarkup(React.createElement(ConsultingMonthlyPlanCard,{...props,workspace:{plan,generated:true,tasks:[{id:"t1",title:"Rotina gerada",due_date:"2026-10-05",status:"concluida",deleted:false}]}}));assert(generated.includes("Rotina gerada"));assert(!/consultingPlans\./.test(generated));
-  const list=renderToStaticMarkup(React.createElement(ConsultingPlansList,{data:{items:[{...plan,code:"PRJ-01",client_name:"Empresa",client_id:"r1"}],total:11,ending:1,expired:0,returns:1,today:"2026-10-18"},page:0,onPage:()=>{},onOpen:()=>{},formatDate:d=>d}));assert(list.includes("Empresa"));assert(list.includes("1 / 2"));assert(!/consultingPlans\./.test(list));
+  const list=renderToStaticMarkup(React.createElement(ConsultingPlansList,{data:{items:[{...plan,code:"PRJ-01",client_name:"Empresa",client_id:"r1"}],total:11,ending:1,expired:0,returns:1,today:"2026-10-18"},page:0,onPage:()=>{},onOpen:()=>{},formatDate:d=>d,money:v=>String(v)}));assert(list.includes("Empresa"));assert(list.includes("1 / 2"));assert(!/consultingPlans\./.test(list));
+ }
+});
+
+test("exemplos distintos mostram valores e a prévia preserva datas civis em PT/EN/ES",async()=>{
+ const {ConsultingPublicDemo}=await import("../src/components/consulting/consulting-public-demo.tsx");
+ const {ConsultingRoutinePreview}=await import("../src/components/consulting/consulting-monthly-plan-card.tsx");
+ const {buildConsultingDemo,buildConsultingDemoData}=await import("../src/lib/consulting-demo.ts");
+ const state=buildConsultingDemo();
+ assert.notEqual(state.monthlyPlans.c1.service_name,state.monthlyPlans.c2.service_name);
+ assert.notDeepEqual(state.monthlyPlans.c1.routine,state.monthlyPlans.c2.routine);
+ for(const language of ["pt","en","es"]){
+  await i18n.changeLanguage(language);
+  const html=renderToStaticMarkup(React.createElement(ConsultingPublicDemo,{module:"plans",data:buildConsultingDemoData(),consulting:state,setData:()=>{},setConsulting:()=>{},goTo:()=>{}}));
+  assert(html.includes(i18n.t("consultingPlans.exampleService")));assert(html.includes(i18n.t("consultingPlans.exampleService2")));
+  assert(html.includes(i18n.t("consultingPlans.perMonth")));assert(html.includes("Aurora Tecnologia"));assert(html.includes("Vale Verde"));
+  assert(!/consultingPlans\./.test(html));
+  const props={plan:{...state.monthlyPlans.c1,starts_on:"2027-02-10",ends_on:"2027-02-28",routine:[{title:"Reunião",day:5},{title:"Relatório",day:31}]},month:"2027-02",formatDate:d=>d};
+  const preview=renderToStaticMarkup(React.createElement(ConsultingRoutinePreview,props));
+  assert(preview.includes("2027-02-10"));assert(preview.includes("2027-02-28"));assert(!preview.includes("<button"));
+  assert.equal(renderToStaticMarkup(React.createElement(ConsultingRoutinePreview,{...props,month:"2027-03"})),"");
  }
 });

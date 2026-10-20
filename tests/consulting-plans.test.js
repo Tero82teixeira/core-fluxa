@@ -20,3 +20,12 @@ test('demo gera uma rotina por competência, preserva tarefas anteriores e reini
  const paused=saveConsultingDemoPlan(state,'c1',{...plan,status:'pausado'},3);assert.throws(()=>generateConsultingDemoMonth(data,paused,'c1','2026-12'),/NOT_ACTIVE/);
  assert.deepEqual(buildConsultingDemo().monthlyGenerated,{});assert.equal(buildConsultingDemoData().tasks.length,initial);
 });
+
+test('avisos do plano incluem o limite de 30 dias e distinguem pausa e período encerrado', async()=>{
+ const {monthlyPlanAttention}=await import('../src/lib/consulting-plans.ts');
+ const current={...plan,return_on:'2026-10-18',ends_on:'2026-11-17'};
+ assert.deepEqual(monthlyPlanAttention(current,'2026-10-18'),{ending:true,expired:false,returnDue:true});
+ assert.equal(monthlyPlanAttention({...current,ends_on:'2026-11-18'},'2026-10-18').ending,false);
+ assert.deepEqual(monthlyPlanAttention({...current,ends_on:'2026-10-17',return_on:'2026-10-19'},'2026-10-18'),{ending:false,expired:true,returnDue:false});
+ assert.deepEqual(monthlyPlanAttention({...current,status:'pausado'},'2026-10-18'),{ending:false,expired:false,returnDue:false});
+});

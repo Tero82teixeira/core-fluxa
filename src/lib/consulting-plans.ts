@@ -104,3 +104,19 @@ export function monthlyPlanError(error: unknown) {
           ? "consultingPlans.inactive"
           : "consultingPlans.error";
 }
+
+/** Mesmos limites de aviso do painel: 30 dias inclusivos e retorno até hoje. */
+export function monthlyPlanAttention(
+  plan: Pick<MonthlyPlanValues, "status" | "ends_on" | "return_on">,
+  today: string,
+) {
+  if (plan.status !== "ativo" || !validPlanDate(today))
+    return { ending: false, expired: false, returnDue: false };
+  const end = new Date(`${today}T12:00:00Z`);
+  end.setUTCDate(end.getUTCDate() + 30);
+  return {
+    ending: plan.ends_on >= today && plan.ends_on <= end.toISOString().slice(0, 10),
+    expired: plan.ends_on < today,
+    returnDue: Boolean(plan.return_on && plan.return_on <= today),
+  };
+}

@@ -1,19 +1,21 @@
 import "@/i18n";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import type { PlanOverview } from "@/lib/consulting-plans";
+import { monthlyPlanAttention, type PlanOverview } from "@/lib/consulting-plans";
 export function ConsultingPlansList({
   data,
   page,
   onPage,
   onOpen,
   formatDate,
+  money,
 }: {
   data: PlanOverview;
   page: number;
   onPage: (page: number) => void;
   onOpen: (id: string) => void;
   formatDate: (value: string) => string;
+  money: (value: number) => string;
 }) {
   const { t } = useTranslation();
   return (
@@ -29,24 +31,70 @@ export function ConsultingPlansList({
       </div>
       <p className="text-xs text-muted-foreground">{t("consultingPlans.overviewHint")}</p>
       <div className="grid gap-3 lg:grid-cols-2">
-        {data.items.map((plan) => (
-          <article key={plan.process_id} className="space-y-2 rounded-xl border p-4">
-            <h3 className="break-words font-medium">{plan.service_name}</h3>
-            <p className="break-words text-sm text-muted-foreground">
-              {plan.client_name} · {plan.code}
-            </p>
-            <p className="text-sm">
-              {t("consultingPlans.ends_on")}: {formatDate(plan.ends_on)} ·{" "}
-              {t(`consultingPlans.statuses.${plan.status}`)}
-            </p>
-            {plan.status === "ativo" && plan.return_on && plan.return_on <= data.today && (
-              <p className="text-sm text-primary">{t("consultingPlans.returnDue")}</p>
-            )}
-            <Button variant="outline" className="min-h-11" onClick={() => onOpen(plan.process_id)}>
-              {t("consultingPlans.open")}
-            </Button>
-          </article>
-        ))}
+        {data.items.map((plan) => {
+          const attention = monthlyPlanAttention(plan, data.today);
+          return (
+            <article key={plan.process_id} className="space-y-2 rounded-xl border p-4">
+              <h3 className="break-words font-medium">{plan.service_name}</h3>
+              <p className="break-words text-sm text-muted-foreground">
+                {plan.client_name} · {plan.code}
+              </p>
+              <p className="text-sm font-semibold">
+                {money(plan.monthly_amount)}{" "}
+                <span className="font-normal text-muted-foreground">
+                  {t("consultingPlans.perMonth")}
+                </span>
+              </p>
+              <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs text-muted-foreground">
+                    {t("consultingPlans.starts_on")}
+                  </dt>
+                  <dd>{formatDate(plan.starts_on)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t("consultingPlans.ends_on")}</dt>
+                  <dd>{formatDate(plan.ends_on)}</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-xs text-muted-foreground">
+                    {t("consultingPlans.return_on")}
+                  </dt>
+                  <dd>
+                    {plan.return_on ? formatDate(plan.return_on) : t("consultingProject.empty")}
+                  </dd>
+                </div>
+              </dl>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full bg-muted px-2 py-1">
+                  {t(`consultingPlans.statuses.${plan.status}`)}
+                </span>
+                {attention.ending && (
+                  <span className="rounded-full bg-primary/10 px-2 py-1 text-primary">
+                    {t("consultingPlans.ending")}
+                  </span>
+                )}
+                {attention.expired && (
+                  <span className="rounded-full bg-destructive/10 px-2 py-1 text-destructive">
+                    {t("consultingPlans.expired")}
+                  </span>
+                )}
+                {attention.returnDue && (
+                  <span className="rounded-full bg-primary/10 px-2 py-1 text-primary">
+                    {t("consultingPlans.returnDue")}
+                  </span>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                className="min-h-11"
+                onClick={() => onOpen(plan.process_id)}
+              >
+                {t("consultingPlans.open")}
+              </Button>
+            </article>
+          );
+        })}
       </div>
       {!data.total && (
         <p className="text-sm text-muted-foreground">{t("consultingPlans.noPlans")}</p>
