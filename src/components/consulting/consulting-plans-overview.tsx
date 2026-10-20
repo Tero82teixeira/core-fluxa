@@ -32,13 +32,20 @@ export function ConsultingPlansOverview() {
       </section>
     );
   return query.data ? (
-    <ConsultingPlansList
-      data={query.data}
-      page={page}
-      onPage={setPage}
-      formatDate={formatDate}
-      money={formatCurrency}
-      onOpen={(id) => void navigate({ to: "/processos/$processId", params: { processId: id } })}
-    />
+    <details className="rounded-2xl border bg-card p-4 sm:p-6">
+      <summary className="min-h-11 cursor-pointer content-center font-semibold focus-visible:outline-2 focus-visible:outline-ring">
+        {t("consultingPlans.overview")}
+      </summary>
+      <div className="mt-4">
+        <ConsultingPlansList
+          data={query.data}
+          page={page}
+          onPage={setPage}
+          formatDate={formatDate}
+          money={formatCurrency}
+          onOpen={(id) => void navigate({ to: "/processos/$processId", params: { processId: id } })}
+        />
+      </div>
+    </details>
   ) : null;
 }

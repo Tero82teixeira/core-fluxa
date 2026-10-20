@@ -1,6 +1,32 @@
 import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
+  consultingDay: {
+  "title": "Consulting priorities",
+  "range": "As of {{today}} · follow-ups and projects through {{horizon}}",
+  "filters": "Filter priorities",
+  "kinds": {
+    "delivery": "Overdue deliveries",
+    "followup": "Follow-ups",
+    "project": "Project deadlines"
+  },
+  "hint": "Includes overdue items and dates in the next seven days for follow-ups and projects. Follow-ups use the active monthly plan date; check whether contact has already been made. Closed projects are excluded.",
+  "open": "Open project",
+  "overdue": "Overdue",
+  "today": "Today",
+  "upcoming": "Upcoming days",
+  "refresh": "Refresh priorities",
+  "previous": "Previous",
+  "next": "Next",
+  "page": "Page {{page}} of {{pages}}",
+  "loading": "Loading priorities…",
+  "unavailable": "Priorities could not be loaded. Please refresh and try again.",
+  "empty": {
+    "delivery": "No overdue deliveries in active projects.",
+    "followup": "No follow-ups scheduled through the indicated date in active plans.",
+    "project": "No active project deadlines through the indicated date."
+  }
+},
   consultingSummary: {
     title: "Consulting summary",
     open: "View summary for the client",

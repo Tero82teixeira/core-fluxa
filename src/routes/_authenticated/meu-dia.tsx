@@ -1,3 +1,5 @@
+import { ConsultingDayOverview } from "@/components/consulting/consulting-day-overview";
+import { useQueryClient } from "@tanstack/react-query";
 import { ConsultingPlansOverview } from "@/components/consulting/consulting-plans-overview";
 import { ConsultingJourney } from "@/components/consulting/consulting-journey";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -91,7 +93,12 @@ function MyDayPage() {
   const loading = queries.some((query) => query.isLoading);
   const refreshing = queries.some((query) => query.isFetching);
   const error = queries.some((query) => query.isError);
-  const refresh = () => queries.forEach((query) => void query.refetch());
+  const cache = useQueryClient();
+  const refresh = () => {
+    queries.forEach((query) => void query.refetch());
+    void cache.invalidateQueries({ queryKey: ["consulting-day",organizationId] });
+    void cache.invalidateQueries({ queryKey: ["consulting-plans",organizationId] });
+  };
 
   return (
     <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
@@ -137,6 +144,7 @@ function MyDayPage() {
         </div>
       </header>
 
+      <ConsultingDayOverview />
       <ConsultingJourney />
       <ConsultingPlansOverview />
       <GettingStartedCard />

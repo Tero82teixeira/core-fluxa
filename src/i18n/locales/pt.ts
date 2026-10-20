@@ -1,5 +1,31 @@
 /** Português (Brasil) — idioma padrão e fonte da verdade das chaves. */
 export const pt = {
+  consultingDay: {
+  "title": "Prioridades da consultoria",
+  "range": "Posição em {{today}} · acompanhamentos e projetos até {{horizon}}",
+  "filters": "Filtrar prioridades",
+  "kinds": {
+    "delivery": "Entregas atrasadas",
+    "followup": "Acompanhamentos",
+    "project": "Prazos de projetos"
+  },
+  "hint": "Inclui atrasados e datas dos próximos sete dias para acompanhamentos e projetos. Acompanhamentos usam a data do plano mensal ativo; confira se o retorno já foi realizado. Projetos encerrados não aparecem.",
+  "open": "Abrir projeto",
+  "overdue": "Atrasado",
+  "today": "Hoje",
+  "upcoming": "Próximos dias",
+  "refresh": "Atualizar prioridades",
+  "previous": "Anterior",
+  "next": "Próxima",
+  "page": "Página {{page}} de {{pages}}",
+  "loading": "Carregando prioridades…",
+  "unavailable": "Não foi possível carregar as prioridades. Tente atualizar novamente.",
+  "empty": {
+    "delivery": "Nenhuma entrega atrasada nos projetos ativos.",
+    "followup": "Nenhum acompanhamento agendado até a data indicada nos planos ativos.",
+    "project": "Nenhum projeto ativo com prazo até a data indicada."
+  }
+},
   consultingSummary: {
     title: "Resumo da consultoria",
     open: "Ver resumo para o cliente",

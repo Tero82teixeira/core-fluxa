@@ -1,6 +1,32 @@
 import type { LocaleShape } from "./pt";
 
 export const es: LocaleShape = {
+  consultingDay: {
+  "title": "Prioridades de la consultoría",
+  "range": "Estado al {{today}} · seguimientos y proyectos hasta {{horizon}}",
+  "filters": "Filtrar prioridades",
+  "kinds": {
+    "delivery": "Entregas atrasadas",
+    "followup": "Seguimientos",
+    "project": "Plazos de proyectos"
+  },
+  "hint": "Incluye atrasos y fechas de los próximos siete días para seguimientos y proyectos. Los seguimientos usan la fecha del plan mensual activo; revisa si ya se realizó el contacto. Se excluyen los proyectos cerrados.",
+  "open": "Abrir proyecto",
+  "overdue": "Atrasado",
+  "today": "Hoy",
+  "upcoming": "Próximos días",
+  "refresh": "Actualizar prioridades",
+  "previous": "Anterior",
+  "next": "Siguiente",
+  "page": "Página {{page}} de {{pages}}",
+  "loading": "Cargando prioridades…",
+  "unavailable": "No se pudieron cargar las prioridades. Actualiza e inténtalo de nuevo.",
+  "empty": {
+    "delivery": "No hay entregas atrasadas en los proyectos activos.",
+    "followup": "No hay seguimientos programados hasta la fecha indicada en los planes activos.",
+    "project": "No hay proyectos activos con plazo hasta la fecha indicada."
+  }
+},
   consultingSummary: {
     title: "Resumen de la consultoría",
     open: "Ver resumen para el cliente",

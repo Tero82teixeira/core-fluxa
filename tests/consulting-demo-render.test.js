@@ -120,3 +120,23 @@ test("resumo do cliente renderiza texto seguro, revisão e download no sistema e
   assert(!/consultingSummary\./.test(demo));
  }
 });
+
+test("prioridades em PT/EN/ES mantêm filtros, paginação e não exibem itens antigos ao trocar categoria",async()=>{
+ const {ConsultingDayCard}=await import("../src/components/consulting/consulting-day-card.tsx");
+ const {buildConsultingDay}=await import("../src/lib/consulting-day.ts");
+ const source=Array.from({length:9},(_,i)=>({id:String(i),kind:"delivery",process_id:"p1",code:"PRJ-1",project_title:"Projeto",client_name:"Empresa",title:i===0?"<script>Texto</script>":`Entrega ${i}`,due_date:"2026-10-19"}));
+ const data=buildConsultingDay("2026-10-20",source,"delivery",0);
+ for(const language of ["pt","en","es"]){
+  await i18n.changeLanguage(language);
+  const props={data,kind:"delivery",page:0,onKind:()=>{},onPage:()=>{},onOpen:()=>{},formatDate:d=>d};
+  const html=renderToStaticMarkup(React.createElement(ConsultingDayCard,props));
+  assert.equal((html.match(/<article/g)||[]).length,6);assert.equal((html.match(/aria-pressed="true"/g)||[]).length,1);
+  assert(html.includes("&lt;script&gt;"));assert(html.includes(i18n.t("consultingDay.page",{page:1,pages:2})));assert(html.includes(i18n.t("consultingDay.open")));
+  assert(!/consultingDay\./.test(html));assert(!html.includes("<script>"));
+  const changing=renderToStaticMarkup(React.createElement(ConsultingDayCard,{...props,kind:"followup",busy:true}));
+  assert(!changing.includes("<article"));assert(changing.includes('aria-busy="true"'));assert(changing.includes(i18n.t("consultingDay.loading")));
+  for(const kind of ["delivery","followup","project"]){
+   const empty=renderToStaticMarkup(React.createElement(ConsultingDayCard,{...props,kind,data:buildConsultingDay("2026-10-20",[],kind,0)}));assert(empty.includes(i18n.t(`consultingDay.empty.${kind}`)));
+  }
+ }
+});

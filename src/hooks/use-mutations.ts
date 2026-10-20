@@ -102,6 +102,7 @@ export function useUpdateMemberRole(organizationId: string | null) {
 export type ClientPayload = ReturnType<typeof import("@/lib/validators").toClientPayload>;
 
 const invalidateClients = (queryClient: ReturnType<typeof useQueryClient>, organizationId: string | null, id?: string) => {
+  void queryClient.invalidateQueries({ queryKey: ["consulting-day", organizationId] });
   queryClient.invalidateQueries({ queryKey: ["clients", organizationId] });
   queryClient.invalidateQueries({ queryKey: ["clients-page", organizationId] });
   queryClient.invalidateQueries({ queryKey: ["client-owners", organizationId] });
@@ -261,6 +262,7 @@ export function useCreateProcess(organizationId: string | null) {
     onSuccess: () => {
       captureProductEvent("process_created");
       queryClient.invalidateQueries({ queryKey: ["processes", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["consulting-day", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["legal-cnj-processes", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["legal-workspace", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["activity", organizationId] });
@@ -313,6 +315,7 @@ export function useMoveProcessStage(organizationId: string | null, segment?: str
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["processes", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["consulting-day", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["legal-cnj-processes", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["legal-workspace", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["process", variables.processId] });
@@ -368,6 +371,7 @@ export function useUpdateProcess(organizationId: string | null) {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["processes", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["consulting-day", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["client-processes"] });
       queryClient.invalidateQueries({ queryKey: ["activity", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["global-search", organizationId] });
@@ -632,6 +636,7 @@ export function useCreateChecklistItem(organizationId: string | null, processId:
       });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["consulting-day", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["process-checklist", processId] });
       queryClient.invalidateQueries({ queryKey: ["process-movements", processId] });
     },
@@ -662,6 +667,7 @@ export function useSeedChecklist(organizationId: string | null) {
       if (error) throw error;
     },
     onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["consulting-day", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["process-checklist", variables.processId] });
     },
   });
@@ -696,6 +702,7 @@ export function useUpdateChecklistItem(organizationId: string | null, processId:
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["consulting-day", organizationId] });
       queryClient.invalidateQueries({ queryKey: ["process-checklist", processId] });
       queryClient.invalidateQueries({ queryKey: ["process-movements", processId] });
     },

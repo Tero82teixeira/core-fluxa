@@ -6993,6 +6993,10 @@ export type Database = {
         Args: { _organization_id: string; _process_id: string; _reference: string }
         Returns: Json
       }
+      read_consulting_day: {
+        Args: { _organization_id: string; _kind?: string; _page?: number }
+        Returns: Json
+      }
       read_consulting_plans: {
         Args: { _organization_id: string; _process_id?: string; _reference?: string; _page?: number }
         Returns: Json

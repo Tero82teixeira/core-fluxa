@@ -1,3 +1,5 @@
+import { ConsultingDayCard } from "./consulting-day-card";
+import { CONSULTING_DAY_PAGE_SIZE, type ConsultingDayKind } from "@/lib/consulting-day";
 import { ConsultingSummaryCard } from "./consulting-summary-card";
 import { ConsultingMonthlyPlanCard } from "./consulting-monthly-plan-card";
 import { ConsultingPlansList } from "./consulting-plans-list";
@@ -23,6 +25,7 @@ import {
   toggleConsultingDelivery,
   advanceConsultingDemoProject,
   consultingDemoSummary,
+  consultingDemoDay,
   type ConsultingDemoState,
 } from "@/lib/consulting-demo";
 import type { DemoData, DemoModule } from "@/lib/public-demo";
@@ -43,6 +46,8 @@ export function ConsultingPublicDemo({
   goTo: (module: DemoModule) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const [dayKind, setDayKind] = useState<ConsultingDayKind>("delivery");
+  const [dayPage, setDayPage] = useState(0);
   const [planMonth, setPlanMonth] = useState("2026-10");
   const [planPage, setPlanPage] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -57,6 +62,21 @@ export function ConsultingPublicDemo({
     new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" }).format(value);
   const client = (id: string) => data.records.find((r) => r.id === id)?.name ?? "—";
   const summary = consultingDemoSummary(data, consulting);
+  const daySnapshot = consultingDemoDay(
+    data,
+    consulting,
+    (key) => String(t(key)),
+    dayKind,
+    dayPage,
+  );
+  const daySafePage = Math.min(
+    dayPage,
+    Math.max(0, Math.ceil(daySnapshot.total / CONSULTING_DAY_PAGE_SIZE) - 1),
+  );
+  const dayData =
+    daySafePage === dayPage
+      ? daySnapshot
+      : consultingDemoDay(data, consulting, (key) => String(t(key)), dayKind, daySafePage);
   const displayPlan = (plan: MonthlyPlan & { example?: boolean }) =>
     plan.example
       ? {
@@ -100,6 +120,8 @@ export function ConsultingPublicDemo({
             setPlanPage(0);
             setData(buildConsultingDemoData);
             setConsulting(buildConsultingDemo);
+            setDayPage(0);
+            setDayKind("delivery");
           }}
         >
           {t("consultingDemo.reset")}
@@ -107,6 +129,21 @@ export function ConsultingPublicDemo({
       </div>
       {module === "overview" && (
         <>
+          <ConsultingDayCard
+            data={dayData}
+            kind={dayKind}
+            page={daySafePage}
+            formatDate={date}
+            onKind={(value) => {
+              setDayKind(value);
+              setDayPage(0);
+            }}
+            onPage={setDayPage}
+            onOpen={(id) => {
+              setSelected(id);
+              goTo("cases");
+            }}
+          />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {(["requests", "proposals", "projects", "deliveries"] as const).map((key, i) => (
               <button
