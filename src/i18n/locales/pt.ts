@@ -1,5 +1,59 @@
 /** Português (Brasil) — idioma padrão e fonte da verdade das chaves. */
 export const pt = {
+  consultingTemplates: {
+  "amountNotSet": "Valor não informado",
+  "title": "Começar com um modelo",
+  "hint": "Escolha um modelo, confira a prévia e aplique ao rascunho. Você poderá adaptar os textos e as entregas antes de criar o projeto.",
+  "choose": "Modelo de consultoria",
+  "initialStage": "Etapa inicial sugerida: Diagnóstico. Você poderá alterá-la no cadastro.",
+  "replace": "Confirmo substituir o objetivo, o escopo, a etapa inicial e as entregas deste rascunho. Cliente, responsável, prazo e valor serão preservados.",
+  "apply": "Usar este modelo",
+  "noAutomation": "O modelo não define preços ou prazos e não ativa plano mensal, cobranças ou recorrência.",
+  "deliveries": "Entregas iniciais",
+  "deliveryHint": "Revise a lista antes de criar. As entregas começam como Planejadas, sem prazo nem responsável próprios; ajuste esses campos depois na ficha.",
+  "add": "Adicionar entrega",
+  "deliveryNumber": "Entrega {{number}}",
+  "remove": "Remover",
+  "removeNumber": "Remover entrega {{number}}",
+  "empty": "Nenhuma entrega inicial. Você poderá adicionar entregas pela ficha do projeto.",
+  "invalidDeliveries": "Use até 20 entregas, com títulos de 3 a 160 caracteres, sem repetição.",
+  "projectInfo": "Revise o projeto",
+  "serviceHint": "O tipo de serviço pode sugerir prazo e valor. Se já houver entregas no rascunho, elas serão preservadas.",
+  "partial": "Projeto {{code}} criado. Não foi possível confirmar as entregas sugeridas. Confira a ficha antes de adicionar novamente.",
+  "chooseClient": "Selecione o cliente de exemplo",
+  "demoOpen": "Novo projeto com modelo",
+  "demoCreate": "Criar projeto de exemplo",
+  "demoCreated": "Projeto de exemplo criado nesta sessão.",
+  "models": {
+    "advisory": {
+      "name": "Assessoria empresarial",
+      "objective": "Acompanhar a gestão e as prioridades da empresa",
+      "scope": "Acompanhamento da gestão com diagnóstico inicial, definição de prioridades, plano de ação e avaliação da evolução. Ajuste a frequência, os indicadores e as condições ao que foi combinado com o cliente.",
+      "delivery1": "Diagnóstico e definição das prioridades",
+      "delivery2": "Plano de ação da assessoria",
+      "delivery3": "Reunião de acompanhamento",
+      "delivery4": "Relatório de evolução e próximos passos"
+    },
+    "diagnosis": {
+      "name": "Diagnóstico de processos",
+      "objective": "Diagnosticar processos e identificar melhorias",
+      "scope": "Levantamento das informações, mapeamento do processo atual, análise de gargalos e apresentação das oportunidades de melhoria. Delimite os setores e os processos incluídos no atendimento.",
+      "delivery1": "Levantamento de informações",
+      "delivery2": "Mapeamento do processo atual",
+      "delivery3": "Análise de gargalos e oportunidades",
+      "delivery4": "Apresentação do diagnóstico"
+    },
+    "action": {
+      "name": "Plano de ação",
+      "objective": "Organizar e acompanhar um plano de ação",
+      "scope": "Definição de metas, organização das ações com responsáveis e acompanhamento da execução até a avaliação dos resultados. Ajuste as metas, os prazos e os critérios de conclusão com o cliente.",
+      "delivery1": "Definição das metas",
+      "delivery2": "Plano de ação com responsáveis",
+      "delivery3": "Acompanhamento da execução",
+      "delivery4": "Avaliação dos resultados"
+    }
+  }
+},
   consultingDay: {
   "title": "Prioridades da consultoria",
   "range": "Posição em {{today}} · acompanhamentos e projetos até {{horizon}}",

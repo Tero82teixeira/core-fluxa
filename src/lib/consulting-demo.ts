@@ -12,6 +12,7 @@ import {
   type ConsultingDeliveryValues,
 } from "./consulting-project.ts";
 import { buildDemoData, type DemoData } from "./public-demo.ts";
+import { consultingDraftDeliveries } from "./consulting-templates.ts";
 import {
   buildConsultingDay,
   type ConsultingDayItem,
@@ -127,6 +128,69 @@ export function buildConsultingDemo(): ConsultingDemoState {
       done: Math.floor(i / 3) === 2 || i % 3 < [1, 2, 3, 0][Math.floor(i / 3)],
       due_date: ["2026-10-16", "2026-10-17", "2026-10-22"][i % 3],
     })),
+  };
+}
+
+/** New example project from a reviewed draft; no proposal, plan or billing side effects. */
+export function createConsultingDemoTemplateProject(
+  data: DemoData,
+  state: ConsultingDemoState,
+  projectId: string,
+  clientId: string,
+  values: ConsultingProjectValues,
+  titles: readonly string[],
+) {
+  if (
+    !/^template-[A-Za-z0-9-]{1,80}$/.test(projectId) ||
+    !data.records.some((record) => record.id === clientId)
+  )
+    throw new Error("CONSULTING_TEMPLATE_CLIENT_INVALID");
+  const payload = consultingProjectPayload(values),
+    deliveries = consultingDraftDeliveries(titles);
+  if (data.cases.some((project) => project.id === projectId)) return { data, state, projectId };
+  const profile = {
+    title: payload.title,
+    description: payload.description ?? "",
+    owner_name: payload.owner_name ?? "",
+    due_date: payload.due_date ?? "",
+  };
+  return {
+    projectId,
+    data: {
+      ...data,
+      cases: [
+        {
+          id: projectId,
+          code: `PRJ-DEMO-M${data.cases.filter((project) => project.id.startsWith("template-")).length + 1}`,
+          recordId: clientId,
+          titleKey: "",
+          stage: 0,
+          status: "active" as const,
+          due: profile.due_date,
+          amount: 0,
+        },
+        ...data.cases,
+      ],
+    },
+    state: {
+      ...state,
+      projectProfiles: { ...state.projectProfiles, [projectId]: profile },
+      deliveries: [
+        ...state.deliveries,
+        ...deliveries.map((title, index) => ({
+          id: `${projectId}-d${index + 1}`,
+          projectId,
+          title,
+          titleKey: "",
+          description: "",
+          assignee_name: "",
+          due_date: "",
+          status: "pendente" as const,
+          required: true,
+          done: false,
+        })),
+      ],
+    },
   };
 }
 

@@ -1,3 +1,4 @@
+import { ConsultingTemplateDemo } from "./consulting-template-demo";
 import { ConsultingDayCard } from "./consulting-day-card";
 import { CONSULTING_DAY_PAGE_SIZE, type ConsultingDayKind } from "@/lib/consulting-day";
 import { ConsultingSummaryCard } from "./consulting-summary-card";
@@ -25,6 +26,7 @@ import {
   toggleConsultingDelivery,
   advanceConsultingDemoProject,
   consultingDemoSummary,
+  createConsultingDemoTemplateProject,
   consultingDemoDay,
   type ConsultingDemoState,
 } from "@/lib/consulting-demo";
@@ -48,6 +50,7 @@ export function ConsultingPublicDemo({
   const { t, i18n } = useTranslation();
   const [dayKind, setDayKind] = useState<ConsultingDayKind>("delivery");
   const [dayPage, setDayPage] = useState(0);
+  const [templateOpen, setTemplateOpen] = useState(false);
   const [planMonth, setPlanMonth] = useState("2026-10");
   const [planPage, setPlanPage] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -116,6 +119,7 @@ export function ConsultingPublicDemo({
           className="min-h-11"
           onClick={() => {
             setSelected(null);
+            setTemplateOpen(false);
             setPlanMonth("2026-10");
             setPlanPage(0);
             setData(buildConsultingDemoData);
@@ -259,7 +263,33 @@ export function ConsultingPublicDemo({
           }}
         />
       )}
-      {module === "cases" && (
+      {module === "cases" && !selected && !templateOpen && (
+        <Button className="min-h-11 w-full sm:w-auto" onClick={() => setTemplateOpen(true)}>
+          {t("consultingTemplates.demoOpen")}
+        </Button>
+      )}
+      {module === "cases" && templateOpen && (
+        <ConsultingTemplateDemo
+          clients={data.records.map((record) => ({ id: record.id, name: record.name }))}
+          onCancel={() => setTemplateOpen(false)}
+          onCreate={async (clientId, values, titles) => {
+            const projectId = `template-${crypto.randomUUID()}`;
+            const next = createConsultingDemoTemplateProject(
+              data,
+              consulting,
+              projectId,
+              clientId,
+              values,
+              titles,
+            );
+            setData(() => next.data);
+            setConsulting(() => next.state);
+            setSelected(projectId);
+            setTemplateOpen(false);
+          }}
+        />
+      )}
+      {module === "cases" && !templateOpen && (
         <div className={selected ? "grid gap-4" : "grid gap-4 xl:grid-cols-2"}>
           {data.cases
             .filter((project) => !selected || project.id === selected)
@@ -279,7 +309,10 @@ export function ConsultingPublicDemo({
                     {client(project.recordId)}
                   </p>
                   <p className="text-sm">
-                    {money(project.amount)} · {date(project.due)}
+                    {project.id.startsWith("template-")
+                      ? t("consultingTemplates.amountNotSet")
+                      : money(project.amount)}{" "}
+                    · {date(project.due)}
                   </p>
                   <p className="font-medium">{t(`consultingDemo.stages.s${project.stage}`)}</p>
                   <Button

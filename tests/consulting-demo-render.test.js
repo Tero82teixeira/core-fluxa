@@ -140,3 +140,22 @@ test("prioridades em PT/EN/ES mantêm filtros, paginação e não exibem itens a
   }
  }
 });
+
+test("modelos mostram prévia, confirmação de substituição e lista editável em PT/EN/ES",async()=>{
+ const {ConsultingTemplatePicker}=await import("../src/components/consulting/consulting-template-picker.tsx");
+ const {ConsultingDeliveryDraft}=await import("../src/components/consulting/consulting-delivery-draft.tsx");
+ const {ConsultingTemplateDemo}=await import("../src/components/consulting/consulting-template-demo.tsx");
+ const {consultingTemplate}=await import("../src/lib/consulting-templates.ts");
+ for(const language of ["pt","en","es"]){
+  await i18n.changeLanguage(language);
+  const props={onApply:()=>{}};
+  const preview=renderToStaticMarkup(React.createElement(ConsultingTemplatePicker,props));
+  assert.equal((preview.match(/<option/g)||[]).length,3);assert.equal((preview.match(/<li /g)||[]).length,4);assert(preview.includes(i18n.t("consultingTemplates.models.advisory.objective")));assert(!preview.includes('type="checkbox"'));
+  const replace=renderToStaticMarkup(React.createElement(ConsultingTemplatePicker,{...props,hasContent:true}));assert(replace.includes('type="checkbox"'));assert(replace.includes('disabled=""'));assert(replace.includes(i18n.t("consultingTemplates.replace")));
+  const edit=renderToStaticMarkup(React.createElement(ConsultingDeliveryDraft,{titles:['<script>Entrega</script>','Outra entrega'],onChange:()=>{}}));assert(edit.includes('&lt;script&gt;'));assert(!edit.includes('<script>'));assert.equal((edit.match(/<input/g)||[]).length,2);assert(edit.includes(i18n.t("consultingTemplates.removeNumber",{number:1})));
+  const invalid=renderToStaticMarkup(React.createElement(ConsultingDeliveryDraft,{titles:['ab','ab'],onChange:()=>{}}));assert(invalid.includes('aria-invalid="true"'));assert(invalid.includes(i18n.t("consultingTemplates.invalidDeliveries")));
+  const form=renderToStaticMarkup(React.createElement(ConsultingTemplateDemo,{clients:[{id:'r1',name:'Aurora'}],onCreate:async()=>{},onCancel:()=>{}}));assert(form.includes('Aurora'));assert(form.includes(i18n.t("consultingTemplates.demoCreate")));assert(form.includes('disabled=""'));assert(form.includes('maxLength="160"'));
+  assert(!/consultingTemplates\./.test(preview+replace+edit+form+invalid));
+  assert.equal(consultingTemplate('advisory',i18n.t.bind(i18n)).deliveries.length,4);
+ }
+});
