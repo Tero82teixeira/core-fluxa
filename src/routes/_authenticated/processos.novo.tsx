@@ -1,6 +1,10 @@
+import { ConsultingTemplatePicker } from "@/components/consulting/consulting-template-picker";
+import { ConsultingDeliveryDraft } from "@/components/consulting/consulting-delivery-draft";
+import { consultingDraftDeliveriesValid, consultingDraftDeliveries, createProjectWithSuggestedDeliveries, applyConsultingTemplate } from "@/lib/consulting-templates";
+import { useTranslation } from "react-i18next";
 import { consultingProjectValid } from "@/lib/consulting-project";
 import { processStageDefinitions } from "@/lib/consulting-workspace";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BriefcaseBusiness, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -62,6 +66,9 @@ function addDays(days: number) {
 
 function NewProcess() {
   const navigate = useNavigate();
+  const {t}=useTranslation();
+  const submitLock=useRef(false);
+  const [submitting,setSubmitting]=useState(false);
   const { clientId } = Route.useSearch();
   const { organizationId, displayName, membership } = useWorkspace();
   const isConsulting = membership?.organizations?.organization_settings?.business_segment === "consulting_services";
@@ -97,7 +104,7 @@ function NewProcess() {
     }),
     [clientId, displayName],
   );
-  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
+  const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm) || (isConsulting && pendingChecklist.length>0);
   const markSaved = useUnsavedChanges(isDirty);
 
   useEffect(() => {
@@ -113,7 +120,7 @@ function NewProcess() {
     const checklist = Array.isArray(type?.default_checklist)
       ? (type?.default_checklist as string[])
       : [];
-    setPendingChecklist(
+    if(!isConsulting || pendingChecklist.length===0) setPendingChecklist(
       checklist.filter((item) => typeof item === "string" && item.trim().length > 0),
     );
     setForm((current) => ({
@@ -127,14 +134,18 @@ function NewProcess() {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!organizationId) return;
+    if (!organizationId || submitLock.current) return;
     if (!form.client_id) {
       toast.error("Selecione o cliente do processo.");
       return;
     }
     if(isConsulting && !consultingProjectValid(form)){toast.error("Informe um objetivo de 3 a 160 caracteres e confira o prazo do projeto.");return;}
+    if(isConsulting && !consultingDraftDeliveriesValid(pendingChecklist)){toast.error(t("consultingTemplates.invalidDeliveries"));return;}
+    submitLock.current=true;
+    setSubmitting(true);
     try {
-      const created = await createProcess.mutateAsync({
+      const titles=isConsulting ? consultingDraftDeliveries(pendingChecklist) : pendingChecklist;
+      const {created,deliveriesConfirmed}=await createProjectWithSuggestedDeliveries(()=>createProcess.mutateAsync({
         client_id: form.client_id,
         service_type_id: form.service_type_id || null,
         title: form.title.trim() || null,
@@ -145,19 +156,16 @@ function NewProcess() {
         due_date: form.due_date || null,
         value: form.value ? Number(form.value.replace(",", ".")) : 0,
         financial_status: "nao_aplicavel",
-      });
-      if (pendingChecklist.length > 0) {
-        try {
-          await seedChecklist.mutateAsync({ processId: created.id, titles: pendingChecklist });
-        } catch (error) {
-          toast.warning("Processo criado, mas o checklist sugerido não pôde ser gerado.");
-        }
-      }
-      toast.success(`${isConsulting ? "Projeto" : "Processo"} ${created.code} criado.`);
+      }), (processId,titles)=>seedChecklist.mutateAsync({processId,titles}),titles);
+      if(deliveriesConfirmed)toast.success(`${isConsulting ? "Projeto" : "Processo"} ${created.code} criado.`);
+      else toast.warning(isConsulting ? t("consultingTemplates.partial",{code:created.code}) : "Processo criado, mas não foi possível confirmar os itens sugeridos. Confira o checklist na ficha antes de repetir.");
       markSaved();
       navigate({ to: "/processos/$processId", params: { processId: created.id } });
     } catch (error) {
       toast.error(describeError(error, "processo"));
+    } finally {
+      submitLock.current=false;
+      setSubmitting(false);
     }
   };
 
@@ -202,16 +210,22 @@ function NewProcess() {
           )}
         </div>
       </header>
+      {isConsulting && <ConsultingTemplatePicker disabled={submitting} hasContent={Boolean(form.title.trim()||form.description.trim()||pendingChecklist.length||form.stage!=="novo")} onApply={(draft)=>{
+        const next=applyConsultingTemplate(form,draft);
+        setForm(next.form);
+        setPendingChecklist(next.deliveries);
+      }} />}
       <Card className="rounded-2xl border-border/70 shadow-soft">
         <CardContent className="p-4 sm:p-6 lg:p-7">
           <div className="mb-6">
-            <p className="text-sm font-semibold">Informações do processo</p>
+            <p className="text-sm font-semibold">{isConsulting ? t("consultingTemplates.projectInfo") : "Informações do processo"}</p>
             <p className="helper-text mt-1">
-              O tipo de serviço pode sugerir prazo, valor e checklist automaticamente.
+              {isConsulting ? t("consultingTemplates.serviceHint") : "O tipo de serviço pode sugerir prazo, valor e checklist automaticamente."}
             </p>
           </div>
 
           <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+            <fieldset className="contents" disabled={submitting}>
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Cliente</Label>
               <Select
@@ -247,7 +261,7 @@ function NewProcess() {
                   ))}
                 </SelectContent>
               </Select>
-              {pendingChecklist.length > 0 && (
+              {!isConsulting && pendingChecklist.length > 0 && (
                 <p className="helper-text">
                   {pendingChecklist.length} itens de checklist sugeridos serão criados com o
                   processo.
@@ -260,6 +274,8 @@ function NewProcess() {
               <Input
                 id="title"
                 maxLength={160}
+                required={isConsulting}
+                minLength={isConsulting ? 3 : undefined}
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
               />
@@ -344,15 +360,16 @@ function NewProcess() {
               />
             </div>
 
+            {isConsulting && <div className="min-w-0 sm:col-span-2"><ConsultingDeliveryDraft titles={pendingChecklist} onChange={setPendingChecklist} disabled={submitting} /></div>}
             <div className="grid gap-2 sm:col-span-2 sm:flex border-t border-border/70 pt-5">
               <Button
                 className="w-full sm:w-auto"
                 type="submit"
-                disabled={createProcess.isPending || (isConsulting && !consultingProjectValid(form))}
-                aria-busy={createProcess.isPending}
+                disabled={submitting || (isConsulting && (!consultingProjectValid(form)||!consultingDraftDeliveriesValid(pendingChecklist)))}
+                aria-busy={submitting}
               >
-                {createProcess.isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
-                {createProcess.isPending ? "Criando…" : isConsulting ? "Criar projeto" : "Criar processo"}
+                {submitting && <Loader2 className="size-4 animate-spin" aria-hidden />}
+                {submitting ? "Criando…" : isConsulting ? "Criar projeto" : "Criar processo"}
               </Button>
               <Button
                 className="w-full sm:w-auto"
@@ -363,6 +380,7 @@ function NewProcess() {
                 Cancelar
               </Button>
             </div>
+            </fieldset>
           </form>
         </CardContent>
       </Card>

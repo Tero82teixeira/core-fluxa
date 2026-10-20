@@ -1,3 +1,5 @@
+import {CONSULTING_TEMPLATE_IDS,consultingTemplate} from "../src/lib/consulting-templates.ts";
+import {pt} from "../src/i18n/locales/pt.ts";
 import {createRequire} from 'node:module';
 import {resolve} from 'node:path';
 import {readFileSync} from 'node:fs';
@@ -26,6 +28,8 @@ try{
  await db.exec(base.match(/CREATE POLICY "processes_select"[^;]+;/)[0]);
  const policies=readFileSync('supabase/migrations/20260731172851_dc43122c-1836-4204-892b-a17f4f42ce93.sql','utf8');
  await db.exec(policies.match(/CREATE POLICY "processes_update"[^;]+;/)[0]);
+ await db.exec(policies.match(/CREATE POLICY "processes_insert"[^;]+;/)[0]);
+ await db.exec("GRANT INSERT ON processes TO authenticated;");
  const checklist=readFileSync('supabase/migrations/20260731172812_ab35210b-e568-48b7-a5a5-84c99dae17ed.sql','utf8');
  await db.exec(checklist.slice(checklist.indexOf('-- 6. Checklist do processo')));
  await db.exec(`SET ROLE authenticated;SET test.actor='${actor}';`);
@@ -36,6 +40,15 @@ try{
  assert.equal(result.rows.length,1);assert.equal(result.rows[0].status,'aprovado');assert.equal(result.rows[0].assignee_name,'Bruno');
  result=await db.query(`UPDATE process_checklist_items SET title='Errado' WHERE id=$1 AND organization_id=$2 AND process_id=$3 RETURNING id`,[delivery,org,foreign]);assert.equal(result.rows.length,0);
  result=await db.query(`UPDATE processes SET title='Errado' WHERE id=$1 RETURNING id`,[foreign]);assert.equal(result.rows.length,0);
+ for(const [index,key] of CONSULTING_TEMPLATE_IDS.entries()){
+  const model=consultingTemplate(key,path=>path.split('.').reduce((value,part)=>value[part],pt));
+  const projectId=id(30+index);
+  await db.query('INSERT INTO processes(id,organization_id,title,description,owner_name,due_date) VALUES($1,$2,$3,$4,$5,$6)',[projectId,org,model.title,model.description,'Ana','2026-12-20']);
+  await db.query(`INSERT INTO process_checklist_items(organization_id,process_id,title,position) SELECT $1,$2,title,position FROM jsonb_to_recordset($3::jsonb) AS x(title text,position integer)`,[org,projectId,JSON.stringify(model.deliveries.map((title,position)=>({title,position})))]);
+  const saved=(await db.query('SELECT title,status,required,due_date,assignee_name FROM process_checklist_items WHERE process_id=$1 ORDER BY position',[projectId])).rows;
+  assert.deepEqual(saved.map(item=>item.title),model.deliveries);
+  assert(saved.every(item=>item.status==='pendente'&&item.required&&item.due_date===null&&item.assignee_name===null));
+ }
  await db.exec(`SET test.actor='${viewer}';`);
  result=await db.query(`SELECT title FROM processes WHERE id=$1`,[project]);assert.equal(result.rows[0].title,'Reduzir retrabalho');
  result=await db.query(`UPDATE processes SET title='Sem permissão' WHERE id=$1 RETURNING id`,[project]);assert.equal(result.rows.length,0);

@@ -1,6 +1,60 @@
 import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
+  consultingTemplates: {
+  "amountNotSet": "Amount not specified",
+  "title": "Start with a template",
+  "hint": "Choose a template, review the preview and apply it to the draft. You can adapt the text and deliveries before creating the project.",
+  "choose": "Consulting template",
+  "initialStage": "Suggested starting stage: Diagnosis. You can change it in the project form.",
+  "replace": "I confirm replacing this draft’s objective, scope, starting stage and deliveries. Client, owner, deadline and amount will be preserved.",
+  "apply": "Use this template",
+  "noAutomation": "The template does not set prices or deadlines or activate monthly plans, charges or recurrence.",
+  "deliveries": "Initial deliveries",
+  "deliveryHint": "Review the list before creating. Deliveries start as Planned, without their own deadline or owner; adjust these fields later in the project.",
+  "add": "Add delivery",
+  "deliveryNumber": "Delivery {{number}}",
+  "remove": "Remove",
+  "removeNumber": "Remove delivery {{number}}",
+  "empty": "No initial deliveries. You can add deliveries from the project details.",
+  "invalidDeliveries": "Use up to 20 deliveries with unique titles of 3 to 160 characters.",
+  "projectInfo": "Review the project",
+  "serviceHint": "The service type may suggest a deadline and amount. Existing draft deliveries will be preserved.",
+  "partial": "Project {{code}} created. The suggested deliveries could not be confirmed. Check the project before adding them again.",
+  "chooseClient": "Select the example client",
+  "demoOpen": "New project from template",
+  "demoCreate": "Create example project",
+  "demoCreated": "Example project created in this session.",
+  "models": {
+    "advisory": {
+      "name": "Business advisory",
+      "objective": "Support company management and priorities",
+      "scope": "Management support with an initial diagnosis, priority setting, an action plan and progress review. Adapt frequency, indicators and terms to the agreement with the client.",
+      "delivery1": "Diagnosis and priority setting",
+      "delivery2": "Advisory action plan",
+      "delivery3": "Follow-up meeting",
+      "delivery4": "Progress report and next steps"
+    },
+    "diagnosis": {
+      "name": "Process diagnosis",
+      "objective": "Diagnose processes and identify improvements",
+      "scope": "Gather information, map the current process, analyze bottlenecks and present improvement opportunities. Define the departments and processes included in the engagement.",
+      "delivery1": "Information gathering",
+      "delivery2": "Current process mapping",
+      "delivery3": "Bottleneck and opportunity analysis",
+      "delivery4": "Diagnosis presentation"
+    },
+    "action": {
+      "name": "Action plan",
+      "objective": "Organize and track an action plan",
+      "scope": "Define goals, organize actions with responsible people and follow execution through result evaluation. Agree on goals, deadlines and completion criteria with the client.",
+      "delivery1": "Goal definition",
+      "delivery2": "Action plan with assigned owners",
+      "delivery3": "Execution follow-up",
+      "delivery4": "Result evaluation"
+    }
+  }
+},
   consultingDay: {
   "title": "Consulting priorities",
   "range": "As of {{today}} · follow-ups and projects through {{horizon}}",
