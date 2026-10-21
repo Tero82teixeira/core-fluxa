@@ -17,12 +17,14 @@ try {
  CREATE TABLE organization_settings(organization_id uuid,business_segment text,enabled_modules jsonb);
  CREATE TABLE organization_members(organization_id uuid,user_id uuid,role app_role,is_active boolean);
  CREATE FUNCTION has_org_role(org uuid,roles app_role[]) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT EXISTS(SELECT 1 FROM public.organization_members WHERE organization_id=org AND user_id=auth.uid() AND is_active AND role=ANY(roles)) $$;
- CREATE TABLE clients(id uuid PRIMARY KEY,organization_id uuid NOT NULL,name text,notes text,archived_at timestamptz);
+ CREATE TABLE clients(id uuid PRIMARY KEY,organization_id uuid NOT NULL,name text,notes text,archived_at timestamptz,owner_id uuid);
+ CREATE TABLE processes(organization_id uuid,client_id uuid,owner_id uuid);
+ CREATE TABLE tasks(organization_id uuid,client_id uuid,assignee_id uuid);
  CREATE TABLE audit_logs(organization_id uuid,actor_id uuid,action text,entity text,entity_id uuid,metadata jsonb);
  INSERT INTO organizations VALUES('${org}'),('${other}');
  INSERT INTO organization_settings VALUES('${org}','consulting_services','["clients"]'),('${other}','consulting_services','[]');
  INSERT INTO organization_members VALUES('${org}','${actor}','proprietario',true),('${org}','${viewer}','visualizador',true);
- INSERT INTO clients VALUES('${client}','${org}','Cliente','Observação preservada',null),('${foreign}','${other}','SEGREDO','PRIVADO',null),('${newClient}','${org}','Novo cliente',null,null);
+ INSERT INTO clients VALUES('${client}','${org}','Cliente','Observação preservada',null,'${actor}'),('${foreign}','${other}','SEGREDO','PRIVADO',null,null),('${newClient}','${org}','Novo cliente',null,null,null);
  `);
  await db.exec(sql);await db.exec(sql);
  await db.exec(`SET test.actor='${actor}';SET ROLE authenticated;`);
@@ -45,6 +47,19 @@ try {
   if(canRead) assert.equal((await read()).revision>=4,true);else await assert.rejects(()=>read(),/ACCESS_DENIED/);
   if(canWrite) await save(values,(await read()).revision);else await assert.rejects(()=>save(values,4),/ACCESS_DENIED/);
  }
+ // Operational users retain the client visibility rules of clients_secure.
+ await db.exec(`RESET ROLE;UPDATE organization_members SET role='operacional' WHERE user_id='${actor}';SET ROLE authenticated;`);
+ await assert.rejects(()=>read(newClient),/CLIENT_NOT_FOUND/);await assert.rejects(()=>save(values,null,newClient),/CLIENT_NOT_FOUND/);
+ for(const relation of ['processes','tasks']){
+  const owner=relation==='tasks'?'assignee_id':'owner_id';
+  await db.exec(`RESET ROLE;INSERT INTO ${relation}(organization_id,client_id,${owner}) VALUES('${other}','${newClient}','${actor}');SET ROLE authenticated;`);
+  await assert.rejects(()=>read(newClient),/CLIENT_NOT_FOUND/);
+  await db.exec(`RESET ROLE;DELETE FROM ${relation};INSERT INTO ${relation}(organization_id,client_id,${owner}) VALUES('${org}','${newClient}','${actor}');SET ROLE authenticated;`);
+  const current=await read(newClient);await save(values,current?.revision??null,newClient);
+  await db.exec(`RESET ROLE;DELETE FROM ${relation};SET ROLE authenticated;`);
+  await assert.rejects(()=>read(newClient),/CLIENT_NOT_FOUND/);
+ }
+ await db.exec(`RESET ROLE;DELETE FROM consulting_client_diagnostics WHERE client_id='${newClient}';SET ROLE authenticated;`);
  await db.exec(`RESET ROLE;UPDATE organization_members SET role='proprietario',is_active=false WHERE user_id='${actor}';SET ROLE authenticated;`);
  await assert.rejects(()=>read(),/ACCESS_DENIED/);await assert.rejects(()=>save(),/ACCESS_DENIED/);
  await db.exec(`RESET ROLE;UPDATE organization_members SET is_active=true WHERE user_id='${actor}';UPDATE organization_settings SET enabled_modules='["processes"]' WHERE organization_id='${org}';SET ROLE authenticated;`);

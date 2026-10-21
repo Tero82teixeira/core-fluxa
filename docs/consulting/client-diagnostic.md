@@ -40,6 +40,8 @@ exigem sessão, vínculo ativo, área consulting_services e módulo clients habi
 (lista de módulos vazia conserva a convenção do sistema de liberar todos).
 Proprietário, administrador, gestor, operacional e superadmin podem editar;
 visualizador pode ler; atendimento, financeiro e cliente externo não acessam.
+O perfil operacional só consulta e edita clientes sob sua responsabilidade direta
+ou vinculados a projeto/tarefa de sua responsabilidade, como na carteira existente.
 Clientes arquivados continuam legíveis, mas não aceitam edição. Empresa e cliente
 são conferidos no servidor em todas as chamadas; o helper de acesso é interno.
 

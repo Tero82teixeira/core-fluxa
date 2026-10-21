@@ -32,7 +32,10 @@ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
 DECLARE saved public.consulting_client_diagnostics;
 BEGIN
  IF NOT public.consulting_diagnostic_access(_organization_id,false) THEN RAISE EXCEPTION 'CONSULTING_DIAGNOSTIC_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
- IF NOT EXISTS(SELECT 1 FROM public.clients WHERE id=_client_id AND organization_id=_organization_id) THEN RAISE EXCEPTION 'CONSULTING_DIAGNOSTIC_CLIENT_NOT_FOUND' USING ERRCODE='P0002'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.clients c WHERE c.id=_client_id AND c.organization_id=_organization_id AND (NOT public.has_org_role(_organization_id,ARRAY['operacional']::public.app_role[])
+   OR c.owner_id=auth.uid()
+   OR EXISTS(SELECT 1 FROM public.processes p WHERE p.client_id=c.id AND p.organization_id=c.organization_id AND p.owner_id=auth.uid())
+   OR EXISTS(SELECT 1 FROM public.tasks t WHERE t.client_id=c.id AND t.organization_id=c.organization_id AND t.assignee_id=auth.uid()))) THEN RAISE EXCEPTION 'CONSULTING_DIAGNOSTIC_CLIENT_NOT_FOUND' USING ERRCODE='P0002'; END IF;
  SELECT * INTO saved FROM public.consulting_client_diagnostics WHERE client_id=_client_id AND organization_id=_organization_id;
  RETURN CASE WHEN saved.client_id IS NULL THEN NULL ELSE to_jsonb(saved) END;
 END; $$;
@@ -43,7 +46,10 @@ DECLARE saved public.consulting_client_diagnostics; old_revision integer; target
 BEGIN
  IF NOT public.consulting_diagnostic_access(_organization_id,true) THEN RAISE EXCEPTION 'CONSULTING_DIAGNOSTIC_ACCESS_DENIED' USING ERRCODE='42501'; END IF;
  -- Serializa inclusive a primeira gravação; nenhum usuário altera cliente arquivado.
- PERFORM 1 FROM public.clients WHERE id=_client_id AND organization_id=_organization_id AND archived_at IS NULL FOR UPDATE;
+ PERFORM 1 FROM public.clients c WHERE c.id=_client_id AND c.organization_id=_organization_id AND c.archived_at IS NULL AND (NOT public.has_org_role(_organization_id,ARRAY['operacional']::public.app_role[])
+   OR c.owner_id=auth.uid()
+   OR EXISTS(SELECT 1 FROM public.processes p WHERE p.client_id=c.id AND p.organization_id=c.organization_id AND p.owner_id=auth.uid())
+   OR EXISTS(SELECT 1 FROM public.tasks t WHERE t.client_id=c.id AND t.organization_id=c.organization_id AND t.assignee_id=auth.uid())) FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'CONSULTING_DIAGNOSTIC_CLIENT_NOT_FOUND' USING ERRCODE='P0002'; END IF;
  IF _values IS NULL OR jsonb_typeof(_values)<>'object' THEN RAISE EXCEPTION 'CONSULTING_DIAGNOSTIC_INVALID' USING ERRCODE='22023'; END IF;
  FOREACH key IN ARRAY ARRAY['focus','situation','attempts','expected_result','priority','target_on'] LOOP
