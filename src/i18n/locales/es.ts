@@ -1,6 +1,36 @@
 import type { LocaleShape } from "./pt";
 
 export const es: LocaleShape = {
+  consultingProposal: {
+  "edit": "Editar borrador",
+  "title": "Preparar propuesta",
+  "prepare": "Preparar propuesta",
+  "prepareHint": "Usa el resultado esperado como punto de partida. Revisa el servicio y completa las condiciones antes de guardar.",
+  "defaultTitle": "Propuesta de consultoría",
+  "hint": "Revisa el contenido que se presentará al cliente. Guardar crea solo un borrador; el envío se realiza después en Propuestas.",
+  "proposalTitle": "Título de la propuesta",
+  "service": "Objetivo y servicio ofrecido",
+  "serviceHint": "El resultado esperado se copió del diagnóstico. Adapta el texto para definir el alcance, las entregas y el plazo del servicio.",
+  "terms": "Condiciones comerciales",
+  "amount": "Importe de la propuesta (BRL)",
+  "amountHint": "Usa números sin separador de miles. Ejemplo: 1500,00.",
+  "frequency": "Frecuencia de pago",
+  "firstDueDate": "Primer vencimiento",
+  "validUntil": "Propuesta válida hasta",
+  "dateHint": "Completa las fechas de pago y validez. El plazo deseado del diagnóstico no se usa como vencimiento. El cobro automático permanece desactivado en esta preparación.",
+  "save": "Guardar borrador",
+  "saving": "Guardando…",
+  "cancel": "Cancelar preparación",
+  "saved": "Borrador guardado. Abre Propuestas para revisar, editar o generar el enlace cuando esté listo.",
+  "uncertain": "No se pudo confirmar el guardado. Se conservó el texto y se bloqueó el reenvío para evitar duplicados. Abre Propuestas y comprueba si se creó el borrador antes de preparar otro.",
+  "view": "Ver propuestas",
+  "frequencies": {
+    "once": "Pago único",
+    "monthly": "Mensual",
+    "quarterly": "Trimestral",
+    "yearly": "Anual"
+  }
+},
   consultingDiagnostic: {
   "title": "Diagnóstico inicial",
   "hint": "Registra las necesidades del cliente para orientar la propuesta y el proyecto. Uso interno del equipo.",

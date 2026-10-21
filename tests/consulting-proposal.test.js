@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {consultingProposalAmount,consultingProposalDraftValid,consultingProposalInput,proposalFromConsultingDiagnostic} from '../src/lib/consulting-proposal.ts';
+import {buildConsultingDemo,buildConsultingDemoData,saveConsultingDemoDiagnosticProposal,updateConsultingDemoDiagnosticProposal,advanceConsultingDemoProposal,startConsultingDemoProject} from '../src/lib/consulting-demo.ts';
+const today='2026-10-18';
+const complete={title:'Organização dos pedidos',serviceDescription:'Organizar os pedidos e definir responsáveis.',terms:'Quatro encontros. Execução em 30 dias.',amount:'1500,00',billingFrequency:'once',firstDueDate:'2026-10-25',validUntil:'2026-10-28'};
+test('preparar proposta usa somente o resultado esperado, sem inventar valor, condições ou datas',()=>{
+ const diagnostic={expected_result:'  Resultado público  ',situation:'PRIVADO_SITUACAO',attempts:'PRIVADO_TENTATIVAS',priority:'high',target_on:'2026-11-20'};
+ const draft=proposalFromConsultingDiagnostic(diagnostic.expected_result,'Proposta de consultoria');
+ assert.deepEqual(draft,{title:'Proposta de consultoria',serviceDescription:'Resultado público',terms:'',amount:'',billingFrequency:'once',firstDueDate:'',validUntil:''});
+ assert(!consultingProposalDraftValid(draft,today));assert(!JSON.stringify(draft).includes('PRIVADO'));
+ assert.throws(()=>proposalFromConsultingDiagnostic('xx','Título'),/INVALID/);
+ assert.throws(()=>proposalFromConsultingDiagnostic('x'.repeat(2001),'Título'),/INVALID/);
+ assert.equal(proposalFromConsultingDiagnostic('x'.repeat(2000),'Título').serviceDescription.length,2000);
+});
+test('rascunho exige revisão das condições, valores e datas, com centavos e calendário válidos',()=>{
+ for(const [text,value] of [['0,01',.01],['1600,00',1600],['1600.5',1600.5],[' 1500 ',1500],['999999999999,99',999999999999.99]])assert.equal(consultingProposalAmount(text),value);
+ for(const value of ['', '0','-2','1.500,00','1e3','Infinity','NaN','1,001','1000000000000','R$ 10','0010'])assert.equal(consultingProposalAmount(value),null);
+ assert(consultingProposalDraftValid(complete,today));
+ for(const change of [{title:'  '},{title:'x'.repeat(181)},{serviceDescription:'x'.repeat(2001)},{terms:''},{terms:'x'.repeat(4001)},{firstDueDate:''},{firstDueDate:'2026-10-17'},{validUntil:'2026-02-30'},{validUntil:'2026-10-17'},{billingFrequency:'weekly'},{amount:'0'}])assert(!consultingProposalDraftValid({...complete,...change},today));
+ assert(consultingProposalDraftValid({...complete,firstDueDate:'2028-02-29',validUntil:'2028-02-29'},today));
+ const original={...complete,asaasAutoCharge:true,customerEmail:'PRIVADO',id:'overwrite',situation:'PRIVADO'};
+ const input=consultingProposalInput(original,{id:'client-1',name:' Cliente '},today);
+ assert.equal(input.clientId,'client-1');assert.equal(input.customerName,'Cliente');assert.equal(input.amount,1500);assert.equal(input.asaasAutoCharge,false);assert.equal(input.opportunityId,null);
+ assert(!('id' in input));assert(!JSON.stringify(input).includes('PRIVADO'));assert(original.asaasAutoCharge);
+ assert.throws(()=>consultingProposalInput(complete,{id:'',name:'Cliente'},today),/INVALID/);
+});
+test('demonstração salva rascunho revisado por cliente, permite edição e não altera outros módulos',()=>{
+ const state=buildConsultingDemo(),data=buildConsultingDemoData(),before=structuredClone({state,data});
+ let next=saveConsultingDemoDiagnosticProposal(data,state,'r1',complete,'diagnostic-example');
+ assert.deepEqual({state,data},before);
+ for(const key of ['diagnostics','monthlyPlans','monthlyGenerated','projectProfiles','deliveries','requests'])assert.strictEqual(next[key],state[key]);
+ assert.equal(next.proposals.length,state.proposals.length+1);const p=next.proposals[0];assert.equal(p.status,'draft');assert.equal(p.recordId,'r1');assert.equal(p.due,'');assert.equal(p.prepared.serviceDescription,complete.serviceDescription);assert.equal(p.prepared.asaasAutoCharge,false);
+ assert.strictEqual(saveConsultingDemoDiagnosticProposal(data,next,'r1',complete,'diagnostic-example'),next);
+ assert.throws(()=>saveConsultingDemoDiagnosticProposal(data,state,'r2',complete,'diagnostic-other'),/CLIENT_INVALID/);
+ assert.throws(()=>saveConsultingDemoDiagnosticProposal(data,state,'unknown',complete,'diagnostic-other'),/CLIENT_INVALID/);
+ next=updateConsultingDemoDiagnosticProposal(data,next,p.id,{...complete,terms:'Condições revisadas',amount:'1800'});assert.equal(next.proposals[0].amount,1800);assert.equal(next.proposals[0].prepared.terms,'Condições revisadas');assert.equal(next.proposals[0].status,'draft');
+ assert.equal(startConsultingDemoProject(data,next,p.id).data,data);
+ next=advanceConsultingDemoProposal(next,p.id);assert.throws(()=>updateConsultingDemoDiagnosticProposal(data,next,p.id,complete),/NOT_EDITABLE/);
+ next=advanceConsultingDemoProposal(next,p.id);const started=startConsultingDemoProject(data,next,p.id);
+ assert.equal(started.data.cases.at(-1).due,'');assert.equal(started.state.projectProfiles[`project-${p.id}`].title,complete.title);assert.equal(started.state.projectProfiles[`project-${p.id}`].due_date,'');assert.equal(started.state.deliveries.length,state.deliveries.length);assert.deepEqual(started.data.finance,data.finance);
+ assert.equal(buildConsultingDemo().proposals.length,state.proposals.length);
+});

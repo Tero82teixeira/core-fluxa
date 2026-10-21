@@ -1,5 +1,35 @@
 /** Português (Brasil) — idioma padrão e fonte da verdade das chaves. */
 export const pt = {
+  consultingProposal: {
+  "edit": "Editar rascunho",
+  "title": "Preparar proposta",
+  "prepare": "Preparar proposta",
+  "prepareHint": "Use o resultado esperado como ponto de partida. Você revisará o serviço e preencherá as condições antes de salvar.",
+  "defaultTitle": "Proposta de consultoria",
+  "hint": "Confira o conteúdo que será apresentado ao cliente. Salvar cria apenas um rascunho; o envio é feito depois em Propostas.",
+  "proposalTitle": "Título da proposta",
+  "service": "Objetivo e serviço oferecido",
+  "serviceHint": "O resultado esperado foi copiado do diagnóstico. Adapte o texto para definir o escopo, as entregas e o prazo do serviço.",
+  "terms": "Condições comerciais",
+  "amount": "Valor da proposta (R$)",
+  "amountHint": "Use números sem separador de milhar. Exemplo: 1500,00.",
+  "frequency": "Forma de pagamento",
+  "firstDueDate": "Primeiro vencimento",
+  "validUntil": "Proposta válida até",
+  "dateHint": "Preencha as datas de pagamento e validade. O prazo desejado do diagnóstico não é usado como vencimento. Esta preparação mantém a cobrança automática desativada.",
+  "save": "Salvar rascunho",
+  "saving": "Salvando…",
+  "cancel": "Cancelar preparação",
+  "saved": "Rascunho salvo. Abra Propostas para revisar, editar ou gerar o link quando estiver pronto.",
+  "uncertain": "Não foi possível confirmar a gravação. Seu texto foi preservado e uma nova tentativa foi bloqueada nesta tela para evitar repetição. Abra Propostas e confira se o rascunho foi criado antes de preparar outro.",
+  "view": "Ver propostas",
+  "frequencies": {
+    "once": "Pagamento único",
+    "monthly": "Mensal",
+    "quarterly": "Trimestral",
+    "yearly": "Anual"
+  }
+},
   consultingDiagnostic: {
   "title": "Diagnóstico inicial",
   "hint": "Registre a necessidade do cliente para orientar a proposta e o projeto. Uso interno da equipe.",

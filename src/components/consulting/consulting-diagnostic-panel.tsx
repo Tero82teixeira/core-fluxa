@@ -1,3 +1,9 @@
+import { Link } from "@tanstack/react-router";
+import { useWorkspace } from "@/lib/workspace";
+import { routeVisibleForModules } from "@/lib/organization-segments";
+import { ConsultingProposalPreparation } from "./consulting-proposal-preparation";
+import { useSaveCommercialProposal } from "@/hooks/use-commercial-proposals";
+import { consultingProposalInput } from "@/lib/consulting-proposal";
 import { useTranslation } from "react-i18next";
 import { ConsultingDiagnosticCard } from "./consulting-diagnostic-card";
 import {
@@ -9,13 +15,24 @@ import { formatDate } from "@/lib/format";
 export function ConsultingDiagnosticPanel({
   organizationId,
   clientId,
+  clientName,
   canEdit,
 }: {
   organizationId: string;
   clientId: string;
+  clientName: string;
   canEdit: boolean;
 }) {
   const { t } = useTranslation();
+  const { membership } = useWorkspace();
+  const settings = membership?.organizations?.organization_settings;
+  const canPrepare =
+    canEdit &&
+    settings?.business_segment === "consulting_services" &&
+    routeVisibleForModules("/relatorios", settings.business_segment, settings.enabled_modules);
+  const createProposal = useSaveCommercialProposal(organizationId);
+  // Match the existing commercial form/API minimum day; never convert a chosen due date.
+  const today = new Date().toISOString().slice(0, 10);
   const query = useConsultingDiagnostic(organizationId, clientId);
   const save = useSaveConsultingDiagnostic(organizationId, clientId);
   if (query.isPending || (query.isError && query.data === undefined))
@@ -50,6 +67,35 @@ export function ConsultingDiagnosticPanel({
               target_on: record.target_on ?? "",
             }
           : null
+      }
+      after={
+        canPrepare && record ? (
+          <ConsultingProposalPreparation
+            key={`${organizationId}:${clientId}`}
+            expectedResult={record.expected_result}
+            clientName={clientName}
+            today={today}
+            disabled={query.isFetching || query.isError}
+            viewProposals={
+              <Button asChild className="min-h-11" variant="outline">
+                <Link to="/relatorios" search={{ tipo: "commercial" }}>
+                  {t("consultingProposal.view")}
+                </Link>
+              </Button>
+            }
+            onSave={async (draft) => {
+              if (!canPrepare) throw new Error("NO_PERMISSION");
+              const id = await createProposal.mutateAsync(
+                consultingProposalInput(draft, { id: clientId, name: clientName }, today),
+              );
+              if (
+                typeof id !== "string" ||
+                !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+              )
+                throw new Error("CONSULTING_PROPOSAL_NOT_CONFIRMED");
+            }}
+          />
+        ) : undefined
       }
       canEdit={canEdit}
       formatDate={formatDate}

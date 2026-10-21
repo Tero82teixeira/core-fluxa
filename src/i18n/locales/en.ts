@@ -1,6 +1,36 @@
 import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
+  consultingProposal: {
+  "edit": "Edit draft",
+  "title": "Prepare proposal",
+  "prepare": "Prepare proposal",
+  "prepareHint": "Use the expected outcome as a starting point. Review the service and fill in the terms before saving.",
+  "defaultTitle": "Consulting proposal",
+  "hint": "Review the content that will be presented to the client. Saving creates only a draft; sending is a separate step in Proposals.",
+  "proposalTitle": "Proposal title",
+  "service": "Objective and service offered",
+  "serviceHint": "The expected outcome was copied from the assessment. Adapt the text to define the scope, deliveries and service timeline.",
+  "terms": "Commercial terms",
+  "amount": "Proposal amount (BRL)",
+  "amountHint": "Use numbers without a thousands separator. Example: 1500.00.",
+  "frequency": "Payment frequency",
+  "firstDueDate": "First payment due date",
+  "validUntil": "Proposal valid until",
+  "dateHint": "Enter payment and validity dates. The desired assessment deadline is not used as a payment date. Automatic collection stays disabled in this preparation.",
+  "save": "Save draft",
+  "saving": "Saving…",
+  "cancel": "Cancel preparation",
+  "saved": "Draft saved. Open Proposals to review, edit or generate the link when ready.",
+  "uncertain": "The save could not be confirmed. Your text was kept and resubmission was blocked to prevent duplicates. Open Proposals and check whether the draft was created before preparing another.",
+  "view": "View proposals",
+  "frequencies": {
+    "once": "One-time payment",
+    "monthly": "Monthly",
+    "quarterly": "Quarterly",
+    "yearly": "Yearly"
+  }
+},
   consultingDiagnostic: {
   "title": "Initial assessment",
   "hint": "Record the client’s needs to guide the proposal and project. For internal team use.",
