@@ -44,6 +44,6 @@ test('consultoria começa com perfil geral e preserva retomada e especializaçõ
  const form=readFileSync('src/routes/_authenticated/processos.novo.tsx','utf8');
  assert.match(form,/clientId/);
  const proposals=readFileSync('src/components/reports/commercial-proposals-panel.tsx','utf8');
- assert.match(proposals,/proposal.status === "accepted"/);assert.match(proposals,/clientId:proposal.client_id|clientId: proposal.client_id/);
+ assert.match(proposals,/proposal.status === "accepted"/);assert.match(proposals,/proposalId:proposal.id|proposalId: proposal.id/);assert.match(proposals,/proposal.converted_client_id/);
  assert.match(proposals,/can\("processes.create"\)/);
 });

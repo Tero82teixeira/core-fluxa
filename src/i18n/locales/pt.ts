@@ -1,5 +1,25 @@
 /** Português (Brasil) — idioma padrão e fonte da verdade das chaves. */
 export const pt = {
+  consultingSource: {
+  "reference": "Proposta de origem · {{number}}",
+  "linked": "Proposta vinculada",
+  "consult": "Consultar proposta de origem",
+  "title": "Título aprovado",
+  "scope": "Serviço aprovado",
+  "terms": "Condições aprovadas",
+  "reviewHint": "O nome e o escopo vieram da proposta aceita. Revise responsável, prazo e entregas antes de criar. Datas de pagamento e valor não foram transferidos.",
+  "shortTitle": "O título sugerido foi limitado a 160 caracteres. O título aprovado completo está disponível abaixo para consulta.",
+  "archived": "Esta proposta foi arquivada após o vínculo. A referência é mantida para consulta.",
+  "preparing": "Preparar projeto da proposta",
+  "loading": "Carregando a proposta e conferindo o cliente…",
+  "error": "Não foi possível conferir a proposta ou o cliente. Tente novamente antes de criar o projeto.",
+  "invalid": "Use uma proposta aceita, com cliente ativo e acessível nesta empresa, na área de Consultoria e com os módulos necessários habilitados.",
+  "unavailable": "A referência está gravada, mas não foi possível consultar a proposta agora.",
+  "retry": "Tentar novamente",
+  "back": "Voltar aos projetos",
+  "prepare": "Preparar projeto desta proposta",
+  "exampleTerms": "Condições ilustrativas desta proposta de demonstração. Confira o escopo e defina as entregas antes de criar o projeto."
+},
   consultingProposal: {
   "edit": "Editar rascunho",
   "title": "Preparar proposta",

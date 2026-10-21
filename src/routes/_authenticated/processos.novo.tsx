@@ -1,3 +1,7 @@
+import { useConsultingProposalSource, useConsultingSourceClient } from "@/hooks/use-consulting-proposal-source";
+import { ConsultingProposalSourceCard, ConsultingProposalSourceStatus } from "@/components/consulting/consulting-proposal-source-card";
+import { consultingProjectFromProposal, consultingSourceReady, consultingSourceClient, consultingSourceIdValid, type ConsultingProposalSource } from "@/lib/consulting-project-source";
+import { routeVisibleForModules } from "@/lib/organization-segments";
 import { ConsultingTemplatePicker } from "@/components/consulting/consulting-template-picker";
 import { ConsultingDeliveryDraft } from "@/components/consulting/consulting-delivery-draft";
 import { consultingDraftDeliveriesValid, consultingDraftDeliveries, createProjectWithSuggestedDeliveries, applyConsultingTemplate } from "@/lib/consulting-templates";
@@ -37,11 +41,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Search = { clientId?: string };
+type Search = { clientId?: string; proposalId?: string };
 
 export const Route = createFileRoute("/_authenticated/processos/novo")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     clientId: typeof search.clientId === "string" ? search.clientId : undefined,
+    proposalId: typeof search.proposalId === "string" ? search.proposalId : undefined,
   }),
   head: () => ({
     meta: [
@@ -65,6 +70,27 @@ function addDays(days: number) {
 }
 
 function NewProcess() {
+  const { proposalId } = Route.useSearch();
+  const { organizationId, membership } = useWorkspace();
+  const permissions = usePermissions();
+  const settings = membership?.organizations?.organization_settings;
+  const navigate = useNavigate();
+  const allowed = Boolean(permissions.canCreate && permissions.canViewReports && settings?.business_segment === "consulting_services" && routeVisibleForModules("/relatorios",settings.business_segment,settings.enabled_modules) && routeVisibleForModules("/processos",settings.business_segment,settings.enabled_modules));
+  const source = useConsultingProposalSource(organizationId,proposalId,allowed);
+  const sourceClient = useConsultingSourceClient(organizationId,source.data ? consultingSourceClient(source.data) : null, allowed && consultingSourceReady(source.data,organizationId));
+  if(!proposalId)return <NewProcessForm key={organizationId}/>;
+  const back=()=>void navigate({to:"/processos"});
+  if(!allowed || !consultingSourceIdValid(proposalId))return <ConsultingProposalSourceStatus status="invalid" onBack={back}/>;
+  if(source.isPending)return <ConsultingProposalSourceStatus status="loading" onBack={back}/>;
+  if(source.isError)return <ConsultingProposalSourceStatus status="error" onBack={back} onRetry={()=>{void source.refetch();}}/>;
+  if(!consultingSourceReady(source.data,organizationId))return <ConsultingProposalSourceStatus status="invalid" onBack={back}/>;
+  if(sourceClient.isPending)return <ConsultingProposalSourceStatus status="loading" onBack={back}/>;
+  if(sourceClient.isError)return <ConsultingProposalSourceStatus status="error" onBack={back} onRetry={()=>void sourceClient.refetch()}/>;
+  if(!sourceClient.data?.id || !sourceClient.data.name)return <ConsultingProposalSourceStatus status="invalid" onBack={back}/>;
+  return <NewProcessForm key={`${organizationId}:${source.data!.id}`} source={source.data!} sourceClient={{id:sourceClient.data.id,name:sourceClient.data.name}}/>;
+}
+
+function NewProcessForm({source,sourceClient}:{source?:ConsultingProposalSource;sourceClient?:{id:string;name:string}}) {
   const navigate = useNavigate();
   const {t}=useTranslation();
   const submitLock=useRef(false);
@@ -73,17 +99,18 @@ function NewProcess() {
   const { organizationId, displayName, membership } = useWorkspace();
   const isConsulting = membership?.organizations?.organization_settings?.business_segment === "consulting_services";
   const permissions = usePermissions();
-  const clients = useClients(organizationId);
+  const clients = useClients(source ? null : organizationId);
   const serviceTypes = useAllServiceTypes(organizationId);
   const createProcess = useCreateProcess(organizationId);
   const seedChecklist = useSeedChecklist(organizationId);
   const [pendingChecklist, setPendingChecklist] = useState<string[]>([]);
 
+  const preset = source && organizationId ? consultingProjectFromProposal(source,organizationId) : null;
   const [form, setForm] = useState({
-    client_id: clientId ?? "",
+    client_id: preset?.client_id ?? clientId ?? "",
     service_type_id: "",
-    title: "",
-    description: "",
+    title: preset?.title ?? "",
+    description: preset?.description ?? "",
     stage: "novo" as ProcessStage,
     priority: "media" as PriorityLevel,
     due_date: "",
@@ -92,17 +119,17 @@ function NewProcess() {
   });
   const initialForm = useMemo(
     () => ({
-      client_id: clientId ?? "",
+      client_id: preset?.client_id ?? clientId ?? "",
       service_type_id: "",
-      title: "",
-      description: "",
+      title: preset?.title ?? "",
+      description: preset?.description ?? "",
       stage: "novo" as ProcessStage,
       priority: "media" as PriorityLevel,
       due_date: "",
       value: "",
       owner_name: displayName ?? "",
     }),
-    [clientId, displayName],
+    [clientId, displayName, preset?.client_id, preset?.title, preset?.description],
   );
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm) || (isConsulting && pendingChecklist.length>0);
   const markSaved = useUnsavedChanges(isDirty);
@@ -139,6 +166,7 @@ function NewProcess() {
       toast.error("Selecione o cliente do processo.");
       return;
     }
+    if(source && form.client_id!==consultingSourceClient(source)){toast.error(t("consultingSource.invalid"));return;}
     if(isConsulting && !consultingProjectValid(form)){toast.error("Informe um objetivo de 3 a 160 caracteres e confira o prazo do projeto.");return;}
     if(isConsulting && !consultingDraftDeliveriesValid(pendingChecklist)){toast.error(t("consultingTemplates.invalidDeliveries"));return;}
     submitLock.current=true;
@@ -146,6 +174,7 @@ function NewProcess() {
     try {
       const titles=isConsulting ? consultingDraftDeliveries(pendingChecklist) : pendingChecklist;
       const {created,deliveriesConfirmed}=await createProjectWithSuggestedDeliveries(()=>createProcess.mutateAsync({
+        ...(source ? {source_commercial_proposal_id:source.id} : {}),
         client_id: form.client_id,
         service_type_id: form.service_type_id || null,
         title: form.title.trim() || null,
@@ -210,6 +239,7 @@ function NewProcess() {
           )}
         </div>
       </header>
+      {source && <ConsultingProposalSourceCard source={source} review/>}
       {isConsulting && <ConsultingTemplatePicker disabled={submitting} hasContent={Boolean(form.title.trim()||form.description.trim()||pendingChecklist.length||form.stage!=="novo")} onApply={(draft)=>{
         const next=applyConsultingTemplate(form,draft);
         setForm(next.form);
@@ -230,6 +260,7 @@ function NewProcess() {
               <Label>Cliente</Label>
               <Select
                 value={form.client_id}
+                disabled={Boolean(source)}
                 onValueChange={(value) => setForm({ ...form, client_id: value })}
               >
                 <SelectTrigger className="h-10 rounded-xl" aria-label="Cliente do processo">
@@ -238,7 +269,7 @@ function NewProcess() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {(clients.data ?? []).map((client) => (
+                  {(sourceClient ? [sourceClient] : clients.data ?? []).map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.name}
                     </SelectItem>

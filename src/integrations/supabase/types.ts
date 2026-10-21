@@ -6212,6 +6212,7 @@ export type Database = {
           owner_name: string | null
           priority: Database["public"]["Enums"]["priority_level"]
           protocol: string | null
+          source_commercial_proposal_id: string | null
           service_type_id: string | null
           stage: Database["public"]["Enums"]["process_stage"]
           title: string | null
@@ -6239,6 +6240,7 @@ export type Database = {
           owner_name?: string | null
           priority?: Database["public"]["Enums"]["priority_level"]
           protocol?: string | null
+          source_commercial_proposal_id?: string | null
           service_type_id?: string | null
           stage?: Database["public"]["Enums"]["process_stage"]
           title?: string | null
@@ -6266,6 +6268,7 @@ export type Database = {
           owner_name?: string | null
           priority?: Database["public"]["Enums"]["priority_level"]
           protocol?: string | null
+          source_commercial_proposal_id?: string | null
           service_type_id?: string | null
           stage?: Database["public"]["Enums"]["process_stage"]
           title?: string | null
@@ -6274,6 +6277,13 @@ export type Database = {
           value?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "processes_source_commercial_proposal_id_fkey"
+            columns: ["source_commercial_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_proposals"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "processes_client_id_fkey"
             columns: ["client_id"]

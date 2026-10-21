@@ -491,7 +491,7 @@ export function CommercialProposalsPanel({
                       <CheckCircle2 className="size-4" /> Conversão concluída
                     </span>
                   )}
-                  {canStartProject && proposal.status === "accepted" && proposal.client_id && <Button asChild size="sm" variant="outline"><Link to="/processos/novo" search={{clientId:proposal.client_id}}>Novo projeto para este cliente</Link></Button>}
+                  {canStartProject && proposal.status === "accepted" && (proposal.client_id || proposal.converted_client_id) && <Button asChild size="sm" variant="outline"><Link to="/processos/novo" search={{proposalId:proposal.id}}>Preparar projeto desta proposta</Link></Button>}
                   {canCancel && ["draft", "sent", "viewed"].includes(proposal.status) && (
                     <Button
                       size="sm"

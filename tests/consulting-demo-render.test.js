@@ -207,3 +207,21 @@ test("preparação de proposta real e demo exibem campos para revisão em PT/EN/
   assert(!/consultingProposal\./.test(form+action+records+proposal+disabled));
  }
 });
+
+test("origem da proposta e revisão do projeto renderizam textos seguros e referências em PT/EN/ES",async()=>{
+ const {ConsultingProposalSourceCard,ConsultingProposalSourceStatus}=await import('../src/components/consulting/consulting-proposal-source-card.tsx');
+ const {ConsultingTemplateDemo}=await import('../src/components/consulting/consulting-template-demo.tsx');
+ const {ConsultingPublicDemo}=await import('../src/components/consulting/consulting-public-demo.tsx');
+ const {buildConsultingDemo,buildConsultingDemoData,consultingDemoProposalSource,createConsultingDemoProjectFromProposal}=await import('../src/lib/consulting-demo.ts');
+ const source={id:'p3',organization_id:'demo',client_id:'r2',converted_client_id:null,proposal_number:'PROP-DEMO-3',title:'Título aprovado <script>Texto</script>',service_description:'Escopo integral\nLinha 2',terms:'Condições aprovadas',status:'accepted',archived_at:null,first_due_date:'2099-12-20',amount:999999};
+ for(const language of ['pt','en','es']){
+  await i18n.changeLanguage(language);
+  const html=renderToStaticMarkup(React.createElement(ConsultingProposalSourceCard,{source,review:true}));assert(html.includes('PROP-DEMO-3'));assert(html.includes('Condições aprovadas'));assert(html.includes('&lt;script&gt;'));assert(!html.includes('<script>'));assert(!html.includes('2099-12-20'));assert(!html.includes('999999'));
+  const long=renderToStaticMarkup(React.createElement(ConsultingProposalSourceCard,{source:{...source,title:'x'.repeat(180)},review:true}));assert(long.includes(i18n.t('consultingSource.shortTitle')));
+  const form=renderToStaticMarkup(React.createElement(ConsultingTemplateDemo,{source,clients:[{id:'r2',name:'Vale Verde'}],onCancel:()=>{},onCreate:async()=>{}}));assert(form.includes('value="r2"'));assert(form.includes('disabled=""'));assert(form.includes('Escopo integral'));assert(form.includes(i18n.t('consultingSource.consult')));assert(!form.includes('2099-12-20'));
+  for(const status of ['loading','error','invalid']){const gate=renderToStaticMarkup(React.createElement(ConsultingProposalSourceStatus,{status,onBack:()=>{},onRetry:()=>{}}));assert(gate.includes(i18n.t(`consultingSource.${status}`)));assert(!gate.includes('<form'));if(status==='loading')assert(gate.includes('aria-busy="true"'));}
+  const data=buildConsultingDemoData(),state=buildConsultingDemo();const saved=createConsultingDemoProjectFromProposal(data,state,'p3',{title:'Projeto revisado',description:'Escopo revisado',owner_name:'Equipe',due_date:'2026-12-20'},['Entrega revisada']);
+  const view=renderToStaticMarkup(React.createElement(ConsultingPublicDemo,{module:'cases',data:saved.data,consulting:saved.state,setData:()=>{},setConsulting:()=>{},goTo:()=>{}}));const savedSource=consultingDemoProposalSource(saved.data,saved.state,saved.state.projectSources[saved.projectId],key=>String(i18n.t(key)));const reference=renderToStaticMarkup(React.createElement(ConsultingProposalSourceCard,{source:savedSource}));assert(reference.includes(i18n.t('consultingSource.consult')));assert(reference.includes(savedSource.proposal_number));assert(view.includes('Projeto revisado'));assert(view.includes('Entrega revisada'));assert(!/consultingSource\./.test(view+html+long+form));
+  assert(consultingDemoProposalSource(saved.data,saved.state,'p3',key=>String(i18n.t(key))));
+ }
+});

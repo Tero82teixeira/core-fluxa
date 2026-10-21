@@ -1,3 +1,4 @@
+import { ConsultingProposalSourceCard } from "./consulting-proposal-source-card";
 import { ConsultingProposalDraft } from "./consulting-proposal-draft";
 import type { ConsultingProposalDraft as Draft } from "@/lib/consulting-proposal";
 import { ConsultingProposalPreparation } from "./consulting-proposal-preparation";
@@ -29,7 +30,8 @@ import {
   buildConsultingDemoData,
   createConsultingDemoProposal,
   advanceConsultingDemoProposal,
-  startConsultingDemoProject,
+  consultingDemoProposalSource,
+  createConsultingDemoProjectFromProposal,
   toggleConsultingDelivery,
   advanceConsultingDemoProject,
   consultingDemoSummary,
@@ -55,6 +57,7 @@ export function ConsultingPublicDemo({
   goTo: (module: DemoModule) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const [projectProposal,setProjectProposal]=useState<string|null>(null);
   const [editingProposal, setEditingProposal] = useState<{id: string; clientId: string; values: Draft} | null>(null);
   const [diagnosticClient, setDiagnosticClient] = useState(data.records[0]?.id ?? "");
   const [dayKind, setDayKind] = useState<ConsultingDayKind>("delivery");
@@ -112,12 +115,7 @@ export function ConsultingPublicDemo({
     returns: plans.filter((p) => monthlyPlanAttention(p, CONSULTING_DEMO_DATE).returnDue).length,
     today: CONSULTING_DEMO_DATE,
   };
-  const openProject = (id: string) => {
-    const next = startConsultingDemoProject(data, consulting, id);
-    setData(() => next.data);
-    setConsulting(() => next.state);
-    goTo("cases");
-  };
+  const projectSource=projectProposal ? consultingDemoProposalSource(data,consulting,projectProposal,key=>String(t(key))) : null;
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/30 p-4">
@@ -128,6 +126,7 @@ export function ConsultingPublicDemo({
           variant="outline"
           className="min-h-11"
           onClick={() => {
+            setProjectProposal(null);
             setEditingProposal(null);
             setDiagnosticClient("r1");
             setSelected(null);
@@ -275,7 +274,17 @@ export function ConsultingPublicDemo({
           setEditingProposal(null);
         }}
       />}
-      {module === "proposals" && !editingProposal && (
+      {module === "proposals" && projectSource && <ConsultingTemplateDemo
+        key={projectSource.id}
+        source={projectSource}
+        clients={data.records.map(client=>({id:client.id,name:client.name}))}
+        onCancel={()=>setProjectProposal(null)}
+        onCreate={async (_clientId,values,titles)=>{
+          const next=createConsultingDemoProjectFromProposal(data,consulting,projectSource.id,values,titles);
+          setData(()=>next.data);setConsulting(()=>next.state);setProjectProposal(null);setSelected(next.projectId);goTo("cases");
+        }}
+      />}
+      {module === "proposals" && !editingProposal && !projectSource && (
         <div className="grid gap-4 lg:grid-cols-2">
           {consulting.proposals.map((proposal) => (
             <article key={proposal.id} className="min-w-0 space-y-3 rounded-xl border bg-card p-5">
@@ -301,7 +310,7 @@ export function ConsultingPublicDemo({
                 setEditingProposal({ id: proposal.id, clientId: proposal.recordId, values: { title: input.title, serviceDescription: input.serviceDescription, terms: input.terms, amount: input.amount.toFixed(2), billingFrequency: input.billingFrequency, firstDueDate: input.firstDueDate, validUntil: input.validUntil } });
               }}>{t("consultingProposal.edit")}</Button>}
               {proposal.projectId ? (
-                <Button variant="outline" className="min-h-11" onClick={() => goTo("cases")}>
+                <Button variant="outline" className="min-h-11" onClick={() => {setSelected(proposal.projectId!);goTo("cases");}}>
                   {t("consultingDemo.viewProjects")}
                 </Button>
               ) : (
@@ -309,7 +318,7 @@ export function ConsultingPublicDemo({
                   className="min-h-11"
                   onClick={() =>
                     proposal.status === "accepted"
-                      ? openProject(proposal.id)
+                      ? setProjectProposal(proposal.id)
                       : setConsulting((s) => advanceConsultingDemoProposal(s, proposal.id))
                   }
                 >
@@ -318,7 +327,7 @@ export function ConsultingPublicDemo({
                       ? "consultingDemo.send"
                       : proposal.status === "sent"
                         ? "consultingDemo.accept"
-                        : "consultingDemo.start",
+                        : "consultingSource.prepare",
                   )}
                 </Button>
               )}
@@ -429,7 +438,11 @@ export function ConsultingPublicDemo({
                   />
                   {selected === project.id && (
                     <div className="space-y-4">
-                      <ConsultingProjectCard
+                      {consulting.projectSources[project.id] && (()=>{
+                    const source=consultingDemoProposalSource(data,consulting,consulting.projectSources[project.id],key=>String(t(key)));
+                    return source ? <ConsultingProposalSourceCard source={source}/> : null;
+                  })()}
+                  <ConsultingProjectCard
                         key={project.id}
                         canEdit
                         values={
