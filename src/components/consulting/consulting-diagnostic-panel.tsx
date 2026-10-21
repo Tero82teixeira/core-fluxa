@@ -31,12 +31,8 @@ export function ConsultingDiagnosticPanel({
     settings?.business_segment === "consulting_services" &&
     routeVisibleForModules("/relatorios", settings.business_segment, settings.enabled_modules);
   const createProposal = useSaveCommercialProposal(organizationId);
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
+  // Match the existing commercial form/API minimum day; never convert a chosen due date.
+  const today = new Date().toISOString().slice(0, 10);
   const query = useConsultingDiagnostic(organizationId, clientId);
   const save = useSaveConsultingDiagnostic(organizationId, clientId);
   if (query.isPending || (query.isError && query.data === undefined))

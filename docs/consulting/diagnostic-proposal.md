@@ -13,7 +13,9 @@ tentativas anteriores, prioridade e observações internas não são copiados.
 O nome e o vínculo do cliente vêm da ficha aberta; contatos e documentos não são
 preenchidos automaticamente. O valor aceita vírgula ou ponto decimal, até duas
 casas, sem separador de milhar. O formulário valida os limites já aceitos pela
-rotina comercial e datas civis, sem substituí-las por datas calculadas.
+rotina comercial e datas civis, sem substituí-las por datas calculadas. O dia
+mínimo segue o formulário comercial existente e a validação da API; as datas
+escolhidas são enviadas literalmente, sem conversão de fuso.
 
 **Salvar rascunho** usa `useSaveCommercialProposal` e a RPC existente
 `save_commercial_proposal`: não publica token, envia mensagem, cria cliente,
