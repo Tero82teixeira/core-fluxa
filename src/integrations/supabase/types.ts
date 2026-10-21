@@ -14,6 +14,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      consulting_client_diagnostics: {
+        Row: {
+          attempts: string
+          client_id: string
+          created_at: string
+          created_by: string
+          expected_result: string
+          focus: string
+          organization_id: string
+          priority: string
+          revision: number
+          situation: string
+          target_on: string | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          attempts?: string
+          client_id: string
+          created_at?: string
+          created_by: string
+          expected_result: string
+          focus: string
+          organization_id: string
+          priority: string
+          revision?: number
+          situation: string
+          target_on?: string | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          attempts?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          expected_result?: string
+          focus?: string
+          organization_id?: string
+          priority?: string
+          revision?: number
+          situation?: string
+          target_on?: string | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consulting_client_diagnostics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consulting_client_diagnostics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consulting_client_diagnostics_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consulting_monthly_plans: {
         Row: {
           created_at: string
@@ -6981,6 +7051,18 @@ export type Database = {
       }
     }
     Functions: {
+      consulting_diagnostic_access: {
+        Args: { _organization_id: string; _write?: boolean }
+        Returns: boolean
+      }
+      read_consulting_client_diagnostic: {
+        Args: { _client_id: string; _organization_id: string }
+        Returns: Json
+      }
+      save_consulting_client_diagnostic: {
+        Args: { _client_id: string; _expected_revision?: number; _organization_id: string; _values: Json }
+        Returns: Json
+      }
       consulting_plan_access: {
         Args: { _organization_id: string; _write?: boolean; _tasks?: boolean }
         Returns: boolean

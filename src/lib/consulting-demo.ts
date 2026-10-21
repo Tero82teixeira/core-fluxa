@@ -18,8 +18,10 @@ import {
   type ConsultingDayItem,
   type ConsultingDayKind,
 } from "./consulting-day.ts";
+import { consultingDiagnosticPayload, type ConsultingDiagnosticValues } from "./consulting-diagnostic.ts";
 export const CONSULTING_DEMO_DATE = "2026-10-18";
 export type ConsultingDemoState = {
+  diagnostics: Record<string, ConsultingDiagnosticValues & { example?: boolean }>;
   monthlyPlans: Record<string, MonthlyPlan & { example?: boolean }>;
   monthlyGenerated: Record<string, string[]>;
   projectProfiles: Record<string, ConsultingProjectValues>;
@@ -65,6 +67,7 @@ export function buildConsultingDemoData(): DemoData {
 }
 export function buildConsultingDemo(): ConsultingDemoState {
   return {
+    diagnostics: { r1: { focus: "processes", situation: "consultingDiagnostic.example.situation", attempts: "consultingDiagnostic.example.attempts", expected_result: "consultingDiagnostic.example.expected_result", priority: "high", target_on: "2026-11-20", example: true } },
     projectProfiles: {},
     monthlyGenerated: {},
     monthlyPlans: Object.fromEntries(
@@ -480,4 +483,10 @@ export function generateConsultingDemoMonth(
     created: tasks.length,
     existing: 0,
   };
+}
+
+/** Session-local diagnostic only. It does not create a proposal, project or charge. */
+export function saveConsultingDemoDiagnostic(data: DemoData, state: ConsultingDemoState, clientId: string, values: ConsultingDiagnosticValues): ConsultingDemoState {
+  if (!data.records.some(record => record.id === clientId)) throw new Error("CONSULTING_DIAGNOSTIC_CLIENT_NOT_FOUND");
+  return { ...state, diagnostics: { ...state.diagnostics, [clientId]: consultingDiagnosticPayload(values) } };
 }

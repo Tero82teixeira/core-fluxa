@@ -159,3 +159,29 @@ test("modelos mostram prévia, confirmação de substituição e lista editável
   assert.equal(consultingTemplate('advisory',i18n.t.bind(i18n)).deliveries.length,4);
  }
 });
+
+test("diagnóstico real e demonstração renderizam formulário acessível e exemplos em PT/EN/ES",async()=>{
+ const {ConsultingDiagnosticCard,ConsultingDiagnosticForm}=await import('../src/components/consulting/consulting-diagnostic-card.tsx');
+ const {ConsultingPublicDemo}=await import('../src/components/consulting/consulting-public-demo.tsx');
+ const {emptyConsultingDiagnostic}=await import('../src/lib/consulting-diagnostic.ts');
+ const {buildConsultingDemo,buildConsultingDemoData}=await import('../src/lib/consulting-demo.ts');
+ const values={focus:'processes',priority:'high',situation:'<script>Privado</script>',attempts:'Texto\nCompleto',expected_result:'Organizar solicitações',target_on:'2026-11-20'};
+ for(const language of ['pt','en','es']){
+  await i18n.changeLanguage(language);
+  const props={values,canEdit:false,onSave:async()=>{},formatDate:d=>d};
+  const view=renderToStaticMarkup(React.createElement(ConsultingDiagnosticCard,props));
+  assert(view.includes('&lt;script&gt;'));assert(!view.includes('<script>'));assert(!view.includes('<button'));assert(view.includes('2026-11-20'));
+  const empty=renderToStaticMarkup(React.createElement(ConsultingDiagnosticCard,{...props,values:null,canEdit:true}));
+  assert(empty.includes(i18n.t('consultingDiagnostic.empty')));assert(empty.includes(i18n.t('consultingDiagnostic.add')));
+  for(const draft of [values,emptyConsultingDiagnostic()]){
+   const form=renderToStaticMarkup(React.createElement(ConsultingDiagnosticForm,{values:draft,onSave:async()=>{},onCancel:()=>{}}));
+   assert.equal((form.match(/<textarea/g)||[]).length,3);assert.equal((form.match(/<select/g)||[]).length,2);assert.equal((form.match(/<option/g)||[]).length,9);
+   assert(form.includes('maxLength="2000"'));assert(form.includes('type="date"'));assert(form.includes('min-h-11'));
+   if(!draft.situation)assert(form.includes('disabled=""'));
+   assert(!/consultingDiagnostic\./.test(form));
+  }
+  const demo=renderToStaticMarkup(React.createElement(ConsultingPublicDemo,{module:'records',data:buildConsultingDemoData(),consulting:buildConsultingDemo(),setData:()=>{},setConsulting:()=>{},goTo:()=>{}}));
+  assert(demo.includes(i18n.t('consultingDiagnostic.example.situation')));assert(demo.includes(i18n.t('consultingDiagnostic.edit')));assert(demo.includes('Aurora Tecnologia'));assert(!/consultingDiagnostic\./.test(demo));
+  assert(!/consultingDiagnostic\./.test(view+empty));
+ }
+});

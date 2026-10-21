@@ -1,6 +1,50 @@
 import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
+  consultingDiagnostic: {
+  "title": "Initial assessment",
+  "hint": "Record the client’s needs to guide the proposal and project. For internal team use.",
+  "focus": "What needs improvement?",
+  "situation": "What is the current situation?",
+  "attempts": "What has been tried? (optional)",
+  "expected_result": "What outcome is expected?",
+  "priority": "Priority",
+  "target_on": "Desired deadline (optional)",
+  "emptyField": "Not specified",
+  "empty": "No assessment recorded for this client.",
+  "add": "Record assessment",
+  "edit": "Edit assessment",
+  "save": "Save assessment",
+  "saving": "Saving…",
+  "saved": "Assessment saved.",
+  "cancel": "Cancel editing",
+  "requiredHint": "Describe the situation and expected outcome using 3 to 2,000 characters. The desired deadline is a planning reference.",
+  "stale": "Someone else changed this assessment. Your draft has been kept. Copy anything you need, cancel editing and reopen to review the current version.",
+  "saveError": "The save could not be confirmed. Your draft has been kept. Cancel editing and check the current version before trying again.",
+  "loadError": "The assessment could not be loaded. Try again; if the problem persists, ask the administrator to check feature activation.",
+  "loading": "Loading assessment…",
+  "retry": "Try again",
+  "chooseClient": "Client for assessment",
+  "demoHint": "Choose a fictional client and record or edit their assessment in this session.",
+  "focuses": {
+    "sales": "Sales",
+    "organization": "Organization",
+    "service": "Customer service",
+    "finance": "Finance",
+    "processes": "Processes",
+    "other": "Other need"
+  },
+  "priorities": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "example": {
+    "situation": "Orders arrive through different channels and the team wastes time looking for information.",
+    "attempts": "Tried a spreadsheet for customer service, but the records became outdated.",
+    "expected_result": "Centralize requests and assign owners to reduce rework."
+  }
+},
   consultingTemplates: {
   "amountNotSet": "Amount not specified",
   "title": "Start with a template",

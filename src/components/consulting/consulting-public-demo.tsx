@@ -1,3 +1,4 @@
+import { ConsultingDiagnosticCard } from "./consulting-diagnostic-card";
 import { ConsultingTemplateDemo } from "./consulting-template-demo";
 import { ConsultingDayCard } from "./consulting-day-card";
 import { CONSULTING_DAY_PAGE_SIZE, type ConsultingDayKind } from "@/lib/consulting-day";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { LOCALE_BY_LANGUAGE, type AppLanguage } from "@/i18n";
 import {
   CONSULTING_DEMO_DATE,
+  saveConsultingDemoDiagnostic,
   saveConsultingDemoPlan,
   generateConsultingDemoMonth,
   saveConsultingDemoProfile,
@@ -48,12 +50,14 @@ export function ConsultingPublicDemo({
   goTo: (module: DemoModule) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const [diagnosticClient, setDiagnosticClient] = useState(data.records[0]?.id ?? "");
   const [dayKind, setDayKind] = useState<ConsultingDayKind>("delivery");
   const [dayPage, setDayPage] = useState(0);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [planMonth, setPlanMonth] = useState("2026-10");
   const [planPage, setPlanPage] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
+  const diagnosticRecord = data.records.find(record => record.id === diagnosticClient);
   const locale = LOCALE_BY_LANGUAGE[(i18n.resolvedLanguage ?? "pt") as AppLanguage];
   const date = (value: string) =>
     value
@@ -118,6 +122,7 @@ export function ConsultingPublicDemo({
           variant="outline"
           className="min-h-11"
           onClick={() => {
+            setDiagnosticClient("r1");
             setSelected(null);
             setTemplateOpen(false);
             setPlanMonth("2026-10");
@@ -177,6 +182,37 @@ export function ConsultingPublicDemo({
             <p className="text-sm text-muted-foreground">{t("consultingDemo.realFlow")}</p>
           </section>
         </>
+      )}
+      {module === "records" && (
+        <div className="space-y-4">
+          <label className="grid max-w-xl gap-2 text-sm">
+            {t("consultingDiagnostic.chooseClient")}
+            <select className="min-h-11 w-full rounded-md border bg-background px-3 text-sm" value={diagnosticClient} onChange={e => setDiagnosticClient(e.target.value)}>
+              {data.records.map(record => <option key={record.id} value={record.id}>{record.name}</option>)}
+            </select>
+          </label>
+          {diagnosticRecord && <section className="space-y-3 rounded-xl border bg-card p-4">
+            <h2 className="break-words font-semibold">{diagnosticRecord.name}</h2>
+            <p className="text-sm text-muted-foreground">{diagnosticRecord.city} · {t(`demo.kind.${diagnosticRecord.kind}`)}</p>
+            <dl className="grid gap-3 text-sm sm:grid-cols-2">
+              <div><dt className="text-muted-foreground">{t("demo.table.owner")}</dt><dd>{diagnosticRecord.owner}</dd></div>
+              <div><dt className="text-muted-foreground">{t("demo.table.status")}</dt><dd>{t(`demo.status.${diagnosticRecord.status}`)}</dd></div>
+            </dl>
+          </section>}
+          <p className="text-sm text-muted-foreground">{t("consultingDiagnostic.demoHint")}</p>
+          {data.records.some(record => record.id === diagnosticClient) && <ConsultingDiagnosticCard
+            key={diagnosticClient}
+            values={consulting.diagnostics[diagnosticClient] ? {
+              ...consulting.diagnostics[diagnosticClient],
+              situation: consulting.diagnostics[diagnosticClient].example ? t(consulting.diagnostics[diagnosticClient].situation) : consulting.diagnostics[diagnosticClient].situation,
+              attempts: consulting.diagnostics[diagnosticClient].example ? t(consulting.diagnostics[diagnosticClient].attempts) : consulting.diagnostics[diagnosticClient].attempts,
+              expected_result: consulting.diagnostics[diagnosticClient].example ? t(consulting.diagnostics[diagnosticClient].expected_result) : consulting.diagnostics[diagnosticClient].expected_result,
+            } : null}
+            canEdit
+            formatDate={date}
+            onSave={async values => { setConsulting(state => saveConsultingDemoDiagnostic(data, state, diagnosticClient, values)); }}
+          />}
+        </div>
       )}
       {module === "attendance" && (
         <div className="grid gap-4 lg:grid-cols-2">

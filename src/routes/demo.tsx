@@ -184,7 +184,7 @@ function DemoWorkspace({ area }: { area: BusinessSegment }) {
         </div>
         {area === "legal" && ["overview", "schedule", "cases"].includes(active) ? (
           <LegalPublicDemo module={active} data={data} setData={setData} legal={legal} setLegal={setLegal} goTo={setActive} />
-        ) : area === "consulting_services" && ["overview", "attendance", "proposals", "cases", "plans", "schedule"].includes(active) ? <ConsultingPublicDemo module={active} data={data} setData={setData} consulting={consulting} setConsulting={setConsulting} goTo={setActive} /> : <ModuleView area={area} module={active} data={data} setData={setData} goTo={setActive} />}
+        ) : area === "consulting_services" && ["overview", "records", "attendance", "proposals", "cases", "plans", "schedule"].includes(active) ? <ConsultingPublicDemo module={active} data={data} setData={setData} consulting={consulting} setConsulting={setConsulting} goTo={setActive} /> : <ModuleView area={area} module={active} data={data} setData={setData} goTo={setActive} />}
       </main>
     </div>
   );

@@ -28,6 +28,8 @@ import { CLIENT_STATUS, PRIORITY, PROCESS_STAGE, TASK_STATUS } from "@/lib/domai
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DocumentScopePanel } from "@/components/documents/document-scope-panel";
+import { consultingDiagnosticCanRead } from "@/lib/consulting-diagnostic";
+import { ConsultingDiagnosticPanel } from "@/components/consulting/consulting-diagnostic-panel";
 import { ClientPortalPanel } from "@/components/clients/client-portal-panel";
 import {
   formatCurrency,
@@ -66,6 +68,7 @@ const AUDIT_LABEL: Record<string, string> = {
   "client.updated": "Cadastro atualizado",
   "client.archived": "Cliente arquivado",
   "client.restored": "Cliente reativado",
+  "consulting.diagnostic.saved": "Diagnóstico inicial atualizado",
 };
 
 const CLOSED = ["finalizado", "arquivado", "cancelado"];
@@ -328,7 +331,10 @@ function ClientDetail() {
           </TabsContent>
         )}
 
-        <TabsContent value="visao" className="mt-4">
+        <TabsContent value="visao" className="mt-4 space-y-4">
+          {isConsulting && consultingDiagnosticCanRead(role) && organizationId && data.organization_id === organizationId && (
+            <ConsultingDiagnosticPanel organizationId={organizationId} clientId={clientId} canEdit={permissions.canEdit && !archived} />
+          )}
           <Card>
             <CardContent className="grid gap-6 p-4 sm:p-6 md:grid-cols-2">
               <div>
