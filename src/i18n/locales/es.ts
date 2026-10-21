@@ -1,6 +1,50 @@
 import type { LocaleShape } from "./pt";
 
 export const es: LocaleShape = {
+  consultingDiagnostic: {
+  "title": "Diagnóstico inicial",
+  "hint": "Registra las necesidades del cliente para orientar la propuesta y el proyecto. Uso interno del equipo.",
+  "focus": "¿Qué necesita mejorar?",
+  "situation": "¿Cómo está hoy?",
+  "attempts": "¿Qué ha intentado? (opcional)",
+  "expected_result": "¿Qué resultado espera lograr?",
+  "priority": "Prioridad",
+  "target_on": "Plazo deseado (opcional)",
+  "emptyField": "No informado",
+  "empty": "No hay diagnóstico registrado para este cliente.",
+  "add": "Registrar diagnóstico",
+  "edit": "Editar diagnóstico",
+  "save": "Guardar diagnóstico",
+  "saving": "Guardando…",
+  "saved": "Diagnóstico guardado.",
+  "cancel": "Cancelar edición",
+  "requiredHint": "Describe la situación y el resultado esperado con entre 3 y 2.000 caracteres. El plazo deseado es una referencia para la planificación.",
+  "stale": "Otra persona modificó este diagnóstico. Se conservó tu borrador. Copia lo necesario, cancela la edición y vuelve a abrir para revisar la versión actual.",
+  "saveError": "No se pudo confirmar el guardado. Se conservó tu borrador. Cancela la edición y revisa la versión actual antes de intentarlo de nuevo.",
+  "loadError": "No se pudo cargar el diagnóstico. Inténtalo de nuevo; si persiste el problema, pide al administrador que revise la activación.",
+  "loading": "Cargando diagnóstico…",
+  "retry": "Intentar de nuevo",
+  "chooseClient": "Cliente para diagnóstico",
+  "demoHint": "Elige un cliente ficticio y registra o edita su diagnóstico en esta sesión.",
+  "focuses": {
+    "sales": "Ventas",
+    "organization": "Organización",
+    "service": "Atención",
+    "finance": "Finanzas",
+    "processes": "Procesos",
+    "other": "Otra necesidad"
+  },
+  "priorities": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta"
+  },
+  "example": {
+    "situation": "Los pedidos llegan por distintos canales y el equipo pierde tiempo buscando información.",
+    "attempts": "Intentó organizar la atención en una hoja de cálculo, pero los registros quedaron desactualizados.",
+    "expected_result": "Centralizar las solicitudes y definir responsables para reducir el retrabajo."
+  }
+},
   consultingTemplates: {
   "amountNotSet": "Importe no informado",
   "title": "Empezar con un modelo",

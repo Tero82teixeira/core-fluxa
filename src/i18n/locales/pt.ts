@@ -1,5 +1,49 @@
 /** Português (Brasil) — idioma padrão e fonte da verdade das chaves. */
 export const pt = {
+  consultingDiagnostic: {
+  "title": "Diagnóstico inicial",
+  "hint": "Registre a necessidade do cliente para orientar a proposta e o projeto. Uso interno da equipe.",
+  "focus": "O que precisa melhorar?",
+  "situation": "Como está hoje?",
+  "attempts": "O que já tentou? (opcional)",
+  "expected_result": "Qual resultado espera alcançar?",
+  "priority": "Prioridade",
+  "target_on": "Prazo desejado (opcional)",
+  "emptyField": "Não informado",
+  "empty": "Nenhum diagnóstico registrado para este cliente.",
+  "add": "Registrar diagnóstico",
+  "edit": "Editar diagnóstico",
+  "save": "Salvar diagnóstico",
+  "saving": "Salvando…",
+  "saved": "Diagnóstico salvo.",
+  "cancel": "Cancelar edição",
+  "requiredHint": "Descreva a situação e o resultado esperado com 3 a 2.000 caracteres. O prazo desejado serve como referência para o planejamento.",
+  "stale": "Este diagnóstico foi alterado por outra pessoa. Sua edição foi preservada. Copie o que precisar, cancele a edição e abra novamente para revisar a versão atual.",
+  "saveError": "Não foi possível confirmar a gravação. Sua edição foi preservada. Cancele a edição e confira a versão atual antes de tentar novamente.",
+  "loadError": "Não foi possível carregar o diagnóstico. Tente novamente; se o problema continuar, peça ao administrador para conferir a ativação do recurso.",
+  "loading": "Carregando diagnóstico…",
+  "retry": "Tentar novamente",
+  "chooseClient": "Cliente para diagnóstico",
+  "demoHint": "Escolha um cliente fictício e registre ou edite seu diagnóstico nesta sessão.",
+  "focuses": {
+    "sales": "Vendas",
+    "organization": "Organização",
+    "service": "Atendimento",
+    "finance": "Financeiro",
+    "processes": "Processos",
+    "other": "Outra necessidade"
+  },
+  "priorities": {
+    "low": "Baixa",
+    "medium": "Média",
+    "high": "Alta"
+  },
+  "example": {
+    "situation": "Os pedidos chegam por canais diferentes e a equipe perde tempo procurando informações.",
+    "attempts": "Tentou organizar o atendimento em uma planilha, mas os registros ficaram desatualizados.",
+    "expected_result": "Centralizar as solicitações e definir responsáveis para reduzir o retrabalho."
+  }
+},
   consultingTemplates: {
   "amountNotSet": "Valor não informado",
   "title": "Começar com um modelo",
