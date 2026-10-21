@@ -204,6 +204,7 @@ export function useArchiveClient(organizationId: string | null) {
  * ------------------------------------------------------------------ */
 
 export type ProcessInput = {
+  source_commercial_proposal_id?: string;
   client_id: string;
   service_type_id?: string | null;
   title?: string | null;

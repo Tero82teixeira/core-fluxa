@@ -1,6 +1,26 @@
 import type { LocaleShape } from "./pt";
 
 export const en: LocaleShape = {
+  consultingSource: {
+  "reference": "Source proposal · {{number}}",
+  "linked": "Linked proposal",
+  "consult": "View source proposal",
+  "title": "Approved title",
+  "scope": "Approved service",
+  "terms": "Approved terms",
+  "reviewHint": "The name and scope came from the accepted proposal. Review the owner, deadline and deliveries before creating. Payment dates and amount were not transferred.",
+  "shortTitle": "The suggested title was limited to 160 characters. The full approved title is available below for reference.",
+  "archived": "This proposal was archived after linking. Its reference is retained for review.",
+  "preparing": "Prepare project from proposal",
+  "loading": "Loading the proposal and checking the client…",
+  "error": "The proposal or client could not be checked. Try again before creating the project.",
+  "invalid": "Use an accepted proposal with an active client accessible in this organization, in Consulting with the required modules enabled.",
+  "unavailable": "The reference is saved, but the proposal could not be loaded right now.",
+  "retry": "Try again",
+  "back": "Back to projects",
+  "prepare": "Prepare project from this proposal",
+  "exampleTerms": "Illustrative terms for this demo proposal. Review the scope and define deliveries before creating the project."
+},
   consultingProposal: {
   "edit": "Edit draft",
   "title": "Prepare proposal",

@@ -1,3 +1,5 @@
+import { ConsultingProposalSourceCard } from "./consulting-proposal-source-card";
+import { consultingProjectFromProposal, type ConsultingProposalSource } from "@/lib/consulting-project-source";
 import "@/i18n";
 import { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,10 +14,12 @@ import { consultingDraftDeliveriesValid } from "@/lib/consulting-templates";
 
 export function ConsultingTemplateDemo({
   clients,
+  source,
   onCreate,
   onCancel,
 }: {
   clients: { id: string; name: string }[];
+  source?: ConsultingProposalSource;
   onCreate: (
     clientId: string,
     profile: ConsultingProjectValues,
@@ -26,17 +30,19 @@ export function ConsultingTemplateDemo({
   const { t } = useTranslation(),
     id = useId(),
     lock = useRef(false);
-  const [client, setClient] = useState(""),
+  const preset = source ? consultingProjectFromProposal(source,"demo") : null;
+  const [client, setClient] = useState(preset?.client_id ?? ""),
     [deliveries, setDeliveries] = useState<string[]>([]),
     [busy, setBusy] = useState(false);
   const [profile, setProfile] = useState<ConsultingProjectValues>({
-    title: "",
-    description: "",
+    title: preset?.title ?? "",
+    description: preset?.description ?? "",
     owner_name: t("consultingProject.exampleOwner"),
     due_date: "",
   });
   return (
     <div className="space-y-4">
+      {source && <ConsultingProposalSourceCard source={source} review/>}
       <ConsultingTemplatePicker
         hasContent={Boolean(profile.title || profile.description || deliveries.length)}
         disabled={busy}
@@ -80,6 +86,7 @@ export function ConsultingTemplateDemo({
             <select
               id={`${id}-client`}
               required
+              disabled={Boolean(source)}
               value={client}
               onChange={(e) => setClient(e.target.value)}
               className="min-h-11 w-full min-w-0 rounded-lg border bg-background px-3"

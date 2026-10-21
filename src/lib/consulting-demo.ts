@@ -1,3 +1,4 @@
+import { consultingProjectFromProposal, type ConsultingProposalSource } from "./consulting-project-source.ts";
 import {
   normalizedMonthlyPlan,
   monthlyDueDate,
@@ -22,6 +23,7 @@ import { consultingDiagnosticPayload, type ConsultingDiagnosticValues } from "./
 import { consultingProposalInput, type ConsultingProposalDraft } from "./consulting-proposal.ts";
 export const CONSULTING_DEMO_DATE = "2026-10-18";
 export type ConsultingDemoState = {
+  projectSources: Record<string,string>;
   diagnostics: Record<string, ConsultingDiagnosticValues & { example?: boolean }>;
   monthlyPlans: Record<string, MonthlyPlan & { example?: boolean }>;
   monthlyGenerated: Record<string, string[]>;
@@ -40,6 +42,7 @@ export type ConsultingDemoState = {
     amount: number;
     due: string;
     status: "draft" | "sent" | "accepted";
+    reference?: string;
     prepared?: ReturnType<typeof consultingProposalInput>;
     projectId?: string;
   }[];
@@ -69,6 +72,7 @@ export function buildConsultingDemoData(): DemoData {
 }
 export function buildConsultingDemo(): ConsultingDemoState {
   return {
+    projectSources: {},
     diagnostics: { r1: { focus: "processes", situation: "consultingDiagnostic.example.situation", attempts: "consultingDiagnostic.example.attempts", expected_result: "consultingDiagnostic.example.expected_result", priority: "high", target_on: "2026-11-20", example: true } },
     projectProfiles: {},
     monthlyGenerated: {},
@@ -509,4 +513,24 @@ export function updateConsultingDemoDiagnosticProposal(data: DemoData, state: Co
   if (!proposal?.prepared || proposal.status !== "draft" || !client) throw new Error("CONSULTING_PROPOSAL_NOT_EDITABLE");
   const prepared = consultingProposalInput(draft, client, CONSULTING_DEMO_DATE);
   return { ...state, proposals: state.proposals.map(row => row.id === proposalId ? { ...row, prepared, amount: prepared.amount } : row) };
+}
+
+export function consultingDemoProposalSource(data: DemoData,state:ConsultingDemoState,proposalId:string,label:(key:string)=>string):ConsultingProposalSource|null {
+  const proposal=state.proposals.find(row=>row.id===proposalId);
+  if(!proposal || proposal.status!=="accepted" || !data.records.some(client=>client.id===proposal.recordId))return null;
+  return {id:proposal.id,organization_id:"demo",client_id:proposal.recordId,converted_client_id:null,
+    proposal_number:proposal.reference ?? `PROP-DEMO-${proposal.id}`,title:proposal.prepared?.title ?? label(proposal.serviceKey),
+    service_description:proposal.prepared?.serviceDescription ?? label("consultingDemo.scope"),terms:proposal.prepared?.terms ?? label("consultingSource.exampleTerms"),status:"accepted",archived_at:null};
+}
+/** Explicitly reviewed creation; no payment dates, value or unreviewed deliveries. */
+export function createConsultingDemoProjectFromProposal(data:DemoData,state:ConsultingDemoState,proposalId:string,values:ConsultingProjectValues,titles:readonly string[]) {
+  const source=consultingDemoProposalSource(data,state,proposalId,key=>key);
+  if(!source)throw new Error("CONSULTING_PROJECT_SOURCE_INVALID");
+  const existing=state.proposals.find(row=>row.id===proposalId)?.projectId;
+  if(existing)return {data,state,projectId:existing};
+  const preset=consultingProjectFromProposal(source,"demo");
+  const next=createConsultingDemoTemplateProject(data,state,`template-source-${proposalId}`,preset.client_id,values,titles);
+  return {...next,state:{...next.state,projectSources:{...next.state.projectSources,[next.projectId]:proposalId},
+    proposals:next.state.proposals.map(row=>row.id===proposalId?{...row,projectId:next.projectId}:row),
+    requests:next.state.requests.map(row=>row.id===state.proposals.find(proposal=>proposal.id===proposalId)?.requestId?{...row,status:"project" as const}:row)}};
 }

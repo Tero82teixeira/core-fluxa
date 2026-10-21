@@ -1,0 +1,15 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET LOCAL search_path=pg_catalog,public,extensions,pg_temp;
+SELECT no_plan();
+SELECT has_column('public','processes','source_commercial_proposal_id','referência persistente disponível');
+SELECT col_is_null('public','processes','source_commercial_proposal_id','projetos anteriores não precisam de origem');
+SELECT ok((SELECT confrelid='public.commercial_proposals'::regclass AND confdeltype='r' FROM pg_constraint WHERE conrelid='public.processes'::regclass AND conname='processes_source_commercial_proposal_id_fkey'),'origem protegida por FK com exclusão restrita');
+SELECT has_trigger('public','processes','guard_consulting_project_proposal_source','validação de origem ativa');
+SELECT ok((SELECT NOT prosecdef FROM pg_proc WHERE oid='public.guard_consulting_project_proposal_source()'::regprocedure),'trigger security invoker');
+SELECT ok((SELECT proconfig @> ARRAY['search_path=""'] FROM pg_proc WHERE oid='public.guard_consulting_project_proposal_source()'::regprocedure),'search path fixo');
+SELECT ok(NOT has_function_privilege('authenticated','public.guard_consulting_project_proposal_source()','EXECUTE'),'função não é API autenticada');
+SELECT ok(NOT has_function_privilege('anon','public.guard_consulting_project_proposal_source()','EXECUTE'),'sem API pública');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid='public.processes'::regclass),'RLS de projetos preservada');
+SELECT * FROM finish();
+ROLLBACK;

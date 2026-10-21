@@ -9,6 +9,7 @@ export type CommercialProposal = {
   organization_id: string;
   opportunity_id: string | null;
   client_id: string | null;
+  converted_client_id: string | null;
   public_token: string;
   proposal_number: string;
   status: "draft" | "sent" | "viewed" | "accepted" | "declined" | "expired" | "cancelled";
@@ -67,7 +68,7 @@ export type PublicCommercialProposal = Pick<
 > & { organization_name: string };
 
 const proposalSelect =
-  "id,organization_id,opportunity_id,client_id,public_token,proposal_number,status,title,service_description,terms,customer_name,customer_email,customer_phone,customer_document,amount,billing_frequency,first_due_date,valid_until,asaas_auto_charge,sent_at,first_viewed_at,accepted_at,declined_at,accepted_by_name,initial_transaction_id,created_at,updated_at";
+  "id,organization_id,opportunity_id,client_id,converted_client_id,public_token,proposal_number,status,title,service_description,terms,customer_name,customer_email,customer_phone,customer_document,amount,billing_frequency,first_due_date,valid_until,asaas_auto_charge,sent_at,first_viewed_at,accepted_at,declined_at,accepted_by_name,initial_transaction_id,created_at,updated_at";
 
 export function useCommercialProposals(organizationId: string | null) {
   return useQuery({

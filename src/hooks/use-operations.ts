@@ -43,6 +43,7 @@ export type ClientRow = {
 };
 
 export type ProcessRow = {
+  source_commercial_proposal_id?: string | null;
   cnj_number?: string;
   id: string;
   organization_id: string;

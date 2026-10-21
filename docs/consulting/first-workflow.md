@@ -77,3 +77,11 @@ uma regra da demonstração, não um novo bloqueio no fluxo de etapas da empresa
 Validação adicional: persistência dos campos existentes e permissões de leitura /
 escrita em PGlite com DDL e políticas originais (`consulting-project.database.mjs`),
 além de datas civis, limites, progresso e edição/reinício da demo. Sem SQL novo.
+
+## Atualização: proposta aceita para projeto
+
+O atalho atual **Preparar projeto desta proposta** leva o ID da proposta aceita e
+carrega título, escopo e cliente no cadastro. A equipe revisa responsável, prazo e
+entregas antes de criar. A origem fica gravada e consultável na ficha; preço e datas
+financeiras não são transferidos. Essa evolução requer a ativação descrita em
+`proposal-project.md` e substitui a limitação anterior de preencher somente cliente.

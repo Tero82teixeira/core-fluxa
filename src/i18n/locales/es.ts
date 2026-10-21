@@ -1,6 +1,26 @@
 import type { LocaleShape } from "./pt";
 
 export const es: LocaleShape = {
+  consultingSource: {
+  "reference": "Propuesta de origen · {{number}}",
+  "linked": "Propuesta vinculada",
+  "consult": "Consultar propuesta de origen",
+  "title": "Título aprobado",
+  "scope": "Servicio aprobado",
+  "terms": "Condiciones aprobadas",
+  "reviewHint": "El nombre y el alcance provienen de la propuesta aceptada. Revisa responsable, plazo y entregas antes de crear. No se transfirieron fechas de pago ni importe.",
+  "shortTitle": "El título sugerido se limitó a 160 caracteres. El título aprobado completo está disponible abajo para consulta.",
+  "archived": "Esta propuesta se archivó después del vínculo. La referencia se conserva para consulta.",
+  "preparing": "Preparar proyecto de la propuesta",
+  "loading": "Cargando la propuesta y comprobando el cliente…",
+  "error": "No se pudo comprobar la propuesta o el cliente. Inténtalo de nuevo antes de crear el proyecto.",
+  "invalid": "Usa una propuesta aceptada con un cliente activo y accesible en esta empresa, en Consultoría y con los módulos necesarios habilitados.",
+  "unavailable": "La referencia está guardada, pero no se pudo consultar la propuesta ahora.",
+  "retry": "Intentar de nuevo",
+  "back": "Volver a proyectos",
+  "prepare": "Preparar proyecto de esta propuesta",
+  "exampleTerms": "Condiciones ilustrativas de esta propuesta de demostración. Revisa el alcance y define las entregas antes de crear el proyecto."
+},
   consultingProposal: {
   "edit": "Editar borrador",
   "title": "Preparar propuesta",
