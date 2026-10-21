@@ -1,3 +1,4 @@
+import {proposalFromConsultingDiagnostic,consultingProposalInput} from '../src/lib/consulting-proposal.ts';
 import {createRequire} from 'node:module';
 import {resolve} from 'node:path';
 import {readFileSync} from 'node:fs';
@@ -87,5 +88,36 @@ try {
  assert(audits.length>0);assert(audits.every(a=>a.action==='consulting.diagnostic.saved'&&Object.keys(a.metadata).join()==='revision'));
  assert.equal((await db.query('SELECT count(*)::int AS n FROM consulting_client_diagnostics')).rows[0].n,1);
  assert.equal((await db.query('SELECT notes FROM clients WHERE id=$1',[client])).rows[0].notes,'Observação preservada');
+ // Exercise the existing proposal DDL/RPC rather than a replacement save implementation.
+ await db.exec(`ALTER TABLE organizations ADD COLUMN trade_name text,ADD COLUMN legal_name text;
+ CREATE TABLE commercial_opportunities(id uuid PRIMARY KEY,organization_id uuid NOT NULL,archived_at timestamptz);
+ CREATE TABLE financial_recurrences(id uuid PRIMARY KEY);
+ CREATE TABLE financial_transactions(id uuid PRIMARY KEY);
+ CREATE FUNCTION is_org_member(org uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT EXISTS(SELECT 1 FROM public.organization_members WHERE organization_id=org AND user_id=auth.uid() AND is_active) $$;`);
+ await db.exec(readFileSync('supabase/migrations/20261002120000_commercial_proposals.sql','utf8'));
+ await db.exec(`SET ROLE authenticated;`);
+ const currentDate=(await db.query('SELECT current_date::text AS today')).rows[0].today;
+ const input=consultingProposalInput({...proposalFromConsultingDiagnostic(prior.expected_result,'Proposta revisada'),terms:'Condições e prazo revisados',amount:'1600,25',firstDueDate:currentDate,validUntil:currentDate},{id:client,name:'Cliente'},currentDate);
+ const payload={client_id:input.clientId,opportunity_id:input.opportunityId,title:input.title,service_description:input.serviceDescription,terms:input.terms,customer_name:input.customerName,amount:input.amount,billing_frequency:input.billingFrequency,first_due_date:input.firstDueDate,valid_until:input.validUntil,asaas_auto_charge:input.asaasAutoCharge};
+ const saveProposal=async(p=payload,proposal=null,o=org)=>(await db.query('SELECT public.save_commercial_proposal($1,$2,$3) AS id',[o,proposal,JSON.stringify(p)])).rows[0].id;
+ const proposalId=await saveProposal();
+ const stored=(await db.query('SELECT * FROM commercial_proposals WHERE id=$1',[proposalId])).rows[0];
+ assert.equal(stored.status,'draft');assert.equal(stored.client_id,client);assert.equal(Number(stored.amount),1600.25);assert.equal(stored.service_description,prior.expected_result);assert.equal(stored.asaas_auto_charge,false);assert.equal(stored.sent_at,null);assert.equal(stored.accepted_at,null);assert.equal(stored.initial_transaction_id,null);assert.equal(stored.opportunity_id,null);assert.equal(stored.customer_document,null);
+ assert.equal((await db.query('SELECT * FROM public.get_public_commercial_proposal($1)',[stored.public_token])).rows.length,0);
+ await saveProposal({...payload,title:'Título editado'},proposalId);assert.equal((await db.query('SELECT title FROM commercial_proposals WHERE id=$1',[proposalId])).rows[0].title,'Título editado');
+ await assert.rejects(()=>saveProposal({...payload,client_id:foreign}),/CLIENT_SCOPE_MISMATCH/);
+ await assert.rejects(()=>saveProposal(payload,null,other),/NOT_ALLOWED/);
+ await assert.rejects(()=>saveProposal({...payload,amount:0}),/INVALID_PROPOSAL_AMOUNT/);
+ await db.exec(`RESET ROLE;UPDATE clients SET archived_at=now() WHERE id='${client}';SET ROLE authenticated;`);
+ await assert.rejects(()=>saveProposal(),/CLIENT_SCOPE_MISMATCH/);
+ await db.exec(`RESET ROLE;UPDATE clients SET archived_at=null WHERE id='${client}';SET ROLE authenticated;SET test.actor='${viewer}';`);
+ await assert.rejects(()=>saveProposal(),/NOT_ALLOWED/);
+ await db.exec(`SET test.actor='';`);await assert.rejects(()=>saveProposal(),/AUTH_REQUIRED/);
+ await db.exec(`RESET ROLE;SET test.actor='${actor}';`);
+ assert.deepEqual((await db.query('SELECT public.read_consulting_client_diagnostic($1,$2) AS result',[org,client])).rows[0].result,prior);
+ for(const table of ['financial_transactions','financial_recurrences','commercial_opportunities','processes','tasks'])assert.equal((await db.query(`SELECT count(*)::int AS n FROM ${table}`)).rows[0].n,0);
+ assert.equal((await db.query('SELECT count(*)::int AS n FROM clients')).rows[0].n,3);
+ assert.equal((await db.query('SELECT count(*)::int AS n FROM commercial_proposals')).rows[0].n,1);
+ console.log('Proposta existente: rascunho persistido, editável e inacessível pelo token; sem novos clientes, projeto, tarefas ou financeiro.');
  console.log('Diagnóstico: gravação e auditoria atômicas, revisões, validação, isolamento, módulos e nove papéis verificados.');
 } finally { await db.close(); }

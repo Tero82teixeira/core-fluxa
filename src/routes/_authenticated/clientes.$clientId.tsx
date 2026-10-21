@@ -333,7 +333,7 @@ function ClientDetail() {
 
         <TabsContent value="visao" className="mt-4 space-y-4">
           {isConsulting && consultingDiagnosticCanRead(role) && organizationId && data.organization_id === organizationId && (
-            <ConsultingDiagnosticPanel organizationId={organizationId} clientId={clientId} canEdit={permissions.canEdit && !archived} />
+            <ConsultingDiagnosticPanel organizationId={organizationId} clientId={clientId} clientName={data.name} canEdit={permissions.canEdit && !archived} />
           )}
           <Card>
             <CardContent className="grid gap-6 p-4 sm:p-6 md:grid-cols-2">

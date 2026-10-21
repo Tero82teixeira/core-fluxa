@@ -19,6 +19,7 @@ import {
   type ConsultingDayKind,
 } from "./consulting-day.ts";
 import { consultingDiagnosticPayload, type ConsultingDiagnosticValues } from "./consulting-diagnostic.ts";
+import { consultingProposalInput, type ConsultingProposalDraft } from "./consulting-proposal.ts";
 export const CONSULTING_DEMO_DATE = "2026-10-18";
 export type ConsultingDemoState = {
   diagnostics: Record<string, ConsultingDiagnosticValues & { example?: boolean }>;
@@ -39,6 +40,7 @@ export type ConsultingDemoState = {
     amount: number;
     due: string;
     status: "draft" | "sent" | "accepted";
+    prepared?: ReturnType<typeof consultingProposalInput>;
     projectId?: string;
   }[];
   deliveries: {
@@ -309,13 +311,14 @@ export function startConsultingDemoProject(data: DemoData, state: ConsultingDemo
     },
     state: {
       ...state,
+      projectProfiles: proposal.prepared ? { ...state.projectProfiles, [projectId]: { title: proposal.prepared.title, description: proposal.prepared.serviceDescription, owner_name: "", due_date: "" } } : state.projectProfiles,
       proposals: state.proposals.map((p) => (p.id === id ? { ...p, projectId } : p)),
       requests: state.requests.map((r) =>
         r.id === proposal.requestId ? { ...r, status: "project" as const } : r,
       ),
       deliveries: [
         ...state.deliveries,
-        ...[1, 2, 3].map((n) => ({
+        ...(proposal.prepared ? [] : [1, 2, 3]).map((n) => ({
           id: `${projectId}-d${n}`,
           projectId,
           titleKey: `consultingDemo.deliveries.d${n}`,
@@ -489,4 +492,21 @@ export function generateConsultingDemoMonth(
 export function saveConsultingDemoDiagnostic(data: DemoData, state: ConsultingDemoState, clientId: string, values: ConsultingDiagnosticValues): ConsultingDemoState {
   if (!data.records.some(record => record.id === clientId)) throw new Error("CONSULTING_DIAGNOSTIC_CLIENT_NOT_FOUND");
   return { ...state, diagnostics: { ...state.diagnostics, [clientId]: consultingDiagnosticPayload(values) } };
+}
+
+/** Reviewed draft in this session only; no request, project, task, charge or publication. */
+export function saveConsultingDemoDiagnosticProposal(data: DemoData, state: ConsultingDemoState, clientId: string, draft: ConsultingProposalDraft, proposalId: string): ConsultingDemoState {
+  const client = data.records.find(record => record.id === clientId);
+  if (!client || !state.diagnostics[clientId] || !/^diagnostic-[A-Za-z0-9-]{1,80}$/.test(proposalId)) throw new Error("CONSULTING_PROPOSAL_CLIENT_INVALID");
+  if (state.proposals.some(proposal => proposal.id === proposalId)) return state;
+  const prepared = consultingProposalInput(draft, client, CONSULTING_DEMO_DATE);
+  return { ...state, proposals: [ { id: proposalId, requestId: "", recordId: clientId, serviceKey: "", amount: prepared.amount, due: "", status: "draft", prepared }, ...state.proposals ] };
+}
+
+export function updateConsultingDemoDiagnosticProposal(data: DemoData, state: ConsultingDemoState, proposalId: string, draft: ConsultingProposalDraft): ConsultingDemoState {
+  const proposal = state.proposals.find(row => row.id === proposalId);
+  const client = data.records.find(row => row.id === proposal?.recordId);
+  if (!proposal?.prepared || proposal.status !== "draft" || !client) throw new Error("CONSULTING_PROPOSAL_NOT_EDITABLE");
+  const prepared = consultingProposalInput(draft, client, CONSULTING_DEMO_DATE);
+  return { ...state, proposals: state.proposals.map(row => row.id === proposalId ? { ...row, prepared, amount: prepared.amount } : row) };
 }

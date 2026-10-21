@@ -1,5 +1,5 @@
 import "@/i18n";
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
 } from "@/lib/consulting-diagnostic";
 
 type Props = {
+  after?: ReactNode;
   values: ConsultingDiagnosticValues | null;
   canEdit: boolean;
   onSave: (values: ConsultingDiagnosticValues) => Promise<void>;
@@ -147,7 +148,7 @@ export function ConsultingDiagnosticForm({
     </form>
   );
 }
-export function ConsultingDiagnosticCard({ values, canEdit, onSave, formatDate }: Props) {
+export function ConsultingDiagnosticCard({ values, canEdit, onSave, formatDate, after }: Props) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   return (
@@ -196,6 +197,7 @@ export function ConsultingDiagnosticCard({ values, canEdit, onSave, formatDate }
       ) : (
         <p className="text-sm text-muted-foreground">{t("consultingDiagnostic.empty")}</p>
       )}
+      {!editing && values && after}
     </section>
   );
 }

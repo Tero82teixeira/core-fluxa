@@ -1,3 +1,6 @@
+import { ConsultingProposalDraft } from "./consulting-proposal-draft";
+import type { ConsultingProposalDraft as Draft } from "@/lib/consulting-proposal";
+import { ConsultingProposalPreparation } from "./consulting-proposal-preparation";
 import { ConsultingDiagnosticCard } from "./consulting-diagnostic-card";
 import { ConsultingTemplateDemo } from "./consulting-template-demo";
 import { ConsultingDayCard } from "./consulting-day-card";
@@ -15,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { LOCALE_BY_LANGUAGE, type AppLanguage } from "@/i18n";
 import {
   CONSULTING_DEMO_DATE,
+  saveConsultingDemoDiagnosticProposal,
+  updateConsultingDemoDiagnosticProposal,
   saveConsultingDemoDiagnostic,
   saveConsultingDemoPlan,
   generateConsultingDemoMonth,
@@ -50,6 +55,7 @@ export function ConsultingPublicDemo({
   goTo: (module: DemoModule) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const [editingProposal, setEditingProposal] = useState<{id: string; clientId: string; values: Draft} | null>(null);
   const [diagnosticClient, setDiagnosticClient] = useState(data.records[0]?.id ?? "");
   const [dayKind, setDayKind] = useState<ConsultingDayKind>("delivery");
   const [dayPage, setDayPage] = useState(0);
@@ -122,6 +128,7 @@ export function ConsultingPublicDemo({
           variant="outline"
           className="min-h-11"
           onClick={() => {
+            setEditingProposal(null);
             setDiagnosticClient("r1");
             setSelected(null);
             setTemplateOpen(false);
@@ -208,6 +215,18 @@ export function ConsultingPublicDemo({
               attempts: consulting.diagnostics[diagnosticClient].example ? t(consulting.diagnostics[diagnosticClient].attempts) : consulting.diagnostics[diagnosticClient].attempts,
               expected_result: consulting.diagnostics[diagnosticClient].example ? t(consulting.diagnostics[diagnosticClient].expected_result) : consulting.diagnostics[diagnosticClient].expected_result,
             } : null}
+            after={consulting.diagnostics[diagnosticClient] && diagnosticRecord ? <ConsultingProposalPreparation
+              key={diagnosticClient}
+              expectedResult={consulting.diagnostics[diagnosticClient].example ? t(consulting.diagnostics[diagnosticClient].expected_result) : consulting.diagnostics[diagnosticClient].expected_result}
+              clientName={diagnosticRecord.name}
+              today={CONSULTING_DEMO_DATE}
+              viewProposals={<Button className="min-h-11" variant="outline" onClick={() => goTo("proposals")}>{t("consultingProposal.view")}</Button>}
+              onSave={async draft => {
+                const id = `diagnostic-${crypto.randomUUID()}`;
+                const next = saveConsultingDemoDiagnosticProposal(data, consulting, diagnosticClient, draft, id);
+                setConsulting(() => next);
+              }}
+            /> : undefined}
             canEdit
             formatDate={date}
             onSave={async values => { setConsulting(state => saveConsultingDemoDiagnostic(data, state, diagnosticClient, values)); }}
@@ -244,22 +263,43 @@ export function ConsultingPublicDemo({
           ))}
         </div>
       )}
-      {module === "proposals" && (
+      {module === "proposals" && editingProposal && <ConsultingProposalDraft
+        key={editingProposal.id}
+        initial={editingProposal.values}
+        clientName={client(editingProposal.clientId)}
+        today={CONSULTING_DEMO_DATE}
+        onCancel={() => setEditingProposal(null)}
+        onSave={async draft => {
+          const next = updateConsultingDemoDiagnosticProposal(data, consulting, editingProposal.id, draft);
+          setConsulting(() => next);
+          setEditingProposal(null);
+        }}
+      />}
+      {module === "proposals" && !editingProposal && (
         <div className="grid gap-4 lg:grid-cols-2">
           {consulting.proposals.map((proposal) => (
             <article key={proposal.id} className="min-w-0 space-y-3 rounded-xl border bg-card p-5">
               <p className="break-words text-sm text-muted-foreground">
                 {client(proposal.recordId)}
               </p>
-              <h2 className="font-semibold">{t(proposal.serviceKey)}</h2>
-              <p className="text-sm text-muted-foreground">{t("consultingDemo.scope")}</p>
+              <h2 className="font-semibold break-words">{proposal.prepared?.title ?? t(proposal.serviceKey)}</h2>
+              <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{proposal.prepared?.serviceDescription ?? t("consultingDemo.scope")}</p>
               <p className="font-semibold">{money(proposal.amount)}</p>
               <p className="text-sm">
-                {t("consultingDemo.due")}: {date(proposal.due)}
+                {t(proposal.prepared ? "consultingProposal.firstDueDate" : "consultingDemo.due")}: {date(proposal.prepared?.firstDueDate ?? proposal.due)}
               </p>
+              {proposal.prepared && <>
+                <p className="text-sm">{t("consultingProposal.frequency")}: {t(`consultingProposal.frequencies.${proposal.prepared.billingFrequency}`)}</p>
+                <p className="text-sm">{t("consultingProposal.validUntil")}: {date(proposal.prepared.validUntil)}</p>
+                <p className="whitespace-pre-wrap break-words text-sm">{proposal.prepared.terms}</p>
+              </>}
               <p className="text-sm font-medium text-primary">
                 {t(`consultingDemo.proposalStatus.${proposal.status}`)}
               </p>
+              {proposal.prepared && proposal.status === "draft" && <Button className="min-h-11" variant="outline" onClick={() => {
+                const input = proposal.prepared!;
+                setEditingProposal({ id: proposal.id, clientId: proposal.recordId, values: { title: input.title, serviceDescription: input.serviceDescription, terms: input.terms, amount: input.amount.toFixed(2), billingFrequency: input.billingFrequency, firstDueDate: input.firstDueDate, validUntil: input.validUntil } });
+              }}>{t("consultingProposal.edit")}</Button>}
               {proposal.projectId ? (
                 <Button variant="outline" className="min-h-11" onClick={() => goTo("cases")}>
                   {t("consultingDemo.viewProjects")}

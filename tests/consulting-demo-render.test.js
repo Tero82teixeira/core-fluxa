@@ -185,3 +185,25 @@ test("diagnóstico real e demonstração renderizam formulário acessível e exe
   assert(!/consultingDiagnostic\./.test(view+empty));
  }
 });
+
+test("preparação de proposta real e demo exibem campos para revisão em PT/EN/ES",async()=>{
+ const {ConsultingProposalDraft}=await import('../src/components/consulting/consulting-proposal-draft.tsx');
+ const {ConsultingProposalPreparation}=await import('../src/components/consulting/consulting-proposal-preparation.tsx');
+ const {ConsultingPublicDemo}=await import('../src/components/consulting/consulting-public-demo.tsx');
+ const {proposalFromConsultingDiagnostic}=await import('../src/lib/consulting-proposal.ts');
+ const {buildConsultingDemo,buildConsultingDemoData,saveConsultingDemoDiagnosticProposal}=await import('../src/lib/consulting-demo.ts');
+ for(const language of ['pt','en','es']){
+  await i18n.changeLanguage(language);
+  const initial=proposalFromConsultingDiagnostic('<script>Resultado esperado</script>',i18n.t('consultingProposal.defaultTitle'));
+  const form=renderToStaticMarkup(React.createElement(ConsultingProposalDraft,{initial,clientName:'Aurora Tecnologia',today:'2026-10-18',onSave:async()=>{},onCancel:()=>{}}));
+  assert(form.includes('&lt;script&gt;'));assert(!form.includes('<script>'));assert(form.includes('disabled=""'));assert.equal((form.match(/type="date"/g)||[]).length,2);assert.equal((form.match(/<textarea/g)||[]).length,2);assert(form.includes(i18n.t('consultingProposal.serviceHint')));assert(form.includes('inputMode="decimal"'));assert(!form.includes('type="checkbox"'));
+  const action=renderToStaticMarkup(React.createElement(ConsultingProposalPreparation,{expectedResult:'Resultado esperado',clientName:'Aurora',today:'2026-10-18',onSave:async()=>{},viewProposals:'Ver propostas'}));assert(action.includes(i18n.t('consultingProposal.prepare')));assert(!action.includes('<form'));
+  const disabled=renderToStaticMarkup(React.createElement(ConsultingProposalPreparation,{expectedResult:'Resultado esperado',clientName:'Aurora',today:'2026-10-18',disabled:true,onSave:async()=>{},viewProposals:'Ver propostas'}));assert(disabled.includes('disabled=""'));
+  const data=buildConsultingDemoData();let state=buildConsultingDemo();
+  const props={data,consulting:state,setData:()=>{},setConsulting:()=>{},goTo:()=>{}};
+  const records=renderToStaticMarkup(React.createElement(ConsultingPublicDemo,{...props,module:'records'}));assert(records.includes(i18n.t('consultingProposal.prepare')));
+  state=saveConsultingDemoDiagnosticProposal(data,state,'r1',{...initial,title:'Texto literal da proposta',terms:'Condições revisadas',amount:'1500',firstDueDate:'2026-10-25',validUntil:'2026-10-28'},'diagnostic-render');
+  const proposal=renderToStaticMarkup(React.createElement(ConsultingPublicDemo,{...props,consulting:state,module:'proposals'}));assert(proposal.includes('Texto literal da proposta'));assert(proposal.includes('Condições revisadas'));assert(proposal.includes(i18n.t('consultingProposal.edit')));assert(proposal.includes(i18n.t('consultingProposal.validUntil')));assert(!proposal.includes('Os pedidos chegam'));
+  assert(!/consultingProposal\./.test(form+action+records+proposal+disabled));
+ }
+});

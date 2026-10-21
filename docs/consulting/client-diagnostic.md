@@ -64,3 +64,11 @@ isolamento entre empresas/clientes, clientes arquivados, acesso direto negado,
 sessão obrigatória e rollback quando a auditoria falha. pgTAP no banco completo
 confere RLS, privilégios, funções e search_path; a validação de integração confere
 paridade dos tipos gerados. Nenhuma validação foi feita com dados reais de clientes.
+
+## Preparação da proposta
+
+O atalho explícito **Preparar proposta** copia somente o resultado esperado para
+um formulário revisável. A equipe define o escopo, condições, valor e datas e
+confirma **Salvar rascunho**. Situação e tentativas anteriores continuam internas;
+o prazo desejado não vira vencimento. Veja `diagnostic-proposal.md` para o fluxo
+real e a demonstração. Não exige novo SQL.
