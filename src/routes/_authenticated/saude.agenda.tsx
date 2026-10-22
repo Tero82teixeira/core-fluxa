@@ -55,7 +55,7 @@ import {
   useHealthInsurers,
 } from "@/hooks/use-health-insurance";
 import { describeError } from "@/lib/errors";
-import { usePermissions } from "@/lib/permissions";
+import { useHealthPermissions } from "@/hooks/use-health-permissions";
 import { useWorkspace } from "@/lib/workspace";
 
 export const Route = createFileRoute("/_authenticated/saude/agenda")({
@@ -155,7 +155,7 @@ function formatDayHeading(value: string) {
 
 function HealthAgendaPage() {
   const { organizationId } = useWorkspace();
-  const permissions = usePermissions();
+  const permissions = useHealthPermissions();
   const { date: requestedDate } = Route.useSearch();
   const [date, setDate] = useState(requestedDate || localDateInputValue);
   const [viewMode, setViewMode] = useState<"day" | "week">("day");
@@ -228,6 +228,7 @@ function HealthAgendaPage() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!permissions.canManageAppointments || create.isPending) return;
     if (!form.patient_profile_id || !form.service_label.trim()) {
       toast.error("Informe o paciente e o serviço.");
       return;
@@ -285,6 +286,7 @@ function HealthAgendaPage() {
     appointmentId: string,
     status: HealthAppointmentStatus,
   ) => {
+    if (!permissions.canManageAppointments || updateStatus.isPending) return;
     try {
       await updateStatus.mutateAsync({ appointmentId, status });
       toast.success(`Atendimento marcado como ${statusLabel[status].toLowerCase()}.`);
@@ -297,6 +299,7 @@ function HealthAgendaPage() {
     appointmentId: string,
     status: "chegou" | "em_atendimento",
   ) => {
+    if (!permissions.canManageAppointments || updateReceptionStatus.isPending) return;
     try {
       await updateReceptionStatus.mutateAsync({ appointmentId, status });
       toast.success(status === "chegou" ? "Chegada registrada." : "Atendimento iniciado.");
@@ -335,7 +338,7 @@ function HealthAgendaPage() {
             </p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            {permissions.canCreate && (
+            {permissions.canManageAppointments && (
               <Button
                 type="button"
                 className="bg-white text-slate-950 hover:bg-slate-100"
@@ -442,7 +445,7 @@ function HealthAgendaPage() {
         </div>
       </div>
 
-      {showForm && permissions.canCreate && (
+      {showForm && permissions.canManageAppointments && (
         <Card className="rounded-2xl border-border/70 shadow-soft">
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -650,7 +653,7 @@ function HealthAgendaPage() {
                             Iniciado às {formatTime(appointment.service_started_at)}
                           </p>
                         )}
-                      {appointment.billing_item_id && permissions.canViewFinance && (
+                      {appointment.billing_item_id && permissions.canViewBilling && (
                         <Button
                           asChild
                           size="sm"
@@ -665,10 +668,10 @@ function HealthAgendaPage() {
                       )}
                     </div>
                   </div>
-                  {permissions.canEdit && (
+                  {permissions.canManageAppointments && (
                       <div className="flex flex-wrap gap-2">
                         {!appointment.billing_item_id &&
-                          permissions.canManageFinance &&
+                          permissions.canViewBilling &&
                           !["cancelado", "faltou"].includes(appointment.status) && (
                             <Button
                               size="sm"
@@ -728,7 +731,7 @@ function HealthAgendaPage() {
                           <>
                             <Button
                               size="sm"
-                              variant={permissions.canManageFinance ? "outline" : "default"}
+                              variant={permissions.canViewBilling ? "outline" : "default"}
                               disabled={updateStatus.isPending}
                               onClick={() => void changeStatus(appointment.id, "concluido")}
                             >

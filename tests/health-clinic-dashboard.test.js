@@ -19,7 +19,7 @@ describe("Painel da Clínica", () => {
 
   test("protege os indicadores financeiros por papel", () => {
     assert.match(page, /canViewBilling/);
-    assert.match(page, /proprietario/);
+    assert.match(page, /useHealthPermissions/);
     assert.match(billingHook, /organizationId && enabled/);
     assert.match(denialHook, /organizationId && enabled/);
   });
