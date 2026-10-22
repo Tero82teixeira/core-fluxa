@@ -1,23 +1,21 @@
 import { useMemo, useState } from "react";
+import { useHealthPermissions } from "@/hooks/use-health-permissions";
+import { HealthSectionState } from "@/components/health/health-section-state";
+import {
+  summarizeHealthBillingDashboard,
+  type HealthBillingPeriod,
+} from "@/lib/health-billing-dashboard";
+import { localCivilDate } from "@/lib/health-clinic-dashboard";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangle,
   BarChart3,
   CalendarClock,
-  Loader2,
   RefreshCw,
   TrendingUp,
   WalletCards,
 } from "lucide-react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +44,7 @@ export const Route = createFileRoute("/_authenticated/saude/painel-faturamento")
   component: HealthBillingDashboardPage,
 });
 
-type PeriodKey = "30d" | "90d" | "year" | "all";
+type PeriodKey = HealthBillingPeriod;
 
 function money(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -59,130 +57,24 @@ function percent(value: number) {
   }).format(value);
 }
 
-function dateInPeriod(value: string | null | undefined, period: PeriodKey) {
-  if (period === "all") return true;
-  if (!value) return false;
-
-  const date = new Date(`${value}T12:00:00`);
-  const now = new Date();
-
-  if (period === "year") return date.getFullYear() === now.getFullYear();
-
-  const days = period === "30d" ? 30 : 90;
-  const threshold = new Date(now);
-  threshold.setDate(threshold.getDate() - days);
-  return date >= threshold;
-}
-
 function HealthBillingDashboardPage() {
   const { organizationId } = useWorkspace();
+  const { canViewBilling, canViewDenials } = useHealthPermissions();
   const [period, setPeriod] = useState<PeriodKey>("90d");
-  const batches = useHealthBillingBatches(organizationId, "");
-  const denials = useHealthDenials(organizationId, "");
-
-  const filteredBatches = useMemo(
+  const today = localCivilDate();
+  const batches = useHealthBillingBatches(organizationId, "", canViewBilling);
+  const denials = useHealthDenials(organizationId, "", canViewBilling && canViewDenials);
+  const metrics = useMemo(
     () =>
-      (batches.data ?? []).filter((batch) =>
-        dateInPeriod(batch.submitted_at ?? batch.created_at, period),
+      summarizeHealthBillingDashboard(
+        canViewBilling ? (batches.data ?? []) : [],
+        canViewBilling && canViewDenials ? (denials.data ?? []) : [],
+        period,
+        today,
       ),
-    [batches.data, period],
+    [batches.data, denials.data, period, today, canViewBilling, canViewDenials],
   );
-
-  const filteredDenials = useMemo(
-    () =>
-      (denials.data ?? []).filter((denial) =>
-        dateInPeriod(denial.received_at ?? denial.created_at, period),
-      ),
-    [denials.data, period],
-  );
-
-  const metrics = useMemo(() => {
-    const billed = filteredBatches.reduce(
-      (sum, batch) => sum + Number(batch.total_amount || 0),
-      0,
-    );
-    const received = filteredBatches.reduce(
-      (sum, batch) => sum + Number(batch.paid_amount || 0),
-      0,
-    );
-    const denied = filteredDenials.reduce(
-      (sum, denial) => sum + Number(denial.denied_amount || 0),
-      0,
-    );
-    const recovered = filteredDenials.reduce(
-      (sum, denial) => sum + Number(denial.recovered_amount || 0),
-      0,
-    );
-    const pending = filteredBatches.reduce(
-      (sum, batch) => sum + Number(batch.pending_amount || 0),
-      0,
-    );
-
-    const today = new Date().toISOString().slice(0, 10);
-    const overdue = filteredBatches.filter(
-      (batch) =>
-        batch.expected_payment_at &&
-        batch.expected_payment_at < today &&
-        Number(batch.pending_amount || 0) > 0 &&
-        !["pago", "cancelado"].includes(batch.status),
-    );
-
-    return {
-      billed,
-      received,
-      denied,
-      recovered,
-      pending,
-      overdue,
-      receiptRate: billed > 0 ? received / billed : 0,
-      denialRate: billed > 0 ? denied / billed : 0,
-      recoveryRate: denied > 0 ? recovered / denied : 0,
-    };
-  }, [filteredBatches, filteredDenials]);
-
-  const byInsurer = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        name: string;
-        billed: number;
-        received: number;
-        denied: number;
-        pending: number;
-        batches: number;
-      }
-    >();
-
-    for (const batch of filteredBatches) {
-      const key = batch.insurer_id;
-      const current = map.get(key) ?? {
-        name: batch.insurer_name || "Convênio",
-        billed: 0,
-        received: 0,
-        denied: 0,
-        pending: 0,
-        batches: 0,
-      };
-      current.billed += Number(batch.total_amount || 0);
-      current.received += Number(batch.paid_amount || 0);
-      current.pending += Number(batch.pending_amount || 0);
-      current.batches += 1;
-      map.set(key, current);
-    }
-
-    for (const denial of filteredDenials) {
-      const name = denial.insurer_name || "Sem convênio";
-      const currentEntry = [...map.entries()].find(([, value]) => value.name === name);
-      if (currentEntry) {
-        currentEntry[1].denied += Math.max(
-          0,
-          Number(denial.denied_amount || 0) - Number(denial.recovered_amount || 0),
-        );
-      }
-    }
-
-    return [...map.values()].sort((a, b) => b.billed - a.billed);
-  }, [filteredBatches, filteredDenials]);
+  const byInsurer = metrics.byInsurer;
 
   const chartData = byInsurer.slice(0, 8).map((row) => ({
     name: row.name.length > 18 ? `${row.name.slice(0, 18)}…` : row.name,
@@ -191,7 +83,12 @@ function HealthBillingDashboardPage() {
     Pendente: row.pending,
   }));
 
-  const isLoading = batches.isLoading || denials.isLoading;
+  if (!canViewBilling)
+    return (
+      <p role="alert" className="p-6">
+        O faturamento não está disponível para este acesso.
+      </p>
+    );
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
@@ -212,23 +109,29 @@ function HealthBillingDashboardPage() {
               </div>
             </div>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
-              Visão gerencial de faturamento, recebimentos, glosas, recuperação e atrasos por convênio.
+              Visão gerencial dos lotes faturados por convênio: recebimentos, glosas, recuperação e
+              atrasos. Rascunhos e cancelados ficam fora dos totais. Contas particulares são
+              acompanhadas em Contas Médicas.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {([
-              ["30d", "30 dias"],
-              ["90d", "90 dias"],
-              ["year", "Este ano"],
-              ["all", "Todo período"],
-            ] as [PeriodKey, string][]).map(([value, label]) => (
+            {(
+              [
+                ["30d", "30 dias"],
+                ["90d", "90 dias"],
+                ["year", "Este ano"],
+                ["all", "Todo período"],
+              ] as [PeriodKey, string][]
+            ).map(([value, label]) => (
               <Button
                 key={value}
                 type="button"
                 size="sm"
                 variant={period === value ? "secondary" : "outline"}
-                className={period === value ? "" : "border-white/20 bg-white/5 text-white hover:bg-white/10"}
+                className={
+                  period === value ? "" : "border-white/20 bg-white/5 text-white hover:bg-white/10"
+                }
                 onClick={() => setPeriod(value)}
               >
                 {label}
@@ -241,7 +144,7 @@ function HealthBillingDashboardPage() {
               className="border-white/20 bg-white/5 text-white hover:bg-white/10"
               onClick={() => {
                 void batches.refetch();
-                void denials.refetch();
+                if (canViewDenials) void denials.refetch();
               }}
             >
               <RefreshCw className="size-4" />
@@ -251,28 +154,45 @@ function HealthBillingDashboardPage() {
         </div>
       </header>
 
-      {isLoading ? (
-        <Card>
-          <CardContent className="flex min-h-52 items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            Carregando indicadores…
-          </CardContent>
-        </Card>
-      ) : (
+      <HealthSectionState
+        label="os lotes de faturamento"
+        loading={batches.isLoading}
+        error={batches.isError}
+        onRetry={() => void batches.refetch()}
+      >
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <MetricCard label="Faturado" value={money(metrics.billed)} icon={WalletCards} />
             <MetricCard label="Recebido" value={money(metrics.received)} icon={TrendingUp} />
             <MetricCard label="Pendente" value={money(metrics.pending)} icon={CalendarClock} />
-            <MetricCard label="Glosado" value={money(metrics.denied)} icon={AlertTriangle} />
-            <MetricCard label="Recuperado" value={money(metrics.recovered)} icon={RefreshCw} />
+            {canViewDenials && denials.isSuccess && (
+              <>
+                <MetricCard label="Glosado" value={money(metrics.denied)} icon={AlertTriangle} />
+                <MetricCard label="Recuperado" value={money(metrics.recovered)} icon={RefreshCw} />
+              </>
+            )}
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
             <RateCard label="Taxa de recebimento" value={percent(metrics.receiptRate)} />
-            <RateCard label="Taxa de glosa" value={percent(metrics.denialRate)} />
-            <RateCard label="Taxa de recuperação" value={percent(metrics.recoveryRate)} />
+            {canViewDenials && denials.isSuccess && (
+              <>
+                <RateCard label="Taxa de glosa" value={percent(metrics.denialRate)} />
+                <RateCard label="Taxa de recuperação" value={percent(metrics.recoveryRate)} />
+              </>
+            )}
           </div>
+
+          {canViewDenials && (
+            <HealthSectionState
+              label="as glosas"
+              loading={denials.isLoading}
+              error={denials.isError}
+              onRetry={() => void denials.refetch()}
+            >
+              {null}
+            </HealthSectionState>
+          )}
 
           {metrics.overdue.length > 0 && (
             <Card className="border-amber-500/30 bg-amber-500/[0.04]">
@@ -295,7 +215,9 @@ function HealthBillingDashboardPage() {
                       <p className="text-xs text-muted-foreground">
                         Previsto para{" "}
                         {batch.expected_payment_at
-                          ? new Date(`${batch.expected_payment_at}T12:00:00`).toLocaleDateString("pt-BR")
+                          ? new Date(`${batch.expected_payment_at}T12:00:00`).toLocaleDateString(
+                              "pt-BR",
+                            )
                           : "—"}
                       </p>
                     </div>
@@ -323,9 +245,24 @@ function HealthBillingDashboardPage() {
                       <XAxis dataKey="name" fontSize={11} />
                       <YAxis fontSize={11} />
                       <Tooltip formatter={(value) => money(Number(value))} />
-                      <Bar dataKey="Faturado" fill="currentColor" className="text-blue-500" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Recebido" fill="currentColor" className="text-emerald-500" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Pendente" fill="currentColor" className="text-amber-500" radius={[4, 4, 0, 0]} />
+                      <Bar
+                        dataKey="Faturado"
+                        fill="currentColor"
+                        className="text-blue-500"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="Recebido"
+                        fill="currentColor"
+                        className="text-emerald-500"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="Pendente"
+                        fill="currentColor"
+                        className="text-amber-500"
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -348,7 +285,7 @@ function HealthBillingDashboardPage() {
                     </TableHeader>
                     <TableBody>
                       {byInsurer.map((row) => (
-                        <TableRow key={row.name}>
+                        <TableRow key={row.id}>
                           <TableCell>
                             <div className="font-medium">{row.name}</div>
                             <div className="text-xs text-muted-foreground">
@@ -366,7 +303,7 @@ function HealthBillingDashboardPage() {
             </Card>
           </div>
         </>
-      )}
+      </HealthSectionState>
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { useMemo } from "react";
+import { HealthSectionState } from "@/components/health/health-section-state";
+import { useHealthPermissions } from "@/hooks/use-health-permissions";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity,
-  AlertTriangle,
   ArrowRight,
   CalendarCheck,
   CalendarClock,
@@ -10,7 +11,6 @@ import {
   CircleDollarSign,
   ClipboardCheck,
   Clock3,
-  Loader2,
   Play,
   RefreshCw,
   Timer,
@@ -41,8 +41,6 @@ export const Route = createFileRoute("/_authenticated/saude/painel-clinica")({
   component: HealthClinicDashboardPage,
 });
 
-const BILLING_ROLES = new Set(["superadmin", "proprietario", "administrador", "gestor"]);
-
 function money(value: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -72,30 +70,41 @@ function waitingTime(value: string) {
 }
 
 function HealthClinicDashboardPage() {
-  const { organizationId, role } = useWorkspace();
+  const { organizationId } = useWorkspace();
+  const { canManageAppointments, canManageAuthorizations, canViewBilling, canViewDenials } =
+    useHealthPermissions();
   const today = localCivilDate();
-  const canViewBilling = BILLING_ROLES.has(role ?? "");
-  const appointments = useHealthAppointments(organizationId, today);
-  const authorizations = useHealthAuthorizations(organizationId, "");
+  const appointments = useHealthAppointments(organizationId, today, canManageAppointments);
+  const authorizations = useHealthAuthorizations(organizationId, "", canManageAuthorizations);
   const billing = useHealthBillingItems(organizationId, "", canViewBilling);
-  const denials = useHealthDenials(organizationId, "", canViewBilling);
+  const denials = useHealthDenials(organizationId, "", canViewDenials);
 
   const summary = useMemo(
     () =>
       summarizeClinicDashboard({
-        appointments: appointments.data ?? [],
-        authorizations: authorizations.data ?? [],
-        billingItems: billing.data ?? [],
-        denials: denials.data ?? [],
+        appointments: canManageAppointments ? (appointments.data ?? []) : [],
+        authorizations: canManageAuthorizations ? (authorizations.data ?? []) : [],
+        billingItems: canViewBilling ? (billing.data ?? []) : [],
+        denials: canViewDenials ? (denials.data ?? []) : [],
         today,
       }),
-    [appointments.data, authorizations.data, billing.data, denials.data, today],
+    [
+      appointments.data,
+      authorizations.data,
+      billing.data,
+      denials.data,
+      today,
+      canManageAppointments,
+      canManageAuthorizations,
+      canViewBilling,
+      canViewDenials,
+    ],
   );
 
   const nextAppointments = useMemo(
     () =>
       [...(appointments.data ?? [])]
-        .filter((item) => !["cancelado", "faltou"].includes(item.status))
+        .filter((item) => ["agendado", "confirmado"].includes(item.status))
         .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
         .slice(0, 6),
     [appointments.data],
@@ -117,23 +126,19 @@ function HealthClinicDashboardPage() {
     [appointments.data],
   );
 
-  const isLoading =
-    appointments.isLoading ||
-    authorizations.isLoading ||
-    (canViewBilling && (billing.isLoading || denials.isLoading));
-  const hasError =
-    appointments.isError ||
-    authorizations.isError ||
-    (canViewBilling && (billing.isError || denials.isError));
-
   const refresh = () => {
-    void appointments.refetch();
-    void authorizations.refetch();
-    if (canViewBilling) {
-      void billing.refetch();
-      void denials.refetch();
-    }
+    if (canManageAppointments) void appointments.refetch();
+    if (canManageAuthorizations) void authorizations.refetch();
+    if (canViewBilling) void billing.refetch();
+    if (canViewDenials) void denials.refetch();
   };
+
+  if (!canManageAppointments)
+    return (
+      <p role="alert" className="p-6">
+        O painel da clínica não está disponível para este acesso.
+      </p>
+    );
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
@@ -178,139 +183,130 @@ function HealthClinicDashboardPage() {
         </div>
       </header>
 
-      {isLoading ? (
-        <Card>
-          <CardContent className="flex min-h-52 items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            Carregando o painel da clínica…
-          </CardContent>
-        </Card>
-      ) : hasError ? (
-        <Card className="border-destructive/30">
-          <CardContent className="flex min-h-44 flex-col items-center justify-center gap-3 text-center">
-            <AlertTriangle className="size-7 text-destructive" />
-            <div>
-              <p className="font-medium">Não foi possível carregar todo o painel.</p>
-              <p className="text-sm text-muted-foreground">Tente atualizar os indicadores.</p>
-            </div>
-            <Button type="button" variant="outline" onClick={refresh}>
-              Tentar novamente
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <section
-            aria-label="Resumo da agenda"
-            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
-          >
-            <MetricCard
-              label="Atendimentos hoje"
-              value={summary.appointmentCounts.total}
-              icon={Users}
-              tone="blue"
-            />
-            <MetricCard
-              label="A confirmar"
-              value={summary.appointmentCounts.awaitingConfirmation}
-              icon={Clock3}
-              tone="amber"
-            />
-            <MetricCard
-              label="Confirmados"
-              value={summary.appointmentCounts.confirmed}
-              icon={CalendarCheck}
-              tone="emerald"
-            />
-            <MetricCard
-              label="Na recepção"
-              value={summary.appointmentCounts.waiting}
-              icon={Timer}
-              tone="amber"
-            />
-            <MetricCard
-              label="Em atendimento"
-              value={summary.appointmentCounts.inService}
-              icon={Play}
-              tone="blue"
-            />
-            <MetricCard
-              label="Concluídos"
-              value={summary.appointmentCounts.completed}
-              icon={CheckCircle2}
-              tone="violet"
-            />
-          </section>
+      <>
+        {canManageAppointments && appointments.isSuccess && (
+          <>
+            <section
+              aria-label="Resumo da agenda"
+              className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+            >
+              <MetricCard
+                label="Atendimentos hoje"
+                value={summary.appointmentCounts.total}
+                icon={Users}
+                tone="blue"
+              />
+              <MetricCard
+                label="A confirmar"
+                value={summary.appointmentCounts.awaitingConfirmation}
+                icon={Clock3}
+                tone="amber"
+              />
+              <MetricCard
+                label="Confirmados"
+                value={summary.appointmentCounts.confirmed}
+                icon={CalendarCheck}
+                tone="emerald"
+              />
+              <MetricCard
+                label="Na recepção"
+                value={summary.appointmentCounts.waiting}
+                icon={Timer}
+                tone="amber"
+              />
+              <MetricCard
+                label="Em atendimento"
+                value={summary.appointmentCounts.inService}
+                icon={Play}
+                tone="blue"
+              />
+              <MetricCard
+                label="Concluídos"
+                value={summary.appointmentCounts.completed}
+                icon={CheckCircle2}
+                tone="violet"
+              />
+            </section>
 
-          <Card
-            className={receptionQueue.length > 0 ? "border-amber-500/30 bg-amber-500/[0.03]" : ""}
-          >
-            <CardHeader className="flex flex-row items-center justify-between gap-4">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Timer className="size-4 text-amber-600" />
-                  Fila da recepção
-                </CardTitle>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Chegadas registradas e atendimentos em andamento.
-                </p>
-              </div>
-              <Button asChild size="sm" variant="ghost">
-                <Link to="/saude/agenda" search={{ date: today }}>
-                  Abrir recepção <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {receptionQueue.length === 0 ? (
-                <div className="md:col-span-2 xl:col-span-3">
-                  <EmptyState icon={CheckCircle2} text="Nenhum paciente aguardando na recepção." />
-                </div>
-              ) : (
-                receptionQueue.map((appointment) => (
-                  <div key={appointment.id} className="rounded-2xl border bg-background p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{appointment.patient_name}</p>
-                        <p className="truncate text-sm text-muted-foreground">
-                          {appointment.service_label} · {time(appointment.starts_at)}
-                        </p>
-                      </div>
-                      <Badge variant="outline">{appointmentStatus(appointment)}</Badge>
-                    </div>
-                    {appointment.reception_status === "chegou" && appointment.checked_in_at && (
-                      <p className="mt-3 text-xs font-medium text-amber-700 dark:text-amber-300">
-                        Aguardando há {waitingTime(appointment.checked_in_at)}
-                      </p>
-                    )}
-                    {appointment.reception_status === "em_atendimento" &&
-                      appointment.service_started_at && (
-                        <p className="mt-3 text-xs font-medium text-blue-700 dark:text-blue-300">
-                          Iniciado às {time(appointment.service_started_at)}
-                        </p>
-                      )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-            <Card>
+            <Card
+              className={receptionQueue.length > 0 ? "border-amber-500/30 bg-amber-500/[0.03]" : ""}
+            >
               <CardHeader className="flex flex-row items-center justify-between gap-4">
                 <div>
-                  <CardTitle className="text-base">Agenda de hoje</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Timer className="size-4 text-amber-600" />
+                    Fila da recepção
+                  </CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Próximos atendimentos e situação atual.
+                    Chegadas registradas e atendimentos em andamento.
                   </p>
                 </div>
                 <Button asChild size="sm" variant="ghost">
-                  <Link to="/saude/agenda" search={{ date: undefined }}>
-                    Ver agenda <ArrowRight className="size-4" />
+                  <Link to="/saude/agenda" search={{ date: today }}>
+                    Abrir recepção <ArrowRight className="size-4" />
                   </Link>
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {receptionQueue.length === 0 ? (
+                  <div className="md:col-span-2 xl:col-span-3">
+                    <EmptyState
+                      icon={CheckCircle2}
+                      text="Nenhum paciente aguardando na recepção."
+                    />
+                  </div>
+                ) : (
+                  receptionQueue.map((appointment) => (
+                    <div key={appointment.id} className="rounded-2xl border bg-background p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{appointment.patient_name}</p>
+                          <p className="truncate text-sm text-muted-foreground">
+                            {appointment.service_label} · {time(appointment.starts_at)}
+                          </p>
+                        </div>
+                        <Badge variant="outline">{appointmentStatus(appointment)}</Badge>
+                      </div>
+                      {appointment.reception_status === "chegou" && appointment.checked_in_at && (
+                        <p className="mt-3 text-xs font-medium text-amber-700 dark:text-amber-300">
+                          Aguardando há {waitingTime(appointment.checked_in_at)}
+                        </p>
+                      )}
+                      {appointment.reception_status === "em_atendimento" &&
+                        appointment.service_started_at && (
+                          <p className="mt-3 text-xs font-medium text-blue-700 dark:text-blue-300">
+                            Iniciado às {time(appointment.service_started_at)}
+                          </p>
+                        )}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
+        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-base">Agenda de hoje</CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Próximos atendimentos e situação atual.
+                </p>
+              </div>
+              <Button asChild size="sm" variant="ghost">
+                <Link to="/saude/agenda" search={{ date: undefined }}>
+                  Ver agenda <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <HealthSectionState
+                label="a agenda"
+                loading={appointments.isLoading}
+                error={appointments.isError}
+                onRetry={() => void appointments.refetch()}
+              >
                 {nextAppointments.length === 0 ? (
                   <EmptyState
                     icon={CalendarClock}
@@ -333,10 +329,12 @@ function HealthClinicDashboardPage() {
                     </div>
                   ))
                 )}
-              </CardContent>
-            </Card>
+              </HealthSectionState>
+            </CardContent>
+          </Card>
 
-            <div className="space-y-6">
+          <div className="space-y-6">
+            {canManageAuthorizations && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -345,34 +343,48 @@ function HealthClinicDashboardPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {summary.expiringAuthorizations.length === 0 ? (
-                    <EmptyState
-                      icon={CheckCircle2}
-                      text="Nenhuma autorização vence nos próximos 7 dias."
-                    />
-                  ) : (
-                    summary.expiringAuthorizations.slice(0, 5).map((authorization) => (
-                      <div key={authorization.id} className="rounded-xl border p-3">
-                        <p className="font-medium">{authorization.patient_name || "Paciente"}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {authorization.service_label} · vence em{" "}
-                          {civilDate(authorization.valid_until)}
-                        </p>
-                      </div>
-                    ))
-                  )}
+                  <HealthSectionState
+                    label="as autorizações"
+                    loading={authorizations.isLoading}
+                    error={authorizations.isError}
+                    onRetry={() => void authorizations.refetch()}
+                  >
+                    {summary.expiringAuthorizations.length === 0 ? (
+                      <EmptyState
+                        icon={CheckCircle2}
+                        text="Nenhuma autorização vence nos próximos 7 dias."
+                      />
+                    ) : (
+                      summary.expiringAuthorizations.slice(0, 5).map((authorization) => (
+                        <div key={authorization.id} className="rounded-xl border p-3">
+                          <p className="font-medium">{authorization.patient_name || "Paciente"}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {authorization.service_label} · vence em{" "}
+                            {civilDate(authorization.valid_until)}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </HealthSectionState>
                 </CardContent>
               </Card>
+            )}
 
-              {canViewBilling && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <WalletCards className="size-4 text-violet-500" />
-                      Faturamento administrativo
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+            {canViewBilling && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <WalletCards className="size-4 text-violet-500" />
+                    Faturamento administrativo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                  <HealthSectionState
+                    label="o faturamento"
+                    loading={billing.isLoading}
+                    error={billing.isError}
+                    onRetry={() => void billing.refetch()}
+                  >
                     <FinancialMetric label="Em aberto" value={money(summary.openBillingAmount)} />
                     <FinancialMetric label="Rascunhos" value={String(summary.draftBillingCount)} />
                     <Button
@@ -382,28 +394,35 @@ function HealthClinicDashboardPage() {
                     >
                       <Link to="/saude/contas-medicas">Abrir Contas Médicas</Link>
                     </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                  </HealthSectionState>
+                </CardContent>
+              </Card>
+            )}
           </div>
+        </div>
 
-          {canViewBilling && (
-            <Card
-              className={
-                summary.urgentDenials.length > 0 ? "border-rose-500/30 bg-rose-500/[0.03]" : ""
-              }
-            >
-              <CardHeader className="flex flex-row items-center justify-between gap-4">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <CircleDollarSign className="size-4 text-rose-500" />
-                  Glosas com prazo de recurso próximo
-                </CardTitle>
-                <Button asChild size="sm" variant="ghost">
-                  <Link to="/saude/glosas">Ver glosas</Link>
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-3">
+        {canViewDenials && (
+          <Card
+            className={
+              summary.urgentDenials.length > 0 ? "border-rose-500/30 bg-rose-500/[0.03]" : ""
+            }
+          >
+            <CardHeader className="flex flex-row items-center justify-between gap-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CircleDollarSign className="size-4 text-rose-500" />
+                Glosas com prazo de recurso próximo
+              </CardTitle>
+              <Button asChild size="sm" variant="ghost">
+                <Link to="/saude/glosas">Ver glosas</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <HealthSectionState
+                label="as glosas"
+                loading={denials.isLoading}
+                error={denials.isError}
+                onRetry={() => void denials.refetch()}
+              >
                 {summary.urgentDenials.length === 0 ? (
                   <EmptyState icon={CheckCircle2} text="Nenhuma glosa vence nos próximos 7 dias." />
                 ) : (
@@ -426,11 +445,11 @@ function HealthClinicDashboardPage() {
                     </div>
                   ))
                 )}
-              </CardContent>
-            </Card>
-          )}
-        </>
-      )}
+              </HealthSectionState>
+            </CardContent>
+          </Card>
+        )}
+      </>
     </div>
   );
 }

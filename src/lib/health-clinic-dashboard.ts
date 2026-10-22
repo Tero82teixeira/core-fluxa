@@ -2,9 +2,9 @@ import type { HealthAppointment } from "@/hooks/use-health-appointments";
 import type { HealthBillingItem } from "@/hooks/use-health-billing";
 import type { HealthDenial } from "@/hooks/use-health-denials";
 import type { HealthAuthorization } from "@/hooks/use-health-insurance";
+import { summarizeHealthBilling } from "./health-billing-summary.ts";
 
 const ACTIVE_DENIAL_STATUSES = new Set(["aberta", "em_recurso", "parcial"]);
-const OPEN_BILLING_STATUSES = new Set(["rascunho", "enviado", "parcial", "glosado"]);
 
 function civilDayDistance(today: string, target: string) {
   const start = new Date(`${today}T12:00:00Z`).getTime();
@@ -36,16 +36,12 @@ export function summarizeClinicDashboard({
     total: appointments.length,
     awaitingConfirmation: appointments.filter((item) => item.status === "agendado").length,
     confirmed: appointments.filter((item) => item.status === "confirmado").length,
-    waiting: appointments.filter((item) => item.reception_status === "chegou").length,
-    inService: appointments.filter((item) => item.reception_status === "em_atendimento").length,
+    waiting: appointments.filter((item) => item.reception_status === "chegou" && ["agendado", "confirmado"].includes(item.status)).length,
+    inService: appointments.filter((item) => item.reception_status === "em_atendimento" && ["agendado", "confirmado"].includes(item.status)).length,
     completed: appointments.filter((item) => item.status === "concluido").length,
   };
 
-  const openBillingItems = billingItems.filter((item) => OPEN_BILLING_STATUSES.has(item.status));
-  const openBillingAmount = openBillingItems.reduce(
-    (sum, item) => sum + Math.max(0, Number(item.amount || 0) - Number(item.paid_amount || 0)),
-    0,
-  );
+  const openBillingAmount = summarizeHealthBilling(billingItems).open;
 
   const expiringAuthorizations = authorizations
     .filter((item) => {

@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useWorkspace } from "@/lib/workspace";
-import { usePermissions } from "@/lib/permissions";
+import { useHealthPermissions } from "@/hooks/use-health-permissions";
 import { describeError } from "@/lib/errors";
 import { maskPhone } from "@/lib/format";
 import { useCreateHealthInsurer, useHealthInsurers } from "@/hooks/use-health-insurance";
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/saude/convenios")({
 
 function HealthInsurersPage() {
   const { organizationId } = useWorkspace();
-  const permissions = usePermissions();
+  const permissions = useHealthPermissions();
   const [term, setTerm] = useState("");
   const [debounced, setDebounced] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -53,6 +53,7 @@ function HealthInsurersPage() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!permissions.canManageInsurers || create.isPending) return;
     if (!form.name.trim()) {
       toast.error("Informe o nome do convênio.");
       return;
@@ -93,7 +94,7 @@ function HealthInsurersPage() {
               Cadastre operadoras, códigos de registro e contatos administrativos para organizar autorizações e faturamento.
             </p>
           </div>
-          {permissions.canCreate && (
+          {permissions.canManageInsurers && (
             <Button
               className="w-full rounded-xl bg-white text-slate-950 hover:bg-slate-100 sm:w-auto"
               onClick={() => setShowForm((value) => !value)}
@@ -105,7 +106,7 @@ function HealthInsurersPage() {
         </div>
       </header>
 
-      {showForm && permissions.canCreate && (
+      {showForm && permissions.canManageInsurers && (
         <Card className="rounded-2xl border-border/70 shadow-soft">
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">

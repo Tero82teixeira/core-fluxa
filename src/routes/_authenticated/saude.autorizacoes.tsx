@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useWorkspace } from "@/lib/workspace";
-import { usePermissions } from "@/lib/permissions";
+import { useHealthPermissions } from "@/hooks/use-health-permissions";
 import { describeError } from "@/lib/errors";
 import { useHealthPatients } from "@/hooks/use-health-patients";
 import {
@@ -46,7 +46,7 @@ export const Route = createFileRoute("/_authenticated/saude/autorizacoes")({
 
 function HealthAuthorizationsPage() {
   const { organizationId } = useWorkspace();
-  const permissions = usePermissions();
+  const permissions = useHealthPermissions();
   const [term, setTerm] = useState("");
   const [debounced, setDebounced] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -72,6 +72,7 @@ function HealthAuthorizationsPage() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!permissions.canManageAuthorizations || create.isPending) return;
     if (!form.patient_profile_id) {
       toast.error("Selecione o paciente.");
       return;
@@ -130,7 +131,7 @@ function HealthAuthorizationsPage() {
               Acompanhe solicitações, números de autorização, validade e status administrativo por paciente e convênio.
             </p>
           </div>
-          {permissions.canCreate && (
+          {permissions.canManageAuthorizations && (
             <Button
               className="w-full rounded-xl bg-white text-slate-950 hover:bg-slate-100 sm:w-auto"
               onClick={() => setShowForm((value) => !value)}
@@ -142,7 +143,7 @@ function HealthAuthorizationsPage() {
         </div>
       </header>
 
-      {showForm && permissions.canCreate && (
+      {showForm && permissions.canManageAuthorizations && (
         <Card className="rounded-2xl border-border/70 shadow-soft">
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">

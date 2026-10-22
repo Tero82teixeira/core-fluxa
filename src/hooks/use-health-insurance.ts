@@ -34,10 +34,10 @@ const rpc = supabase as unknown as {
   ) => PromiseLike<{ data: unknown; error: unknown }>;
 };
 
-export function useHealthInsurers(organizationId: string | null, search = "") {
+export function useHealthInsurers(organizationId: string | null, search = "", enabled = true) {
   return useQuery({
     queryKey: ["health-insurers", organizationId, search],
-    enabled: Boolean(organizationId),
+    enabled: Boolean(organizationId && enabled),
     queryFn: async () => {
       const { data, error } = await rpc.rpc("list_health_insurers", {
         _organization_id: organizationId,
@@ -74,10 +74,10 @@ export function useCreateHealthInsurer(organizationId: string | null) {
   });
 }
 
-export function useHealthAuthorizations(organizationId: string | null, search = "") {
+export function useHealthAuthorizations(organizationId: string | null, search = "", enabled = true) {
   return useQuery({
     queryKey: ["health-authorizations", organizationId, search],
-    enabled: Boolean(organizationId),
+    enabled: Boolean(organizationId && enabled),
     queryFn: async () => {
       const { data, error } = await rpc.rpc("list_health_authorizations", {
         _organization_id: organizationId,
